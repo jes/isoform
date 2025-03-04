@@ -127,10 +127,7 @@
             // Combine objects
             float scene = opSmoothUnion(sphere, box, 0.5);
             scene = opSmoothUnion(scene, torus, 0.5);
-            
             // Add ground plane
-            float ground = p.y + 1.5;
-            scene = opUnion(scene, ground);
             
             return scene;
         }
