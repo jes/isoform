@@ -114,6 +114,27 @@ vec3 calcNormal(vec3 p) {
     ));
 }
 
+// Edge detection based on normal discontinuity
+float detectEdge(vec3 p, vec3 normal) {
+    // Sample normals at nearby points
+    float offset = 0.01;
+    vec3 n1 = calcNormal(p + vec3(offset, 0.0, 0.0));
+    vec3 n2 = calcNormal(p + vec3(0.0, offset, 0.0));
+    vec3 n3 = calcNormal(p + vec3(0.0, 0.0, offset));
+    
+    // Calculate how different these normals are from the center normal
+    float edge = 0.0;
+    edge += (1.0 - dot(normal, n1));
+    edge += (1.0 - dot(normal, n2));
+    edge += (1.0 - dot(normal, n3));
+    
+    // Normalize and apply threshold for edge detection
+    edge /= 3.0;
+    edge = smoothstep(0.1, 0.3, edge);
+    
+    return edge;
+}
+
 // Ray marching
 float rayMarch(vec3 ro, vec3 rd) {
     float t = 0.0;
@@ -253,6 +274,9 @@ void main() {
         // Get material properties
         Material mat = getMaterial(pos, normal);
         
+        // Detect edges
+        float edge = detectEdge(pos, normal);
+        
         // Lighting setup
         vec3 lightPos = vec3(5.0, 5.0, -5.0);
         vec3 lightDir = normalize(lightPos - pos);
@@ -284,6 +308,10 @@ void main() {
         float rim = 1.0 - max(dot(normal, viewDir), 0.0);
         rim = pow(rim, 4.0);
         color += rim * 0.2 * vec3(1.0);
+        
+        // Apply edge highlighting
+        vec3 edgeColor = vec3(1.0, 1.0, 1.0); // White edge highlight
+        color = mix(color, edgeColor, edge);
         
         // Fog effect based on distance
         float fogFactor = 1.0 - exp(-0.05 * t);
