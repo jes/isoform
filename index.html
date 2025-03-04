@@ -36,16 +36,137 @@
         uniform vec2 uResolution;
         uniform float uTime;
         
+        // 3D SDF primitives
+        float sdSphere(vec3 p, float r) {
+            return length(p) - r;
+        }
+        
+        float sdBox(vec3 p, vec3 b) {
+            vec3 d = abs(p) - b;
+            return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0);
+        }
+        
+        float sdTorus(vec3 p, vec2 t) {
+            vec2 q = vec2(length(p.xz) - t.x, p.y);
+            return length(q) - t.y;
+        }
+        
+        // SDF operations
+        float opUnion(float d1, float d2) { return min(d1, d2); }
+        float opSubtraction(float d1, float d2) { return max(-d1, d2); }
+        float opIntersection(float d1, float d2) { return max(d1, d2); }
+        
+        // Smooth blend operations
+        float opSmoothUnion(float d1, float d2, float k) {
+            float h = clamp(0.5 + 0.5 * (d2 - d1) / k, 0.0, 1.0);
+            return mix(d2, d1, h) - k * h * (1.0 - h);
+        }
+        
+        // Scene description
+        float map(vec3 p) {
+            // Animate objects
+            vec3 spherePos = p - vec3(sin(uTime) * 1.5, cos(uTime * 0.5), 0.0);
+            vec3 boxPos = p - vec3(0.0, sin(uTime) * 0.5, cos(uTime) * 1.5);
+            vec3 torusPos = p - vec3(cos(uTime * 0.7) * 1.0, 0.0, sin(uTime * 0.5) * 1.0);
+            
+            // Create objects
+            float sphere = sdSphere(spherePos, 1.0);
+            float box = sdBox(boxPos, vec3(0.75));
+            float torus = sdTorus(torusPos, vec2(1.0, 0.3));
+            
+            // Combine objects
+            float scene = opSmoothUnion(sphere, box, 0.5);
+            scene = opSmoothUnion(scene, torus, 0.5);
+            
+            // Add ground plane
+            float ground = p.y + 1.5;
+            scene = opUnion(scene, ground);
+            
+            return scene;
+        }
+        
+        // Calculate normal at a point
+        vec3 calcNormal(vec3 p) {
+            const float eps = 0.001;
+            const vec2 h = vec2(eps, 0.0);
+            return normalize(vec3(
+                map(p + h.xyy) - map(p - h.xyy),
+                map(p + h.yxy) - map(p - h.yxy),
+                map(p + h.yyx) - map(p - h.yyx)
+            ));
+        }
+        
+        // Ray marching
+        float rayMarch(vec3 ro, vec3 rd) {
+            float t = 0.0;
+            for (int i = 0; i < 100; i++) {
+                vec3 p = ro + rd * t;
+                float d = map(p);
+                if (d < 0.001 || t > 20.0) break;
+                t += d;
+            }
+            return t;
+        }
+        
         void main() {
             // Normalized coordinates (0.0 to 1.0)
             vec2 uv = gl_FragCoord.xy / uResolution.xy;
             
-            // Create a colorful gradient based on position and time
-            vec3 color = vec3(
-                0.5 + 0.5 * sin(uv.x * 6.0 + uTime),
-                0.5 + 0.5 * sin(uv.y * 6.0 + uTime * 0.7),
-                0.5 + 0.5 * sin((uv.x + uv.y) * 3.0 + uTime * 0.5)
+            // Convert to centered coordinates (-1.0 to 1.0)
+            vec2 p = (2.0 * uv - 1.0);
+            // Correct aspect ratio
+            p.x *= uResolution.x / uResolution.y;
+            
+            // Camera setup
+            vec3 ro = vec3(0.0, 0.0, -5.0); // Ray origin (camera position)
+            vec3 rd = normalize(vec3(p, 2.0)); // Ray direction
+            
+            // Rotate camera around the scene
+            float camAngle = uTime * 0.3;
+            mat3 rotY = mat3(
+                cos(camAngle), 0.0, sin(camAngle),
+                0.0, 1.0, 0.0,
+                -sin(camAngle), 0.0, cos(camAngle)
             );
+            ro = rotY * ro;
+            rd = rotY * rd;
+            
+            // Ray march to find distance
+            float t = rayMarch(ro, rd);
+            
+            // Default background color
+            vec3 color = vec3(0.1, 0.1, 0.2);
+            
+            // If we hit something
+            if (t < 20.0) {
+                // Calculate hit position and normal
+                vec3 pos = ro + rd * t;
+                vec3 normal = calcNormal(pos);
+                
+                // Simple lighting
+                vec3 lightDir = normalize(vec3(1.0, 1.0, -1.0));
+                float diff = max(dot(normal, lightDir), 0.0);
+                
+                // Base color based on normal
+                vec3 objColor = 0.5 + 0.5 * normal;
+                
+                // Add some color variation based on position
+                objColor *= 0.8 + 0.2 * vec3(
+                    0.5 + 0.5 * sin(pos.x * 2.0 + uTime),
+                    0.5 + 0.5 * sin(pos.y * 2.0 + uTime * 0.7),
+                    0.5 + 0.5 * sin(pos.z * 2.0 + uTime * 0.5)
+                );
+                
+                // Apply lighting
+                color = objColor * (0.2 + 0.8 * diff);
+                
+                // Add ambient occlusion
+                float ao = 1.0 - (1.0 / (1.0 + t * 0.1));
+                color *= ao;
+            }
+            
+            // Apply gamma correction
+            color = pow(color, vec3(0.4545));
             
             gl_FragColor = vec4(color, 1.0);
         }
