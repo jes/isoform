@@ -1,0 +1,42 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+}
+canvas {
+    display: block;
+    flex: 1;
+    width: 50vw;
+    height: 100vh;
+}
+#ui-panel {
+    width: 200px;
+    background-color: rgba(30, 30, 40, 0.8);
+    color: white;
+    padding: 15px;
+    font-family: Arial, sans-serif;
+    overflow-y: auto;
+}
+.control-group {
+    margin-bottom: 15px;
+}
+h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #555;
+    padding-bottom: 5px;
+}
+label {
+    display: block;
+    margin: 8px 0;
+    cursor: pointer;
+}
+input[type="checkbox"] {
+    margin-right: 8px;
+}
+.indented {
+    margin-left: 20px;
+    font-size: 0.9em;
+    opacity: 0.9;
+} 
