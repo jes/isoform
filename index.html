@@ -275,177 +275,247 @@
     <script>
         // Initialize WebGL when the page loads
         window.onload = function() {
-            const canvas = document.getElementById('glCanvas');
-            const gl = canvas.getContext('webgl');
+            // Extract core functionality into separate objects/functions
             
-            // Object visibility controls
-            const showSphere = document.getElementById('showSphere');
-            const showBox = document.getElementById('showBox');
-            const showTorus = document.getElementById('showTorus');
+            // WebGL setup and management
+            const renderer = {
+                canvas: document.getElementById('glCanvas'),
+                gl: null,
+                programInfo: null,
+                positionBuffer: null,
+                startTime: Date.now(),
+                
+                init: function() {
+                    this.gl = this.canvas.getContext('webgl');
+                    if (!this.gl) {
+                        alert('Unable to initialize WebGL. Your browser may not support it.');
+                        return false;
+                    }
+                    
+                    this.resizeCanvas();
+                    window.addEventListener('resize', () => this.resizeCanvas());
+                    
+                    // Create buffer for full-screen quad
+                    const positions = [-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0];
+                    this.positionBuffer = this.gl.createBuffer();
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW);
+                    
+                    return true;
+                },
+                
+                resizeCanvas: function() {
+                    this.canvas.width = window.innerWidth;
+                    this.canvas.height = window.innerHeight;
+                    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+                },
+                
+                compileShader: function(source, type) {
+                    const shader = this.gl.createShader(type);
+                    this.gl.shaderSource(shader, source);
+                    this.gl.compileShader(shader);
+
+                    if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+                        console.error('Shader compilation error:', this.gl.getShaderInfoLog(shader));
+                        this.gl.deleteShader(shader);
+                        return null;
+                    }
+                    return shader;
+                },
+                
+                createShaderProgram: function(vsSource, fsSource) {
+                    const vertexShader = this.compileShader(vsSource, this.gl.VERTEX_SHADER);
+                    const fragmentShader = this.compileShader(fsSource, this.gl.FRAGMENT_SHADER);
+
+                    const program = this.gl.createProgram();
+                    this.gl.attachShader(program, vertexShader);
+                    this.gl.attachShader(program, fragmentShader);
+                    this.gl.linkProgram(program);
+
+                    if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
+                        console.error('Program linking error:', this.gl.getProgramInfoLog(program));
+                        return null;
+                    }
+                    
+                    // Set up program info
+                    this.programInfo = {
+                        program: program,
+                        attribLocations: {
+                            vertexPosition: this.gl.getAttribLocation(program, 'aVertexPosition'),
+                        },
+                        uniformLocations: {
+                            resolution: this.gl.getUniformLocation(program, 'uResolution'),
+                            time: this.gl.getUniformLocation(program, 'uTime'),
+                            cameraPosition: this.gl.getUniformLocation(program, 'uCameraPosition'),
+                            cameraTarget: this.gl.getUniformLocation(program, 'uCameraTarget'),
+                            cameraZoom: this.gl.getUniformLocation(program, 'uCameraZoom'),
+                            rotationX: this.gl.getUniformLocation(program, 'uRotationX'),
+                            rotationY: this.gl.getUniformLocation(program, 'uRotationY')
+                        },
+                    };
+                    
+                    return program;
+                },
+                
+                render: function() {
+                    const currentTime = (Date.now() - this.startTime) / 1000;
+                    
+                    // Clear the canvas
+                    this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+                    
+                    // Use our shader program
+                    this.gl.useProgram(this.programInfo.program);
+                    
+                    // Set up vertex attribute
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+                    this.gl.vertexAttribPointer(
+                        this.programInfo.attribLocations.vertexPosition,
+                        2, this.gl.FLOAT, false, 0, 0
+                    );
+                    this.gl.enableVertexAttribArray(this.programInfo.attribLocations.vertexPosition);
+                    
+                    // Set uniforms
+                    this.gl.uniform2f(this.programInfo.uniformLocations.resolution, this.canvas.width, this.canvas.height);
+                    this.gl.uniform1f(this.programInfo.uniformLocations.time, currentTime);
+                    this.gl.uniform3fv(this.programInfo.uniformLocations.cameraPosition, camera.position);
+                    this.gl.uniform3fv(this.programInfo.uniformLocations.cameraTarget, camera.target);
+                    this.gl.uniform1f(this.programInfo.uniformLocations.cameraZoom, camera.zoom);
+                    this.gl.uniform1f(this.programInfo.uniformLocations.rotationX, camera.rotationX);
+                    this.gl.uniform1f(this.programInfo.uniformLocations.rotationY, camera.rotationY);
+                    
+                    // Draw the square (as triangle strip)
+                    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+                }
+            };
             
-            // Subtraction controls
-            const subtractSphere = document.getElementById('subtractSphere');
-            const subtractBox = document.getElementById('subtractBox');
-            const subtractTorus = document.getElementById('subtractTorus');
-            
-            // Thickness controls
-            const thicknessSphere = document.getElementById('thicknessSphere');
-            const thicknessBox = document.getElementById('thicknessBox');
-            const thicknessTorus = document.getElementById('thicknessTorus');
-            
-            // Track if shader needs to be recompiled
-            let needsRecompile = false;
-            
-            // Camera state
+            // Camera controls
             const camera = {
                 position: [0.0, 0.0, -5.0],
                 target: [0.0, 0.0, 0.0],
                 zoom: 1.0,
-                // Scene rotation
                 rotationX: 0.0,
                 rotationY: 0.0,
-                // For mouse interaction
                 isDragging: false,
                 lastMouseX: 0,
                 lastMouseY: 0,
-                // Mouse sensitivity
                 rotationSpeed: 0.01,
                 zoomSpeed: 0.1,
-                panSpeed: 0.01
+                panSpeed: 0.01,
+                
+                init: function(canvas) {
+                    // Mouse event handlers
+                    canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
+                    canvas.addEventListener('mouseup', () => this.onMouseUp());
+                    canvas.addEventListener('mouseleave', () => this.onMouseLeave());
+                    canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                    canvas.addEventListener('wheel', (e) => this.onWheel(e));
+                },
+                
+                onMouseDown: function(e) {
+                    this.isDragging = true;
+                    this.lastMouseX = e.clientX;
+                    this.lastMouseY = e.clientY;
+                },
+                
+                onMouseUp: function() {
+                    this.isDragging = false;
+                },
+                
+                onMouseLeave: function() {
+                    this.isDragging = false;
+                },
+                
+                onMouseMove: function(e) {
+                    if (!this.isDragging) return;
+                    
+                    const deltaX = e.clientX - this.lastMouseX;
+                    const deltaY = e.clientY - this.lastMouseY;
+                    
+                    if (e.shiftKey) {
+                        // Pan camera in screen space
+                        const panX = -deltaX * this.panSpeed;
+                        const panY = deltaY * this.panSpeed;
+                        
+                        this.target[0] += panX;
+                        this.target[1] += panY;
+                        this.position[0] += panX;
+                        this.position[1] += panY;
+                    } else {
+                        // Rotate the scene
+                        this.rotationY += deltaX * this.rotationSpeed;
+                        this.rotationX += deltaY * this.rotationSpeed;
+                    }
+                    
+                    this.lastMouseX = e.clientX;
+                    this.lastMouseY = e.clientY;
+                },
+                
+                onWheel: function(e) {
+                    e.preventDefault();
+                    
+                    // Adjust zoom based on wheel direction
+                    const zoomDelta = e.deltaY * this.zoomSpeed * 0.01;
+                    this.zoom += zoomDelta;
+                    
+                    // Clamp zoom to reasonable values
+                    this.zoom = Math.max(0.1, Math.min(2.0, this.zoom));
+                }
             };
             
-            // Mouse event handlers
-            canvas.addEventListener('mousedown', (e) => {
-                camera.isDragging = true;
-                camera.lastMouseX = e.clientX;
-                camera.lastMouseY = e.clientY;
-            });
-            
-            canvas.addEventListener('mouseup', () => {
-                camera.isDragging = false;
-            });
-            
-            canvas.addEventListener('mouseleave', () => {
-                camera.isDragging = false;
-            });
-            
-            canvas.addEventListener('mousemove', (e) => {
-                if (!camera.isDragging) return;
+            // Scene configuration
+            const scene = {
+                showSphere: document.getElementById('showSphere'),
+                showBox: document.getElementById('showBox'),
+                showTorus: document.getElementById('showTorus'),
+                subtractSphere: document.getElementById('subtractSphere'),
+                subtractBox: document.getElementById('subtractBox'),
+                subtractTorus: document.getElementById('subtractTorus'),
+                thicknessSphere: document.getElementById('thicknessSphere'),
+                thicknessBox: document.getElementById('thicknessBox'),
+                thicknessTorus: document.getElementById('thicknessTorus'),
+                smoothnessSlider: document.getElementById('smoothness'),
+                smoothnessValue: document.getElementById('smoothnessValue'),
+                currentSmoothness: 0.5,
+                needsRecompile: false,
                 
-                const deltaX = e.clientX - camera.lastMouseX;
-                const deltaY = e.clientY - camera.lastMouseY;
-                
-                if (e.shiftKey) {
-                    // Pan camera in screen space
-                    const panX = -deltaX * camera.panSpeed;
-                    const panY = deltaY * camera.panSpeed;
+                init: function() {
+                    // Initialize smoothness value
+                    this.currentSmoothness = parseFloat(this.smoothnessSlider.value);
                     
-                    camera.target[0] += panX;
-                    camera.target[1] += panY;
-                    camera.position[0] += panX;
-                    camera.position[1] += panY;
-                } else {
-                    // Rotate the scene (not the camera)
-                    camera.rotationY += deltaX * camera.rotationSpeed;
-                    camera.rotationX += deltaY * camera.rotationSpeed;
-                }
+                    // Add event listeners
+                    this.showSphere.addEventListener('change', () => this.needsRecompile = true);
+                    this.showBox.addEventListener('change', () => this.needsRecompile = true);
+                    this.showTorus.addEventListener('change', () => this.needsRecompile = true);
+                    this.subtractSphere.addEventListener('change', () => this.needsRecompile = true);
+                    this.subtractBox.addEventListener('change', () => this.needsRecompile = true);
+                    this.subtractTorus.addEventListener('change', () => this.needsRecompile = true);
+                    this.thicknessSphere.addEventListener('change', () => this.needsRecompile = true);
+                    this.thicknessBox.addEventListener('change', () => this.needsRecompile = true);
+                    this.thicknessTorus.addEventListener('change', () => this.needsRecompile = true);
+                    
+                    this.smoothnessSlider.addEventListener('input', () => {
+                        this.currentSmoothness = parseFloat(this.smoothnessSlider.value);
+                        this.smoothnessValue.textContent = this.currentSmoothness.toFixed(2);
+                        this.needsRecompile = true;
+                    });
+                },
                 
-                camera.lastMouseX = e.clientX;
-                camera.lastMouseY = e.clientY;
-            });
-            
-            // Zoom with mouse wheel
-            canvas.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                
-                // Adjust zoom based on wheel direction
-                const zoomDelta = e.deltaY * camera.zoomSpeed * 0.01;
-                camera.zoom += zoomDelta;
-                
-                // Clamp zoom to reasonable values
-                camera.zoom = Math.max(0.1, Math.min(2.0, camera.zoom));
-            });
-            
-            // Add event listeners to checkboxes
-            showSphere.addEventListener('change', () => { needsRecompile = true; });
-            showBox.addEventListener('change', () => { needsRecompile = true; });
-            showTorus.addEventListener('change', () => { needsRecompile = true; });
-            subtractSphere.addEventListener('change', () => { needsRecompile = true; });
-            subtractBox.addEventListener('change', () => { needsRecompile = true; });
-            subtractTorus.addEventListener('change', () => { needsRecompile = true; });
-            thicknessSphere.addEventListener('change', () => { needsRecompile = true; });
-            thicknessBox.addEventListener('change', () => { needsRecompile = true; });
-            thicknessTorus.addEventListener('change', () => { needsRecompile = true; });
-
-            // If WebGL is not available, show an error
-            if (!gl) {
-                alert('Unable to initialize WebGL. Your browser may not support it.');
-                return;
-            }
-
-            // Resize canvas to match window size
-            function resizeCanvas() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                gl.viewport(0, 0, canvas.width, canvas.height);
-            }
-            
-            window.addEventListener('resize', resizeCanvas);
-            resizeCanvas();
-
-            // Compile shader from source
-            function compileShader(source, type) {
-                const shader = gl.createShader(type);
-                gl.shaderSource(shader, source);
-                gl.compileShader(shader);
-
-                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                    console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
-                    gl.deleteShader(shader);
-                    return null;
-                }
-                return shader;
-            }
-
-            // Create shader program
-            function createShaderProgram(vsSource, fsSource) {
-                const vertexShader = compileShader(vsSource, gl.VERTEX_SHADER);
-                const fragmentShader = compileShader(fsSource, gl.FRAGMENT_SHADER);
-
-                const program = gl.createProgram();
-                gl.attachShader(program, vertexShader);
-                gl.attachShader(program, fragmentShader);
-                gl.linkProgram(program);
-
-                if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-                    console.error('Program linking error:', gl.getProgramInfoLog(program));
-                    return null;
-                }
-                return program;
-            }
-
-            // Get shader sources from script tags
-            const vsSource = document.getElementById('vertex-shader').text;
-            let fsSource = document.getElementById('fragment-shader').text;
-            
-            // Create shader program
-            let shaderProgram = createShaderProgram(vsSource, fsSource);
-            
-            // Function to update fragment shader based on UI settings
-            function updateFragmentShader() {
-                if (!needsRecompile && !smoothnessChanged) return;
-                
-                // Get the original shader source
-                let originalSource = document.getElementById('fragment-shader').text;
-                
-                // Find the scene combination part and replace it
-                const sceneStartMarker = "// Combine objects";
-                const sceneEndMarker = "// Add ground plane";
-                
-                let startIndex = originalSource.indexOf(sceneStartMarker);
-                let endIndex = originalSource.indexOf(sceneEndMarker);
-                
-                if (startIndex !== -1 && endIndex !== -1) {
+                generateShaderCode: function() {
+                    if (!this.needsRecompile) return null;
+                    
+                    // Get the original shader source
+                    let originalSource = document.getElementById('fragment-shader').text;
+                    
+                    // Find the scene combination part
+                    const sceneStartMarker = "// Combine objects";
+                    const sceneEndMarker = "// Add ground plane";
+                    
+                    let startIndex = originalSource.indexOf(sceneStartMarker);
+                    let endIndex = originalSource.indexOf(sceneEndMarker);
+                    
+                    if (startIndex === -1 || endIndex === -1) return null;
+                    
                     // Skip to the end of the start marker line
                     startIndex = originalSource.indexOf('\n', startIndex) + 1;
                     
@@ -454,18 +524,18 @@
                     
                     // Check if we have any positive objects
                     const hasPositiveObjects = 
-                        (showSphere.checked && !subtractSphere.checked) || 
-                        (showBox.checked && !subtractBox.checked) || 
-                        (showTorus.checked && !subtractTorus.checked);
+                        (this.showSphere.checked && !this.subtractSphere.checked) || 
+                        (this.showBox.checked && !this.subtractBox.checked) || 
+                        (this.showTorus.checked && !this.subtractTorus.checked);
                     
                     // Check if we have any subtractive objects
                     const hasSubtractiveObjects = 
-                        (showSphere.checked && subtractSphere.checked) || 
-                        (showBox.checked && subtractBox.checked) || 
-                        (showTorus.checked && subtractTorus.checked);
+                        (this.showSphere.checked && this.subtractSphere.checked) || 
+                        (this.showBox.checked && this.subtractBox.checked) || 
+                        (this.showTorus.checked && this.subtractTorus.checked);
                     
                     // If no objects are selected at all
-                    if (!showSphere.checked && !showBox.checked && !showTorus.checked) {
+                    if (!this.showSphere.checked && !this.showBox.checked && !this.showTorus.checked) {
                         newSceneCode += "            float scene = 1000.0; // No objects selected\n";
                     } 
                     // If we only have subtractive objects, create a base sphere
@@ -473,16 +543,16 @@
                         newSceneCode += "            float scene = 10.0; // Base for subtractive objects\n";
                         
                         // Add all subtractive objects
-                        if (showSphere.checked && subtractSphere.checked) {
-                            newSceneCode += `            scene = opSmoothSubtraction(scene, sphere, ${currentSmoothness.toFixed(2)});\n`;
+                        if (this.showSphere.checked && this.subtractSphere.checked) {
+                            newSceneCode += `            scene = opSmoothSubtraction(scene, sphere, ${this.currentSmoothness.toFixed(2)});\n`;
                         }
                         
-                        if (showBox.checked && subtractBox.checked) {
-                            newSceneCode += `            scene = opSmoothSubtraction(scene, box, ${currentSmoothness.toFixed(2)});\n`;
+                        if (this.showBox.checked && this.subtractBox.checked) {
+                            newSceneCode += `            scene = opSmoothSubtraction(scene, box, ${this.currentSmoothness.toFixed(2)});\n`;
                         }
                         
-                        if (showTorus.checked && subtractTorus.checked) {
-                            newSceneCode += `            scene = opSmoothSubtraction(scene, torus, ${currentSmoothness.toFixed(2)});\n`;
+                        if (this.showTorus.checked && this.subtractTorus.checked) {
+                            newSceneCode += `            scene = opSmoothSubtraction(scene, torus, ${this.currentSmoothness.toFixed(2)});\n`;
                         }
                     } 
                     // We have at least one positive object
@@ -491,9 +561,9 @@
                         let sceneInitialized = false;
                         
                         // First pass: add all positive objects
-                        if (showSphere.checked && !subtractSphere.checked) {
+                        if (this.showSphere.checked && !this.subtractSphere.checked) {
                             let sphereObj = "sphere";
-                            if (thicknessSphere.checked) {
+                            if (this.thicknessSphere.checked) {
                                 sphereObj = `opThickness(sphere, 0.1)`;
                             }
                             
@@ -501,13 +571,13 @@
                                 newSceneCode += `            float scene = ${sphereObj};\n`;
                                 sceneInitialized = true;
                             } else {
-                                newSceneCode += `            scene = opSmoothUnion(scene, ${sphereObj}, ${currentSmoothness.toFixed(2)});\n`;
+                                newSceneCode += `            scene = opSmoothUnion(scene, ${sphereObj}, ${this.currentSmoothness.toFixed(2)});\n`;
                             }
                         }
                         
-                        if (showBox.checked && !subtractBox.checked) {
+                        if (this.showBox.checked && !this.subtractBox.checked) {
                             let boxObj = "box";
-                            if (thicknessBox.checked) {
+                            if (this.thicknessBox.checked) {
                                 boxObj = `opThickness(box, 0.1)`;
                             }
                             
@@ -515,13 +585,13 @@
                                 newSceneCode += `            float scene = ${boxObj};\n`;
                                 sceneInitialized = true;
                             } else {
-                                newSceneCode += `            scene = opSmoothUnion(scene, ${boxObj}, ${currentSmoothness.toFixed(2)});\n`;
+                                newSceneCode += `            scene = opSmoothUnion(scene, ${boxObj}, ${this.currentSmoothness.toFixed(2)});\n`;
                             }
                         }
                         
-                        if (showTorus.checked && !subtractTorus.checked) {
+                        if (this.showTorus.checked && !this.subtractTorus.checked) {
                             let torusObj = "torus";
-                            if (thicknessTorus.checked) {
+                            if (this.thicknessTorus.checked) {
                                 torusObj = `opThickness(torus, 0.1)`;
                             }
                             
@@ -529,153 +599,84 @@
                                 newSceneCode += `            float scene = ${torusObj};\n`;
                                 sceneInitialized = true;
                             } else {
-                                newSceneCode += `            scene = opSmoothUnion(scene, ${torusObj}, ${currentSmoothness.toFixed(2)});\n`;
+                                newSceneCode += `            scene = opSmoothUnion(scene, ${torusObj}, ${this.currentSmoothness.toFixed(2)});\n`;
                             }
                         }
                         
                         // Second pass: apply all subtractive objects
-                        if (showSphere.checked && subtractSphere.checked) {
+                        if (this.showSphere.checked && this.subtractSphere.checked) {
                             let sphereObj = "sphere";
-                            if (thicknessSphere.checked) {
+                            if (this.thicknessSphere.checked) {
                                 sphereObj = `opThickness(sphere, 0.1)`;
                             }
-                            newSceneCode += `            scene = opSmoothSubtraction(scene, ${sphereObj}, ${currentSmoothness.toFixed(2)});\n`;
+                            newSceneCode += `            scene = opSmoothSubtraction(scene, ${sphereObj}, ${this.currentSmoothness.toFixed(2)});\n`;
                         }
                         
-                        if (showBox.checked && subtractBox.checked) {
+                        if (this.showBox.checked && this.subtractBox.checked) {
                             let boxObj = "box";
-                            if (thicknessBox.checked) {
+                            if (this.thicknessBox.checked) {
                                 boxObj = `opThickness(box, 0.1)`;
                             }
-                            newSceneCode += `            scene = opSmoothSubtraction(scene, ${boxObj}, ${currentSmoothness.toFixed(2)});\n`;
+                            newSceneCode += `            scene = opSmoothSubtraction(scene, ${boxObj}, ${this.currentSmoothness.toFixed(2)});\n`;
                         }
                         
-                        if (showTorus.checked && subtractTorus.checked) {
+                        if (this.showTorus.checked && this.subtractTorus.checked) {
                             let torusObj = "torus";
-                            if (thicknessTorus.checked) {
+                            if (this.thicknessTorus.checked) {
                                 torusObj = `opThickness(torus, 0.1)`;
                             }
-                            newSceneCode += `            scene = opSmoothSubtraction(scene, ${torusObj}, ${currentSmoothness.toFixed(2)});\n`;
+                            newSceneCode += `            scene = opSmoothSubtraction(scene, ${torusObj}, ${this.currentSmoothness.toFixed(2)});\n`;
                         }
                     }
                     
                     // Combine the parts
-                    fsSource = originalSource.substring(0, startIndex) + 
+                    const newSource = originalSource.substring(0, startIndex) + 
                                newSceneCode +
                                originalSource.substring(endIndex);
                     
-                    // Recompile the shader program
-                    gl.deleteProgram(shaderProgram);
-                    shaderProgram = createShaderProgram(vsSource, fsSource);
-                    
-                    // Update program info
-                    programInfo.program = shaderProgram;
-                    programInfo.attribLocations.vertexPosition = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
-                    programInfo.uniformLocations.resolution = gl.getUniformLocation(shaderProgram, 'uResolution');
-                    programInfo.uniformLocations.time = gl.getUniformLocation(shaderProgram, 'uTime');
-                    programInfo.uniformLocations.cameraPosition = gl.getUniformLocation(shaderProgram, 'uCameraPosition');
-                    programInfo.uniformLocations.cameraTarget = gl.getUniformLocation(shaderProgram, 'uCameraTarget');
-                    programInfo.uniformLocations.cameraZoom = gl.getUniformLocation(shaderProgram, 'uCameraZoom');
-                    programInfo.uniformLocations.rotationX = gl.getUniformLocation(shaderProgram, 'uRotationX');
-                    programInfo.uniformLocations.rotationY = gl.getUniformLocation(shaderProgram, 'uRotationY');
+                    this.needsRecompile = false;
+                    return newSource;
                 }
-                
-                needsRecompile = false;
-                smoothnessChanged = false;
-            }
-            
-            // Create a square (two triangles) that covers the entire canvas
-            const positions = [
-                -1.0, -1.0,
-                 1.0, -1.0,
-                -1.0,  1.0,
-                 1.0,  1.0
-            ];
-            
-            // Create buffer and load vertex data
-            const positionBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-            
-            // Get attribute and uniform locations
-            const programInfo = {
-                program: shaderProgram,
-                attribLocations: {
-                    vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-                },
-                uniformLocations: {
-                    resolution: gl.getUniformLocation(shaderProgram, 'uResolution'),
-                    time: gl.getUniformLocation(shaderProgram, 'uTime'),
-                    cameraPosition: gl.getUniformLocation(shaderProgram, 'uCameraPosition'),
-                    cameraTarget: gl.getUniformLocation(shaderProgram, 'uCameraTarget'),
-                    cameraZoom: gl.getUniformLocation(shaderProgram, 'uCameraZoom'),
-                    rotationX: gl.getUniformLocation(shaderProgram, 'uRotationX'),
-                    rotationY: gl.getUniformLocation(shaderProgram, 'uRotationY')
-                },
             };
             
-            // Start time for animation
-            const startTime = Date.now();
+            // Main application
+            const app = {
+                init: function() {
+                    // Initialize components
+                    if (!renderer.init()) return;
+                    camera.init(renderer.canvas);
+                    scene.init();
+                    
+                    // Get shader sources
+                    const vsSource = document.getElementById('vertex-shader').text;
+                    let fsSource = document.getElementById('fragment-shader').text;
+                    
+                    // Create initial shader program
+                    renderer.createShaderProgram(vsSource, fsSource);
+                    
+                    // Start the render loop
+                    this.render();
+                },
+                
+                render: function() {
+                    // Check if shader needs to be updated
+                    const newShaderCode = scene.generateShaderCode();
+                    if (newShaderCode) {
+                        const vsSource = document.getElementById('vertex-shader').text;
+                        renderer.createShaderProgram(vsSource, newShaderCode);
+                    }
+                    
+                    // Render the scene
+                    renderer.render();
+                    
+                    // Request next frame
+                    requestAnimationFrame(() => this.render());
+                }
+            };
             
-            // Render function
-            function render() {
-                // Check if shader needs to be updated
-                updateFragmentShader();
-                
-                // Calculate time in seconds
-                const currentTime = (Date.now() - startTime) / 1000;
-                
-                // Clear the canvas
-                gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                gl.clear(gl.COLOR_BUFFER_BIT);
-                
-                // Use our shader program
-                gl.useProgram(programInfo.program);
-                
-                // Set up vertex attribute
-                gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-                gl.vertexAttribPointer(
-                    programInfo.attribLocations.vertexPosition,
-                    2,          // 2 components per vertex
-                    gl.FLOAT,   // data type
-                    false,      // don't normalize
-                    0,          // stride
-                    0           // offset
-                );
-                gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
-                
-                // Set uniforms
-                gl.uniform2f(programInfo.uniformLocations.resolution, canvas.width, canvas.height);
-                gl.uniform1f(programInfo.uniformLocations.time, currentTime);
-                gl.uniform3fv(programInfo.uniformLocations.cameraPosition, camera.position);
-                gl.uniform3fv(programInfo.uniformLocations.cameraTarget, camera.target);
-                gl.uniform1f(programInfo.uniformLocations.cameraZoom, camera.zoom);
-                gl.uniform1f(programInfo.uniformLocations.rotationX, camera.rotationX);
-                gl.uniform1f(programInfo.uniformLocations.rotationY, camera.rotationY);
-                
-                // Draw the square (as triangle strip)
-                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-                
-                // Request next frame
-                requestAnimationFrame(render);
-            }
-            
-            // Start rendering
-            render();
+            // Start the application
+            app.init();
         };
-
-        // Update smoothness value display when slider changes
-        const smoothnessSlider = document.getElementById('smoothness');
-        const smoothnessValue = document.getElementById('smoothnessValue');
-        let currentSmoothness = parseFloat(smoothnessSlider.value);
-        let smoothnessChanged = false;
-
-        smoothnessSlider.addEventListener('input', () => {
-            currentSmoothness = parseFloat(smoothnessSlider.value);
-            smoothnessValue.textContent = currentSmoothness.toFixed(2);
-            smoothnessChanged = true;
-            needsRecompile = true; // Force shader recompilation when smoothness changes
-        });
     </script>
 </body>
 </html> 
