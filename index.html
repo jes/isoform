@@ -56,6 +56,12 @@
         </div>
         
         <div class="control-group">
+            <h3>Parameters</h3>
+            <label for="smoothness">Blend Smoothness: <span id="smoothnessValue">0.5</span></label>
+            <input type="range" id="smoothness" min="0.00" max="2.0" step="0.01" value="0.5">
+        </div>
+        
+        <div class="control-group">
             <h3>Navigation</h3>
             <p><strong>Rotate:</strong> Click and drag</p>
             <p><strong>Pan:</strong> Shift + drag</p>
@@ -395,7 +401,7 @@
             
             // Function to update fragment shader based on UI settings
             function updateFragmentShader() {
-                if (!needsRecompile) return;
+                if (!needsRecompile && !smoothnessChanged) return;
                 
                 // Get the original shader source
                 let originalSource = document.getElementById('fragment-shader').text;
@@ -419,27 +425,26 @@
                         newSceneCode += "            float scene = 1000.0; // No objects selected\n";
                     } else {
                         // Start with the first checked object
+                        let firstObjectAdded = false;
+                        
                         if (showSphere.checked) {
                             newSceneCode += "            float scene = sphere;\n";
+                            firstObjectAdded = true;
                         } else if (showBox.checked) {
                             newSceneCode += "            float scene = box;\n";
+                            firstObjectAdded = true;
                         } else if (showTorus.checked) {
                             newSceneCode += "            float scene = torus;\n";
+                            firstObjectAdded = true;
                         }
                         
                         // Add remaining objects with smooth union
-                        if (showSphere.checked && showBox.checked) {
-                            newSceneCode += "            scene = opSmoothUnion(scene, box, 0.5);\n";
-                        } else if (!showSphere.checked && showBox.checked && showTorus.checked) {
-                            newSceneCode += "            scene = opSmoothUnion(scene, torus, 0.5);\n";
+                        if (firstObjectAdded && showBox.checked && !newSceneCode.includes("scene = box")) {
+                            newSceneCode += `            scene = opSmoothUnion(scene, box, ${currentSmoothness.toFixed(2)});\n`;
                         }
                         
-                        if (showSphere.checked && showTorus.checked) {
-                            if (!showBox.checked) {
-                                newSceneCode += "            scene = opSmoothUnion(scene, torus, 0.5);\n";
-                            } else {
-                                newSceneCode += "            scene = opSmoothUnion(scene, torus, 0.5);\n";
-                            }
+                        if (firstObjectAdded && showTorus.checked && !newSceneCode.includes("scene = torus")) {
+                            newSceneCode += `            scene = opSmoothUnion(scene, torus, ${currentSmoothness.toFixed(2)});\n`;
                         }
                     }
                     
@@ -463,6 +468,7 @@
                 }
                 
                 needsRecompile = false;
+                smoothnessChanged = false;
             }
             
             // Create a square (two triangles) that covers the entire canvas
@@ -543,6 +549,19 @@
             // Start rendering
             render();
         };
+
+        // Update smoothness value display when slider changes
+        const smoothnessSlider = document.getElementById('smoothness');
+        const smoothnessValue = document.getElementById('smoothnessValue');
+        let currentSmoothness = parseFloat(smoothnessSlider.value);
+        let smoothnessChanged = false;
+
+        smoothnessSlider.addEventListener('input', () => {
+            currentSmoothness = parseFloat(smoothnessSlider.value);
+            smoothnessValue.textContent = currentSmoothness.toFixed(2);
+            smoothnessChanged = true;
+            needsRecompile = true; // Force shader recompilation when smoothness changes
+        });
     </script>
 </body>
 </html> 
