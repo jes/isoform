@@ -9,16 +9,52 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
+            display: flex;
         }
         canvas {
             display: block;
-            width: 100vw;
+            flex: 1;
+            width: 50vw;
             height: 100vh;
+        }
+        #ui-panel {
+            width: 200px;
+            background-color: rgba(30, 30, 40, 0.8);
+            color: white;
+            padding: 15px;
+            font-family: Arial, sans-serif;
+            overflow-y: auto;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+        }
+        label {
+            display: block;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+        input[type="checkbox"] {
+            margin-right: 8px;
         }
     </style>
 </head>
 <body>
     <canvas id="glCanvas"></canvas>
+    
+    <div id="ui-panel">
+        <div class="control-group">
+            <h3>Objects</h3>
+            <label><input type="checkbox" id="showSphere" checked> Sphere</label>
+            <label><input type="checkbox" id="showBox" checked> Box</label>
+            <label><input type="checkbox" id="showTorus" checked> Torus</label>
+        </div>
+    </div>
 
     <!-- Vertex shader -->
     <script id="vertex-shader" type="x-shader/x-vertex">
@@ -177,6 +213,19 @@
         window.onload = function() {
             const canvas = document.getElementById('glCanvas');
             const gl = canvas.getContext('webgl');
+            
+            // Object visibility controls
+            const showSphere = document.getElementById('showSphere');
+            const showBox = document.getElementById('showBox');
+            const showTorus = document.getElementById('showTorus');
+            
+            // Track if shader needs to be recompiled
+            let needsRecompile = false;
+            
+            // Add event listeners to checkboxes
+            showSphere.addEventListener('change', () => { needsRecompile = true; });
+            showBox.addEventListener('change', () => { needsRecompile = true; });
+            showTorus.addEventListener('change', () => { needsRecompile = true; });
 
             // If WebGL is not available, show an error
             if (!gl) {
@@ -227,10 +276,79 @@
 
             // Get shader sources from script tags
             const vsSource = document.getElementById('vertex-shader').text;
-            const fsSource = document.getElementById('fragment-shader').text;
+            let fsSource = document.getElementById('fragment-shader').text;
             
             // Create shader program
-            const shaderProgram = createShaderProgram(vsSource, fsSource);
+            let shaderProgram = createShaderProgram(vsSource, fsSource);
+            
+            // Function to update fragment shader based on UI settings
+            function updateFragmentShader() {
+                if (!needsRecompile) return;
+                
+                // Get the original shader source
+                let originalSource = document.getElementById('fragment-shader').text;
+                
+                // Find the scene combination part and replace it
+                const sceneStartMarker = "// Combine objects";
+                const sceneEndMarker = "// Add ground plane";
+                
+                let startIndex = originalSource.indexOf(sceneStartMarker);
+                let endIndex = originalSource.indexOf(sceneEndMarker);
+                
+                if (startIndex !== -1 && endIndex !== -1) {
+                    // Skip to the end of the start marker line
+                    startIndex = originalSource.indexOf('\n', startIndex) + 1;
+                    
+                    // Build the new scene combination code
+                    let newSceneCode = "            // Combine objects\n";
+                    
+                    // Initialize with a very large value if no objects are selected
+                    if (!showSphere.checked && !showBox.checked && !showTorus.checked) {
+                        newSceneCode += "            float scene = 1000.0; // No objects selected\n";
+                    } else {
+                        // Start with the first checked object
+                        if (showSphere.checked) {
+                            newSceneCode += "            float scene = sphere;\n";
+                        } else if (showBox.checked) {
+                            newSceneCode += "            float scene = box;\n";
+                        } else if (showTorus.checked) {
+                            newSceneCode += "            float scene = torus;\n";
+                        }
+                        
+                        // Add remaining objects with smooth union
+                        if (showSphere.checked && showBox.checked) {
+                            newSceneCode += "            scene = opSmoothUnion(scene, box, 0.5);\n";
+                        } else if (!showSphere.checked && showBox.checked && showTorus.checked) {
+                            newSceneCode += "            scene = opSmoothUnion(scene, torus, 0.5);\n";
+                        }
+                        
+                        if (showSphere.checked && showTorus.checked) {
+                            if (!showBox.checked) {
+                                newSceneCode += "            scene = opSmoothUnion(scene, torus, 0.5);\n";
+                            } else {
+                                newSceneCode += "            scene = opSmoothUnion(scene, torus, 0.5);\n";
+                            }
+                        }
+                    }
+                    
+                    // Combine the parts
+                    fsSource = originalSource.substring(0, startIndex) + 
+                               newSceneCode +
+                               originalSource.substring(endIndex);
+                    
+                    // Recompile the shader program
+                    gl.deleteProgram(shaderProgram);
+                    shaderProgram = createShaderProgram(vsSource, fsSource);
+                    
+                    // Update program info
+                    programInfo.program = shaderProgram;
+                    programInfo.attribLocations.vertexPosition = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
+                    programInfo.uniformLocations.resolution = gl.getUniformLocation(shaderProgram, 'uResolution');
+                    programInfo.uniformLocations.time = gl.getUniformLocation(shaderProgram, 'uTime');
+                }
+                
+                needsRecompile = false;
+            }
             
             // Create a square (two triangles) that covers the entire canvas
             const positions = [
@@ -262,6 +380,9 @@
             
             // Render function
             function render() {
+                // Check if shader needs to be updated
+                updateFragmentShader();
+                
                 // Calculate time in seconds
                 const currentTime = (Date.now() - startTime) / 1000;
                 
@@ -300,4 +421,5 @@
         };
     </script>
 </body>
+</html>
 </html> 
