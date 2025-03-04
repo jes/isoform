@@ -326,11 +326,12 @@
             canvas.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 
-                // Adjust distance based on wheel direction
-                camera.distance += e.deltaY * camera.zoomSpeed * 0.01;
+                // Adjust zoom based on wheel direction
+                const zoomDelta = e.deltaY * camera.zoomSpeed * 0.01;
+                camera.zoom += zoomDelta;
                 
-                // Clamp distance to reasonable values
-                camera.distance = Math.max(1.0, Math.min(20.0, camera.distance));
+                // Clamp zoom to reasonable values
+                camera.zoom = Math.max(0.1, Math.min(2.0, camera.zoom));
             });
             
             // Add event listeners to checkboxes
