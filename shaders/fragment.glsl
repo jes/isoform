@@ -130,7 +130,8 @@ float detectEdge(vec3 p, vec3 normal) {
     
     // Normalize and apply threshold for edge detection
     edge /= 3.0;
-    edge = smoothstep(0.1, 0.3, edge);
+    // Increase edge prominence by lowering the threshold and making the transition sharper
+    edge = smoothstep(0.05, 0.15, edge);
     
     return edge;
 }
@@ -184,26 +185,42 @@ Material getMaterial(vec3 p, vec3 normal) {
     float boxDist = sdBox(boxPos, vec3(0.75));
     float torusDist = sdTorus(torusPos, vec2(1.0, 0.3));
     
-    // Find the closest object
-    float minDist = min(sphereDist, min(boxDist, torusDist));
+    // Define materials for each object
+    Material sphereMat, boxMat, torusMat;
     
-    // Assign material based on closest object
-    if (minDist == sphereDist) {
-        // Sphere material
-        mat.color = vec3(1.0, 0.3, 0.2);
-        mat.metallic = 0.8;
-        mat.roughness = 0.2;
-    } else if (minDist == boxDist) {
-        // Box material
-        mat.color = vec3(0.2, 0.7, 1.0);
-        mat.metallic = 0.0;
-        mat.roughness = 0.7;
-    } else if (minDist == torusDist) {
-        // Torus material
-        mat.color = vec3(1.0, 0.8, 0.2);
-        mat.metallic = 0.5;
-        mat.roughness = 0.3;
-    }
+    // Sphere material
+    sphereMat.color = vec3(1.0, 0.3, 0.2);
+    sphereMat.metallic = 0.8;
+    sphereMat.roughness = 0.2;
+    
+    // Box material
+    boxMat.color = vec3(0.2, 0.7, 1.0);
+    boxMat.metallic = 0.0;
+    boxMat.roughness = 0.7;
+    
+    // Torus material
+    torusMat.color = vec3(1.0, 0.8, 0.2);
+    torusMat.metallic = 0.5;
+    torusMat.roughness = 0.3;
+    
+    // Blend factor - controls how much blending occurs between materials
+    float blendFactor = 0.5; // Same as used in opSmoothUnion
+    
+    // Initialize with sphere material
+    mat = sphereMat;
+    
+    // Blend between sphere and box
+    float sphereBoxWeight = clamp(0.5 + 0.5 * (boxDist - sphereDist) / blendFactor, 0.0, 1.0);
+    mat.color = mix(boxMat.color, sphereMat.color, sphereBoxWeight);
+    mat.metallic = mix(boxMat.metallic, sphereMat.metallic, sphereBoxWeight);
+    mat.roughness = mix(boxMat.roughness, sphereMat.roughness, sphereBoxWeight);
+    
+    // Blend the result with torus
+    float combinedDist = opSmoothUnion(sphereDist, boxDist, blendFactor);
+    float torusWeight = clamp(0.5 + 0.5 * (torusDist - combinedDist) / blendFactor, 0.0, 1.0);
+    mat.color = mix(torusMat.color, mat.color, torusWeight);
+    mat.metallic = mix(torusMat.metallic, mat.metallic, torusWeight);
+    mat.roughness = mix(torusMat.roughness, mat.roughness, torusWeight);
     
     return mat;
 }
@@ -311,7 +328,9 @@ void main() {
         
         // Apply edge highlighting
         vec3 edgeColor = vec3(1.0, 1.0, 1.0); // White edge highlight
-        color = mix(color, edgeColor, edge);
+        // Increase the edge effect by using a higher mix factor
+        float edgeMixFactor = edge * 1.5; // Amplify the edge effect
+        color = mix(color, edgeColor, clamp(edgeMixFactor, 0.0, 1.0));
         
         // Fog effect based on distance
         float fogFactor = 1.0 - exp(-0.05 * t);
