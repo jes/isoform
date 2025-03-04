@@ -54,6 +54,13 @@
             <label><input type="checkbox" id="showBox" checked> Box</label>
             <label><input type="checkbox" id="showTorus" checked> Torus</label>
         </div>
+        
+        <div class="control-group">
+            <h3>Navigation</h3>
+            <p><strong>Rotate:</strong> Click and drag</p>
+            <p><strong>Pan:</strong> Shift + drag</p>
+            <p><strong>Zoom:</strong> Mouse wheel</p>
+        </div>
     </div>
 
     <!-- Vertex shader -->
@@ -71,6 +78,9 @@
         
         uniform vec2 uResolution;
         uniform float uTime;
+        uniform vec3 uCameraPosition;
+        uniform vec3 uCameraTarget;
+        uniform float uCameraZoom;
         
         // 3D SDF primitives
         float sdSphere(vec3 p, float r) {
@@ -151,18 +161,19 @@
             p.x *= uResolution.x / uResolution.y;
             
             // Camera setup
-            vec3 ro = vec3(0.0, 0.0, -5.0); // Ray origin (camera position)
-            vec3 rd = normalize(vec3(p, 2.0)); // Ray direction
+            vec3 ro = uCameraPosition; // Ray origin (camera position)
+            vec3 target = uCameraTarget; // Look at point
             
-            // Rotate camera around the scene
-            float camAngle = uTime * 0.3;
-            mat3 rotY = mat3(
-                cos(camAngle), 0.0, sin(camAngle),
-                0.0, 1.0, 0.0,
-                -sin(camAngle), 0.0, cos(camAngle)
-            );
-            ro = rotY * ro;
-            rd = rotY * rd;
+            // Camera frame
+            vec3 forward = normalize(target - ro);
+            vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
+            vec3 up = cross(forward, right);
+            
+            // Apply zoom
+            float zoom = uCameraZoom;
+            
+            // Ray direction using camera frame
+            vec3 rd = normalize(forward + p.x * right * zoom + p.y * up * zoom);
             
             // Ray march to find distance
             float t = rayMarch(ro, rd);
@@ -218,6 +229,110 @@
             
             // Track if shader needs to be recompiled
             let needsRecompile = false;
+            
+            // Camera state
+            const camera = {
+                position: [0.0, 0.0, -5.0],
+                target: [0.0, 0.0, 0.0],
+                zoom: 1.0,
+                // Rotation in spherical coordinates
+                theta: 0.0,  // horizontal angle
+                phi: Math.PI / 2.0,  // vertical angle
+                distance: 5.0,
+                // For mouse interaction
+                isDragging: false,
+                lastMouseX: 0,
+                lastMouseY: 0,
+                // Mouse sensitivity
+                rotationSpeed: 0.01,
+                zoomSpeed: 0.1,
+                panSpeed: 0.01
+            };
+            
+            // Update camera position based on spherical coordinates
+            function updateCameraPosition() {
+                camera.position[0] = camera.distance * Math.sin(camera.phi) * Math.sin(camera.theta);
+                camera.position[1] = camera.distance * Math.cos(camera.phi);
+                camera.position[2] = camera.distance * Math.sin(camera.phi) * Math.cos(camera.theta);
+            }
+            
+            // Mouse event handlers
+            canvas.addEventListener('mousedown', (e) => {
+                camera.isDragging = true;
+                camera.lastMouseX = e.clientX;
+                camera.lastMouseY = e.clientY;
+            });
+            
+            canvas.addEventListener('mouseup', () => {
+                camera.isDragging = false;
+            });
+            
+            canvas.addEventListener('mouseleave', () => {
+                camera.isDragging = false;
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                if (!camera.isDragging) return;
+                
+                const deltaX = e.clientX - camera.lastMouseX;
+                const deltaY = e.clientY - camera.lastMouseY;
+                
+                if (e.shiftKey) {
+                    // Pan camera
+                    const forward = [
+                        camera.target[0] - camera.position[0],
+                        camera.target[1] - camera.position[1],
+                        camera.target[2] - camera.position[2]
+                    ];
+                    const forwardLen = Math.sqrt(forward[0]*forward[0] + forward[1]*forward[1] + forward[2]*forward[2]);
+                    const normalizedForward = [forward[0]/forwardLen, forward[1]/forwardLen, forward[2]/forwardLen];
+                    
+                    // Calculate right vector
+                    const right = [
+                        normalizedForward[2],
+                        0,
+                        -normalizedForward[0]
+                    ];
+                    const rightLen = Math.sqrt(right[0]*right[0] + right[1]*right[1] + right[2]*right[2]);
+                    const normalizedRight = [right[0]/rightLen, right[1]/rightLen, right[2]/rightLen];
+                    
+                    // Calculate up vector
+                    const up = [0, 1, 0];
+                    
+                    // Apply pan
+                    for (let i = 0; i < 3; i++) {
+                        const panX = normalizedRight[i] * deltaX * camera.panSpeed;
+                        const panY = up[i] * -deltaY * camera.panSpeed;
+                        camera.target[i] -= panX + panY;
+                        camera.position[i] -= panX + panY;
+                    }
+                } else {
+                    // Rotate camera
+                    camera.theta -= deltaX * camera.rotationSpeed;
+                    camera.phi -= deltaY * camera.rotationSpeed;
+                    
+                    // Clamp phi to avoid gimbal lock
+                    camera.phi = Math.max(0.1, Math.min(Math.PI - 0.1, camera.phi));
+                    
+                    updateCameraPosition();
+                }
+                
+                camera.lastMouseX = e.clientX;
+                camera.lastMouseY = e.clientY;
+            });
+            
+            // Zoom with mouse wheel
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                
+                // Adjust distance based on wheel direction
+                camera.distance += e.deltaY * camera.zoomSpeed * 0.01;
+                
+                // Clamp distance to reasonable values
+                camera.distance = Math.max(1.0, Math.min(20.0, camera.distance));
+                
+                updateCameraPosition();
+            });
             
             // Add event listeners to checkboxes
             showSphere.addEventListener('change', () => { needsRecompile = true; });
@@ -342,6 +457,9 @@
                     programInfo.attribLocations.vertexPosition = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
                     programInfo.uniformLocations.resolution = gl.getUniformLocation(shaderProgram, 'uResolution');
                     programInfo.uniformLocations.time = gl.getUniformLocation(shaderProgram, 'uTime');
+                    programInfo.uniformLocations.cameraPosition = gl.getUniformLocation(shaderProgram, 'uCameraPosition');
+                    programInfo.uniformLocations.cameraTarget = gl.getUniformLocation(shaderProgram, 'uCameraTarget');
+                    programInfo.uniformLocations.cameraZoom = gl.getUniformLocation(shaderProgram, 'uCameraZoom');
                 }
                 
                 needsRecompile = false;
@@ -369,11 +487,17 @@
                 uniformLocations: {
                     resolution: gl.getUniformLocation(shaderProgram, 'uResolution'),
                     time: gl.getUniformLocation(shaderProgram, 'uTime'),
+                    cameraPosition: gl.getUniformLocation(shaderProgram, 'uCameraPosition'),
+                    cameraTarget: gl.getUniformLocation(shaderProgram, 'uCameraTarget'),
+                    cameraZoom: gl.getUniformLocation(shaderProgram, 'uCameraZoom')
                 },
             };
             
             // Start time for animation
             const startTime = Date.now();
+            
+            // Initialize camera position
+            updateCameraPosition();
             
             // Render function
             function render() {
@@ -405,6 +529,9 @@
                 // Set uniforms
                 gl.uniform2f(programInfo.uniformLocations.resolution, canvas.width, canvas.height);
                 gl.uniform1f(programInfo.uniformLocations.time, currentTime);
+                gl.uniform3fv(programInfo.uniformLocations.cameraPosition, camera.position);
+                gl.uniform3fv(programInfo.uniformLocations.cameraTarget, camera.target);
+                gl.uniform1f(programInfo.uniformLocations.cameraZoom, camera.zoom);
                 
                 // Draw the square (as triangle strip)
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -418,5 +545,4 @@
         };
     </script>
 </body>
-</html>
 </html> 
