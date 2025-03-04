@@ -87,6 +87,8 @@
         uniform vec3 uCameraPosition;
         uniform vec3 uCameraTarget;
         uniform float uCameraZoom;
+        uniform float uRotationX;
+        uniform float uRotationY;
         
         // 3D SDF primitives
         float sdSphere(vec3 p, float r) {
@@ -114,8 +116,34 @@
             return mix(d2, d1, h) - k * h * (1.0 - h);
         }
         
+        // Apply rotation to a point
+        vec3 rotatePoint(vec3 p) {
+            // Rotate around Y axis
+            float cosY = cos(uRotationY);
+            float sinY = sin(uRotationY);
+            p = vec3(
+                p.x * cosY - p.z * sinY,
+                p.y,
+                p.x * sinY + p.z * cosY
+            );
+            
+            // Rotate around X axis
+            float cosX = cos(uRotationX);
+            float sinX = sin(uRotationX);
+            p = vec3(
+                p.x,
+                p.y * cosX - p.z * sinX,
+                p.y * sinX + p.z * cosX
+            );
+            
+            return p;
+        }
+        
         // Scene description
         float map(vec3 p) {
+            // Apply rotation to the point (effectively rotating the scene)
+            p = rotatePoint(p);
+            
             // Animate objects
             vec3 spherePos = p - vec3(sin(uTime) * 1.5, cos(uTime * 0.5), 0.0);
             vec3 boxPos = p - vec3(0.0, sin(uTime) * 0.5, cos(uTime) * 1.5);
@@ -241,10 +269,9 @@
                 position: [0.0, 0.0, -5.0],
                 target: [0.0, 0.0, 0.0],
                 zoom: 1.0,
-                // Rotation in spherical coordinates
-                theta: 0.0,  // horizontal angle
-                phi: Math.PI / 2.0,  // vertical angle
-                distance: 5.0,
+                // Scene rotation
+                rotationX: 0.0,
+                rotationY: 0.0,
                 // For mouse interaction
                 isDragging: false,
                 lastMouseX: 0,
@@ -254,13 +281,6 @@
                 zoomSpeed: 0.1,
                 panSpeed: 0.01
             };
-            
-            // Update camera position based on spherical coordinates
-            function updateCameraPosition() {
-                camera.position[0] = camera.distance * Math.sin(camera.phi) * Math.sin(camera.theta);
-                camera.position[1] = camera.distance * Math.cos(camera.phi);
-                camera.position[2] = camera.distance * Math.sin(camera.phi) * Math.cos(camera.theta);
-            }
             
             // Mouse event handlers
             canvas.addEventListener('mousedown', (e) => {
@@ -284,43 +304,18 @@
                 const deltaY = e.clientY - camera.lastMouseY;
                 
                 if (e.shiftKey) {
-                    // Pan camera
-                    const forward = [
-                        camera.target[0] - camera.position[0],
-                        camera.target[1] - camera.position[1],
-                        camera.target[2] - camera.position[2]
-                    ];
-                    const forwardLen = Math.sqrt(forward[0]*forward[0] + forward[1]*forward[1] + forward[2]*forward[2]);
-                    const normalizedForward = [forward[0]/forwardLen, forward[1]/forwardLen, forward[2]/forwardLen];
+                    // Pan camera in screen space
+                    const panX = -deltaX * camera.panSpeed;
+                    const panY = deltaY * camera.panSpeed;
                     
-                    // Calculate right vector
-                    const right = [
-                        normalizedForward[2],
-                        0,
-                        -normalizedForward[0]
-                    ];
-                    const rightLen = Math.sqrt(right[0]*right[0] + right[1]*right[1] + right[2]*right[2]);
-                    const normalizedRight = [right[0]/rightLen, right[1]/rightLen, right[2]/rightLen];
-                    
-                    // Calculate up vector
-                    const up = [0, 1, 0];
-                    
-                    // Apply pan
-                    for (let i = 0; i < 3; i++) {
-                        const panX = normalizedRight[i] * deltaX * camera.panSpeed;
-                        const panY = up[i] * -deltaY * camera.panSpeed;
-                        camera.target[i] -= panX + panY;
-                        camera.position[i] -= panX + panY;
-                    }
+                    camera.target[0] += panX;
+                    camera.target[1] += panY;
+                    camera.position[0] += panX;
+                    camera.position[1] += panY;
                 } else {
-                    // Rotate camera
-                    camera.theta -= deltaX * camera.rotationSpeed;
-                    camera.phi -= deltaY * camera.rotationSpeed;
-                    
-                    // Clamp phi to avoid gimbal lock
-                    camera.phi = Math.max(0.1, Math.min(Math.PI - 0.1, camera.phi));
-                    
-                    updateCameraPosition();
+                    // Rotate the scene (not the camera)
+                    camera.rotationY += deltaX * camera.rotationSpeed;
+                    camera.rotationX += deltaY * camera.rotationSpeed;
                 }
                 
                 camera.lastMouseX = e.clientX;
@@ -336,8 +331,6 @@
                 
                 // Clamp distance to reasonable values
                 camera.distance = Math.max(1.0, Math.min(20.0, camera.distance));
-                
-                updateCameraPosition();
             });
             
             // Add event listeners to checkboxes
@@ -465,6 +458,8 @@
                     programInfo.uniformLocations.cameraPosition = gl.getUniformLocation(shaderProgram, 'uCameraPosition');
                     programInfo.uniformLocations.cameraTarget = gl.getUniformLocation(shaderProgram, 'uCameraTarget');
                     programInfo.uniformLocations.cameraZoom = gl.getUniformLocation(shaderProgram, 'uCameraZoom');
+                    programInfo.uniformLocations.rotationX = gl.getUniformLocation(shaderProgram, 'uRotationX');
+                    programInfo.uniformLocations.rotationY = gl.getUniformLocation(shaderProgram, 'uRotationY');
                 }
                 
                 needsRecompile = false;
@@ -495,15 +490,14 @@
                     time: gl.getUniformLocation(shaderProgram, 'uTime'),
                     cameraPosition: gl.getUniformLocation(shaderProgram, 'uCameraPosition'),
                     cameraTarget: gl.getUniformLocation(shaderProgram, 'uCameraTarget'),
-                    cameraZoom: gl.getUniformLocation(shaderProgram, 'uCameraZoom')
+                    cameraZoom: gl.getUniformLocation(shaderProgram, 'uCameraZoom'),
+                    rotationX: gl.getUniformLocation(shaderProgram, 'uRotationX'),
+                    rotationY: gl.getUniformLocation(shaderProgram, 'uRotationY')
                 },
             };
             
             // Start time for animation
             const startTime = Date.now();
-            
-            // Initialize camera position
-            updateCameraPosition();
             
             // Render function
             function render() {
@@ -538,6 +532,8 @@
                 gl.uniform3fv(programInfo.uniformLocations.cameraPosition, camera.position);
                 gl.uniform3fv(programInfo.uniformLocations.cameraTarget, camera.target);
                 gl.uniform1f(programInfo.uniformLocations.cameraZoom, camera.zoom);
+                gl.uniform1f(programInfo.uniformLocations.rotationX, camera.rotationX);
+                gl.uniform1f(programInfo.uniformLocations.rotationY, camera.rotationY);
                 
                 // Draw the square (as triangle strip)
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
