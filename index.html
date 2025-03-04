@@ -42,6 +42,11 @@
         input[type="checkbox"] {
             margin-right: 8px;
         }
+        .indented {
+            margin-left: 20px;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
@@ -51,13 +56,16 @@
         <div class="control-group">
             <h3>Objects</h3>
             <label><input type="checkbox" id="showSphere" checked> Sphere</label>
-            <label><input type="checkbox" id="subtractSphere"> Subtractive</label>
+            <label class="indented"><input type="checkbox" id="subtractSphere"> Subtractive</label>
+            <label class="indented"><input type="checkbox" id="thicknessSphere"> Thickness</label>
             
             <label><input type="checkbox" id="showBox" checked> Box</label>
-            <label><input type="checkbox" id="subtractBox"> Subtractive</label>
+            <label class="indented"><input type="checkbox" id="subtractBox"> Subtractive</label>
+            <label class="indented"><input type="checkbox" id="thicknessBox"> Thickness</label>
             
             <label><input type="checkbox" id="showTorus" checked> Torus</label>
-            <label><input type="checkbox" id="subtractTorus"> Subtractive</label>
+            <label class="indented"><input type="checkbox" id="subtractTorus"> Subtractive</label>
+            <label class="indented"><input type="checkbox" id="thicknessTorus"> Thickness</label>
         </div>
         
         <div class="control-group">
@@ -114,6 +122,11 @@
         float opUnion(float d1, float d2) { return min(d1, d2); }
         float opSubtraction(float d1, float d2) { return max(d1, -d2); }
         float opIntersection(float d1, float d2) { return max(d1, d2); }
+        
+        // Thickness operation - creates a shell of thickness t around the object
+        float opThickness(float d, float t) {
+            return abs(d) - t;
+        }
         
         // Smooth blend operations
         float opSmoothUnion(float d1, float d2, float k) {
@@ -275,6 +288,11 @@
             const subtractBox = document.getElementById('subtractBox');
             const subtractTorus = document.getElementById('subtractTorus');
             
+            // Thickness controls
+            const thicknessSphere = document.getElementById('thicknessSphere');
+            const thicknessBox = document.getElementById('thicknessBox');
+            const thicknessTorus = document.getElementById('thicknessTorus');
+            
             // Track if shader needs to be recompiled
             let needsRecompile = false;
             
@@ -355,6 +373,9 @@
             subtractSphere.addEventListener('change', () => { needsRecompile = true; });
             subtractBox.addEventListener('change', () => { needsRecompile = true; });
             subtractTorus.addEventListener('change', () => { needsRecompile = true; });
+            thicknessSphere.addEventListener('change', () => { needsRecompile = true; });
+            thicknessBox.addEventListener('change', () => { needsRecompile = true; });
+            thicknessTorus.addEventListener('change', () => { needsRecompile = true; });
 
             // If WebGL is not available, show an error
             if (!gl) {
@@ -471,43 +492,70 @@
                         
                         // First pass: add all positive objects
                         if (showSphere.checked && !subtractSphere.checked) {
+                            let sphereObj = "sphere";
+                            if (thicknessSphere.checked) {
+                                sphereObj = `opThickness(sphere, 0.1)`;
+                            }
+                            
                             if (!sceneInitialized) {
-                                newSceneCode += "            float scene = sphere;\n";
+                                newSceneCode += `            float scene = ${sphereObj};\n`;
                                 sceneInitialized = true;
                             } else {
-                                newSceneCode += `            scene = opSmoothUnion(scene, sphere, ${currentSmoothness.toFixed(2)});\n`;
+                                newSceneCode += `            scene = opSmoothUnion(scene, ${sphereObj}, ${currentSmoothness.toFixed(2)});\n`;
                             }
                         }
                         
                         if (showBox.checked && !subtractBox.checked) {
+                            let boxObj = "box";
+                            if (thicknessBox.checked) {
+                                boxObj = `opThickness(box, 0.1)`;
+                            }
+                            
                             if (!sceneInitialized) {
-                                newSceneCode += "            float scene = box;\n";
+                                newSceneCode += `            float scene = ${boxObj};\n`;
                                 sceneInitialized = true;
                             } else {
-                                newSceneCode += `            scene = opSmoothUnion(scene, box, ${currentSmoothness.toFixed(2)});\n`;
+                                newSceneCode += `            scene = opSmoothUnion(scene, ${boxObj}, ${currentSmoothness.toFixed(2)});\n`;
                             }
                         }
                         
                         if (showTorus.checked && !subtractTorus.checked) {
+                            let torusObj = "torus";
+                            if (thicknessTorus.checked) {
+                                torusObj = `opThickness(torus, 0.1)`;
+                            }
+                            
                             if (!sceneInitialized) {
-                                newSceneCode += "            float scene = torus;\n";
+                                newSceneCode += `            float scene = ${torusObj};\n`;
                                 sceneInitialized = true;
                             } else {
-                                newSceneCode += `            scene = opSmoothUnion(scene, torus, ${currentSmoothness.toFixed(2)});\n`;
+                                newSceneCode += `            scene = opSmoothUnion(scene, ${torusObj}, ${currentSmoothness.toFixed(2)});\n`;
                             }
                         }
                         
                         // Second pass: apply all subtractive objects
                         if (showSphere.checked && subtractSphere.checked) {
-                            newSceneCode += `            scene = opSmoothSubtraction(scene, sphere, ${currentSmoothness.toFixed(2)});\n`;
+                            let sphereObj = "sphere";
+                            if (thicknessSphere.checked) {
+                                sphereObj = `opThickness(sphere, 0.1)`;
+                            }
+                            newSceneCode += `            scene = opSmoothSubtraction(scene, ${sphereObj}, ${currentSmoothness.toFixed(2)});\n`;
                         }
                         
                         if (showBox.checked && subtractBox.checked) {
-                            newSceneCode += `            scene = opSmoothSubtraction(scene, box, ${currentSmoothness.toFixed(2)});\n`;
+                            let boxObj = "box";
+                            if (thicknessBox.checked) {
+                                boxObj = `opThickness(box, 0.1)`;
+                            }
+                            newSceneCode += `            scene = opSmoothSubtraction(scene, ${boxObj}, ${currentSmoothness.toFixed(2)});\n`;
                         }
                         
                         if (showTorus.checked && subtractTorus.checked) {
-                            newSceneCode += `            scene = opSmoothSubtraction(scene, torus, ${currentSmoothness.toFixed(2)});\n`;
+                            let torusObj = "torus";
+                            if (thicknessTorus.checked) {
+                                torusObj = `opThickness(torus, 0.1)`;
+                            }
+                            newSceneCode += `            scene = opSmoothSubtraction(scene, ${torusObj}, ${currentSmoothness.toFixed(2)});\n`;
                         }
                     }
                     
