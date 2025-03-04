@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL Fragment Shader Canvas</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="glCanvas"></canvas>
+
+    <!-- Vertex shader -->
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        attribute vec4 aVertexPosition;
+        
+        void main() {
+            gl_Position = aVertexPosition;
+        }
+    </script>
+
+    <!-- Fragment shader -->
+    <script id="fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+        
+        uniform vec2 uResolution;
+        uniform float uTime;
+        
+        void main() {
+            // Normalized coordinates (0.0 to 1.0)
+            vec2 uv = gl_FragCoord.xy / uResolution.xy;
+            
+            // Create a colorful gradient based on position and time
+            vec3 color = vec3(
+                0.5 + 0.5 * sin(uv.x * 6.0 + uTime),
+                0.5 + 0.5 * sin(uv.y * 6.0 + uTime * 0.7),
+                0.5 + 0.5 * sin((uv.x + uv.y) * 3.0 + uTime * 0.5)
+            );
+            
+            gl_FragColor = vec4(color, 1.0);
+        }
+    </script>
+
+    <script>
+        // Initialize WebGL when the page loads
+        window.onload = function() {
+            const canvas = document.getElementById('glCanvas');
+            const gl = canvas.getContext('webgl');
+
+            // If WebGL is not available, show an error
+            if (!gl) {
+                alert('Unable to initialize WebGL. Your browser may not support it.');
+                return;
+            }
+
+            // Resize canvas to match window size
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            }
+            
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // Compile shader from source
+            function compileShader(source, type) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+
+                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                    console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
+                    gl.deleteShader(shader);
+                    return null;
+                }
+                return shader;
+            }
+
+            // Create shader program
+            function createShaderProgram(vsSource, fsSource) {
+                const vertexShader = compileShader(vsSource, gl.VERTEX_SHADER);
+                const fragmentShader = compileShader(fsSource, gl.FRAGMENT_SHADER);
+
+                const program = gl.createProgram();
+                gl.attachShader(program, vertexShader);
+                gl.attachShader(program, fragmentShader);
+                gl.linkProgram(program);
+
+                if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                    console.error('Program linking error:', gl.getProgramInfoLog(program));
+                    return null;
+                }
+                return program;
+            }
+
+            // Get shader sources from script tags
+            const vsSource = document.getElementById('vertex-shader').text;
+            const fsSource = document.getElementById('fragment-shader').text;
+            
+            // Create shader program
+            const shaderProgram = createShaderProgram(vsSource, fsSource);
+            
+            // Create a square (two triangles) that covers the entire canvas
+            const positions = [
+                -1.0, -1.0,
+                 1.0, -1.0,
+                -1.0,  1.0,
+                 1.0,  1.0
+            ];
+            
+            // Create buffer and load vertex data
+            const positionBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+            
+            // Get attribute and uniform locations
+            const programInfo = {
+                program: shaderProgram,
+                attribLocations: {
+                    vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+                },
+                uniformLocations: {
+                    resolution: gl.getUniformLocation(shaderProgram, 'uResolution'),
+                    time: gl.getUniformLocation(shaderProgram, 'uTime'),
+                },
+            };
+            
+            // Start time for animation
+            const startTime = Date.now();
+            
+            // Render function
+            function render() {
+                // Calculate time in seconds
+                const currentTime = (Date.now() - startTime) / 1000;
+                
+                // Clear the canvas
+                gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                
+                // Use our shader program
+                gl.useProgram(programInfo.program);
+                
+                // Set up vertex attribute
+                gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+                gl.vertexAttribPointer(
+                    programInfo.attribLocations.vertexPosition,
+                    2,          // 2 components per vertex
+                    gl.FLOAT,   // data type
+                    false,      // don't normalize
+                    0,          // stride
+                    0           // offset
+                );
+                gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+                
+                // Set uniforms
+                gl.uniform2f(programInfo.uniformLocations.resolution, canvas.width, canvas.height);
+                gl.uniform1f(programInfo.uniformLocations.time, currentTime);
+                
+                // Draw the square (as triangle strip)
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                
+                // Request next frame
+                requestAnimationFrame(render);
+            }
+            
+            // Start rendering
+            render();
+        };
+    </script>
+</body>
+</html> 
