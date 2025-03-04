@@ -42,6 +42,11 @@
         input[type="checkbox"] {
             margin-right: 8px;
         }
+        #controls-info {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
@@ -53,6 +58,13 @@
             <label><input type="checkbox" id="showSphere" checked> Sphere</label>
             <label><input type="checkbox" id="showBox" checked> Box</label>
             <label><input type="checkbox" id="showTorus" checked> Torus</label>
+        </div>
+        
+        <div id="controls-info">
+            <h3>Navigation</h3>
+            <p>Shift + Mouse: Pan</p>
+            <p>Alt + Mouse: Rotate</p>
+            <p>Scroll: Zoom</p>
         </div>
     </div>
 
@@ -71,6 +83,8 @@
         
         uniform vec2 uResolution;
         uniform float uTime;
+        uniform vec3 uCameraPosition;
+        uniform mat3 uCameraRotation;
         
         // 3D SDF primitives
         float sdSphere(vec3 p, float r) {
@@ -154,18 +168,8 @@
             p.x *= uResolution.x / uResolution.y;
             
             // Camera setup
-            vec3 ro = vec3(0.0, 0.0, -5.0); // Ray origin (camera position)
-            vec3 rd = normalize(vec3(p, 2.0)); // Ray direction
-            
-            // Rotate camera around the scene
-            float camAngle = uTime * 0.3;
-            mat3 rotY = mat3(
-                cos(camAngle), 0.0, sin(camAngle),
-                0.0, 1.0, 0.0,
-                -sin(camAngle), 0.0, cos(camAngle)
-            );
-            ro = rotY * ro;
-            rd = rotY * rd;
+            vec3 ro = uCameraPosition; // Ray origin (camera position)
+            vec3 rd = normalize(uCameraRotation * vec3(p, 2.0)); // Ray direction
             
             // Ray march to find distance
             float t = rayMarch(ro, rd);
@@ -222,10 +226,165 @@
             // Track if shader needs to be recompiled
             let needsRecompile = false;
             
+            // Camera state
+            const camera = {
+                position: [0.0, 0.0, -5.0],
+                rotation: [0.0, 0.0, 0.0], // Euler angles in radians
+                zoom: 5.0,
+                autoRotate: true
+            };
+            
+            // Mouse state
+            const mouse = {
+                lastX: 0,
+                lastY: 0,
+                dragging: false,
+                shiftKey: false,
+                altKey: false
+            };
+            
             // Add event listeners to checkboxes
             showSphere.addEventListener('change', () => { needsRecompile = true; });
             showBox.addEventListener('change', () => { needsRecompile = true; });
             showTorus.addEventListener('change', () => { needsRecompile = true; });
+            
+            // Add mouse and keyboard event listeners for navigation
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('wheel', handleMouseWheel);
+            window.addEventListener('keydown', handleKeyDown);
+            window.addEventListener('keyup', handleKeyUp);
+            
+            function handleMouseDown(event) {
+                mouse.lastX = event.clientX;
+                mouse.lastY = event.clientY;
+                mouse.dragging = true;
+            }
+            
+            function handleMouseUp() {
+                mouse.dragging = false;
+            }
+            
+            function handleMouseMove(event) {
+                // Update last position regardless of dragging state
+                const deltaX = event.clientX - (mouse.lastX || event.clientX);
+                const deltaY = event.clientY - (mouse.lastY || event.clientY);
+                
+                // FreeCAD style: modifier key + mouse movement (no click required)
+                if (mouse.shiftKey) {
+                    // Pan (translate camera)
+                    const panSpeed = -0.01;
+                    // Calculate right and up vectors based on current rotation
+                    const cosY = Math.cos(camera.rotation[1]);
+                    const sinY = Math.sin(camera.rotation[1]);
+                    
+                    // Move right/left
+                    camera.position[0] += deltaX * panSpeed * cosY;
+                    camera.position[2] += deltaX * panSpeed * sinY;
+                    
+                    // Move up/down
+                    camera.position[1] -= deltaY * panSpeed;
+                    
+                    // Disable auto-rotation when user pans
+                    camera.autoRotate = false;
+                }
+                
+                if (mouse.altKey) {
+                    // Rotate camera
+                    const rotateSpeed = 0.005;
+                    camera.rotation[1] += deltaX * rotateSpeed; // Yaw (left/right)
+                    camera.rotation[0] += deltaY * rotateSpeed; // Pitch (up/down)
+                    
+                    // Clamp pitch to avoid flipping
+                    camera.rotation[0] = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, camera.rotation[0]));
+                    
+                    // Disable auto-rotation when user rotates
+                    camera.autoRotate = false;
+                }
+                
+                mouse.lastX = event.clientX;
+                mouse.lastY = event.clientY;
+            }
+            
+            function handleMouseWheel(event) {
+                // Zoom in/out
+                const zoomSpeed = 0.1;
+                camera.zoom += Math.sign(event.deltaY) * zoomSpeed;
+                
+                // Clamp zoom to reasonable values
+                camera.zoom = Math.max(1.0, Math.min(20.0, camera.zoom));
+                
+                // Update camera position based on zoom
+                updateCameraPosition();
+                
+                // Disable auto-rotation when user zooms
+                camera.autoRotate = false;
+                
+                event.preventDefault();
+            }
+            
+            function handleKeyDown(event) {
+                if (event.key === 'Shift') {
+                    mouse.shiftKey = true;
+                } else if (event.key === 'Alt' || event.key === 'Meta') {
+                    mouse.altKey = true;
+                    // More aggressive prevention for Firefox
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return false;
+                }
+            }
+            
+            function handleKeyUp(event) {
+                if (event.key === 'Shift') {
+                    mouse.shiftKey = false;
+                } else if (event.key === 'Alt' || event.key === 'Meta') {
+                    mouse.altKey = false;
+                    // Also prevent default on key up
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return false;
+                }
+            }
+            
+            function updateCameraPosition() {
+                // Calculate position based on spherical coordinates
+                const direction = [
+                    Math.sin(camera.rotation[1]) * Math.cos(camera.rotation[0]),
+                    Math.sin(camera.rotation[0]),
+                    Math.cos(camera.rotation[1]) * Math.cos(camera.rotation[0])
+                ];
+                
+                // Only update position if auto-rotate is disabled
+                if (!camera.autoRotate) {
+                    camera.position = [
+                        -direction[0] * camera.zoom,
+                        -direction[1] * camera.zoom,
+                        -direction[2] * camera.zoom
+                    ];
+                }
+            }
+            
+            // Create rotation matrix from Euler angles
+            function createRotationMatrix(angles) {
+                const [pitch, yaw, roll] = angles;
+                
+                // Rotation matrices for each axis
+                const cosPitch = Math.cos(pitch);
+                const sinPitch = Math.sin(pitch);
+                const cosYaw = Math.cos(yaw);
+                const sinYaw = Math.sin(yaw);
+                const cosRoll = Math.cos(roll);
+                const sinRoll = Math.sin(roll);
+                
+                // Combined rotation matrix (column-major for WebGL)
+                return [
+                    cosYaw * cosRoll, sinPitch * sinYaw * cosRoll - cosPitch * sinRoll, cosPitch * sinYaw * cosRoll + sinPitch * sinRoll,
+                    cosYaw * sinRoll, sinPitch * sinYaw * sinRoll + cosPitch * cosRoll, cosPitch * sinYaw * sinRoll - sinPitch * cosRoll,
+                    -sinYaw, sinPitch * cosYaw, cosPitch * cosYaw
+                ];
+            }
 
             // If WebGL is not available, show an error
             if (!gl) {
@@ -345,6 +504,8 @@
                     programInfo.attribLocations.vertexPosition = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
                     programInfo.uniformLocations.resolution = gl.getUniformLocation(shaderProgram, 'uResolution');
                     programInfo.uniformLocations.time = gl.getUniformLocation(shaderProgram, 'uTime');
+                    programInfo.uniformLocations.cameraPosition = gl.getUniformLocation(shaderProgram, 'uCameraPosition');
+                    programInfo.uniformLocations.cameraRotation = gl.getUniformLocation(shaderProgram, 'uCameraRotation');
                 }
                 
                 needsRecompile = false;
@@ -372,6 +533,8 @@
                 uniformLocations: {
                     resolution: gl.getUniformLocation(shaderProgram, 'uResolution'),
                     time: gl.getUniformLocation(shaderProgram, 'uTime'),
+                    cameraPosition: gl.getUniformLocation(shaderProgram, 'uCameraPosition'),
+                    cameraRotation: gl.getUniformLocation(shaderProgram, 'uCameraRotation'),
                 },
             };
             
@@ -385,6 +548,12 @@
                 
                 // Calculate time in seconds
                 const currentTime = (Date.now() - startTime) / 1000;
+                
+                // Update camera if auto-rotate is enabled
+                if (camera.autoRotate) {
+                    camera.rotation[1] = currentTime * 0.3; // Yaw rotation
+                    updateCameraPosition();
+                }
                 
                 // Clear the canvas
                 gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -408,6 +577,12 @@
                 // Set uniforms
                 gl.uniform2f(programInfo.uniformLocations.resolution, canvas.width, canvas.height);
                 gl.uniform1f(programInfo.uniformLocations.time, currentTime);
+                gl.uniform3fv(programInfo.uniformLocations.cameraPosition, new Float32Array(camera.position));
+                gl.uniformMatrix3fv(
+                    programInfo.uniformLocations.cameraRotation, 
+                    false, 
+                    new Float32Array(createRotationMatrix(camera.rotation))
+                );
                 
                 // Draw the square (as triangle strip)
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -421,5 +596,4 @@
         };
     </script>
 </body>
-</html>
 </html> 
