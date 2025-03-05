@@ -27,8 +27,8 @@ const renderer = {
         
         // Load shader sources
         try {
-            this.vertexShaderSource = await this.loadShader('shaders/vertex.glsl');
-            this.fragmentShaderSource = await this.loadShader('shaders/fragment.glsl');
+            this.vertexShaderSource = window.vertexShaderSource;
+            this.fragmentShaderSource = window.fragmentShaderSource;
             this.createShaderProgram(this.vertexShaderSource, this.fragmentShaderSource);
         } catch (error) {
             console.error('Failed to load shaders:', error);
@@ -36,14 +36,6 @@ const renderer = {
         }
         
         return true;
-    },
-    
-    async loadShader(url) {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Failed to load shader from ${url}`);
-        }
-        return await response.text();
     },
     
     resizeCanvas() {
@@ -58,6 +50,7 @@ const renderer = {
         this.gl.compileShader(shader);
 
         if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+            console.warn('Shader source:', source);
             console.error('Shader compilation error:', this.gl.getShaderInfoLog(shader));
             this.gl.deleteShader(shader);
             return null;

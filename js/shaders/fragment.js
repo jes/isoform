@@ -1,58 +1,13 @@
+// Export fragment shader as a string
+const fragmentShaderSource = `
 precision mediump float;
 
 uniform vec2 uResolution;
-uniform float uTime;
 uniform vec3 uCameraPosition;
 uniform vec3 uCameraTarget;
 uniform float uCameraZoom;
 uniform float uRotationX;
 uniform float uRotationY;
-
-// 3D SDF primitives
-float sdSphere(vec3 p, float r) {
-    return length(p) - r;
-}
-
-float sdBox(vec3 p, vec3 b) {
-    vec3 d = abs(p) - b;
-    return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0);
-}
-
-float sdTorus(vec3 p, vec2 t) {
-    vec2 q = vec2(length(p.xz) - t.x, p.y);
-    return length(q) - t.y;
-}
-
-float sdPlane(vec3 p, vec3 n, float h) {
-    // n must be normalized
-    return dot(p, n) + h;
-}
-
-// SDF operations
-float opUnion(float d1, float d2) { return min(d1, d2); }
-float opSubtraction(float d1, float d2) { return max(d1, -d2); }
-float opIntersection(float d1, float d2) { return max(d1, d2); }
-
-// Thickness operation - creates a shell of thickness t around the object
-float opThickness(float d, float t) {
-    return abs(d) - t;
-}
-
-// Smooth blend operations
-float opSmoothUnion(float d1, float d2, float k) {
-    float h = clamp(0.5 + 0.5 * (d2 - d1) / k, 0.0, 1.0);
-    return mix(d2, d1, h) - k * h * (1.0 - h);
-}
-
-float opSmoothSubtraction(float d1, float d2, float k) {
-    float h = clamp(0.5 - 0.5 * (d2 + d1) / k, 0.0, 1.0);
-    return mix(d1, -d2, h) + k * h * (1.0 - h);
-}
-
-float opSmoothIntersection(float d1, float d2, float k) {
-    float h = clamp(0.5 - 0.5 * (d2 - d1) / k, 0.0, 1.0);
-    return mix(d2, d1, h) + k * h * (1.0 - h);
-}
 
 // Apply rotation to a point
 vec3 rotatePoint(vec3 p) {
@@ -77,31 +32,11 @@ vec3 rotatePoint(vec3 p) {
     return p;
 }
 
-// Scene description
+// begin scene
 float map(vec3 p) {
-    // Apply rotation to the point (effectively rotating the scene)
-    p = rotatePoint(p);
-    
-    // Animate objects
-    vec3 spherePos = p - vec3(sin(uTime) * 1.5, cos(uTime * 0.5), 0.0);
-    vec3 boxPos = p - vec3(0.0, sin(uTime) * 0.5, cos(uTime) * 1.5);
-    vec3 torusPos = p - vec3(cos(uTime * 0.7) * 1.0, 0.0, sin(uTime * 0.5) * 1.0);
-    
-    // Create objects
-    float sphere = sdSphere(spherePos, 1.0);
-    float box = sdBox(boxPos, vec3(0.75));
-    float torus = sdTorus(torusPos, vec2(1.0, 0.3));
-    
-    // Combine objects
-    float scene = opSmoothUnion(sphere, box, 0.5);
-    scene = opSmoothUnion(scene, torus, 0.5);
-    
-    // Add ground plane
-    float ground = sdPlane(p, vec3(0.0, 1.0, 0.0), 2.0);
-    scene = opUnion(scene, ground);
-    
-    return scene;
+    return 1000.0;
 }
+// end scene
 
 // Calculate normal at a point
 vec3 calcNormal(vec3 p) {
@@ -175,52 +110,6 @@ Material getMaterial(vec3 p, vec3 normal) {
         mat.roughness = 0.9;
         return mat;
     }
-    
-    // Determine which object we hit based on distance
-    vec3 spherePos = p - vec3(sin(uTime) * 1.5, cos(uTime * 0.5), 0.0);
-    vec3 boxPos = p - vec3(0.0, sin(uTime) * 0.5, cos(uTime) * 1.5);
-    vec3 torusPos = p - vec3(cos(uTime * 0.7) * 1.0, 0.0, sin(uTime * 0.5) * 1.0);
-    
-    float sphereDist = sdSphere(spherePos, 1.0);
-    float boxDist = sdBox(boxPos, vec3(0.75));
-    float torusDist = sdTorus(torusPos, vec2(1.0, 0.3));
-    
-    // Define materials for each object
-    Material sphereMat, boxMat, torusMat;
-    
-    // Sphere material
-    sphereMat.color = vec3(1.0, 0.3, 0.2);
-    sphereMat.metallic = 0.8;
-    sphereMat.roughness = 0.2;
-    
-    // Box material
-    boxMat.color = vec3(0.2, 0.7, 1.0);
-    boxMat.metallic = 0.0;
-    boxMat.roughness = 0.7;
-    
-    // Torus material
-    torusMat.color = vec3(1.0, 0.8, 0.2);
-    torusMat.metallic = 0.5;
-    torusMat.roughness = 0.3;
-    
-    // Blend factor - controls how much blending occurs between materials
-    float blendFactor = 0.5; // Same as used in opSmoothUnion
-    
-    // Initialize with sphere material
-    mat = sphereMat;
-    
-    // Blend between sphere and box
-    float sphereBoxWeight = clamp(0.5 + 0.5 * (boxDist - sphereDist) / blendFactor, 0.0, 1.0);
-    mat.color = mix(boxMat.color, sphereMat.color, sphereBoxWeight);
-    mat.metallic = mix(boxMat.metallic, sphereMat.metallic, sphereBoxWeight);
-    mat.roughness = mix(boxMat.roughness, sphereMat.roughness, sphereBoxWeight);
-    
-    // Blend the result with torus
-    float combinedDist = opSmoothUnion(sphereDist, boxDist, blendFactor);
-    float torusWeight = clamp(0.5 + 0.5 * (torusDist - combinedDist) / blendFactor, 0.0, 1.0);
-    mat.color = mix(torusMat.color, mat.color, torusWeight);
-    mat.metallic = mix(torusMat.metallic, mat.metallic, torusWeight);
-    mat.roughness = mix(torusMat.roughness, mat.roughness, torusWeight);
     
     return mat;
 }
@@ -342,4 +231,12 @@ void main() {
     color = pow(color, vec3(1.0 / 2.2));
     
     gl_FragColor = vec4(color, 1.0);
+}
+`;
+
+// Make it available globally or as a module export
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = fragmentShaderSource;
+} else {
+    window.fragmentShaderSource = fragmentShaderSource;
 } 
