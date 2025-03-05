@@ -65,7 +65,7 @@ const camera = {
         
         // Adjust zoom based on wheel direction
         const zoomDelta = e.deltaY * this.zoomSpeed * 0.01;
-        this.zoom += zoomDelta;
+        this.zoom -= zoomDelta;
         
         // Clamp zoom to reasonable values
         this.zoom = Math.max(0.1, Math.min(2.0, this.zoom));
