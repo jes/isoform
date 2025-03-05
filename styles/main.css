@@ -243,3 +243,10 @@ input[type="checkbox"] {
 .context-menu-item:hover {
     background-color: #675a5a;
 }
+
+/* Add styling for the context menu separator */
+.context-menu-separator {
+    height: 1px;
+    background-color: #555;
+    margin: 5px 0;
+}

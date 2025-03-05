@@ -376,13 +376,13 @@ const ui = {
                 this.renderPropertyEditor();
             });
             contextMenu.appendChild(addTorusOption);
-            
-            // Add a separator if we're going to add the Delete option
+
+            // Add a separator before the Delete option
             const separator = document.createElement('div');
             separator.className = 'context-menu-separator';
             contextMenu.appendChild(separator);
         }
-        
+       
         // Add Delete option
         const deleteOption = document.createElement('div');
         deleteOption.className = 'context-menu-item';
