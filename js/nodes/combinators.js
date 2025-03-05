@@ -52,9 +52,36 @@ class IntersectionNode extends TreeNode {
   }
 }
 
+class SubtractionNode extends TreeNode {
+  constructor(children = []) {
+    super("Subtraction");
+    this.maxChildren = null;
+    this.addChild(children);
+  }
+
+  shaderImplementation() {
+    return `
+      float opSubtraction(float d1, float d2) { return max(d1, -d2); }
+    `;
+  }
+
+  generateShaderCode() {
+    if (this.children.length < 1) {
+      this.warn("Subtraction node needs at least one child");
+      return this.noopShaderCode();
+    }
+
+    let shaderCode = this.children[0].generateShaderCode();
+    for (let i = 1; i < this.children.length; i++) {
+      shaderCode = `opSubtraction(${shaderCode}, ${this.children[i].generateShaderCode()})`;
+    }
+    return shaderCode;
+  }
+}
+
 // Detect environment and export accordingly
 (function() {
-  const nodes = { UnionNode, IntersectionNode };
+  const nodes = { UnionNode, IntersectionNode, SubtractionNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {
