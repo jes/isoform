@@ -63,17 +63,25 @@ input[type="checkbox"] {
     border: 1px solid #444;
     background-color: rgba(40, 40, 50, 0.8);
     padding: 5px;
+    font-size: 0.85em; /* Reduced font size */
 }
 
 .tree-node {
-    margin: 2px 0;
+    margin: 1px 0;
+    position: relative;
+}
+
+.tree-node-label-container {
+    display: flex;
+    align-items: center;
 }
 
 .tree-node-label {
-    padding: 3px 5px;
+    padding: 2px 3px;
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: 2px;
     transition: background-color 0.2s;
+    flex: 1;
 }
 
 .tree-node-label:hover {
@@ -85,6 +93,50 @@ input[type="checkbox"] {
     font-weight: bold;
 }
 
+.tree-toggle, .tree-toggle-placeholder {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.8em;
+    color: #aaa;
+    margin-right: 2px;
+}
+
+.tree-toggle:hover {
+    color: white;
+}
+
+.tree-children {
+    padding-left: 16px;
+    position: relative;
+}
+
+/* Connection lines */
+.tree-line-container {
+    display: flex;
+    align-items: center;
+    margin-right: 3px;
+    position: relative;
+}
+
+.tree-h-line {
+    width: 8px;
+    height: 1px;
+    background-color: #555;
+}
+
+.tree-v-line {
+    position: absolute;
+    width: 1px;
+    height: calc(100% + 4px);
+    background-color: #555;
+    left: 0;
+    top: 50%;
+}
+
 /* Property Editor Styles */
 #property-editor {
     max-height: 200px;
@@ -93,6 +145,7 @@ input[type="checkbox"] {
     border: 1px solid #444;
     background-color: rgba(40, 40, 50, 0.8);
     padding: 5px;
+    font-size: 0.9em;
 }
 
 .property-item {
@@ -113,6 +166,7 @@ input[type="checkbox"] {
     color: white;
     padding: 3px 5px;
     border-radius: 3px;
+    font-size: 0.9em;
 }
 
 .vector-input {

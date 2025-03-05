@@ -28,16 +28,51 @@ const ui = {
     createTreeNode(node, level) {
         const container = document.createElement('div');
         container.className = 'tree-node';
-        container.style.paddingLeft = `${level * 5}px`;
+        
+        // Create the node label container with toggle and label
+        const labelContainer = document.createElement('div');
+        labelContainer.className = 'tree-node-label-container';
+        
+        // Add connection lines
+        if (level > 0) {
+            const lineContainer = document.createElement('div');
+            lineContainer.className = 'tree-line-container';
+            
+            // Add horizontal line
+            const hLine = document.createElement('div');
+            hLine.className = 'tree-h-line';
+            
+            // Add vertical line if not the last child
+            if (node.parent && node !== node.parent.children[node.parent.children.length - 1]) {
+                const vLine = document.createElement('div');
+                vLine.className = 'tree-v-line';
+                lineContainer.appendChild(vLine);
+            }
+            
+            lineContainer.appendChild(hLine);
+            labelContainer.appendChild(lineContainer);
+        }
+        
+        // Create toggle button for collapsing/expanding if node has children
+        const hasChildren = node.children && node.children.length > 0;
+        const toggleBtn = document.createElement('div');
+        toggleBtn.className = hasChildren ? 'tree-toggle' : 'tree-toggle-placeholder';
+        toggleBtn.innerHTML = hasChildren ? '▼' : '&nbsp;';
+        labelContainer.appendChild(toggleBtn);
         
         // Create the node label
         const label = document.createElement('div');
         label.className = 'tree-node-label';
         label.textContent = node.name;
         label.dataset.nodeId = node.uniqueId || Math.random().toString(36).substr(2, 9);
+        labelContainer.appendChild(label);
+        
+        container.appendChild(labelContainer);
         
         // Add click handler to select the node
-        label.addEventListener('click', () => {
+        label.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
             // Remove selected class from all nodes
             const selectedLabels = document.querySelectorAll('.tree-node-label.selected');
             selectedLabels.forEach(el => el.classList.remove('selected'));
@@ -50,14 +85,32 @@ const ui = {
             this.renderPropertyEditor();
         });
         
-        container.appendChild(label);
+        // Add toggle functionality
+        if (hasChildren) {
+            toggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const childrenContainer = container.querySelector('.tree-children');
+                const isCollapsed = toggleBtn.innerHTML === '►';
+                
+                // Toggle the children visibility
+                if (isCollapsed) {
+                    toggleBtn.innerHTML = '▼';
+                    childrenContainer.style.display = 'block';
+                } else {
+                    toggleBtn.innerHTML = '►';
+                    childrenContainer.style.display = 'none';
+                }
+            });
+        }
         
         // Recursively add children
-        if (node.children && node.children.length > 0) {
+        if (hasChildren) {
             const childrenContainer = document.createElement('div');
             childrenContainer.className = 'tree-children';
             
             node.children.forEach(child => {
+                // Set parent reference for connection lines
+                child.parent = node;
                 const childNode = this.createTreeNode(child, level + 1);
                 childrenContainer.appendChild(childNode);
             });
