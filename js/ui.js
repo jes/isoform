@@ -286,14 +286,26 @@ const ui = {
             // Create a container for the vector inputs
             input = document.createElement('div');
             input.className = 'vector-input';
+            input.style.display = 'flex';
+            input.style.flexDirection = 'column';
+            input.style.gap = '4px';
             
             // Create inputs for each component
             ['x', 'y', 'z'].forEach((component, index) => {
+                const componentContainer = document.createElement('div');
+                componentContainer.style.display = 'flex';
+                componentContainer.style.alignItems = 'center';
+                
                 const componentInput = document.createElement('input');
                 componentInput.type = 'number';
                 componentInput.step = '0.1';
                 componentInput.value = propValue[index];
-                componentInput.placeholder = component;
+                componentInput.style.flex = '1';
+                
+                // Add more subtle, professional colored borders for each component (red, green, blue)
+                const colors = ['rgba(220, 53, 69, 0.5)', 'rgba(40, 167, 69, 0.5)', 'rgba(0, 123, 255, 0.5)']; // Muted red, green, blue
+                componentInput.style.borderColor = colors[index];
+                componentInput.style.borderWidth = '1px';
                 
                 componentInput.addEventListener('change', () => {
                     const newValue = [...this.selectedNode.getProperty(propName)];
@@ -303,7 +315,8 @@ const ui = {
                     this.updateTreeIfNeeded(propName);
                 });
                 
-                input.appendChild(componentInput);
+                componentContainer.appendChild(componentInput);
+                input.appendChild(componentContainer);
             });
         }
         
