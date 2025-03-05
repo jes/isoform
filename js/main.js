@@ -1,27 +1,47 @@
 // Main application
 const app = {
+    document: null,
+    
     async init() {
         // Initialize components
         if (!await renderer.init()) return;
         camera.init(renderer.canvas);
         scene.init();
         
+        // Create the scene document
+        this.createDocument();
+        
+        // Initialize UI with the document
+        ui.init(this.document);
+        
         // Start the render loop
         this.render();
     },
     
-    render() {
+    createDocument() {
         const doc = new UnionNode([], 0.5);
         const sphere = new SphereNode(1.1);
         const box = new RotateNode([Math.PI / 4, 0, 0], new RoughnessNode(0.01, 20.0, new BoxNode([1, 1, 1])));
         const torus = new TorusNode(1.0, 0.3);
 
         doc.addChild(torus);
-
         doc.addChild(new SubtractionNode([box, new TranslateNode([0, 1, 0], sphere)], 0.5));
-
+        
+        this.document = doc;
+        return doc;
+    },
+    
+    updateScene() {
+        // Update shader when properties change
+        const newShaderCode = scene.generateShaderCode(this.document);
+        if (newShaderCode) {
+            renderer.createShaderProgram(renderer.vertexShaderSource, newShaderCode);
+        }
+    },
+    
+    render() {
         // Check if shader needs to be updated
-        const newShaderCode = scene.generateShaderCode(doc);
+        const newShaderCode = scene.generateShaderCode(this.document);
         if (newShaderCode) {
             renderer.createShaderProgram(renderer.vertexShaderSource, newShaderCode);
         }
