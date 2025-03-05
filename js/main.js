@@ -33,8 +33,7 @@ const app = {
     
     updateScene() {
         // Update shader when properties change
-        const newShaderCode = scene.generateShaderCode(this.document);
-        if (newShaderCode) {
+        if (this.document.dirty()) {
             renderer.createShaderProgram(renderer.vertexShaderSource, newShaderCode);
         }
     },

@@ -5,6 +5,20 @@ class TreeNode {
     this.parent = null;
     this.maxChildren = 0;
     this.warnFunction = null;
+    this.isDirty = true;
+  }
+
+  dirty() {
+    return this.isDirty;
+  }
+
+  markDirty() {
+    this.isDirty = true;
+    this.parent?.markDirty();
+  }
+  markClean() {
+    this.isDirty = false;
+    this.children.forEach(child => child.markClean());
   }
 
   properties() {
@@ -13,6 +27,7 @@ class TreeNode {
 
   setProperty(name, value) {
     this[name] = value;
+    this.markDirty();
   }
 
   getProperty(name) {
