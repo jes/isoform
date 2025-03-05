@@ -99,6 +99,11 @@ input[type="checkbox"] {
     font-weight: bold;
 }
 
+.tree-node-label.child-of-selected {
+    background-color: rgba(80, 80, 120, 0.4);
+    /* More subtle than the selected color */
+}
+
 .tree-toggle, .tree-toggle-placeholder {
     width: 16px;
     height: 16px;

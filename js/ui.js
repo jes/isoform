@@ -139,8 +139,15 @@ const ui = {
             const selectedLabels = document.querySelectorAll('.tree-node-label.selected');
             selectedLabels.forEach(el => el.classList.remove('selected'));
             
+            // Remove child highlight from all nodes
+            const childHighlightLabels = document.querySelectorAll('.tree-node-label.child-of-selected');
+            childHighlightLabels.forEach(el => el.classList.remove('child-of-selected'));
+            
             // Add selected class to this node
             label.classList.add('selected');
+            
+            // Highlight all children of this node
+            this.highlightChildNodes(node, true);
             
             // Update the property editor
             this.selectedNode = node;
@@ -155,8 +162,16 @@ const ui = {
             // Also select the node on right-click
             const selectedLabels = document.querySelectorAll('.tree-node-label.selected');
             selectedLabels.forEach(el => el.classList.remove('selected'));
+            
+            // Remove child highlight from all nodes
+            const childHighlightLabels = document.querySelectorAll('.tree-node-label.child-of-selected');
+            childHighlightLabels.forEach(el => el.classList.remove('child-of-selected'));
+            
             label.classList.add('selected');
             this.selectedNode = node;
+            
+            // Highlight all children of this node
+            this.highlightChildNodes(node, true);
         });
         
         // Add toggle functionality
@@ -471,5 +486,31 @@ const ui = {
         separator.className = 'context-menu-separator';
         menu.appendChild(separator);
         return separator;
+    },
+
+    highlightChildNodes(node, highlight = true) {
+        if (!node || !node.children || node.children.length === 0) return;
+        
+        // Process each child recursively
+        const processChildren = (currentNode) => {
+            if (!currentNode.children) return;
+            
+            currentNode.children.forEach(child => {
+                // Find the DOM element for this child
+                const childLabel = document.querySelector(`.tree-node-label[data-node-id="${child.uniqueId}"]`);
+                if (childLabel) {
+                    if (highlight) {
+                        childLabel.classList.add('child-of-selected');
+                    } else {
+                        childLabel.classList.remove('child-of-selected');
+                    }
+                }
+                
+                // Process this child's children recursively
+                processChildren(child);
+            });
+        };
+        
+        processChildren(node);
     },
 }; 
