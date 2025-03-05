@@ -8,10 +8,10 @@ class TreeNode {
     this.isDirty = true;
   }
 
+  // "dirty" means the shader needs to be recompiled
   dirty() {
     return this.isDirty;
   }
-
   markDirty() {
     this.isDirty = true;
     this.parent?.markDirty();
