@@ -8,6 +8,7 @@ uniform vec3 uCameraTarget;
 uniform float uCameraZoom;
 uniform float uRotationX;
 uniform float uRotationY;
+uniform bool uShowEdges;
 
 // Apply rotation to a point
 vec3 rotatePoint(vec3 p) {
@@ -224,8 +225,8 @@ void main() {
         
         // Apply edge highlighting
         vec3 edgeColor = vec3(1.0, 1.0, 1.0); // White edge highlight
-        // Increase the edge effect by using a higher mix factor
-        float edgeMixFactor = edge * 1.5; // Amplify the edge effect
+        // Only apply edge highlighting if enabled
+        float edgeMixFactor = uShowEdges ? edge * 1.5 : 0.0; // Amplify the edge effect when enabled
         color = mix(color, edgeColor, clamp(edgeMixFactor, 0.0, 1.0));
         
         // Fog effect based on distance

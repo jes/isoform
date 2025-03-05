@@ -13,6 +13,9 @@ const ui = {
         // Initialize resize functionality
         this.initResizeHandle();
         
+        // Initialize display options
+        this.initDisplayOptions();
+        
         // Initial render of the tree
         this.renderTree();
     },
@@ -540,5 +543,18 @@ const ui = {
         };
         
         processChildren(node);
+    },
+
+    initDisplayOptions() {
+        const showEdgesCheckbox = document.getElementById('show-edges');
+        if (showEdgesCheckbox) {
+            // Set initial state based on camera setting
+            showEdgesCheckbox.checked = camera.showEdges;
+            
+            // Add event listener
+            showEdgesCheckbox.addEventListener('change', (e) => {
+                camera.showEdges = e.target.checked;
+            });
+        }
     },
 }; 
