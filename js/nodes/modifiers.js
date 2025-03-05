@@ -8,6 +8,10 @@ class TranslateNode extends TreeNode {
       this.uniqueId = this.offset.map(v => Math.abs(v).toString().replace('.', '_')).join('_');
     }
 
+    properties() {
+      return {"offset": "vec3"};
+    }
+
     shaderImplementation() {
       return `
         float ${this.getFunctionName()}(vec3 p) {
@@ -34,6 +38,10 @@ class RotateNode extends TreeNode {
     this.maxChildren = 1;
     this.addChild(children);
     this.uniqueId = angles.map(v => Math.abs(v).toString().replace('.', '_')).join('_');
+  }
+
+  properties() {
+    return {"angles": "vec3"};
   }
 
   shaderImplementation() {
@@ -77,6 +85,10 @@ class RoughnessNode extends TreeNode {
     this.maxChildren = 1;
     this.addChild(children);
     this.uniqueId = Math.abs(this.amplitude).toString().replace('.', '_') + "_" + Math.abs(this.frequency).toString().replace('.', '_');
+  }
+
+  properties() {
+    return {"amplitude": "float", "frequency": "float"};
   }
 
   shaderImplementation() {

@@ -7,6 +7,18 @@ class TreeNode {
     this.warnFunction = null;
   }
 
+  properties() {
+    return {};
+  }
+
+  setProperty(name, value) {
+    this[name] = value;
+  }
+
+  getProperty(name) {
+    return this[name];
+  }
+
   addChild(node) {
     // Handle array of nodes
     if (Array.isArray(node)) {

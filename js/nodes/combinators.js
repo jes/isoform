@@ -6,6 +6,10 @@ class UnionNode extends TreeNode {
       this.smoothK = smoothK;
     }
 
+    properties() {
+      return {"smoothK": "float"};
+    }
+
     shaderImplementation() {
       return `
         float opUnion(float d1, float d2) { return min(d1, d2); }
@@ -42,6 +46,10 @@ class IntersectionNode extends TreeNode {
     this.smoothK = smoothK;
   }
 
+  properties() {
+    return {"smoothK": "float"};
+  }
+
   shaderImplementation() {
     return `
       float opIntersection(float d1, float d2) { return max(d1, d2); }
@@ -76,6 +84,10 @@ class SubtractionNode extends TreeNode {
     this.maxChildren = null;
     this.addChild(children);
     this.smoothK = smoothK;
+  }
+
+  properties() {
+    return {"smoothK": "float"};
   }
 
   shaderImplementation() {

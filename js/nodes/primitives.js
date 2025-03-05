@@ -4,6 +4,10 @@ class SphereNode extends TreeNode {
     this.radius = radius;
   }
 
+  properties() {
+    return {"radius": "float"};
+  }
+
   shaderImplementation() {
     return `
       float sdSphere(vec3 p, float r) {
@@ -21,6 +25,10 @@ class BoxNode extends TreeNode {
   constructor(size = [1, 1, 1]) {
     super("Box");
     this.size = size;
+  }
+
+  properties() {
+    return {"size": "vec3"};
   }
 
   shaderImplementation() {
@@ -42,6 +50,10 @@ class TorusNode extends TreeNode {
     super("Torus");
     this.majorRadius = majorRadius;
     this.minorRadius = minorRadius;
+  }
+
+  properties() {
+    return {"majorRadius": "float", "minorRadius": "float"};
   }
 
   shaderImplementation() {
