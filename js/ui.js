@@ -212,7 +212,6 @@ const ui = {
                 
                 input.addEventListener('change', () => {
                     this.selectedNode.setProperty(propName, parseFloat(input.value));
-                    this.updateScene();
                 });
             } 
             else if (propType === 'vec3') {
@@ -232,7 +231,6 @@ const ui = {
                         const newValue = [...propValue];
                         newValue[index] = parseFloat(componentInput.value);
                         this.selectedNode.setProperty(propName, newValue);
-                        this.updateScene();
                     });
                     
                     input.appendChild(componentInput);
@@ -243,11 +241,4 @@ const ui = {
             this.propertyEditor.appendChild(propContainer);
         }
     },
-    
-    updateScene() {
-        // Trigger scene update and shader recompilation
-        if (app && app.updateScene) {
-            app.updateScene();
-        }
-    }
 }; 
