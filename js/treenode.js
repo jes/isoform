@@ -4,7 +4,6 @@ class TreeNode {
 
   constructor(name = "Node") {
     this.name = name;
-    this.friendlyName = name;
     this.children = [];
     this.parent = null;
     this.maxChildren = 0;
@@ -12,6 +11,7 @@ class TreeNode {
     this.isDirty = true;
     this.signature = "";
     this.uniqueId = TreeNode.nextId++;
+    this.friendlyName = `${this.name}${this.uniqueId}`;
   }
 
   // "dirty" means the shader needs to be recompiled
