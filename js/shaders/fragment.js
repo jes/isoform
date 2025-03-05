@@ -51,8 +51,11 @@ vec3 calcNormal(vec3 p) {
 
 // Edge detection based on normal discontinuity
 float detectEdge(vec3 p, vec3 normal) {
+    // Calculate screen-space consistent offset based on distance from camera
+    float distanceToCamera = length(p - uCameraPosition);
+    float offset = 0.002 * distanceToCamera * (1.0 / uCameraZoom);
+    
     // Sample normals at nearby points
-    float offset = 0.01;
     vec3 n1 = calcNormal(p + vec3(offset, 0.0, 0.0));
     vec3 n2 = calcNormal(p + vec3(0.0, offset, 0.0));
     vec3 n3 = calcNormal(p + vec3(0.0, 0.0, offset));
