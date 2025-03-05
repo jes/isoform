@@ -28,7 +28,7 @@ const ui = {
     createTreeNode(node, level) {
         const container = document.createElement('div');
         container.className = 'tree-node';
-        container.style.paddingLeft = `${level * 20}px`;
+        container.style.paddingLeft = `${level * 5}px`;
         
         // Create the node label
         const label = document.createElement('div');
