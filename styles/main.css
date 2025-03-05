@@ -74,6 +74,7 @@ input[type="checkbox"] {
 .tree-node-label-container {
     display: flex;
     align-items: center;
+    position: relative;
 }
 
 .tree-node-label {
@@ -103,38 +104,52 @@ input[type="checkbox"] {
     font-size: 0.8em;
     color: #aaa;
     margin-right: 2px;
+    position: relative;
+    z-index: 1; /* Ensure toggle is above the lines */
 }
 
 .tree-toggle:hover {
     color: white;
 }
 
+/* Improved tree structure with continuous lines */
 .tree-children {
-    padding-left: 16px;
     position: relative;
+    padding-left: 20px;
 }
 
-/* Connection lines */
-.tree-line-container {
-    display: flex;
-    align-items: center;
-    margin-right: 3px;
-    position: relative;
+/* Vertical line from parent to last child */
+.tree-children:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 8px;
+    width: 1px;
+    height: var(--line-height, calc(100% - 10px));
+    background-color: #555;
 }
 
-.tree-h-line {
-    width: 8px;
+/* Horizontal line to each node */
+.tree-node-label-container:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -12px;
+    width: 12px;
     height: 1px;
     background-color: #555;
 }
 
+/* Don't show horizontal connector for root nodes */
+#tree-view > .tree-node > .tree-node-label-container:before {
+    display: none;
+}
+
+/* Remove the connection lines that were previously defined */
+.tree-line-container,
+.tree-h-line,
 .tree-v-line {
-    position: absolute;
-    width: 1px;
-    height: calc(100% + 4px);
-    background-color: #555;
-    left: 0;
-    top: 50%;
+    display: none;
 }
 
 /* Property Editor Styles */

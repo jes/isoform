@@ -13,6 +13,34 @@ const ui = {
         // Initial render of the tree
         this.renderTree();
     },
+
+    adjustTreeLines() {
+        // Find all tree-children elements
+        const treeChildrenElements = document.querySelectorAll('.tree-children');
+        
+        treeChildrenElements.forEach(element => {
+            // Get all child nodes in this container
+            const childNodes = element.querySelectorAll(':scope > .tree-node');
+            
+            if (childNodes.length > 0) {
+                // Get the last visible child node
+                const lastChild = childNodes[childNodes.length - 1];
+                const lastChildLabel = lastChild.querySelector('.tree-node-label-container');
+                
+                if (lastChildLabel) {
+                    // Calculate the position of the last child relative to the parent container
+                    const parentRect = element.getBoundingClientRect();
+                    const lastChildRect = lastChildLabel.getBoundingClientRect();
+                    
+                    // Calculate the distance from the top of the container to the middle of the last child
+                    const distance = (lastChildRect.top - parentRect.top) + (lastChildRect.height / 2);
+                    
+                    // Set the height of the vertical line to this distance
+                    element.style.setProperty('--line-height', `${distance}px`);
+                }
+            }
+        });
+    },
     
     renderTree() {
         if (!this.document || !this.treeView) return;
@@ -23,6 +51,9 @@ const ui = {
         // Create the tree structure
         const treeRoot = this.createTreeNode(this.document, 0);
         this.treeView.appendChild(treeRoot);
+
+        // Adjust the tree lines after rendering
+        setTimeout(() => this.adjustTreeLines(), 0);
     },
     
     createTreeNode(node, level) {
@@ -32,26 +63,6 @@ const ui = {
         // Create the node label container with toggle and label
         const labelContainer = document.createElement('div');
         labelContainer.className = 'tree-node-label-container';
-        
-        // Add connection lines
-        if (level > 0) {
-            const lineContainer = document.createElement('div');
-            lineContainer.className = 'tree-line-container';
-            
-            // Add horizontal line
-            const hLine = document.createElement('div');
-            hLine.className = 'tree-h-line';
-            
-            // Add vertical line if not the last child
-            if (node.parent && node !== node.parent.children[node.parent.children.length - 1]) {
-                const vLine = document.createElement('div');
-                vLine.className = 'tree-v-line';
-                lineContainer.appendChild(vLine);
-            }
-            
-            lineContainer.appendChild(hLine);
-            labelContainer.appendChild(lineContainer);
-        }
         
         // Create toggle button for collapsing/expanding if node has children
         const hasChildren = node.children && node.children.length > 0;
@@ -96,6 +107,9 @@ const ui = {
                 if (isCollapsed) {
                     toggleBtn.innerHTML = '▼';
                     childrenContainer.style.display = 'block';
+                    
+                    // Recalculate line heights when expanding
+                    setTimeout(() => this.adjustTreeLines(), 0);
                 } else {
                     toggleBtn.innerHTML = '►';
                     childrenContainer.style.display = 'none';
@@ -108,9 +122,10 @@ const ui = {
             const childrenContainer = document.createElement('div');
             childrenContainer.className = 'tree-children';
             
-            node.children.forEach(child => {
+            node.children.forEach((child, index) => {
                 // Set parent reference for connection lines
                 child.parent = node;
+                child.isLastChild = index === node.children.length - 1;
                 const childNode = this.createTreeNode(child, level + 1);
                 childrenContainer.appendChild(childNode);
             });
