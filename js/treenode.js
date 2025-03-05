@@ -1,4 +1,7 @@
 class TreeNode {
+  // Static counter for unique IDs
+  static nextId = 1;
+
   constructor(name = "Node") {
     this.name = name;
     this.friendlyName = name;
@@ -7,6 +10,8 @@ class TreeNode {
     this.maxChildren = 0;
     this.warnFunction = null;
     this.isDirty = true;
+    this.signature = "";
+    this.uniqueId = TreeNode.nextId++;
   }
 
   // "dirty" means the shader needs to be recompiled
