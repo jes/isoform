@@ -330,7 +330,7 @@ const ui = {
         // or visibility of nodes, you might need to call renderTree()
     },
 
-    replaceNodeWithTransform(originalNode, transformNode) {
+    replaceNode(originalNode, transformNode, addAsChild = false) {
         // Get the parent of the original node
         const parent = originalNode.parent;
         
@@ -339,24 +339,18 @@ const ui = {
             return;
         }
 
-        // Find the index of the original node in its parent's children array
-        const index = parent.children.indexOf(originalNode);
-        if (index === -1) {
-            console.error("Node not found in parent's children");
-            return;
+        parent.replaceChild(originalNode, transformNode);
+
+        if (addAsChild) {
+            transformNode.addChild(originalNode);
         }
-        
-        // Remove the original node from its parent
-        parent.children[index] = transformNode;
-        
-        // Add the original node as a child of the transform node
-        transformNode.addChild(originalNode);
-        
+       
         // Update the tree view
         this.renderTree();
         
-        // Select the new transform node
-        this.selectedNode = transformNode;
+        // Only set selectedNode to transformNode if it's a TreeNode instance
+        // Otherwise set it to null
+        this.selectedNode = transformNode instanceof TreeNode ? transformNode : null;
         this.renderPropertyEditor();
     },
 
@@ -388,13 +382,23 @@ const ui = {
             this.buildPrimitiveOptions(contextMenu, node);
             this.addMenuSeparator(contextMenu);
         }
+
+        if (node.parent && (node.children.length == 1 || (node.children.length > 1 && node.parent.canAddMoreChildren()))) {
+            this.addMenuItem(contextMenu, 'Unlink', () => {
+                this.replaceNode(node, node.children);
+                contextMenu.remove();
+                this.renderTree();
+            });
+        }
         
         // Add Delete option
-        this.addMenuItem(contextMenu, 'Delete', () => {
-            node.delete();
-            contextMenu.remove();
-            this.renderTree();
-        });
+        if (node.parent) {
+            this.addMenuItem(contextMenu, 'Delete', () => {
+                node.delete();
+                contextMenu.remove();
+                this.renderTree();
+            });
+        }
         
         // Add the menu to the document
         document.body.appendChild(contextMenu);
@@ -416,17 +420,17 @@ const ui = {
     buildCombinatorOptions(contextMenu, node) {
         // Add transformation options
         this.addMenuItem(contextMenu, 'Union', () => {
-            this.replaceNodeWithTransform(node, new UnionNode());
+            this.replaceNode(node, new UnionNode(), true);
             contextMenu.remove();
         });
 
         this.addMenuItem(contextMenu, 'Intersection', () => {
-            this.replaceNodeWithTransform(node, new IntersectionNode());
+            this.replaceNode(node, new IntersectionNode(), true);
             contextMenu.remove();
         });
         
         this.addMenuItem(contextMenu, 'Subtraction', () => {
-            this.replaceNodeWithTransform(node, new SubtractionNode());
+            this.replaceNode(node, new SubtractionNode(), true);
             contextMenu.remove();
         });
     },
@@ -434,17 +438,17 @@ const ui = {
     buildModifierOptions(contextMenu, node) {
         // Add transformation options
         this.addMenuItem(contextMenu, 'Translate', () => {
-            this.replaceNodeWithTransform(node, new TranslateNode());
+            this.replaceNode(node, new TranslateNode(), true);
             contextMenu.remove();
         });
         
         this.addMenuItem(contextMenu, 'Rotate', () => {
-            this.replaceNodeWithTransform(node, new RotateNode());
+            this.replaceNode(node, new RotateNode(), true);
             contextMenu.remove();
         });
         
         this.addMenuItem(contextMenu, 'Roughen', () => {
-            this.replaceNodeWithTransform(node, new RoughnessNode());
+            this.replaceNode(node, new RoughnessNode(), true);
             contextMenu.remove();
         });
     },

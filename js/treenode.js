@@ -170,6 +170,57 @@ class TreeNode {
     // Default icon for generic nodes
     return "📄";
   }
+
+  replaceChild(oldChild, newChild) {
+    // Find the index of the old child in the children array
+    const index = this.children.indexOf(oldChild);
+    if (index === -1) {
+      throw new Error("Child node not found in parent's children");
+    }
+    
+    // Remove the old child from its parent
+    this.children.splice(index, 1);
+    oldChild.parent = null;
+    
+    // Handle array of new children
+    if (Array.isArray(newChild)) {
+      // Insert all new children at the position of the old child
+      for (let i = 0; i < newChild.length; i++) {
+        const child = newChild[i];
+        if (!(child instanceof TreeNode)) {
+          throw new Error("New child must be a TreeNode instance");
+        }
+        
+        // Remove from previous parent if exists
+        if (child.parent) {
+          child.parent.removeChild(child);
+        }
+        
+        // Insert at the appropriate position
+        this.children.splice(index + i, 0, child);
+        child.parent = this;
+      }
+      this.markDirty();
+      return newChild;
+    } 
+    // Handle single new child
+    else {
+      if (!(newChild instanceof TreeNode)) {
+        throw new Error("New child must be a TreeNode instance");
+      }
+      
+      // Remove from previous parent if exists
+      if (newChild.parent) {
+        newChild.parent.removeChild(newChild);
+      }
+      
+      // Insert at the position of the old child
+      this.children.splice(index, 0, newChild);
+      newChild.parent = this;
+      this.markDirty();
+      return newChild;
+    }
+  }
 }
 
 // Detect environment and export accordingly
