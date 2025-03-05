@@ -98,8 +98,8 @@ Material getMaterial(vec3 p, vec3 normal) {
     Material mat;
     
     // Default material
-    mat.color = vec3(0.8);
-    mat.metallic = 0.0;
+    mat.color = vec3(0.5);
+    mat.metallic = 0.2;
     mat.roughness = 0.5;
     
     // Apply rotation to match the scene rotation
@@ -176,7 +176,7 @@ void main() {
     float t = rayMarch(ro, rd);
     
     // Default background color
-    vec3 color = vec3(0.1, 0.1, 0.2);
+    vec3 color = vec3(0.1, 0.1, 0.1);
     
     // If we hit something
     if (t < 20.0) {
