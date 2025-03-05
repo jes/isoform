@@ -97,14 +97,14 @@ const ui = {
         this.treeView.innerHTML = '';
         
         // Create the tree structure
-        const treeRoot = this.createTreeNode(this.document, 0);
+        const treeRoot = this.createTreeNode(this.document, 0, this.document.isDisabled);
         this.treeView.appendChild(treeRoot);
 
         // Adjust the tree lines after rendering
         setTimeout(() => this.adjustTreeLines(), 0);
     },
     
-    createTreeNode(node, level) {
+    createTreeNode(node, level, disabledParent = false) {
         const container = document.createElement('div');
         container.className = 'tree-node';
         
@@ -135,6 +135,11 @@ const ui = {
         if (node.isDisabled === true) {
             label.style.textDecoration = 'line-through';
             label.style.opacity = '0.7';
+        }
+        
+        // Add greyed out style if any parent is disabled (without strikethrough)
+        if (disabledParent) {
+            label.style.opacity = '0.5';
         }
         
         labelContainer.appendChild(label);
@@ -213,7 +218,7 @@ const ui = {
                 // Set parent reference for connection lines
                 child.parent = node;
                 child.isLastChild = index === node.children.length - 1;
-                const childNode = this.createTreeNode(child, level + 1);
+                const childNode = this.createTreeNode(child, level + 1, disabledParent || node.isDisabled);
                 childrenContainer.appendChild(childNode);
             });
             
