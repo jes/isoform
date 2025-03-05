@@ -433,13 +433,13 @@ const ui = {
         const closeContextMenu = (e) => {
             if (!contextMenu.contains(e.target)) {
                 contextMenu.remove();
-                document.removeEventListener('click', closeContextMenu);
+                document.removeEventListener('mousedown', closeContextMenu);
             }
         };
         
         // Use setTimeout to avoid the menu being immediately closed by the current click event
         setTimeout(() => {
-            document.addEventListener('click', closeContextMenu);
+            document.addEventListener('mousedown', closeContextMenu);
         }, 0);
     },
 
