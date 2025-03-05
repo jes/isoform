@@ -1,7 +1,8 @@
 class UnionNode extends TreeNode {
-    constructor() {
+    constructor(children = []) {
       super("Union");
       this.maxChildren = null;
+      this.addChild(children);
     }
 
     shaderImplementation() {
@@ -25,9 +26,10 @@ class UnionNode extends TreeNode {
   }
 
 class IntersectionNode extends TreeNode {
-  constructor() {
+  constructor(children = []) {
     super("Intersection");
     this.maxChildren = null;
+    this.addChild(children);
   }
 
   shaderImplementation() {
