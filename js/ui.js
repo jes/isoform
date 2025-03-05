@@ -359,107 +359,27 @@ const ui = {
         contextMenu.style.position = 'absolute';
         contextMenu.style.left = `${event.clientX}px`;
         contextMenu.style.top = `${event.clientY}px`;
-        
-        // Add transformation options
-        const translateOption = document.createElement('div');
-        translateOption.className = 'context-menu-item';
-        translateOption.textContent = 'Translate';
-        translateOption.addEventListener('click', () => {
-            // Create a new translate node and replace the current node with it
-            this.replaceNodeWithTransform(node, new TranslateNode());
-            contextMenu.remove();
-        });
-        contextMenu.appendChild(translateOption);
-        
-        const rotateOption = document.createElement('div');
-        rotateOption.className = 'context-menu-item';
-        rotateOption.textContent = 'Rotate';
-        rotateOption.addEventListener('click', () => {
-            // Create a new rotate node and replace the current node with it
-            this.replaceNodeWithTransform(node, new RotateNode());
-            contextMenu.remove();
-        });
-        contextMenu.appendChild(rotateOption);
-        
-        const roughenOption = document.createElement('div');
-        roughenOption.className = 'context-menu-item';
-        roughenOption.textContent = 'Roughen';
-        roughenOption.addEventListener('click', () => {
-            // Create a new roughen node and replace the current node with it
-            this.replaceNodeWithTransform(node, new RoughnessNode());
-            contextMenu.remove();
-        });
-        contextMenu.appendChild(roughenOption);
-        
-        // Add a separator after transformation options
-        const transformSeparator = document.createElement('div');
-        transformSeparator.className = 'context-menu-separator';
-        contextMenu.appendChild(transformSeparator);
-        
-        // Check if the node can accept more children
-        if (node.canAddMoreChildren()) {
-            // Add "Add Box" option
-            const addBoxOption = document.createElement('div');
-            addBoxOption.className = 'context-menu-item';
-            addBoxOption.textContent = 'Add Box';
-            addBoxOption.addEventListener('click', () => {
-                const box = new BoxNode([1, 1, 1]);
-                node.addChild(box);
-                contextMenu.remove();
-                this.renderTree();
-                // Select the newly added node
-                this.selectedNode = box;
-                this.renderPropertyEditor();
-            });
-            contextMenu.appendChild(addBoxOption);
-            
-            // Add "Add Sphere" option
-            const addSphereOption = document.createElement('div');
-            addSphereOption.className = 'context-menu-item';
-            addSphereOption.textContent = 'Add Sphere';
-            addSphereOption.addEventListener('click', () => {
-                const sphere = new SphereNode(1.0);
-                node.addChild(sphere);
-                contextMenu.remove();
-                this.renderTree();
-                // Select the newly added node
-                this.selectedNode = sphere;
-                this.renderPropertyEditor();
-            });
-            contextMenu.appendChild(addSphereOption);
-            
-            // Add "Add Torus" option
-            const addTorusOption = document.createElement('div');
-            addTorusOption.className = 'context-menu-item';
-            addTorusOption.textContent = 'Add Torus';
-            addTorusOption.addEventListener('click', () => {
-                const torus = new TorusNode(1.0, 0.3);
-                node.addChild(torus);
-                contextMenu.remove();
-                this.renderTree();
-                // Select the newly added node
-                this.selectedNode = torus;
-                this.renderPropertyEditor();
-            });
-            contextMenu.appendChild(addTorusOption);
 
-            // Add a separator before the Delete option
-            const separator = document.createElement('div');
-            separator.className = 'context-menu-separator';
-            contextMenu.appendChild(separator);
+        // Combinators
+        this.buildCombinatorOptions(contextMenu, node);
+        this.addMenuSeparator(contextMenu);
+        
+        // Modifiers
+        this.buildModifierOptions(contextMenu, node);
+        this.addMenuSeparator(contextMenu);
+        
+        // Add separator if node can add children
+        if (node.canAddMoreChildren()) {
+            this.buildPrimitiveOptions(contextMenu, node);
+            this.addMenuSeparator(contextMenu);
         }
-       
+        
         // Add Delete option
-        const deleteOption = document.createElement('div');
-        deleteOption.className = 'context-menu-item';
-        deleteOption.textContent = 'Delete';
-        deleteOption.addEventListener('click', () => {
+        this.addMenuItem(contextMenu, 'Delete', () => {
             node.delete();
             contextMenu.remove();
             this.renderTree();
         });
-        
-        contextMenu.appendChild(deleteOption);
         
         // Add the menu to the document
         document.body.appendChild(contextMenu);
@@ -476,5 +396,80 @@ const ui = {
         setTimeout(() => {
             document.addEventListener('click', closeContextMenu);
         }, 0);
+    },
+
+    buildCombinatorOptions(contextMenu, node) {
+        // Add transformation options
+        this.addMenuItem(contextMenu, 'Union', () => {
+            this.replaceNodeWithTransform(node, new UnionNode());
+            contextMenu.remove();
+        });
+
+        this.addMenuItem(contextMenu, 'Intersection', () => {
+            this.replaceNodeWithTransform(node, new IntersectionNode());
+            contextMenu.remove();
+        });
+        
+        this.addMenuItem(contextMenu, 'Subtraction', () => {
+            this.replaceNodeWithTransform(node, new SubtractionNode());
+            contextMenu.remove();
+        });
+    },
+
+    buildModifierOptions(contextMenu, node) {
+        // Add transformation options
+        this.addMenuItem(contextMenu, 'Translate', () => {
+            this.replaceNodeWithTransform(node, new TranslateNode());
+            contextMenu.remove();
+        });
+        
+        this.addMenuItem(contextMenu, 'Rotate', () => {
+            this.replaceNodeWithTransform(node, new RotateNode());
+            contextMenu.remove();
+        });
+        
+        this.addMenuItem(contextMenu, 'Roughen', () => {
+            this.replaceNodeWithTransform(node, new RoughnessNode());
+            contextMenu.remove();
+        });
+        
+        this.addMenuSeparator(contextMenu);
+    },
+
+    buildPrimitiveOptions(contextMenu, node) {
+        // Add shape creation options
+        const shapes = [
+            { name: 'Box', constructor: BoxNode, args: [[1, 1, 1]] },
+            { name: 'Sphere', constructor: SphereNode, args: [1.0] },
+            { name: 'Torus', constructor: TorusNode, args: [1.0, 0.3] }
+        ];
+        
+        shapes.forEach(shape => {
+            this.addMenuItem(contextMenu, `Add ${shape.name}`, () => {
+                const newNode = new shape.constructor(...shape.args);
+                node.addChild(newNode);
+                contextMenu.remove();
+                this.renderTree();
+                // Select the newly added node
+                this.selectedNode = newNode;
+                this.renderPropertyEditor();
+            });
+        });
+    },
+
+    addMenuItem(menu, text, onClick) {
+        const menuItem = document.createElement('div');
+        menuItem.className = 'context-menu-item';
+        menuItem.textContent = text;
+        menuItem.addEventListener('click', onClick);
+        menu.appendChild(menuItem);
+        return menuItem;
+    },
+
+    addMenuSeparator(menu) {
+        const separator = document.createElement('div');
+        separator.className = 'context-menu-separator';
+        menu.appendChild(separator);
+        return separator;
     },
 }; 
