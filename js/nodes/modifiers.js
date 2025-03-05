@@ -1,5 +1,5 @@
 class TranslateNode extends TreeNode {
-    constructor(offset = [-1, 0, 0], children = []) {
+    constructor(offset = [0, 0, 0], children = []) {
       super("Translate");
       this.offset = offset;
       this.maxChildren = 1;
