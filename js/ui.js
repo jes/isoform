@@ -10,8 +10,53 @@ const ui = {
         this.treeView = document.getElementById('tree-view');
         this.propertyEditor = document.getElementById('property-editor');
         
+        // Initialize resize functionality
+        this.initResizeHandle();
+        
         // Initial render of the tree
         this.renderTree();
+    },
+
+    initResizeHandle() {
+        const resizeHandle = document.getElementById('resize-handle');
+        const uiPanel = document.getElementById('ui-panel');
+        let startX, startWidth;
+        
+        if (!resizeHandle || !uiPanel) return;
+        
+        const startResize = (e) => {
+            startX = e.clientX;
+            startWidth = parseInt(document.defaultView.getComputedStyle(uiPanel).width, 10);
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('mouseup', stopResize);
+            document.body.style.cursor = 'ew-resize';
+            document.body.style.userSelect = 'none'; // Prevent text selection during resize
+        };
+        
+        const resize = (e) => {
+            // Calculate new width (subtract from startWidth since we're resizing from right to left)
+            const newWidth = startWidth - (e.clientX - startX);
+            // Set minimum and maximum width constraints
+            if (newWidth > 150 && newWidth < window.innerWidth * 0.5) {
+                uiPanel.style.width = `${newWidth}px`;
+                // Trigger canvas resize to update WebGL viewport
+                if (renderer && renderer.resizeCanvas) {
+                    renderer.resizeCanvas();
+                }
+            }
+        };
+        
+        const stopResize = () => {
+            document.removeEventListener('mousemove', resize);
+            document.removeEventListener('mouseup', stopResize);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            
+            // Recalculate tree lines after resizing
+            setTimeout(() => this.adjustTreeLines(), 100);
+        };
+        
+        resizeHandle.addEventListener('mousedown', startResize);
     },
 
     adjustTreeLines() {

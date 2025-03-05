@@ -7,10 +7,8 @@
     <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
-    <canvas id="glCanvas"></canvas>
-    <div id="fps-counter">FPS: 0</div>
-    
     <div id="ui-panel">
+        <div id="resize-handle"></div>
         <div class="control-group">
             <h3>Document Tree</h3>
             <div id="tree-view"></div>
@@ -28,6 +26,9 @@
             <p><strong>Zoom:</strong> Mouse wheel</p>
         </div>
     </div>
+    
+    <canvas id="glCanvas"></canvas>
+    <div id="fps-counter">FPS: 0</div>
 
     <!-- Load scripts -->
     <script src="js/treenode.js"></script>
