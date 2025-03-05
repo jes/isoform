@@ -26,12 +26,12 @@ class UnionNode extends TreeNode {
         return this.noopShaderCode();
       }
 
-      let shaderCode = this.children[0].generateShaderCode();
+      let shaderCode = this.children[0].shaderCode();
       for (let i = 1; i < this.children.length; i++) {
         if (this.smoothK > 0) {
-          shaderCode = `opSmoothUnion(${shaderCode}, ${this.children[i].generateShaderCode()}, ${this.smoothK.toFixed(1)})`;
+          shaderCode = `opSmoothUnion(${shaderCode}, ${this.children[i].shaderCode()}, ${this.smoothK.toFixed(1)})`;
         } else {
-          shaderCode = `opUnion(${shaderCode}, ${this.children[i].generateShaderCode()})`;
+          shaderCode = `opUnion(${shaderCode}, ${this.children[i].shaderCode()})`;
         }
       }
       return shaderCode;
@@ -70,12 +70,12 @@ class IntersectionNode extends TreeNode {
       return this.noopShaderCode();
     }
 
-    let shaderCode = this.children[0].generateShaderCode();
+    let shaderCode = this.children[0].shaderCode();
     for (let i = 1; i < this.children.length; i++) {
       if (this.smoothK > 0) {
-        shaderCode = `opSmoothIntersection(${shaderCode}, ${this.children[i].generateShaderCode()}, ${this.smoothK.toFixed(1)})`;
+        shaderCode = `opSmoothIntersection(${shaderCode}, ${this.children[i].shaderCode()}, ${this.smoothK.toFixed(1)})`;
       } else {
-        shaderCode = `opIntersection(${shaderCode}, ${this.children[i].generateShaderCode()})`;
+        shaderCode = `opIntersection(${shaderCode}, ${this.children[i].shaderCode()})`;
       }
     }
     return shaderCode;
@@ -114,12 +114,12 @@ class SubtractionNode extends TreeNode {
       return this.noopShaderCode();
     }
 
-    let shaderCode = this.children[0].generateShaderCode();
+    let shaderCode = this.children[0].shaderCode();
     for (let i = 1; i < this.children.length; i++) {
       if (this.smoothK > 0) {
-        shaderCode = `opSmoothSubtraction(${shaderCode}, ${this.children[i].generateShaderCode()}, ${this.smoothK.toFixed(1)})`;
+        shaderCode = `opSmoothSubtraction(${shaderCode}, ${this.children[i].shaderCode()}, ${this.smoothK.toFixed(1)})`;
       } else {
-        shaderCode = `opSubtraction(${shaderCode}, ${this.children[i].generateShaderCode()})`;
+        shaderCode = `opSubtraction(${shaderCode}, ${this.children[i].shaderCode()})`;
       }
     }
     return shaderCode;

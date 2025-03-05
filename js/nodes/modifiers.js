@@ -16,7 +16,7 @@ class TranslateNode extends TreeNode {
       return `
         float ${this.getFunctionName()}(vec3 p) {
           p = p - vec3(${this.offset.map(v => v.toFixed(16)).join(", ")});
-          return ${this.children[0].generateShaderCode()};
+          return ${this.children[0].shaderCode()};
         }
       `;
     }
@@ -71,7 +71,7 @@ class RotateNode extends TreeNode {
         float sinZ = sin(${this.angles[2].toFixed(16)});
         p.xy = vec2(p.x * cosZ - p.y * sinZ, p.x * sinZ + p.y * cosZ);
         
-        return ${this.children[0].generateShaderCode()};
+        return ${this.children[0].shaderCode()};
       }
     `;
   }
@@ -112,7 +112,7 @@ class RoughnessNode extends TreeNode {
     return `
       float ${this.getFunctionName()}(vec3 p) {
         // Get the base distance from the child
-        float d = ${this.children[0].generateShaderCode()};
+        float d = ${this.children[0].shaderCode()};
         
         // Create roughness using sine waves in different directions
         float noise = sin(p.x * ${this.frequency.toFixed(8)}) * 

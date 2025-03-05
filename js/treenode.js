@@ -12,6 +12,7 @@ class TreeNode {
     this.signature = "";
     this.uniqueId = TreeNode.nextId++;
     this.displayName = `${this.name}${this.uniqueId}`;
+    this.isDisabled = false;
   }
 
   // "dirty" means the shader needs to be recompiled
@@ -108,10 +109,17 @@ class TreeNode {
     return this.children.length > 0;
   }
 
+  // return supporting function implementations for the node
+  // these are uniq'd before going into the shader source,
+  // make sure that functions with different content have different names,
+  // and similarly that functions with the same name are exactly identical including whitespace and comments
   shaderImplementation() {
     return "";
   }
 
+  // return a unique name for the function, based on the node's name and signature;
+  // you can set "signature" based on the parameters that control the function's behavior;
+  // use this in shaderImplementation()
   getFunctionName() {
     return `sd${this.name}_${this.signature}`;
   }
@@ -142,6 +150,25 @@ class TreeNode {
     return implementations;
   }
 
+  disable() {
+    this.isDisabled = true;
+    this.markDirty();
+  }
+  enable() {
+    this.isDisabled = false;
+    this.markDirty();
+  }
+
+  // return the shader code for the node, respecting isDisabled
+  shaderCode() {
+    if (this.isDisabled) {
+      return this.noopShaderCode();
+    }
+    return this.generateShaderCode();
+  }
+
+  // return the shader code for the node, without respecting isDisabled,
+  // in a form that can be inlined in an expression
   generateShaderCode() {
     return this.noopShaderCode();
   }

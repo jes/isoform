@@ -124,14 +124,20 @@ const ui = {
         nodeIcon.className = 'tree-node-icon';
         nodeIcon.innerHTML = node.getIcon ? node.getIcon() : '📄';
         labelContainer.appendChild(nodeIcon);
-        
+
         // Create the node label
         const label = document.createElement('div');
         label.className = 'tree-node-label';
         label.textContent = node.displayName;
         label.dataset.nodeId = node.uniqueId || Math.random().toString(36).substr(2, 9);
-        labelContainer.appendChild(label);
         
+        // Add strikethrough style if node is disabled
+        if (node.isDisabled === true) {
+            label.style.textDecoration = 'line-through';
+            label.style.opacity = '0.7';
+        }
+        
+        labelContainer.appendChild(label);
         container.appendChild(labelContainer);
         
         // Add click handler to select the node
@@ -393,6 +399,10 @@ const ui = {
         this.buildModifierOptions(contextMenu, node);
         this.addMenuSeparator(contextMenu);
         
+        // Display properties
+        this.buildDisplayOptions(contextMenu, node);
+        this.addMenuSeparator(contextMenu);
+        
         // Add separator if node can add children
         if (node.canAddMoreChildren()) {
             this.buildPrimitiveOptions(contextMenu, node);
@@ -503,6 +513,21 @@ const ui = {
                 this.selectedNode = newNode;
                 this.renderPropertyEditor();
             });
+        });
+    },
+
+    buildDisplayOptions(contextMenu, node) {
+        // Add display property options
+        const isDisabled = node.isDisabled === true;
+        
+        this.addMenuItem(contextMenu, isDisabled ? 'Enable' : 'Disable', () => {
+            if (isDisabled) {
+                node.enable();
+            } else {
+                node.disable();
+            }
+            contextMenu.remove();
+            this.renderTree();
         });
     },
 

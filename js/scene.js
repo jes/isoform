@@ -23,7 +23,7 @@ const scene = {
         let newSceneCode = `
         float map(vec3 p) {
             p = rotatePoint(p);
-            return ${document.generateShaderCode()};
+            return ${document.shaderCode()};
         }
         `;
         
