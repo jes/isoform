@@ -447,8 +447,6 @@ const ui = {
             this.replaceNodeWithTransform(node, new RoughnessNode());
             contextMenu.remove();
         });
-        
-        this.addMenuSeparator(contextMenu);
     },
 
     buildPrimitiveOptions(contextMenu, node) {
