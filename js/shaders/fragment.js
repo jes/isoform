@@ -159,11 +159,15 @@ void main() {
     vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
     vec3 up = cross(forward, right);
     
-    // Apply zoom
+    // Apply zoom - for orthographic, this scales the view size
     float zoom = uCameraZoom;
     
-    // Ray direction using camera frame
-    vec3 rd = normalize(forward + p.x * right * zoom + p.y * up * zoom);
+    // ORTHOGRAPHIC PROJECTION
+    // In orthographic projection, all rays are parallel to the forward direction
+    // The ray origin is offset based on the screen coordinates
+    vec3 rd = normalize(forward);
+    // Adjust the ray origin based on screen position and zoom
+    ro = ro + (p.x * right + p.y * up) / zoom;
     
     // Ray march to find distance
     float t = rayMarch(ro, rd);
