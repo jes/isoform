@@ -330,6 +330,59 @@ const ui = {
         contextMenu.style.left = `${event.clientX}px`;
         contextMenu.style.top = `${event.clientY}px`;
         
+        // Check if the node can accept more children
+        if (node.canAddMoreChildren()) {
+            // Add "Add Box" option
+            const addBoxOption = document.createElement('div');
+            addBoxOption.className = 'context-menu-item';
+            addBoxOption.textContent = 'Add Box';
+            addBoxOption.addEventListener('click', () => {
+                const box = new BoxNode([1, 1, 1]);
+                node.addChild(box);
+                contextMenu.remove();
+                this.renderTree();
+                // Select the newly added node
+                this.selectedNode = box;
+                this.renderPropertyEditor();
+            });
+            contextMenu.appendChild(addBoxOption);
+            
+            // Add "Add Sphere" option
+            const addSphereOption = document.createElement('div');
+            addSphereOption.className = 'context-menu-item';
+            addSphereOption.textContent = 'Add Sphere';
+            addSphereOption.addEventListener('click', () => {
+                const sphere = new SphereNode(1.0);
+                node.addChild(sphere);
+                contextMenu.remove();
+                this.renderTree();
+                // Select the newly added node
+                this.selectedNode = sphere;
+                this.renderPropertyEditor();
+            });
+            contextMenu.appendChild(addSphereOption);
+            
+            // Add "Add Torus" option
+            const addTorusOption = document.createElement('div');
+            addTorusOption.className = 'context-menu-item';
+            addTorusOption.textContent = 'Add Torus';
+            addTorusOption.addEventListener('click', () => {
+                const torus = new TorusNode(1.0, 0.3);
+                node.addChild(torus);
+                contextMenu.remove();
+                this.renderTree();
+                // Select the newly added node
+                this.selectedNode = torus;
+                this.renderPropertyEditor();
+            });
+            contextMenu.appendChild(addTorusOption);
+            
+            // Add a separator if we're going to add the Delete option
+            const separator = document.createElement('div');
+            separator.className = 'context-menu-separator';
+            contextMenu.appendChild(separator);
+        }
+        
         // Add Delete option
         const deleteOption = document.createElement('div');
         deleteOption.className = 'context-menu-item';
