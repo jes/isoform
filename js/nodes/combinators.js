@@ -36,6 +36,10 @@ class UnionNode extends TreeNode {
       }
       return shaderCode;
     }
+
+    getIcon() {
+      return "🔀";
+    }
   }
 
 class IntersectionNode extends TreeNode {
@@ -76,6 +80,10 @@ class IntersectionNode extends TreeNode {
     }
     return shaderCode;
   }
+
+  getIcon() {
+    return "🔄";
+  }
 }
 
 class SubtractionNode extends TreeNode {
@@ -115,6 +123,10 @@ class SubtractionNode extends TreeNode {
       }
     }
     return shaderCode;
+  }
+
+  getIcon() {
+    return "➖";
   }
 }
 

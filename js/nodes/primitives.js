@@ -19,6 +19,10 @@ class SphereNode extends TreeNode {
   generateShaderCode() {
     return `sdSphere(p, ${this.radius.toFixed(16)})`;
   }
+
+  getIcon() {
+    return "🔴";
+  }
 }
 
 class BoxNode extends TreeNode {
@@ -42,6 +46,10 @@ class BoxNode extends TreeNode {
 
   generateShaderCode() {
     return `sdBox(p, vec3(${this.size[0].toFixed(16)}, ${this.size[1].toFixed(16)}, ${this.size[2].toFixed(16)}))`;
+  }
+
+  getIcon() {
+    return "📦";
   }
 }
 
@@ -67,6 +75,10 @@ class TorusNode extends TreeNode {
 
   generateShaderCode() {
     return `sdTorus(p, vec2(${this.majorRadius.toFixed(16)}, ${this.minorRadius.toFixed(16)}))`;
+  }
+
+  getIcon() {
+    return "⭕";
   }
 }
 

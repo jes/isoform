@@ -216,3 +216,10 @@ input[type="checkbox"] {
     opacity: 1;
     background-color: #777;
 }
+
+/* Add this to your CSS file */
+.tree-node-icon {
+    font-size: 0.8em;
+    display: inline-block;
+    text-align: center;
+}

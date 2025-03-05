@@ -29,6 +29,10 @@ class TranslateNode extends TreeNode {
       
       return `${this.getFunctionName()}(p)`;
     }
+
+    getIcon() {
+      return "↔️";
+    }
   }
 
 class RotateNode extends TreeNode {
@@ -74,6 +78,10 @@ class RotateNode extends TreeNode {
     }
     
     return `${this.getFunctionName()}(p)`;
+  }
+
+  getIcon() {
+    return "🔄";
   }
 }
 
@@ -121,6 +129,10 @@ class RoughnessNode extends TreeNode {
     }
     
     return `${this.getFunctionName()}(p)`;
+  }
+
+  getIcon() {
+    return "〰️";
   }
 }
 

@@ -116,6 +116,12 @@ const ui = {
         toggleBtn.innerHTML = hasChildren ? '▼' : '&nbsp;';
         labelContainer.appendChild(toggleBtn);
         
+        // Create node icon
+        const nodeIcon = document.createElement('span');
+        nodeIcon.className = 'tree-node-icon';
+        nodeIcon.innerHTML = node.getIcon ? node.getIcon() : '📄';
+        labelContainer.appendChild(nodeIcon);
+        
         // Create the node label
         const label = document.createElement('div');
         label.className = 'tree-node-label';

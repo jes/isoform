@@ -152,6 +152,11 @@ class TreeNode {
       console.warn(message);
     }
   }
+
+  getIcon() {
+    // Default icon for generic nodes
+    return "📄";
+  }
 }
 
 // Detect environment and export accordingly
