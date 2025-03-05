@@ -234,6 +234,12 @@ const ui = {
         // Clear the property editor
         this.propertyEditor.innerHTML = '';
         
+        // Add a heading showing the node type
+        const nodeTypeHeading = document.createElement('h3');
+        nodeTypeHeading.className = 'node-type-heading';
+        nodeTypeHeading.textContent = this.selectedNode.name || 'Unknown Node';
+        this.propertyEditor.appendChild(nodeTypeHeading);
+        
         // Get the generic properties first (if the method exists)
         const genericProperties = this.selectedNode.genericProperties ? this.selectedNode.genericProperties() : {};
         

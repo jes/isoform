@@ -255,3 +255,12 @@ input[type="checkbox"] {
     background-color: #555;
     margin: 5px 0;
 }
+
+.node-type-heading {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 16px;
+    color: #ddd;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 8px;
+}
