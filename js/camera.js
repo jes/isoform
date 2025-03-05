@@ -68,6 +68,6 @@ const camera = {
         this.zoom -= zoomDelta;
         
         // Clamp zoom to reasonable values
-        this.zoom = Math.max(0.1, Math.min(2.0, this.zoom));
+        //this.zoom = Math.max(0.1, Math.min(2.0, this.zoom));
     }
 }; 

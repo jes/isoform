@@ -397,16 +397,29 @@ const ui = {
         }
 
         if (node.parent && (node.children.length == 1 || (node.children.length > 1 && node.parent.canAddMoreChildren()))) {
-            this.addMenuItem(contextMenu, 'Unlink', () => {
+            this.addMenuItem(contextMenu, 'Delete this', () => {
                 this.replaceNode(node, node.children);
                 contextMenu.remove();
                 this.renderTree();
             });
         }
         
-        // Add Delete option
-        if (node.parent) {
-            this.addMenuItem(contextMenu, 'Delete', () => {
+        if (node.children.length > 0) {
+            this.addMenuItem(contextMenu, 'Delete children', () => {
+                node.children.forEach(child => child.delete());
+                contextMenu.remove();
+                this.renderTree();
+            });
+        } else {
+            this.addMenuItem(contextMenu, 'Delete this', () => {
+                node.delete();
+                contextMenu.remove();
+                this.renderTree();
+            });
+        }
+
+        if (node.parent && node.children.length > 0) {
+            this.addMenuItem(contextMenu, 'Delete with children', () => {
                 node.delete();
                 contextMenu.remove();
                 this.renderTree();
