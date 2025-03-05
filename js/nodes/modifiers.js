@@ -5,7 +5,7 @@ class TranslateNode extends TreeNode {
       this.maxChildren = 1;
       this.addChild(children);
       // Generate a unique ID based on the offset values
-      this.uniqueId = `Translate_${this.offset.map(v => Math.abs(v).toString().replace('.', '_')).join('_')}`;
+      this.uniqueId = this.offset.map(v => Math.abs(v).toString().replace('.', '_')).join('_');
     }
 
     shaderImplementation() {
@@ -33,24 +33,25 @@ class RotateNode extends TreeNode {
     this.angles = angles; // Rotation angles in radians [x, y, z]
     this.maxChildren = 1;
     this.addChild(children);
+    this.uniqueId = angles.map(v => Math.abs(v).toString().replace('.', '_')).join('_');
   }
 
   shaderImplementation() {
     return `
       float ${this.getFunctionName()}(vec3 p) {
         // Rotate around X axis
-        float cosX = cos(angles.x);
-        float sinX = sin(angles.x);
+        float cosX = cos(${this.angles[0].toFixed(16)});
+        float sinX = sin(${this.angles[0].toFixed(16)});
         p.yz = vec2(p.y * cosX - p.z * sinX, p.y * sinX + p.z * cosX);
         
         // Rotate around Y axis
-        float cosY = cos(angles.y);
-        float sinY = sin(angles.y);
+        float cosY = cos(${this.angles[1].toFixed(16)});
+        float sinY = sin(${this.angles[1].toFixed(16)});
         p.xz = vec2(p.x * cosY + p.z * sinY, -p.x * sinY + p.z * cosY);
         
         // Rotate around Z axis
-        float cosZ = cos(angles.z);
-        float sinZ = sin(angles.z);
+        float cosZ = cos(${this.angles[2].toFixed(16)});
+        float sinZ = sin(${this.angles[2].toFixed(16)});
         p.xy = vec2(p.x * cosZ - p.y * sinZ, p.x * sinZ + p.y * cosZ);
         
         return ${this.children[0].generateShaderCode()};
@@ -64,7 +65,7 @@ class RotateNode extends TreeNode {
       return this.noopShaderCode();
     }
     
-    return `sdRotate(p, vec3(${this.angles.map(v => v.toFixed(16)).join(", ")}))`;
+    return `${this.getFunctionName()}(p)`;
   }
 }
 
@@ -75,7 +76,7 @@ class RoughnessNode extends TreeNode {
     this.frequency = frequency; // Controls how dense the roughness pattern is
     this.maxChildren = 1;
     this.addChild(children);
-    this.uniqueId = `Roughness_${Math.abs(this.amplitude).toString().replace('.', '_')}_${Math.abs(this.frequency).toString().replace('.', '_')}`;
+    this.uniqueId = Math.abs(this.amplitude).toString().replace('.', '_') + "_" + Math.abs(this.frequency).toString().replace('.', '_');
   }
 
   shaderImplementation() {

@@ -13,7 +13,7 @@ const app = {
     render() {
         const doc = new UnionNode([], 0.5);
         const sphere = new SphereNode(1.1);
-        const box = new RoughnessNode(0.01, 20.0, new BoxNode([1, 1, 1]));
+        const box = new RotateNode([Math.PI / 4, 0, 0], new RoughnessNode(0.01, 20.0, new BoxNode([1, 1, 1])));
         const torus = new TorusNode(1.0, 0.3);
 
         doc.addChild(torus);
