@@ -90,9 +90,9 @@ class BoxNode extends TreeNode {
 
   generateShaderCode() {
     if (this.radius > 0.0) {
-      return `sdRoundBox(p, vec3(${this.size[0].toFixed(16)}, ${this.size[1].toFixed(16)}, ${this.size[2].toFixed(16)}), ${this.radius.toFixed(16)})`;
+      return `sdRoundBox(p, vec3(${(this.size[0]/2).toFixed(16)}, ${(this.size[1]/2).toFixed(16)}, ${(this.size[2]/2).toFixed(16)}), ${this.radius.toFixed(16)})`;
     } else {
-      return `sdBox(p, vec3(${this.size[0].toFixed(16)}, ${this.size[1].toFixed(16)}, ${this.size[2].toFixed(16)}))`;
+      return `sdBox(p, vec3(${(this.size[0]/2).toFixed(16)}, ${(this.size[1]/2).toFixed(16)}, ${(this.size[2]/2).toFixed(16)}))`;
     }
   }
 
