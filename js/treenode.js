@@ -38,11 +38,15 @@ class TreeNode {
 
   setProperty(name, value) {
     this[name] = value;
+    this.recomputeSignature();
     this.markDirty();
   }
 
   getProperty(name) {
     return this[name];
+  }
+
+  recomputeSignature() {
   }
 
   addChild(node) {
