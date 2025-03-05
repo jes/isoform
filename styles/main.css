@@ -39,4 +39,16 @@ input[type="checkbox"] {
     margin-left: 20px;
     font-size: 0.9em;
     opacity: 0.9;
+}
+#fps-counter {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 14px;
+    pointer-events: none; /* So it doesn't interfere with mouse events */
 } 

@@ -8,6 +8,13 @@ const renderer = {
     vertexShaderSource: null,
     fragmentShaderSource: null,
     
+    // Add these properties for FPS calculation
+    frameCount: 0,
+    lastFpsUpdateTime: 0,
+    fpsUpdateInterval: 500, // Update FPS display every 500ms
+    fpsElement: null,
+    currentFps: 0,
+    
     async init() {
         this.canvas = document.getElementById('glCanvas');
         this.gl = this.canvas.getContext('webgl');
@@ -34,6 +41,10 @@ const renderer = {
             console.error('Failed to load shaders:', error);
             return false;
         }
+        
+        // Initialize FPS counter
+        this.fpsElement = document.getElementById('fps-counter');
+        this.lastFpsUpdateTime = Date.now();
         
         return true;
     },
@@ -122,13 +133,42 @@ const renderer = {
         // Set uniforms
         this.gl.uniform2f(this.programInfo.uniformLocations.resolution, this.canvas.width, this.canvas.height);
         this.gl.uniform1f(this.programInfo.uniformLocations.time, currentTime);
-        this.gl.uniform3fv(this.programInfo.uniformLocations.cameraPosition, camera.position);
-        this.gl.uniform3fv(this.programInfo.uniformLocations.cameraTarget, camera.target);
+        
+        // Add camera uniforms
+        this.gl.uniform3f(this.programInfo.uniformLocations.cameraPosition, 
+            camera.position[0], camera.position[1], camera.position[2]);
+        this.gl.uniform3f(this.programInfo.uniformLocations.cameraTarget, 
+            camera.target[0], camera.target[1], camera.target[2]);
         this.gl.uniform1f(this.programInfo.uniformLocations.cameraZoom, camera.zoom);
         this.gl.uniform1f(this.programInfo.uniformLocations.rotationX, camera.rotationX);
         this.gl.uniform1f(this.programInfo.uniformLocations.rotationY, camera.rotationY);
         
-        // Draw the square (as triangle strip)
+        // Draw the quad
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+        
+        // Update FPS counter
+        this.updateFpsCounter();
+    },
+    
+    updateFpsCounter() {
+        this.frameCount++;
+        
+        const now = Date.now();
+        const elapsed = now - this.lastFpsUpdateTime;
+        
+        // Update FPS display every interval
+        if (elapsed >= this.fpsUpdateInterval) {
+            // Calculate FPS: frames / seconds
+            this.currentFps = Math.round((this.frameCount * 1000) / elapsed);
+            
+            // Update display
+            if (this.fpsElement) {
+                this.fpsElement.textContent = `FPS: ${this.currentFps}`;
+            }
+            
+            // Reset counters
+            this.frameCount = 0;
+            this.lastFpsUpdateTime = now;
+        }
     }
 }; 
