@@ -31,14 +31,10 @@ const app = {
         return doc;
     },
     
-    updateScene() {
+    render() {
         if (this.document.dirty()) {
             renderer.createShaderProgram(renderer.vertexShaderSource, scene.generateShaderCode(this.document));
         }
-    },
-    
-    render() {
-        this.updateScene();
         
         // Render the scene
         renderer.render();
