@@ -100,7 +100,7 @@ class TreeNode {
   }
 
   getFunctionName() {
-    return `sd${this.name}_${this.uniqueId}`;
+    return `sd${this.name}_${this.signature}`;
   }
 
   allShaderImplementations() {

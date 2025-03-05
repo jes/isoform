@@ -5,7 +5,7 @@ class TranslateNode extends TreeNode {
       this.maxChildren = 1;
       this.addChild(children);
       // Generate a unique ID based on the offset values
-      this.uniqueId = this.offset.map(v => Math.abs(v).toString().replace('.', '_')).join('_');
+      this.signature = this.offset.map(v => Math.abs(v).toString().replace('.', '_')).join('_');
     }
 
     properties() {
@@ -41,7 +41,7 @@ class RotateNode extends TreeNode {
     this.angles = angles; // Rotation angles in radians [x, y, z]
     this.maxChildren = 1;
     this.addChild(children);
-    this.uniqueId = angles.map(v => Math.abs(v).toString().replace('.', '_')).join('_');
+    this.signature = angles.map(v => Math.abs(v).toString().replace('.', '_')).join('_');
   }
 
   properties() {
@@ -92,7 +92,7 @@ class RoughnessNode extends TreeNode {
     this.frequency = frequency; // Controls how dense the roughness pattern is
     this.maxChildren = 1;
     this.addChild(children);
-    this.uniqueId = Math.abs(this.amplitude).toString().replace('.', '_') + "_" + Math.abs(this.frequency).toString().replace('.', '_');
+    this.signature = Math.abs(this.amplitude).toString().replace('.', '_') + "_" + Math.abs(this.frequency).toString().replace('.', '_');
   }
 
   properties() {
