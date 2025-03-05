@@ -281,7 +281,7 @@ const ui = {
                 componentInput.placeholder = component;
                 
                 componentInput.addEventListener('change', () => {
-                    const newValue = [...propValue];
+                    const newValue = [...this.selectedNode.getProperty(propName)];
                     newValue[index] = parseFloat(componentInput.value);
                     this.selectedNode.setProperty(propName, newValue);
                     // Update tree if needed
