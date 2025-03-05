@@ -315,6 +315,36 @@ const ui = {
         // or visibility of nodes, you might need to call renderTree()
     },
 
+    replaceNodeWithTransform(originalNode, transformNode) {
+        // Get the parent of the original node
+        const parent = originalNode.parent;
+        
+        if (!parent) {
+            console.error("Cannot transform root node");
+            return;
+        }
+
+        // Find the index of the original node in its parent's children array
+        const index = parent.children.indexOf(originalNode);
+        if (index === -1) {
+            console.error("Node not found in parent's children");
+            return;
+        }
+        
+        // Remove the original node from its parent
+        parent.children[index] = transformNode;
+        
+        // Add the original node as a child of the transform node
+        transformNode.addChild(originalNode);
+        
+        // Update the tree view
+        this.renderTree();
+        
+        // Select the new transform node
+        this.selectedNode = transformNode;
+        this.renderPropertyEditor();
+    },
+
     showContextMenu(event, node) {
         // Remove any existing context menus
         const existingMenu = document.getElementById('tree-context-menu');
@@ -329,6 +359,42 @@ const ui = {
         contextMenu.style.position = 'absolute';
         contextMenu.style.left = `${event.clientX}px`;
         contextMenu.style.top = `${event.clientY}px`;
+        
+        // Add transformation options
+        const translateOption = document.createElement('div');
+        translateOption.className = 'context-menu-item';
+        translateOption.textContent = 'Translate';
+        translateOption.addEventListener('click', () => {
+            // Create a new translate node and replace the current node with it
+            this.replaceNodeWithTransform(node, new TranslateNode());
+            contextMenu.remove();
+        });
+        contextMenu.appendChild(translateOption);
+        
+        const rotateOption = document.createElement('div');
+        rotateOption.className = 'context-menu-item';
+        rotateOption.textContent = 'Rotate';
+        rotateOption.addEventListener('click', () => {
+            // Create a new rotate node and replace the current node with it
+            this.replaceNodeWithTransform(node, new RotateNode());
+            contextMenu.remove();
+        });
+        contextMenu.appendChild(rotateOption);
+        
+        const roughenOption = document.createElement('div');
+        roughenOption.className = 'context-menu-item';
+        roughenOption.textContent = 'Roughen';
+        roughenOption.addEventListener('click', () => {
+            // Create a new roughen node and replace the current node with it
+            this.replaceNodeWithTransform(node, new RoughnessNode());
+            contextMenu.remove();
+        });
+        contextMenu.appendChild(roughenOption);
+        
+        // Add a separator after transformation options
+        const transformSeparator = document.createElement('div');
+        transformSeparator.className = 'context-menu-separator';
+        contextMenu.appendChild(transformSeparator);
         
         // Check if the node can accept more children
         if (node.canAddMoreChildren()) {
