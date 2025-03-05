@@ -68,9 +68,52 @@ class RotateNode extends TreeNode {
   }
 }
 
+class RoughnessNode extends TreeNode {
+  constructor(amplitude = 0.1, frequency = 1.0, children = []) {
+    super("Roughness");
+    this.amplitude = amplitude; // Controls the height of the roughness
+    this.frequency = frequency; // Controls how dense the roughness pattern is
+    this.maxChildren = 1;
+    this.addChild(children);
+    this.uniqueId = `Roughness_${Math.abs(this.amplitude).toString().replace('.', '_')}_${Math.abs(this.frequency).toString().replace('.', '_')}`;
+  }
+
+  shaderImplementation() {
+    return `
+      float ${this.getFunctionName()}(vec3 p) {
+        // Get the base distance from the child
+        float d = ${this.children[0].generateShaderCode()};
+        
+        // Create roughness using sine waves in different directions
+        float noise = sin(p.x * ${this.frequency.toFixed(8)}) * 
+                      sin(p.y * ${this.frequency.toFixed(8)}) * 
+                      sin(p.z * ${this.frequency.toFixed(8)}) * 
+                      sin((p.x + p.y + p.z) * ${(this.frequency * 1.5).toFixed(8)});
+                      
+        // Add some higher frequency components for more detail
+        noise += 0.5 * sin(p.x * ${(this.frequency * 2.0).toFixed(8)}) * 
+                      sin(p.y * ${(this.frequency * 2.0).toFixed(8)}) * 
+                      sin(p.z * ${(this.frequency * 2.0).toFixed(8)});
+        
+        // Scale the noise by the amplitude and add to the distance
+        return d + noise * ${this.amplitude.toFixed(8)};
+      }
+    `;
+  }
+
+  generateShaderCode() {
+    if (!this.hasChildren()) {
+      this.warn("Roughness node has no children to transform");
+      return this.noopShaderCode();
+    }
+    
+    return `${this.getFunctionName()}(p)`;
+  }
+}
+
 // Detect environment and export accordingly
 (function() {
-  const nodes = { TranslateNode, RotateNode };
+  const nodes = { TranslateNode, RotateNode, RoughnessNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {
