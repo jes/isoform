@@ -11,7 +11,7 @@ class TreeNode {
     this.isDirty = true;
     this.signature = "";
     this.uniqueId = TreeNode.nextId++;
-    this.friendlyName = `${this.name}${this.uniqueId}`;
+    this.displayName = `${this.name}${this.uniqueId}`;
   }
 
   // "dirty" means the shader needs to be recompiled
@@ -32,7 +32,7 @@ class TreeNode {
   }
 
   genericProperties() {
-    return {"friendlyName": "string"};
+    return {"displayName": "string"};
   }
 
   setProperty(name, value) {

@@ -125,7 +125,7 @@ const ui = {
         // Create the node label
         const label = document.createElement('div');
         label.className = 'tree-node-label';
-        label.textContent = node.friendlyName;
+        label.textContent = node.displayName;
         label.dataset.nodeId = node.uniqueId || Math.random().toString(36).substr(2, 9);
         labelContainer.appendChild(label);
         
@@ -286,12 +286,12 @@ const ui = {
     
     updateTreeIfNeeded(propName) {
         // Check if the property that changed requires a tree update
-        if (propName === 'friendlyName') {
+        if (propName === 'displayName') {
             // Find the tree node label that corresponds to the selected node
             const nodeLabel = document.querySelector(`.tree-node-label[data-node-id="${this.selectedNode.uniqueId}"]`);
             if (nodeLabel) {
                 // Update just the label text without rebuilding the entire tree
-                nodeLabel.textContent = this.selectedNode.friendlyName;
+                nodeLabel.textContent = this.selectedNode.displayName;
             } else {
                 // If we can't find the specific node, rebuild the entire tree
                 this.renderTree();
