@@ -409,7 +409,9 @@ const ui = {
         
         if (node.children.length > 0) {
             this.addMenuItem(contextMenu, 'Delete children', () => {
-                node.children.forEach(child => child.delete());
+                // Create a copy of the children array to avoid modification issues during iteration
+                const childrenToDelete = [...node.children];
+                childrenToDelete.forEach(child => child.delete());
                 contextMenu.remove();
                 this.renderTree();
             });
