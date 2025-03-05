@@ -34,8 +34,8 @@ const ui = {
         };
         
         const resize = (e) => {
-            // Calculate new width (subtract from startWidth since we're resizing from right to left)
-            const newWidth = startWidth - (e.clientX - startX);
+            // Calculate new width (we're resizing from the left edge now)
+            const newWidth = startWidth - (startX - e.clientX);
             // Set minimum and maximum width constraints
             if (newWidth > 150 && newWidth < window.innerWidth * 0.5) {
                 uiPanel.style.width = `${newWidth}px`;

@@ -3,12 +3,13 @@ body {
     padding: 0;
     overflow: hidden;
     display: flex;
-    /* Remove flex-direction: row-reverse for now to debug */
+    height: 100vh; /* Ensure body takes full viewport height */
 }
 canvas {
     display: block;
     flex: 1;
     height: 100vh;
+    min-width: 0; /* Prevent flex items from overflowing */
 }
 #ui-panel {
     width: 250px; /* Default width */
@@ -208,8 +209,10 @@ input[type="checkbox"] {
     cursor: ew-resize;
     opacity: 0.5;
     transition: opacity 0.2s;
+    z-index: 10;
 }
 
 #resize-handle:hover {
     opacity: 1;
+    background-color: #777;
 }
