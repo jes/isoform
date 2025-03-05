@@ -223,3 +223,20 @@ input[type="checkbox"] {
     display: inline-block;
     text-align: center;
 }
+
+.context-menu {
+    background: white;
+    border: 1px solid #ccc;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    padding: 5px 0;
+    z-index: 1000;
+}
+
+.context-menu-item {
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.context-menu-item:hover {
+    background-color: #f0f0f0;
+}

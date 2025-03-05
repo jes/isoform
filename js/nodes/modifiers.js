@@ -49,6 +49,11 @@ class RotateNode extends TreeNode {
   }
 
   shaderImplementation() {
+    if (!this.hasChildren()) {
+      this.warn("Rotate node has no children to transform");
+      return '';
+    }
+    
     return `
       float ${this.getFunctionName()}(vec3 p) {
         // Rotate around X axis
@@ -73,7 +78,6 @@ class RotateNode extends TreeNode {
 
   generateShaderCode() {
     if (!this.hasChildren()) {
-      this.warn("Rotate node has no children to transform");
       return this.noopShaderCode();
     }
     
@@ -100,6 +104,11 @@ class RoughnessNode extends TreeNode {
   }
 
   shaderImplementation() {
+    if (!this.hasChildren()) {
+      this.warn("Roughness node has no children to transform");
+      return '';
+    }
+    
     return `
       float ${this.getFunctionName()}(vec3 p) {
         // Get the base distance from the child
@@ -124,7 +133,6 @@ class RoughnessNode extends TreeNode {
 
   generateShaderCode() {
     if (!this.hasChildren()) {
-      this.warn("Roughness node has no children to transform");
       return this.noopShaderCode();
     }
     

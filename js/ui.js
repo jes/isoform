@@ -147,6 +147,18 @@ const ui = {
             this.renderPropertyEditor();
         });
         
+        // Add context menu functionality
+        labelContainer.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            this.showContextMenu(e, node);
+            
+            // Also select the node on right-click
+            const selectedLabels = document.querySelectorAll('.tree-node-label.selected');
+            selectedLabels.forEach(el => el.classList.remove('selected'));
+            label.classList.add('selected');
+            this.selectedNode = node;
+        });
+        
         // Add toggle functionality
         if (hasChildren) {
             toggleBtn.addEventListener('click', (e) => {
@@ -301,5 +313,49 @@ const ui = {
         // Add other properties that might require tree updates here
         // For example, if changing a property affects the hierarchy
         // or visibility of nodes, you might need to call renderTree()
-    }
+    },
+
+    showContextMenu(event, node) {
+        // Remove any existing context menus
+        const existingMenu = document.getElementById('tree-context-menu');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
+        
+        // Create context menu
+        const contextMenu = document.createElement('div');
+        contextMenu.id = 'tree-context-menu';
+        contextMenu.className = 'context-menu';
+        contextMenu.style.position = 'absolute';
+        contextMenu.style.left = `${event.clientX}px`;
+        contextMenu.style.top = `${event.clientY}px`;
+        
+        // Add Delete option
+        const deleteOption = document.createElement('div');
+        deleteOption.className = 'context-menu-item';
+        deleteOption.textContent = 'Delete';
+        deleteOption.addEventListener('click', () => {
+            node.delete();
+            contextMenu.remove();
+            this.renderTree();
+        });
+        
+        contextMenu.appendChild(deleteOption);
+        
+        // Add the menu to the document
+        document.body.appendChild(contextMenu);
+        
+        // Close the menu when clicking elsewhere
+        const closeContextMenu = (e) => {
+            if (!contextMenu.contains(e.target)) {
+                contextMenu.remove();
+                document.removeEventListener('click', closeContextMenu);
+            }
+        };
+        
+        // Use setTimeout to avoid the menu being immediately closed by the current click event
+        setTimeout(() => {
+            document.addEventListener('click', closeContextMenu);
+        }, 0);
+    },
 }; 

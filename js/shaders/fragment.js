@@ -77,7 +77,7 @@ float rayMarch(vec3 ro, vec3 rd) {
     for (int i = 0; i < 100; i++) {
         vec3 p = ro + rd * t;
         float d = map(p);
-        if (d < 0.001 || t > 20.0) break;
+        if (d < 0.0001 || t > 20.0) break;
         t += d;
     }
     return t;

@@ -33,6 +33,8 @@ const scene = {
                    newSceneCode +
                    originalSource.substring(endIndex);
         
+        document.markClean();
+
         return newSource;
     }
 }; 

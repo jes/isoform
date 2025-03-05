@@ -70,6 +70,7 @@ class TreeNode {
     
     this.children.push(node);
     node.parent = this;
+    this.markDirty();
     return node;
   }
 
@@ -87,9 +88,16 @@ class TreeNode {
     if (index !== -1) {
       this.children.splice(index, 1);
       node.parent = null;
+      this.markDirty();
       return true;
     }
     return false;
+  }
+
+  delete() {
+    if (this.parent) {
+      this.parent.removeChild(this);
+    }
   }
 
   getChildren() {
@@ -139,7 +147,7 @@ class TreeNode {
   }
 
   noopShaderCode() {
-    return "";
+    return "1000.0";
   }
 
   canAddMoreChildren() {
@@ -149,7 +157,7 @@ class TreeNode {
 
   // propagate warnings up the tree
   warn(message, node = this) {
-    if (node.parent) {
+    if (this.parent) {
       this.parent.warn(message, node);
     } else if (node.warnFunction) {
       this.warnFunction(message, node);
