@@ -487,6 +487,7 @@ const ui = {
         const shapes = [
             { name: 'Box', constructor: BoxNode, args: [[1, 1, 1]] },
             { name: 'Sphere', constructor: SphereNode, args: [1.0] },
+            { name: 'Cylinder', constructor: CylinderNode, args: [1.0, 1.0] },
             { name: 'Torus', constructor: TorusNode, args: [1.0, 0.3] }
         ];
         

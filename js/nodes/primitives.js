@@ -25,6 +25,36 @@ class SphereNode extends TreeNode {
   }
 }
 
+class CylinderNode extends TreeNode {
+  constructor(radius = 1.0, height = 1.0) {
+    super("Cylinder");
+    this.radius = radius;
+    this.height = height;
+  }
+
+  properties() {
+    return {"radius": "float", "height": "float"};
+  }
+  
+  shaderImplementation() {
+    return `
+      float sdCylinder(vec3 p, float r, float h) {
+        vec2 d = vec2(length(p.xz) - r, abs(p.y) - h);
+        return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+      }
+    `;
+  }
+
+  generateShaderCode() {
+    return `sdCylinder(p, ${this.radius.toFixed(16)}, ${this.height.toFixed(16)})`;
+  }
+
+  getIcon() {
+    return "🔵";
+  }
+}
+
+
 class BoxNode extends TreeNode {
   constructor(size = [1, 1, 1], radius = 0.0) {
     super("Box");
@@ -93,7 +123,7 @@ class TorusNode extends TreeNode {
 
 // Detect environment and export accordingly
 (function() {
-  const nodes = { SphereNode, BoxNode, TorusNode };
+  const nodes = { SphereNode, CylinderNode, BoxNode, TorusNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {
