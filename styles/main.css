@@ -185,7 +185,7 @@ input[type="checkbox"] {
 }
 
 .property-item input {
-    width: 100%;
+    width: calc(100% - 12px);
     background-color: rgba(60, 60, 70, 0.8);
     border: 1px solid #555;
     color: white;
