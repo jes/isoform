@@ -1,6 +1,7 @@
 class TreeNode {
   constructor(name = "Node") {
     this.name = name;
+    this.friendlyName = name;
     this.children = [];
     this.parent = null;
     this.maxChildren = 0;
@@ -23,6 +24,10 @@ class TreeNode {
 
   properties() {
     return {};
+  }
+
+  genericProperties() {
+    return {"friendlyName": "string"};
   }
 
   setProperty(name, value) {

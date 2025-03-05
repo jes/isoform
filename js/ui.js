@@ -119,7 +119,7 @@ const ui = {
         // Create the node label
         const label = document.createElement('div');
         label.className = 'tree-node-label';
-        label.textContent = node.name;
+        label.textContent = node.friendlyName;
         label.dataset.nodeId = node.uniqueId || Math.random().toString(36).substr(2, 9);
         labelContainer.appendChild(label);
         
@@ -187,58 +187,113 @@ const ui = {
         // Clear the property editor
         this.propertyEditor.innerHTML = '';
         
-        // Get the properties for this node
-        const properties = this.selectedNode.properties();
+        // Get the generic properties first (if the method exists)
+        const genericProperties = this.selectedNode.genericProperties ? this.selectedNode.genericProperties() : {};
         
-        // Create form elements for each property
-        for (const [propName, propType] of Object.entries(properties)) {
-            const propValue = this.selectedNode.getProperty(propName);
-            
-            const propContainer = document.createElement('div');
-            propContainer.className = 'property-item';
-            
-            const propLabel = document.createElement('label');
-            propLabel.textContent = propName;
-            propContainer.appendChild(propLabel);
-            
-            // Create appropriate input based on property type
-            let input;
-            
-            if (propType === 'float') {
-                input = document.createElement('input');
-                input.type = 'number';
-                input.step = '0.1';
-                input.value = propValue;
-                
-                input.addEventListener('change', () => {
-                    this.selectedNode.setProperty(propName, parseFloat(input.value));
-                });
-            } 
-            else if (propType === 'vec3') {
-                // Create a container for the vector inputs
-                input = document.createElement('div');
-                input.className = 'vector-input';
-                
-                // Create inputs for each component
-                ['x', 'y', 'z'].forEach((component, index) => {
-                    const componentInput = document.createElement('input');
-                    componentInput.type = 'number';
-                    componentInput.step = '0.1';
-                    componentInput.value = propValue[index];
-                    componentInput.placeholder = component;
-                    
-                    componentInput.addEventListener('change', () => {
-                        const newValue = [...propValue];
-                        newValue[index] = parseFloat(componentInput.value);
-                        this.selectedNode.setProperty(propName, newValue);
-                    });
-                    
-                    input.appendChild(componentInput);
-                });
+        // Get the specific properties for this node
+        const specificProperties = this.selectedNode.properties();
+        
+        // Create form elements for generic properties first
+        if (Object.keys(genericProperties).length > 0) {
+            for (const [propName, propType] of Object.entries(genericProperties)) {
+                const propValue = this.selectedNode.getProperty(propName);
+                this.createPropertyInput(propName, propType, propValue);
             }
             
-            propContainer.appendChild(input);
-            this.propertyEditor.appendChild(propContainer);
+            // Add a separator if we have both generic and specific properties
+            if (Object.keys(specificProperties).length > 0) {
+                const separator = document.createElement('hr');
+                separator.className = 'property-separator';
+                this.propertyEditor.appendChild(separator);
+            }
+        }
+        
+        // Create form elements for specific properties
+        for (const [propName, propType] of Object.entries(specificProperties)) {
+            const propValue = this.selectedNode.getProperty(propName);
+            this.createPropertyInput(propName, propType, propValue);
         }
     },
+
+    createPropertyInput(propName, propType, propValue) {
+        const propContainer = document.createElement('div');
+        propContainer.className = 'property-item';
+        
+        const propLabel = document.createElement('label');
+        propLabel.textContent = propName;
+        propContainer.appendChild(propLabel);
+        
+        // Create appropriate input based on property type
+        let input;
+        
+        if (propType === 'float') {
+            input = document.createElement('input');
+            input.type = 'number';
+            input.step = '0.1';
+            input.value = propValue;
+            
+            input.addEventListener('change', () => {
+                this.selectedNode.setProperty(propName, parseFloat(input.value));
+                // Update tree if needed (e.g., if this property affects visual representation)
+                this.updateTreeIfNeeded(propName);
+            });
+        } 
+        else if (propType === 'string') {
+            input = document.createElement('input');
+            input.type = 'text';
+            input.value = propValue || '';
+            
+            input.addEventListener('change', () => {
+                this.selectedNode.setProperty(propName, input.value);
+                // Update tree if needed (e.g., if this property affects visual representation)
+                this.updateTreeIfNeeded(propName);
+            });
+        }
+        else if (propType === 'vec3') {
+            // Create a container for the vector inputs
+            input = document.createElement('div');
+            input.className = 'vector-input';
+            
+            // Create inputs for each component
+            ['x', 'y', 'z'].forEach((component, index) => {
+                const componentInput = document.createElement('input');
+                componentInput.type = 'number';
+                componentInput.step = '0.1';
+                componentInput.value = propValue[index];
+                componentInput.placeholder = component;
+                
+                componentInput.addEventListener('change', () => {
+                    const newValue = [...propValue];
+                    newValue[index] = parseFloat(componentInput.value);
+                    this.selectedNode.setProperty(propName, newValue);
+                    // Update tree if needed
+                    this.updateTreeIfNeeded(propName);
+                });
+                
+                input.appendChild(componentInput);
+            });
+        }
+        
+        propContainer.appendChild(input);
+        this.propertyEditor.appendChild(propContainer);
+    },
+    
+    updateTreeIfNeeded(propName) {
+        // Check if the property that changed requires a tree update
+        if (propName === 'friendlyName') {
+            // Find the tree node label that corresponds to the selected node
+            const nodeLabel = document.querySelector(`.tree-node-label[data-node-id="${this.selectedNode.uniqueId}"]`);
+            if (nodeLabel) {
+                // Update just the label text without rebuilding the entire tree
+                nodeLabel.textContent = this.selectedNode.friendlyName;
+            } else {
+                // If we can't find the specific node, rebuild the entire tree
+                this.renderTree();
+            }
+        }
+        
+        // Add other properties that might require tree updates here
+        // For example, if changing a property affects the hierarchy
+        // or visibility of nodes, you might need to call renderTree()
+    }
 }; 
