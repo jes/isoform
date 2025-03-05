@@ -39,8 +39,17 @@ const renderer = {
     },
     
     resizeCanvas() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        // Get the CSS size of the canvas
+        const displayWidth = this.canvas.clientWidth;
+        const displayHeight = this.canvas.clientHeight;
+        
+        // Check if the canvas is not the same size
+        if (this.canvas.width !== displayWidth || this.canvas.height !== displayHeight) {
+            // Update the canvas size to match its display size
+            this.canvas.width = displayWidth;
+            this.canvas.height = displayHeight;
+        }
+        
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     },
     
