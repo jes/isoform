@@ -131,20 +131,6 @@ float calcAO(vec3 p, vec3 n) {
     return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
 }
 
-// Simple soft shadows
-float softShadow(vec3 ro, vec3 rd, float mint, float maxt, float k) {
-    float res = 1.0;
-    float t = mint;
-    for (int i = 0; i < 16; i++) {
-        if (t < maxt) {
-            float h = map(ro + rd * t);
-            res = min(res, k * h / t);
-            t += h;
-        }
-    }
-    return clamp(res, 0.0, 1.0);
-}
-
 void main() {
     // Normalized coordinates (0.0 to 1.0)
     vec2 uv = gl_FragCoord.xy / uResolution.xy;
@@ -192,7 +178,7 @@ void main() {
         float edge = detectEdge(pos, normal);
         
         // Lighting setup
-        vec3 lightPos = vec3(5.0, 5.0, -5.0);
+        vec3 lightPos = vec3(500.0, 500.0, 0.0);
         vec3 lightDir = normalize(lightPos - pos);
         vec3 viewDir = normalize(ro - pos);
         vec3 halfDir = normalize(lightDir + viewDir);
@@ -204,19 +190,10 @@ void main() {
         // Diffuse light
         float diff = max(dot(normal, lightDir), 0.0);
         // Soft shadows
-        float shadow = softShadow(pos, lightDir, 0.1, 10.0, 8.0);
-        vec3 diffuse = vec3(0.8) * diff * mat.color * shadow;
-        
-        // Specular light (simple Blinn-Phong)
-        float spec = pow(max(dot(normal, halfDir), 0.0), 16.0 / mat.roughness);
-        vec3 specular = vec3(0.8) * spec * mix(vec3(0.04), mat.color, mat.metallic) * shadow;
-        
-        // Fresnel effect for reflections
-        float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 5.0);
-        fresnel = mix(fresnel, 1.0, mat.metallic);
+        vec3 diffuse = vec3(0.8) * diff * mat.color;
         
         // Combine lighting components
-        color = ambient + diffuse + specular;
+        color = ambient + diffuse;
         
         // Add rim lighting
         float rim = 1.0 - max(dot(normal, viewDir), 0.0);
