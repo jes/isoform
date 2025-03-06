@@ -59,7 +59,7 @@ vec3 inverseRotatePoint(vec3 p) {
 float map_axis(vec3 p, vec3 axis) {
     p = rotatePoint(p);
     float h = clamp(dot(p,axis)/dot(axis,axis), 0.0, 1.0);
-    return length(p - axis * h) - 0.1;
+    return length(p - axis * h) - 0.01;
 }
 
 float raymarch_axis(vec3 ro, vec3 rd, vec3 axis) {
@@ -76,7 +76,7 @@ float raymarch_axis(vec3 ro, vec3 rd, vec3 axis) {
 // Draw axis indicator in the bottom right corner
 vec4 drawAxisIndicator(vec2 uv) {
     vec2 axisCentre = vec2(0.05, 0.05);
-    vec2 axisSize = vec2(0.05, 0.05);
+    vec2 axisSize = vec2(0.1, 0.1);
 
     uv -= axisCentre;
     uv /= axisSize;
@@ -103,12 +103,12 @@ vec4 drawAxisIndicator(vec2 uv) {
     // The ray origin is offset based on the screen coordinates
     vec3 rd = normalize(forward);
     // Adjust the ray origin based on screen position and zoom
-    ro = ro + (uv.x * right + uv.y * up) / zoom;
+    ro = ro + (uv.x * right + uv.y * up);
 
     vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
 
     // Ray march to find distance
-    float length = 5.0;
+    float length = 0.4;
     float dx = raymarch_axis(ro, rd, length * vec3(1.0, 0.0, 0.0));
     float dy = raymarch_axis(ro, rd, length * vec3(0.0, 1.0, 0.0));
     float dz = raymarch_axis(ro, rd, length * vec3(0.0, 0.0, 1.0));
