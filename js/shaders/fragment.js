@@ -1,6 +1,6 @@
 // Export fragment shader as a string
 const fragmentShaderSource = `
-precision mediump float;
+precision highp float;
 
 uniform vec2 uResolution;
 uniform vec3 uCameraPosition;
@@ -41,7 +41,7 @@ float map(vec3 p) {
 
 // Calculate normal at a point
 vec3 calcNormal(vec3 p) {
-    const float eps = 0.001;
+    const float eps = 0.00001;
     const vec2 h = vec2(eps, 0.0);
     return normalize(vec3(
         map(p + h.xyy) - map(p - h.xyy),
@@ -54,7 +54,7 @@ vec3 calcNormal(vec3 p) {
 float detectEdge(vec3 p, vec3 normal) {
     // Calculate screen-space consistent offset based on distance from camera
     float distanceToCamera = length(p - uCameraPosition);
-    float offset = 0.002 * distanceToCamera * (1.0 / uCameraZoom);
+    float offset = 0.0005 * distanceToCamera * (1.0 / uCameraZoom);
     
     // Sample normals at nearby points
     vec3 n1 = calcNormal(p + vec3(offset, 0.0, 0.0));
@@ -81,7 +81,7 @@ float rayMarch(vec3 ro, vec3 rd) {
     for (int i = 0; i < 100; i++) {
         vec3 p = ro + rd * t;
         float d = map(p);
-        if (d < 0.001 || t > 20.0) break;
+        if (d < 0.001 || t > 1000000.0) break;
         t += d;
     }
     return t;
@@ -180,7 +180,7 @@ void main() {
     vec3 color = vec3(0.1, 0.1, 0.1);
     
     // If we hit something
-    if (t < 20.0) {
+    if (t < 1000000.0) {
         // Calculate hit position and normal
         vec3 pos = ro + rd * t;
         vec3 normal = calcNormal(pos);
@@ -228,11 +228,6 @@ void main() {
         // Only apply edge highlighting if enabled
         float edgeMixFactor = uShowEdges ? edge * 1.5 : 0.0; // Amplify the edge effect when enabled
         color = mix(color, edgeColor, clamp(edgeMixFactor, 0.0, 1.0));
-        
-        // Fog effect based on distance
-        float fogFactor = 1.0 - exp(-0.05 * t);
-        vec3 fogColor = vec3(0.1, 0.1, 0.2);
-        color = mix(color, fogColor, fogFactor);
     }
     
     // Gamma correction

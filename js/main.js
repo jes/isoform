@@ -22,7 +22,7 @@ const app = {
         const doc = new UnionNode([]);
         doc.setProperty('displayName', 'Document');
         const sphere = new SphereNode(11);
-        const box = new RotateNode([1.0, 0, 0], 45, new RoughnessNode(0.01, 20.0, new BoxNode([20, 20, 20])));
+        const box = new RotateNode([1.0, 0, 0], 45, new RoughnessNode(0.02, 10.0, new BoxNode([20, 20, 20])));
         const torus = new TorusNode(10, 3);
 
         doc.addChild(torus);

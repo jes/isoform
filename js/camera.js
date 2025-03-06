@@ -1,8 +1,8 @@
 // Camera controls
 const camera = {
-    position: [0.0, 0.0, -5.0],
+    position: [0.0, 0.0, -10000.0],
     target: [0.0, 0.0, 0.0],
-    zoom: 1.0,
+    zoom: 0.1,
     rotationX: 0.0,
     rotationY: 0.0,
     isDragging: false,
