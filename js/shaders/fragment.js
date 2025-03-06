@@ -158,6 +158,7 @@ MarchResult rayMarch_secondary(vec3 ro, vec3 rd) {
 // This creates the axis indicator display as an SDF because
 // somehow I'm not smart enough to find the analytical solution
 // to draw the axes correctly. This wants fixing.
+// Also, does this respect the aspect ratio?
 
 float map_axis(vec3 p, vec3 axis) {
     p = rotatePoint(p);
