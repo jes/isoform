@@ -34,82 +34,89 @@ vec3 rotatePoint(vec3 p) {
     return p;
 }
 
+vec3 inverseRotatePoint(vec3 p) {
+    // Inverse rotate around Y axis
+    float cosY = cos(-uRotationY);
+    float sinY = sin(-uRotationY);
+    p = vec3(
+        p.x * cosY + p.z * sinY,    
+        p.y,
+        p.x * sinY - p.z * cosY
+    );
+
+    // Inverse rotate around X axis
+    float cosX = cos(-uRotationX);
+    float sinX = sin(-uRotationX);
+    p = vec3(
+        p.x,
+        p.y * cosX + p.z * sinX,
+        p.y * sinX - p.z * cosX
+    );
+
+    return p;
+}
+
+float map_axis(vec3 p, vec3 axis) {
+    p = rotatePoint(p);
+    float h = clamp(dot(p,axis)/dot(axis,axis), 0.0, 1.0);
+    return length(p - axis * h) - 0.1;
+}
+
+float raymarch_axis(vec3 ro, vec3 rd, vec3 axis) {
+    for (int i = 0; i < 100; i++) {
+        float d = map_axis(ro, axis);
+        if (d < 0.001) {
+            return d;
+        }
+        ro += rd * d;
+    }
+    return 1000.0;
+}
+
 // Draw axis indicator in the bottom right corner
 vec4 drawAxisIndicator(vec2 uv) {
-    // Position in bottom right corner
-    vec2 axisCenter = vec2(0.93, 0.07); // Position in normalized coordinates
-    float axisSize = 0.05; // Size of the axis indicator
-    
-    // Check if we're in the axis indicator area
-    if (distance(uv, axisCenter) > axisSize * 1.5) {
-        return vec4(0.0, 0.0, 0.0, 0.0); // Not in axis area, return transparent
+    vec2 axisCentre = vec2(0.05, 0.05);
+    vec2 axisSize = vec2(0.05, 0.05);
+
+    uv -= axisCentre;
+    uv /= axisSize;
+
+    // if uv is outside axis indicator, return black
+    if (uv.x < -0.5 || uv.x > 0.5 || uv.y < -0.5 || uv.y > 0.5) {
+        return vec4(0.0, 0.0, 0.0, 0.0);
     }
+
+    // Camera setup
+    vec3 ro = uCameraPosition; // Ray origin (camera position)
+    vec3 target = uCameraTarget; // Look at point
     
-    // Create axis directions (apply the same rotation as the scene)
-    vec3 xAxis = normalize(rotatePoint(vec3(1.0, 0.0, 0.0)));
-    vec3 yAxis = normalize(rotatePoint(vec3(0.0, 1.0, 0.0)));
-    vec3 zAxis = normalize(rotatePoint(vec3(0.0, 0.0, 1.0)));
+    // Camera frame
+    vec3 forward = normalize(target - ro);
+    vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
+    vec3 up = cross(forward, right);
     
-    // Account for aspect ratio
-    float aspectRatio = uResolution.x / uResolution.y;
+    // Apply zoom - for orthographic, this scales the view size
+    float zoom = uCameraZoom;
     
-    // Project 3D axes to 2D screen space with aspect ratio correction
-    // Note: We invert Y because screen coordinates increase downward
-    vec2 xProj = axisCenter + vec2(xAxis.x, -xAxis.y) * axisSize;
-    vec2 yProj = axisCenter + vec2(yAxis.x, -yAxis.y) * axisSize;
-    vec2 zProj = axisCenter + vec2(zAxis.x, -zAxis.y) * axisSize;
-    
-    // Adjust x-coordinates for aspect ratio
-    xProj.x = axisCenter.x + (xProj.x - axisCenter.x) / aspectRatio;
-    yProj.x = axisCenter.x + (yProj.x - axisCenter.x) / aspectRatio;
-    zProj.x = axisCenter.x + (zProj.x - axisCenter.x) / aspectRatio;
-    
-    // Draw the axes as lines with smoother edges
-    float lineWidth = 0.0025;
-    
-    // Calculate distances to each axis line
-    float xDist = distance(uv - axisCenter, normalize(xProj - axisCenter) * clamp(length(uv - axisCenter), 0.0, length(xProj - axisCenter)));
-    float yDist = distance(uv - axisCenter, normalize(yProj - axisCenter) * clamp(length(uv - axisCenter), 0.0, length(yProj - axisCenter)));
-    float zDist = distance(uv - axisCenter, normalize(zProj - axisCenter) * clamp(length(uv - axisCenter), 0.0, length(zProj - axisCenter)));
-    
-    // More professional, softer colors
-    vec4 red = vec4(0.8, 0.2, 0.2, 1.0);     // Softer red for x-axis
-    vec4 green = vec4(0.2, 0.7, 0.3, 1.0);   // Softer green for y-axis
-    vec4 blue = vec4(0.2, 0.4, 0.8, 1.0);    // Softer blue for z-axis
-    
-    vec4 color = vec4(0.0, 0.0, 0.0, 0.0); // Start with transparent
-    
-    // Draw axes with depth consideration and smooth edges
-    // This ensures proper occlusion
-    if (xAxis.z < yAxis.z && xAxis.z < zAxis.z) {
-        if (xDist < lineWidth) color = mix(color, red, smoothstep(lineWidth, lineWidth * 0.7, xDist));
-        if (yAxis.z < zAxis.z) {
-            if (yDist < lineWidth) color = mix(color, green, smoothstep(lineWidth, lineWidth * 0.7, yDist));
-            if (zDist < lineWidth) color = mix(color, blue, smoothstep(lineWidth, lineWidth * 0.7, zDist));
-        } else {
-            if (zDist < lineWidth) color = mix(color, blue, smoothstep(lineWidth, lineWidth * 0.7, zDist));
-            if (yDist < lineWidth) color = mix(color, green, smoothstep(lineWidth, lineWidth * 0.7, yDist));
-        }
-    } else if (yAxis.z < xAxis.z && yAxis.z < zAxis.z) {
-        if (yDist < lineWidth) color = mix(color, green, smoothstep(lineWidth, lineWidth * 0.7, yDist));
-        if (xAxis.z < zAxis.z) {
-            if (xDist < lineWidth) color = mix(color, red, smoothstep(lineWidth, lineWidth * 0.7, xDist));
-            if (zDist < lineWidth) color = mix(color, blue, smoothstep(lineWidth, lineWidth * 0.7, zDist));
-        } else {
-            if (zDist < lineWidth) color = mix(color, blue, smoothstep(lineWidth, lineWidth * 0.7, zDist));
-            if (xDist < lineWidth) color = mix(color, red, smoothstep(lineWidth, lineWidth * 0.7, xDist));
-        }
-    } else {
-        if (zDist < lineWidth) color = mix(color, blue, smoothstep(lineWidth, lineWidth * 0.7, zDist));
-        if (xAxis.z < yAxis.z) {
-            if (xDist < lineWidth) color = mix(color, red, smoothstep(lineWidth, lineWidth * 0.7, xDist));
-            if (yDist < lineWidth) color = mix(color, green, smoothstep(lineWidth, lineWidth * 0.7, yDist));
-        } else {
-            if (yDist < lineWidth) color = mix(color, green, smoothstep(lineWidth, lineWidth * 0.7, yDist));
-            if (xDist < lineWidth) color = mix(color, red, smoothstep(lineWidth, lineWidth * 0.7, xDist));
-        }
-    }
-    
+    // ORTHOGRAPHIC PROJECTION
+    // In orthographic projection, all rays are parallel to the forward direction
+    // The ray origin is offset based on the screen coordinates
+    vec3 rd = normalize(forward);
+    // Adjust the ray origin based on screen position and zoom
+    ro = ro + (uv.x * right + uv.y * up) / zoom;
+
+    vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
+
+    // Ray march to find distance
+    float length = 5.0;
+    float dx = raymarch_axis(ro, rd, length * vec3(1.0, 0.0, 0.0));
+    float dy = raymarch_axis(ro, rd, length * vec3(0.0, 1.0, 0.0));
+    float dz = raymarch_axis(ro, rd, length * vec3(0.0, 0.0, 1.0));
+
+    if (dx < 1000.0) color += vec4(1.0, 0.0, 0.0, 1.0);
+    if (dy < 1000.0) color += vec4(0.0, 1.0, 0.0, 1.0);
+    if (dz < 1000.0) color += vec4(0.0, 0.0, 1.0, 1.0);
+
     return color;
 }
 
