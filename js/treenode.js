@@ -9,7 +9,6 @@ class TreeNode {
     this.maxChildren = 0;
     this.warnFunction = null;
     this.isDirty = true;
-    this.signature = "";
     this.uniqueId = TreeNode.nextId++;
     this.displayName = `${this.name}${this.uniqueId}`;
     this.isDisabled = false;
@@ -38,15 +37,11 @@ class TreeNode {
 
   setProperty(name, value) {
     this[name] = value;
-    this.recomputeSignature();
     this.markDirty();
   }
 
   getProperty(name) {
     return this[name];
-  }
-
-  recomputeSignature() {
   }
 
   addChild(node) {
@@ -121,11 +116,10 @@ class TreeNode {
     return "";
   }
 
-  // return a unique name for the function, based on the node's name and signature;
-  // you can set "signature" based on the parameters that control the function's behavior;
+  // return a unique name for the function, based on the node's name and uniqueId;
   // use this in shaderImplementation()
   getFunctionName() {
-    return `sd${this.name}_${this.signature}`;
+    return `sd${this.name}_${this.uniqueId}`;
   }
 
   allShaderImplementations() {
