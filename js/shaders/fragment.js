@@ -176,11 +176,6 @@ void main() {
         float edgeMixFactor = uShowEdges ? edge * 1.5 : 0.0; // Amplify the edge effect when enabled
         color = mix(color, edgeColor, clamp(edgeMixFactor, 0.0, 1.0));
     }
-    // If we didn't hit but got very close (within 1mm = 0.001 units)
-    else if (marchResult.minDistance < 0.1) {
-        // Use a distinct color for near-misses
-        //color = vec3(1.0, 0.3, 0.0); // Bright orange for near-misses
-    }
     
     // Gamma correction
     color = pow(color, vec3(1.0 / 2.2));
