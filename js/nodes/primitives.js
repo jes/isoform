@@ -8,7 +8,7 @@ class SphereNode extends TreeNode {
     return {"radius": "float"};
   }
 
-  shaderImplementation() {
+  generateShaderImplementation() {
     return `
       float sdSphere(vec3 p, float r) {
         return length(p) - r;
@@ -37,7 +37,7 @@ class CylinderNode extends TreeNode {
     return {"radius": "float", "height": "float", "roundRadius": "float"};
   }
   
-  shaderImplementation() {
+  generateShaderImplementation() {
     return `
       float sdCylinder(vec3 p, float r, float h) {
         vec2 d = vec2(length(p.xz) - r, abs(p.y) - h);
@@ -75,7 +75,7 @@ class BoxNode extends TreeNode {
     return {"size": "vec3", "radius": "float"};
   }
 
-  shaderImplementation() {
+  generateShaderImplementation() {
     return `
       float sdBox(vec3 p, vec3 b) {
         vec3 d = abs(p) - b;
@@ -112,7 +112,7 @@ class TorusNode extends TreeNode {
     return {"majorRadius": "float", "minorRadius": "float"};
   }
 
-  shaderImplementation() {
+  generateShaderImplementation() {
     return `
       float sdTorus(vec3 p, vec2 t) {
         vec2 q = vec2(length(p.xz) - t.x, p.y);

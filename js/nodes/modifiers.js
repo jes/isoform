@@ -17,7 +17,7 @@ class TransformNode extends TreeNode {
     };
   }
 
-  shaderImplementation() {
+  generateShaderImplementation() {
     if (!this.hasChildren()) {
       this.warn("Transform node has no children to transform");
       return '';
@@ -90,7 +90,7 @@ class RoughnessNode extends TreeNode {
     return {"amplitude": "float", "frequency": "float"};
   }
 
-  shaderImplementation() {
+  generateShaderImplementation() {
     if (!this.hasChildren()) {
       this.warn("Roughness node has no children to transform");
       return '';

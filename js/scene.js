@@ -33,10 +33,18 @@ const scene = {
             return ${secondaryNode ? document.secondaryShaderCode(secondaryNode) : '1000.0'};
         }
         `;
+
+        const mainImpls = document.allShaderImplementations();
+        const secondaryImpls = document.secondaryShaderImplementations(secondaryNode);
+        
+        // Filter out duplicates from secondaryImpls that are already in mainImpls
+        const filteredSecondaryImpls = secondaryImpls.filter(impl => !mainImpls.includes(impl));
         
         // Combine the parts
+        const impls = [...mainImpls, ...filteredSecondaryImpls];
+        
         const newSource = originalSource.substring(0, startIndex) + 
-                   document.allShaderImplementations().join('\n') +
+                   impls.join('\n') +
                    newSceneCode +
                    originalSource.substring(endIndex);
         

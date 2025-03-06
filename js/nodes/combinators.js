@@ -10,7 +10,7 @@ class UnionNode extends TreeNode {
       return {"smoothK": "float"};
     }
 
-    shaderImplementation() {
+    generateShaderImplementation() {
       return `
         float opUnion(float d1, float d2) { return min(d1, d2); }
         float opSmoothUnion(float d1, float d2, float k) {
@@ -54,7 +54,7 @@ class IntersectionNode extends TreeNode {
     return {"smoothK": "float"};
   }
 
-  shaderImplementation() {
+  generateShaderImplementation() {
     return `
       float opIntersection(float d1, float d2) { return max(d1, d2); }
       float opSmoothIntersection(float d1, float d2, float k) {
@@ -98,7 +98,7 @@ class SubtractionNode extends TreeNode {
     return {"smoothK": "float"};
   }
 
-  shaderImplementation() {
+  generateShaderImplementation() {
     return `
       float opSubtraction(float d1, float d2) { return max(d1, -d2); }
       float opSmoothSubtraction(float d1, float d2, float k) {
