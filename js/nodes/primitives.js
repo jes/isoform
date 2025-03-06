@@ -52,9 +52,9 @@ class CylinderNode extends TreeNode {
 
   generateShaderCode() {
     if (this.roundRadius > 0.0) {
-      return `sdRoundCylinder(p, ${this.radius.toFixed(16)}, ${this.height.toFixed(16)}, ${this.roundRadius.toFixed(16)})`;
+      return `sdRoundCylinder(p, ${this.radius.toFixed(16)}, ${(this.height/2).toFixed(16)}, ${this.roundRadius.toFixed(16)})`;
     } else {
-      return `sdCylinder(p, ${this.radius.toFixed(16)}, ${this.height.toFixed(16)})`;
+      return `sdCylinder(p, ${this.radius.toFixed(16)}, ${(this.height/2).toFixed(16)})`;
     }
   }
 
