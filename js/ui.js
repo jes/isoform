@@ -465,13 +465,16 @@ const ui = {
         contextMenu.style.left = `${event.clientX}px`;
         contextMenu.style.top = `${event.clientY}px`;
 
-        // Combinators
-        this.buildCombinatorOptions(contextMenu, node);
-        this.addMenuSeparator(contextMenu);
-        
-        // Modifiers
-        this.buildModifierOptions(contextMenu, node);
-        this.addMenuSeparator(contextMenu);
+        // Only show combinators and modifiers if not the root node
+        if (node.parent) {
+            // Combinators
+            this.buildCombinatorOptions(contextMenu, node);
+            this.addMenuSeparator(contextMenu);
+            
+            // Modifiers
+            this.buildModifierOptions(contextMenu, node);
+            this.addMenuSeparator(contextMenu);
+        }
         
         // Display properties
         this.buildDisplayOptions(contextMenu, node);
@@ -483,6 +486,7 @@ const ui = {
             this.addMenuSeparator(contextMenu);
         }
 
+        // Only show delete options for non-root nodes or nodes with children
         if (node.parent && (node.children.length == 1 || (node.children.length > 1 && node.parent.canAddMoreChildren()))) {
             this.addMenuItem(contextMenu, 'Delete this', () => {
                 this.replaceNode(node, node.children);
@@ -499,7 +503,7 @@ const ui = {
                 contextMenu.remove();
                 this.renderTree();
             });
-        } else {
+        } else if (node.parent) { // Only allow deleting non-root nodes
             this.addMenuItem(contextMenu, 'Delete this', () => {
                 node.delete();
                 contextMenu.remove();
