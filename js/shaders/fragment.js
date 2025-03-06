@@ -187,8 +187,8 @@ vec4 drawAxisIndicator(vec2 uv) {
     }
 
     // Camera setup
-    vec3 ro = uCameraPosition; // Ray origin (camera position)
-    vec3 target = uCameraTarget; // Look at point
+    vec3 ro = vec3(0.0, 0.0, -10.0); // Ray origin (camera position)
+    vec3 target = vec3(0.0, 0.0, 0.0); // Look at point
     
     // Camera frame
     vec3 forward = normalize(target - ro);
