@@ -4,6 +4,8 @@ const ui = {
     propertyEditor: null,
     selectedNode: null,
     document: null,
+    collapsedNodeIds: new Set(),
+    scrollPosition: 0,
     
     init(doc) {
         this.document = doc;
@@ -93,6 +95,9 @@ const ui = {
     renderTree() {
         if (!this.document || !this.treeView) return;
         
+        // Save scroll position before rebuilding
+        this.scrollPosition = this.treeView.scrollTop;
+        
         // Clear the tree view
         this.treeView.innerHTML = '';
         
@@ -100,8 +105,20 @@ const ui = {
         const treeRoot = this.createTreeNode(this.document, 0, this.document.isDisabled);
         this.treeView.appendChild(treeRoot);
 
-        // Adjust the tree lines after rendering
-        setTimeout(() => this.adjustTreeLines(), 0);
+        // Restore scroll position and adjust tree lines
+        setTimeout(() => {
+            this.treeView.scrollTop = this.scrollPosition;
+            this.adjustTreeLines();
+            
+            // Restore selection if the selected node still exists
+            if (this.selectedNode) {
+                const nodeLabel = document.querySelector(`.tree-node-label[data-node-id="${this.selectedNode.uniqueId}"]`);
+                if (nodeLabel) {
+                    nodeLabel.classList.add('selected');
+                    this.highlightChildNodes(this.selectedNode, true);
+                }
+            }
+        }, 0);
     },
     
     createTreeNode(node, level, disabledParent = false) {
@@ -115,8 +132,13 @@ const ui = {
         // Create toggle button for collapsing/expanding if node has children
         const hasChildren = node.children && node.children.length > 0;
         const toggleBtn = document.createElement('div');
-        toggleBtn.className = hasChildren ? 'tree-toggle' : 'tree-toggle-placeholder';
-        toggleBtn.innerHTML = hasChildren ? '▼' : '&nbsp;';
+        toggleBtn.className = 'tree-toggle';
+        // Check if this node was previously collapsed
+        if (this.collapsedNodeIds.has(node.uniqueId)) {
+            toggleBtn.innerHTML = '►';
+        } else {
+            toggleBtn.innerHTML = '▼';
+        }
         labelContainer.appendChild(toggleBtn);
         
         // Create node icon
@@ -199,12 +221,16 @@ const ui = {
                 if (isCollapsed) {
                     toggleBtn.innerHTML = '▼';
                     childrenContainer.style.display = 'block';
+                    // Remove from collapsed set
+                    this.collapsedNodeIds.delete(node.uniqueId);
                     
                     // Recalculate line heights when expanding
                     setTimeout(() => this.adjustTreeLines(), 0);
                 } else {
                     toggleBtn.innerHTML = '►';
                     childrenContainer.style.display = 'none';
+                    // Add to collapsed set
+                    this.collapsedNodeIds.add(node.uniqueId);
                 }
             });
         }
@@ -223,6 +249,11 @@ const ui = {
             });
             
             container.appendChild(childrenContainer);
+            
+            // Apply collapsed state if needed
+            if (this.collapsedNodeIds.has(node.uniqueId)) {
+                childrenContainer.style.display = 'none';
+            }
         }
         
         return container;
