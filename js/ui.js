@@ -208,6 +208,11 @@ const ui = {
             
             // Highlight all children of this node
             this.highlightChildNodes(node, true);
+            
+            // Mark the document as dirty to regenerate the shader
+            if (app.document) {
+                app.document.markDirty();
+            }
         });
         
         // Add toggle functionality
@@ -626,5 +631,22 @@ const ui = {
                 camera.showEdges = e.target.checked;
             });
         }
+    },
+
+    getSecondaryNode() {
+        // Check if any property input is currently focused
+        const activeElement = document.activeElement;
+        const propertyEditor = document.getElementById('property-editor');
+        
+        // Only return the selected node if a property input within the property editor is focused
+        if (propertyEditor && 
+            activeElement && 
+            (activeElement.tagName === 'INPUT' || activeElement.tagName === 'SELECT') && 
+            propertyEditor.contains(activeElement)) {
+            return this.selectedNode;
+        }
+        
+        // Otherwise return null
+        return null;
     },
 }; 

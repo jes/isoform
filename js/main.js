@@ -1,6 +1,7 @@
 // Main application
 const app = {
     document: null,
+    lastSecondaryNode: null,
     
     async init() {
         // Initialize components
@@ -33,8 +34,14 @@ const app = {
     },
     
     render() {
-        if (this.document.dirty()) {
+        // Track the current secondary node
+        const currentSecondaryNode = ui.getSecondaryNode();
+        
+        // Check if document is dirty or if secondary node has changed
+        if (this.document.dirty() || currentSecondaryNode !== this.lastSecondaryNode) {
             renderer.createShaderProgram(renderer.vertexShaderSource, scene.generateShaderCode(this.document));
+            // Update the last secondary node reference
+            this.lastSecondaryNode = currentSecondaryNode;
         }
         
         // Render the scene

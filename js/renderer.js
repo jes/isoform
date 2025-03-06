@@ -107,6 +107,7 @@ const renderer = {
                 rotationX: this.gl.getUniformLocation(program, 'uRotationX'),
                 rotationY: this.gl.getUniformLocation(program, 'uRotationY'),
                 showEdges: this.gl.getUniformLocation(program, 'uShowEdges'),
+                showSecondary: this.gl.getUniformLocation(program, 'uShowSecondary'),
             },
         };
         
@@ -144,6 +145,9 @@ const renderer = {
         this.gl.uniform1f(this.programInfo.uniformLocations.rotationX, camera.rotationX);
         this.gl.uniform1f(this.programInfo.uniformLocations.rotationY, camera.rotationY);
         this.gl.uniform1i(this.programInfo.uniformLocations.showEdges, camera.showEdges ? 1 : 0);
+        
+        // Set showSecondary uniform based on whether a node is selected
+        this.gl.uniform1i(this.programInfo.uniformLocations.showSecondary, ui.getSecondaryNode() ? 1 : 0);
         
         // Draw the quad
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);

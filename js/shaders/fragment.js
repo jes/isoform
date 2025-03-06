@@ -9,6 +9,7 @@ uniform float uCameraZoom;
 uniform float uRotationX;
 uniform float uRotationY;
 uniform bool uShowEdges;
+uniform bool uShowSecondary;
 
 // Apply rotation to a point
 vec3 rotatePoint(vec3 p) {
@@ -37,6 +38,9 @@ vec3 rotatePoint(vec3 p) {
 float map(vec3 p) {
     return 1000.0;
 }
+float map_secondary(vec3 p) {
+    return 1000.0;
+}
 // end scene
 
 // Calculate normal at a point
@@ -49,6 +53,16 @@ vec3 calcNormal(vec3 p) {
         map(p + h.yyx) - map(p - h.yyx)
     ));
 }
+vec3 calcNormal_secondary(vec3 p) {
+    const float eps = 0.0001;
+    const vec2 h = vec2(eps, 0.0);
+    return normalize(vec3(
+        map_secondary(p + h.xyy) - map_secondary(p - h.xyy),
+        map_secondary(p + h.yxy) - map_secondary(p - h.yxy),
+        map_secondary(p + h.yyx) - map_secondary(p - h.yyx)
+    ));
+}
+
 
 // Edge detection based on normal discontinuity
 float detectEdge(vec3 p, vec3 normal) {
@@ -111,6 +125,36 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
     
     return result;
 }
+MarchResult rayMarch_secondary(vec3 ro, vec3 rd) {
+    MarchResult result;
+    result.distance = 0.0;
+    result.minDistance = 1000000.0;
+    result.hit = false;
+
+    vec3 p = ro;
+    
+    for (int i = 0; i < 100; i++) {
+        float d = map_secondary(p);
+        
+        // Track minimum distance encountered
+        result.minDistance = min(result.minDistance, d);
+        
+        if (d < 0.001) {
+            result.hit = true;
+            result.hitPosition = p;
+            break;
+        }
+
+        p += rd * d;
+        
+        if (result.distance > 1000000.0) break;
+        result.distance += d;
+    }
+    
+    return result;
+}
+
+
 
 void main() {
     // Normalized coordinates (0.0 to 1.0)
@@ -175,6 +219,33 @@ void main() {
         // Only apply edge highlighting if enabled
         float edgeMixFactor = uShowEdges ? edge * 1.5 : 0.0; // Amplify the edge effect when enabled
         color = mix(color, edgeColor, clamp(edgeMixFactor, 0.0, 1.0));
+    }
+
+    if (uShowSecondary) {
+        MarchResult marchResult_secondary = rayMarch_secondary(ro, rd);
+        float t_secondary = marchResult_secondary.distance;
+
+        if (marchResult_secondary.hit) {
+            // Calculate hit position and normal
+            vec3 pos = marchResult_secondary.hitPosition;
+            vec3 normal = calcNormal_secondary(pos);
+            
+            // Lighting setup
+            vec3 lightDir = vec3(0.0, 0.0, -1.0);
+            
+            // Ambient light
+            vec3 ambient = vec3(0.1);
+            
+            // Diffuse light
+            float diff = max(dot(normal, lightDir), 0.0);
+            // Soft shadows
+            vec3 diffuse = vec3(0.4) * diff;
+            
+            // Combine lighting components
+            float w = 0.75;
+            vec3 secondaryColor = vec3(0.95,0.0,0.0) * (ambient + diffuse);
+            color = secondaryColor * w + color * (1.0 - w);
+        }
     }
     
     // Gamma correction

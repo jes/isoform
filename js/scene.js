@@ -19,11 +19,18 @@ const scene = {
         // Skip to the end of the start marker line
         startIndex = originalSource.indexOf('\n', startIndex) + 1;
         
+        // Get the selected node from UI
+        const secondaryNode = ui.getSecondaryNode();
+        
         // Build the new scene combination code
         let newSceneCode = `
         float map(vec3 p) {
             p = rotatePoint(p);
             return ${document.shaderCode()};
+        }
+        float map_secondary(vec3 p) {
+            p = rotatePoint(p);
+            return ${secondaryNode ? secondaryNode.shaderCode() : '1000.0'};
         }
         `;
         
