@@ -1,100 +1,63 @@
-class TranslateNode extends TreeNode {
-    constructor(offset = [0, 0, 0], children = []) {
-      super("Translate");
-      this.offset = offset;
-      this.maxChildren = 1;
-      this.applyToSecondary = true;
-      this.addChild(children);
-    }
-
-    properties() {
-      return {"offset": "vec3"};
-    }
-
-    shaderImplementation() {
-      return `
-        float ${this.getFunctionName()}(vec3 p) {
-          p = p - vec3(${this.offset.map(v => v.toFixed(16)).join(", ")});
-          return ${this.children[0].shaderCode()};
-        }
-      `;
-    }
-
-    generateShaderCode() {
-      if (!this.hasChildren()) {
-        this.warn("Translate node has no children to transform");
-        return this.noopShaderCode();
-      }
-      
-      return `${this.getFunctionName()}(p)`;
-    }
-
-    getIcon() {
-      return "↔️";
-    }
-  }
-
-class RotateNode extends TreeNode {
-  constructor(axis = [0, 1, 0], angle = 0, children = []) {
-    super("Rotate");
-    this.axis = axis; // Rotation axis (should be normalized)
-    this.angle = angle; // Rotation angle in degrees
+class TransformNode extends TreeNode {
+  constructor(translation = [0, 0, 0], rotationAxis = [0, 1, 0], rotationAngle = 0, children = []) {
+    super("Transform");
+    this.translation = translation; // Translation vector [x, y, z]
+    this.rotationAxis = rotationAxis; // Axis of rotation [x, y, z]
+    this.rotationAngle = rotationAngle; // Angle in degrees
     this.maxChildren = 1;
     this.applyToSecondary = true;
     this.addChild(children);
   }
 
   properties() {
-    return {"axis": "vec3", "angle": "float"};
+    return {
+      "translation": "vec3", 
+      "rotationAxis": "vec3", 
+      "rotationAngle": "float"
+    };
   }
 
   shaderImplementation() {
     if (!this.hasChildren()) {
-      this.warn("Rotate node has no children to transform");
+      this.warn("Transform node has no children to transform");
       return '';
     }
     
-    // Normalize the axis vector to ensure proper rotation
+    // Convert rotation angle from degrees to radians
+    const angleRad = (this.rotationAngle * Math.PI / 180.0).toFixed(16);
+    
+    // Normalize the rotation axis
     const axisLength = Math.sqrt(
-      this.axis[0] * this.axis[0] + 
-      this.axis[1] * this.axis[1] + 
-      this.axis[2] * this.axis[2]
+      this.rotationAxis[0] * this.rotationAxis[0] + 
+      this.rotationAxis[1] * this.rotationAxis[1] + 
+      this.rotationAxis[2] * this.rotationAxis[2]
     );
     
     const normalizedAxis = axisLength > 0 ? 
-      [this.axis[0] / axisLength, this.axis[1] / axisLength, this.axis[2] / axisLength] : 
-      [0, 1, 0]; // Default to Y-axis if the provided axis is a zero vector
+      this.rotationAxis.map(v => (v / axisLength).toFixed(16)) : 
+      [0, 1, 0].map(v => v.toFixed(16));
     
     return `
       float ${this.getFunctionName()}(vec3 p) {
-        // Rotation using Rodriguez rotation formula
-        float angle = ${(this.angle*Math.PI/180.0).toFixed(16)};
-        vec3 axis = normalize(vec3(${normalizedAxis.map(v => v.toFixed(16)).join(", ")}));
+        // Apply translation
+        p = p - vec3(${this.translation.map(v => v.toFixed(16)).join(", ")});
         
-        // Apply rotation using Rodriguez formula
-        float cosA = cos(angle);
-        float sinA = sin(angle);
-        float k = 1.0 - cosA;
-        
-        // Rotation matrix components
-        float xx = axis.x * axis.x * k + cosA;
-        float yy = axis.y * axis.y * k + cosA;
-        float zz = axis.z * axis.z * k + cosA;
-        float xy = axis.x * axis.y * k;
-        float yz = axis.y * axis.z * k;
-        float zx = axis.z * axis.x * k;
-        float xs = axis.x * sinA;
-        float ys = axis.y * sinA;
-        float zs = axis.z * sinA;
-        
-        // Create rotation matrix and apply to point
-        mat3 rotationMatrix = mat3(
-          xx, xy - zs, zx + ys,
-          xy + zs, yy, yz - xs,
-          zx - ys, yz + xs, zz
-        );
-        
-        p = rotationMatrix * p;
+        // Apply rotation using axis-angle
+        float angle = ${angleRad};
+        if (angle != 0.0) {
+          vec3 axis = vec3(${normalizedAxis.join(", ")});
+          
+          // Rodrigues rotation formula
+          float cosA = cos(angle);
+          float sinA = sin(angle);
+          float k = 1.0 - cosA;
+          
+          vec3 a = axis * dot(axis, p) * k;
+          vec3 b = p * cosA;
+          vec3 c = cross(axis, p) * sinA;
+          
+          p = a + b + c;
+        }
         
         return ${this.children[0].shaderCode()};
       }
@@ -170,7 +133,7 @@ class RoughnessNode extends TreeNode {
 
 // Detect environment and export accordingly
 (function() {
-  const nodes = { TranslateNode, RotateNode, RoughnessNode };
+  const nodes = { TransformNode, RoughnessNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {

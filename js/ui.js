@@ -552,13 +552,8 @@ const ui = {
 
     buildModifierOptions(contextMenu, node) {
         // Add transformation options
-        this.addMenuItem(contextMenu, 'Translate', () => {
-            this.replaceNode(node, new TranslateNode(), true);
-            contextMenu.remove();
-        });
-        
-        this.addMenuItem(contextMenu, 'Rotate', () => {
-            this.replaceNode(node, new RotateNode(), true);
+        this.addMenuItem(contextMenu, 'Transform', () => {
+            this.replaceNode(node, new TransformNode(), true);
             contextMenu.remove();
         });
         
