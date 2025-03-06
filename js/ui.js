@@ -317,14 +317,29 @@ const ui = {
         
         if (propType === 'float') {
             input = document.createElement('input');
-            input.type = 'number';
-            input.step = '0.1';
+            input.type = 'text'; // Changed from 'number' to 'text' to allow expressions
             input.value = propValue;
             
-            input.addEventListener('change', () => {
-                this.selectedNode.setProperty(propName, parseFloat(input.value));
-                // Update tree if needed (e.g., if this property affects visual representation)
-                this.updateTreeIfNeeded(propName);
+            // Handle both blur and Enter key for evaluation
+            const evaluateAndUpdate = () => {
+                try {
+                    const result = this.evaluateExpression(input.value);
+                    if (!isNaN(result)) {
+                        input.value = result; // Update the input with the evaluated result
+                        this.selectedNode.setProperty(propName, result);
+                        this.updateTreeIfNeeded(propName);
+                    }
+                } catch (e) {
+                    console.warn('Error evaluating expression:', e);
+                }
+            };
+            
+            input.addEventListener('blur', evaluateAndUpdate);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    evaluateAndUpdate();
+                    input.blur(); // Remove focus after evaluation
+                }
             });
         } 
         else if (propType === 'string') {
@@ -334,7 +349,6 @@ const ui = {
             
             input.addEventListener('change', () => {
                 this.selectedNode.setProperty(propName, input.value);
-                // Update tree if needed (e.g., if this property affects visual representation)
                 this.updateTreeIfNeeded(propName);
             });
         }
@@ -353,8 +367,7 @@ const ui = {
                 componentContainer.style.alignItems = 'center';
                 
                 const componentInput = document.createElement('input');
-                componentInput.type = 'number';
-                componentInput.step = '0.1';
+                componentInput.type = 'text'; // Changed from 'number' to 'text' to allow expressions
                 componentInput.value = propValue[index];
                 componentInput.style.flex = '1';
                 
@@ -363,12 +376,28 @@ const ui = {
                 componentInput.style.borderColor = colors[index];
                 componentInput.style.borderWidth = '1px';
                 
-                componentInput.addEventListener('change', () => {
-                    const newValue = [...this.selectedNode.getProperty(propName)];
-                    newValue[index] = parseFloat(componentInput.value);
-                    this.selectedNode.setProperty(propName, newValue);
-                    // Update tree if needed
-                    this.updateTreeIfNeeded(propName);
+                // Handle both blur and Enter key for evaluation
+                const evaluateAndUpdate = () => {
+                    try {
+                        const result = this.evaluateExpression(componentInput.value);
+                        if (!isNaN(result)) {
+                            componentInput.value = result; // Update the input with the evaluated result
+                            const newValue = [...this.selectedNode.getProperty(propName)];
+                            newValue[index] = result;
+                            this.selectedNode.setProperty(propName, newValue);
+                            this.updateTreeIfNeeded(propName);
+                        }
+                    } catch (e) {
+                        console.warn('Error evaluating expression:', e);
+                    }
+                };
+                
+                componentInput.addEventListener('blur', evaluateAndUpdate);
+                componentInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        evaluateAndUpdate();
+                        componentInput.blur(); // Remove focus after evaluation
+                    }
                 });
                 
                 componentContainer.appendChild(componentInput);
@@ -650,5 +679,27 @@ const ui = {
         
         // Otherwise return null
         return null;
+    },
+
+    // Add this function to the ui object to evaluate arithmetic expressions
+    evaluateExpression(expression) {
+        try {
+            // Replace common math functions with their JavaScript equivalents
+            const preparedExpression = expression
+                .replace(/sin\(/g, 'Math.sin(')
+                .replace(/cos\(/g, 'Math.cos(')
+                .replace(/tan\(/g, 'Math.tan(')
+                .replace(/sqrt\(/g, 'Math.sqrt(')
+                .replace(/abs\(/g, 'Math.abs(')
+                .replace(/pow\(/g, 'Math.pow(')
+                .replace(/PI/g, 'Math.PI')
+                .replace(/E/g, 'Math.E');
+            
+            // Evaluate the expression
+            return Function(`"use strict"; return (${preparedExpression});`)();
+        } catch (error) {
+            console.warn('Invalid expression:', expression, error);
+            return NaN;
+        }
     },
 }; 
