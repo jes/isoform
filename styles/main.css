@@ -164,7 +164,6 @@ input[type="checkbox"] {
 
 /* Property Editor Styles */
 #property-editor {
-    max-height: 200px;
     overflow-y: auto;
     margin-bottom: 10px;
     border: 1px solid #444;
