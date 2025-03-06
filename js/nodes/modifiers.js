@@ -154,18 +154,18 @@ class RoughnessNode extends TreeNode {
         float d = ${this.children[0].shaderCode()};
         
         // Create roughness using sine waves in different directions
-        float noise = sin(p.x * ${this.frequency.toFixed(8)}) * 
-                      sin(p.y * ${this.frequency.toFixed(8)}) * 
-                      sin(p.z * ${this.frequency.toFixed(8)}) * 
-                      sin((p.x + p.y + p.z) * ${(this.frequency * 1.5).toFixed(8)});
+        float noise = sin(p.x * ${this.frequency.toFixed(16)}) * 
+                      sin(p.y * ${this.frequency.toFixed(16)}) * 
+                      sin(p.z * ${this.frequency.toFixed(16)}) * 
+                      sin((p.x + p.y + p.z) * ${(this.frequency * 1.5).toFixed(16)});
                       
         // Add some higher frequency components for more detail
-        noise += 0.5 * sin(p.x * ${(this.frequency * 2.0).toFixed(8)}) * 
-                      sin(p.y * ${(this.frequency * 2.0).toFixed(8)}) * 
-                      sin(p.z * ${(this.frequency * 2.0).toFixed(8)});
+        noise += 0.5 * sin(p.x * ${(this.frequency * 2.0).toFixed(16)}) * 
+                      sin(p.y * ${(this.frequency * 2.0).toFixed(16)}) * 
+                      sin(p.z * ${(this.frequency * 2.0).toFixed(16)});
         
         // Scale the noise by the amplitude and add to the distance
-        return d + noise * ${this.amplitude.toFixed(8)};
+        return d + noise * ${this.amplitude.toFixed(16)};
       }
     `;
   }

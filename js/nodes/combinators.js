@@ -29,7 +29,7 @@ class UnionNode extends TreeNode {
       let shaderCode = this.children[0].shaderCode();
       for (let i = 1; i < this.children.length; i++) {
         if (this.smoothK > 0) {
-          shaderCode = `opSmoothUnion(${shaderCode}, ${this.children[i].shaderCode()}, ${this.smoothK.toFixed(1)})`;
+          shaderCode = `opSmoothUnion(${shaderCode}, ${this.children[i].shaderCode()}, ${this.smoothK.toFixed(16)})`;
         } else {
           shaderCode = `opUnion(${shaderCode}, ${this.children[i].shaderCode()})`;
         }
@@ -73,7 +73,7 @@ class IntersectionNode extends TreeNode {
     let shaderCode = this.children[0].shaderCode();
     for (let i = 1; i < this.children.length; i++) {
       if (this.smoothK > 0) {
-        shaderCode = `opSmoothIntersection(${shaderCode}, ${this.children[i].shaderCode()}, ${this.smoothK.toFixed(1)})`;
+        shaderCode = `opSmoothIntersection(${shaderCode}, ${this.children[i].shaderCode()}, ${this.smoothK.toFixed(16)})`;
       } else {
         shaderCode = `opIntersection(${shaderCode}, ${this.children[i].shaderCode()})`;
       }
@@ -117,7 +117,7 @@ class SubtractionNode extends TreeNode {
     let shaderCode = this.children[0].shaderCode();
     for (let i = 1; i < this.children.length; i++) {
       if (this.smoothK > 0) {
-        shaderCode = `opSmoothSubtraction(${shaderCode}, ${this.children[i].shaderCode()}, ${this.smoothK.toFixed(1)})`;
+        shaderCode = `opSmoothSubtraction(${shaderCode}, ${this.children[i].shaderCode()}, ${this.smoothK.toFixed(16)})`;
       } else {
         shaderCode = `opSubtraction(${shaderCode}, ${this.children[i].shaderCode()})`;
       }
