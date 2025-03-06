@@ -64,11 +64,18 @@ const camera = {
     onWheel(e) {
         e.preventDefault();
         
-        // Adjust zoom based on wheel direction
-        const zoomDelta = e.deltaY * this.zoomSpeed * 0.01;
-        this.zoom -= zoomDelta;
+        // Use multiplicative zoom factor instead of additive
+        // This creates consistent percentage changes regardless of current zoom level
+        const zoomFactor = 1.1; // 10% zoom change per scroll click
         
-        // Clamp zoom to reasonable values
-        //this.zoom = Math.max(0.1, Math.min(2.0, this.zoom));
+        if (e.deltaY > 0) {
+            // Zoom out
+            this.zoom /= zoomFactor;
+        } else {
+            // Zoom in
+            this.zoom *= zoomFactor;
+        }
+        
+        // No need for clamping - we allow arbitrary zoom levels now
     }
 }; 
