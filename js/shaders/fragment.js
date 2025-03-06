@@ -34,6 +34,88 @@ vec3 rotatePoint(vec3 p) {
     return p;
 }
 
+// Draw axis indicator in the bottom right corner
+vec3 drawAxisIndicator(vec2 uv) {
+    // Position in bottom right corner
+    vec2 axisCenter = vec2(0.93, 0.07); // Position in normalized coordinates
+    float axisSize = 0.05; // Size of the axis indicator
+    
+    // Check if we're in the axis indicator area
+    if (distance(uv, axisCenter) > axisSize * 1.5) {
+        return vec3(-1.0); // Not in axis area
+    }
+    
+    // Create axis directions (apply the same rotation as the scene)
+    vec3 xAxis = normalize(rotatePoint(vec3(1.0, 0.0, 0.0)));
+    vec3 yAxis = normalize(rotatePoint(vec3(0.0, 1.0, 0.0)));
+    vec3 zAxis = normalize(rotatePoint(vec3(0.0, 0.0, 1.0)));
+    
+    // Account for aspect ratio
+    float aspectRatio = uResolution.x / uResolution.y;
+    
+    // For better visualization, we'll use a simple perspective projection
+    // This will make axes pointing toward/away from viewer appear shorter
+    float perspectiveScale = 0.5;
+    float xScale = 1.0 + xAxis.z * perspectiveScale;
+    float yScale = 1.0 + yAxis.z * perspectiveScale;
+    float zScale = 1.0 + zAxis.z * perspectiveScale;
+    
+    // Project 3D axes to 2D screen space with aspect ratio correction
+    // Note: We invert Y because screen coordinates increase downward
+    vec2 xProj = axisCenter + vec2(xAxis.x, -xAxis.y) * axisSize / xScale;
+    vec2 yProj = axisCenter + vec2(yAxis.x, -yAxis.y) * axisSize / yScale;
+    vec2 zProj = axisCenter + vec2(zAxis.x, -zAxis.y) * axisSize / zScale;
+    
+    // Adjust x-coordinates for aspect ratio
+    xProj.x = axisCenter.x + (xProj.x - axisCenter.x) / aspectRatio;
+    yProj.x = axisCenter.x + (yProj.x - axisCenter.x) / aspectRatio;
+    zProj.x = axisCenter.x + (zProj.x - axisCenter.x) / aspectRatio;
+    
+    // Draw the axes as lines
+    float lineWidth = 0.002;
+    
+    // Calculate distances to each axis line
+    float xDist = distance(uv - axisCenter, normalize(xProj - axisCenter) * clamp(length(uv - axisCenter), 0.0, length(xProj - axisCenter)));
+    float yDist = distance(uv - axisCenter, normalize(yProj - axisCenter) * clamp(length(uv - axisCenter), 0.0, length(yProj - axisCenter)));
+    float zDist = distance(uv - axisCenter, normalize(zProj - axisCenter) * clamp(length(uv - axisCenter), 0.0, length(zProj - axisCenter)));
+    
+    // Draw axes with proper colors
+    vec3 color = vec3(-1.0);
+    
+    // Draw axes with depth consideration - draw in order of depth (back to front)
+    // This ensures proper occlusion
+    if (xAxis.z < yAxis.z && xAxis.z < zAxis.z) {
+        if (xDist < lineWidth) color = vec3(1.0, 0.0, 0.0);
+        if (yAxis.z < zAxis.z) {
+            if (yDist < lineWidth) color = vec3(0.0, 1.0, 0.0);
+            if (zDist < lineWidth) color = vec3(0.0, 0.0, 1.0);
+        } else {
+            if (zDist < lineWidth) color = vec3(0.0, 0.0, 1.0);
+            if (yDist < lineWidth) color = vec3(0.0, 1.0, 0.0);
+        }
+    } else if (yAxis.z < xAxis.z && yAxis.z < zAxis.z) {
+        if (yDist < lineWidth) color = vec3(0.0, 1.0, 0.0);
+        if (xAxis.z < zAxis.z) {
+            if (xDist < lineWidth) color = vec3(1.0, 0.0, 0.0);
+            if (zDist < lineWidth) color = vec3(0.0, 0.0, 1.0);
+        } else {
+            if (zDist < lineWidth) color = vec3(0.0, 0.0, 1.0);
+            if (xDist < lineWidth) color = vec3(1.0, 0.0, 0.0);
+        }
+    } else {
+        if (zDist < lineWidth) color = vec3(0.0, 0.0, 1.0);
+        if (xAxis.z < yAxis.z) {
+            if (xDist < lineWidth) color = vec3(1.0, 0.0, 0.0);
+            if (yDist < lineWidth) color = vec3(0.0, 1.0, 0.0);
+        } else {
+            if (yDist < lineWidth) color = vec3(0.0, 1.0, 0.0);
+            if (xDist < lineWidth) color = vec3(1.0, 0.0, 0.0);
+        }
+    }
+    
+    return color;
+}
+
 // begin scene
 float map(vec3 p) {
     return 1000.0;
@@ -157,6 +239,13 @@ MarchResult rayMarch_secondary(vec3 ro, vec3 rd) {
 void main() {
     // Normalized coordinates (0.0 to 1.0)
     vec2 uv = gl_FragCoord.xy / uResolution.xy;
+    
+    // Check if we're in the axis indicator area first
+    vec3 axisColor = drawAxisIndicator(uv);
+    if (axisColor.x >= 0.0) {
+        gl_FragColor = vec4(axisColor, 1.0);
+        return;
+    }
     
     // Convert to centered coordinates (-1.0 to 1.0)
     vec2 p = (2.0 * uv - 1.0);
