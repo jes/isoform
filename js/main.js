@@ -21,9 +21,9 @@ const app = {
     createDocument() {
         const doc = new UnionNode([]);
         doc.setProperty('displayName', 'Document');
-        const sphere = new SphereNode(1.1);
-        const box = new RotateNode([1.0, 0, 0], 45, new RoughnessNode(0.01, 20.0, new BoxNode([2, 2, 2])));
-        const torus = new TorusNode(1.0, 0.3);
+        const sphere = new SphereNode(11);
+        const box = new RotateNode([1.0, 0, 0], 45, new RoughnessNode(0.01, 20.0, new BoxNode([20, 20, 20])));
+        const torus = new TorusNode(10, 3);
 
         doc.addChild(torus);
         doc.addChild(new SubtractionNode([box, new TranslateNode([0, 1, 0], sphere)], 0.5));
