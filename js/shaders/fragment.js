@@ -154,8 +154,6 @@ MarchResult rayMarch_secondary(vec3 ro, vec3 rd) {
     return result;
 }
 
-
-
 void main() {
     // Normalized coordinates (0.0 to 1.0)
     vec2 uv = gl_FragCoord.xy / uResolution.xy;
@@ -186,7 +184,6 @@ void main() {
     
     // Ray march to find distance
     MarchResult marchResult = rayMarch(ro, rd);
-    float t = marchResult.distance;
     
     // Default background color
     vec3 color = vec3(0.1, 0.1, 0.1);
@@ -223,7 +220,6 @@ void main() {
 
     if (uShowSecondary) {
         MarchResult marchResult_secondary = rayMarch_secondary(ro, rd);
-        float t_secondary = marchResult_secondary.distance;
 
         if (marchResult_secondary.hit) {
             // Calculate hit position and normal

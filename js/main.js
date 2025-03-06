@@ -27,7 +27,7 @@ const app = {
         const torus = new TorusNode(10, 3);
 
         doc.addChild(torus);
-        doc.addChild(new SubtractionNode([box, new TranslateNode([0, 1, 0], sphere)], 0.5));
+        doc.addChild(new SubtractionNode([box, new TranslateNode([0, 10, 0], sphere)], 0.5));
         
         this.document = doc;
         return doc;

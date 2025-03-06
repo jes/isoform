@@ -633,6 +633,8 @@ const ui = {
         }
     },
 
+    // return the object that should be rendered as the "secondary" object, this is so that
+    // you can see what you're working on when editing properties
     getSecondaryNode() {
         // Check if any property input is currently focused
         const activeElement = document.activeElement;

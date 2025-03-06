@@ -3,6 +3,7 @@ class TranslateNode extends TreeNode {
       super("Translate");
       this.offset = offset;
       this.maxChildren = 1;
+      this.applyToSecondary = true;
       this.addChild(children);
     }
 
@@ -39,6 +40,7 @@ class RotateNode extends TreeNode {
     this.axis = axis; // Rotation axis (should be normalized)
     this.angle = angle; // Rotation angle in degrees
     this.maxChildren = 1;
+    this.applyToSecondary = true;
     this.addChild(children);
   }
 

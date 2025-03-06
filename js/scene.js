@@ -30,7 +30,7 @@ const scene = {
         }
         float map_secondary(vec3 p) {
             p = rotatePoint(p);
-            return ${secondaryNode ? secondaryNode.shaderCode() : '1000.0'};
+            return ${secondaryNode ? document.secondaryShaderCode(secondaryNode) : '1000.0'};
         }
         `;
         

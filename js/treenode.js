@@ -2,16 +2,20 @@ class TreeNode {
   // Static counter for unique IDs
   static nextId = 1;
 
+  static _doingSecondary = false; // flag set when we're generating secondary object shader code
+  static _secondaryNode = null; // object to do secondary for
+
   constructor(name = "Node") {
-    this.name = name;
-    this.children = [];
-    this.parent = null;
-    this.maxChildren = 0;
-    this.warnFunction = null;
-    this.isDirty = true;
-    this.uniqueId = TreeNode.nextId++;
-    this.displayName = `${this.name}${this.uniqueId}`;
-    this.isDisabled = false;
+    this.name = name; // internal node type name
+    this.uniqueId = TreeNode.nextId++; // unique identifier per node
+    this.displayName = `${this.name}${this.uniqueId}`; // user-visible name
+    this.children = []; // child nodes
+    this.parent = null; // parent node
+    this.maxChildren = 0; // maximum number of children
+    this.warnFunction = null; // function to call when a warning is issued
+    this.isDirty = true; // whether the shader needs to be recompiled
+    this.isDisabled = false; // whether the node is disabled (i.e. hidden)
+    this.applyToSecondary = false; // whether the node should be applied to the secondary display object (e.g. translate/rotate should still apply but combinators should not)
   }
 
   // "dirty" means the shader needs to be recompiled
@@ -42,6 +46,13 @@ class TreeNode {
 
   getProperty(name) {
     return this[name];
+  }
+
+  containsNode(node) {
+    if (this == node) {
+      return true;
+    }
+    return this.children.some(child => child.containsNode(node));
   }
 
   addChild(node) {
@@ -159,10 +170,38 @@ class TreeNode {
 
   // return the shader code for the node, respecting isDisabled
   shaderCode() {
+    if (TreeNode._doingSecondary) {
+      if (this == TreeNode._secondaryNode) {
+        // switch off secondary flag and render the node in full
+        TreeNode._doingSecondary = false;
+        return this.generateShaderCode();
+      }
+      if (this.applyToSecondary) {
+        return this.generateShaderCode();
+      }
+      // otherwise only do the subtree that contains the secondary node
+      for (const child of this.children) {
+        if (child.containsNode(TreeNode._secondaryNode)) {
+          return child.shaderCode();
+        }
+      }
+      // otherwise noop
+      return this.noopShaderCode();
+    }
+
     if (this.isDisabled) {
       return this.noopShaderCode();
     }
     return this.generateShaderCode();
+  }
+
+  secondaryShaderCode(node) {
+    TreeNode._doingSecondary = true;
+    TreeNode._secondaryNode = node;
+    const code = this.shaderCode();
+    TreeNode._doingSecondary = false;
+    TreeNode._secondaryNode = null;
+    return code;
   }
 
   // return the shader code for the node, without respecting isDisabled,
