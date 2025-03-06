@@ -42,7 +42,7 @@ vec4 drawAxisIndicator(vec2 uv) {
     
     // Check if we're in the axis indicator area
     if (distance(uv, axisCenter) > axisSize * 1.5) {
-        return vec4(-1.0); // Not in axis area
+        return vec4(0.0, 0.0, 0.0, 0.0); // Not in axis area, return transparent
     }
     
     // Create axis directions (apply the same rotation as the scene)
@@ -77,7 +77,7 @@ vec4 drawAxisIndicator(vec2 uv) {
     vec4 green = vec4(0.2, 0.7, 0.3, 1.0);   // Softer green for y-axis
     vec4 blue = vec4(0.2, 0.4, 0.8, 1.0);    // Softer blue for z-axis
     
-    vec4 color = vec4(0.0);
+    vec4 color = vec4(0.0, 0.0, 0.0, 0.0); // Start with transparent
     
     // Draw axes with depth consideration and smooth edges
     // This ensures proper occlusion
@@ -237,13 +237,6 @@ void main() {
     // Normalized coordinates (0.0 to 1.0)
     vec2 uv = gl_FragCoord.xy / uResolution.xy;
     
-    // Check if we're in the axis indicator area first
-    vec4 axisColor = drawAxisIndicator(uv);
-    if (axisColor.x >= 0.0) {
-        gl_FragColor = axisColor;
-        return;
-    }
-    
     // Convert to centered coordinates (-1.0 to 1.0)
     vec2 p = (2.0 * uv - 1.0);
     // Correct aspect ratio
@@ -332,6 +325,11 @@ void main() {
     
     // Gamma correction
     color = pow(color, vec3(1.0 / 2.2));
+    
+    // Draw axis indicator on top of the scene
+    vec4 axisColor = drawAxisIndicator(uv);
+    // Blend the axis indicator with the scene using alpha blending
+    color = mix(color, axisColor.rgb, axisColor.a);
     
     gl_FragColor = vec4(color, 1.0);
 }
