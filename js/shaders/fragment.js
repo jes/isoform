@@ -34,92 +34,6 @@ vec3 rotatePoint(vec3 p) {
     return p;
 }
 
-vec3 inverseRotatePoint(vec3 p) {
-    // Inverse rotate around Y axis
-    float cosY = cos(-uRotationY);
-    float sinY = sin(-uRotationY);
-    p = vec3(
-        p.x * cosY + p.z * sinY,    
-        p.y,
-        p.x * sinY - p.z * cosY
-    );
-
-    // Inverse rotate around X axis
-    float cosX = cos(-uRotationX);
-    float sinX = sin(-uRotationX);
-    p = vec3(
-        p.x,
-        p.y * cosX + p.z * sinX,
-        p.y * sinX - p.z * cosX
-    );
-
-    return p;
-}
-
-float map_axis(vec3 p, vec3 axis) {
-    p = rotatePoint(p);
-    float h = clamp(dot(p,axis)/dot(axis,axis), 0.0, 1.0);
-    return length(p - axis * h) - 0.01;
-}
-
-float raymarch_axis(vec3 ro, vec3 rd, vec3 axis) {
-    for (int i = 0; i < 100; i++) {
-        float d = map_axis(ro, axis);
-        if (d < 0.001) {
-            return d;
-        }
-        ro += rd * d;
-    }
-    return 1000.0;
-}
-
-// Draw axis indicator in the bottom right corner
-vec4 drawAxisIndicator(vec2 uv) {
-    vec2 axisCentre = vec2(0.05, 0.05);
-    vec2 axisSize = vec2(0.1, 0.1);
-
-    uv -= axisCentre;
-    uv /= axisSize;
-
-    // if uv is outside axis indicator, return black
-    if (uv.x < -0.5 || uv.x > 0.5 || uv.y < -0.5 || uv.y > 0.5) {
-        return vec4(0.0, 0.0, 0.0, 0.0);
-    }
-
-    // Camera setup
-    vec3 ro = uCameraPosition; // Ray origin (camera position)
-    vec3 target = uCameraTarget; // Look at point
-    
-    // Camera frame
-    vec3 forward = normalize(target - ro);
-    vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
-    vec3 up = cross(forward, right);
-    
-    // Apply zoom - for orthographic, this scales the view size
-    float zoom = uCameraZoom;
-    
-    // ORTHOGRAPHIC PROJECTION
-    // In orthographic projection, all rays are parallel to the forward direction
-    // The ray origin is offset based on the screen coordinates
-    vec3 rd = normalize(forward);
-    // Adjust the ray origin based on screen position and zoom
-    ro = ro + (uv.x * right + uv.y * up);
-
-    vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
-
-    // Ray march to find distance
-    float length = 0.4;
-    float dx = raymarch_axis(ro, rd, length * vec3(1.0, 0.0, 0.0));
-    float dy = raymarch_axis(ro, rd, length * vec3(0.0, 1.0, 0.0));
-    float dz = raymarch_axis(ro, rd, length * vec3(0.0, 0.0, 1.0));
-
-    if (dx < 1000.0) color += vec4(1.0, 0.0, 0.0, 1.0);
-    if (dy < 1000.0) color += vec4(0.0, 1.0, 0.0, 1.0);
-    if (dz < 1000.0) color += vec4(0.0, 0.0, 1.0, 1.0);
-
-    return color;
-}
-
 // begin scene
 float map(vec3 p) {
     return 1000.0;
@@ -148,7 +62,6 @@ vec3 calcNormal_secondary(vec3 p) {
         map_secondary(p + h.yyx) - map_secondary(p - h.yyx)
     ));
 }
-
 
 // Edge detection based on normal discontinuity
 float detectEdge(vec3 p, vec3 normal) {
@@ -239,6 +152,75 @@ MarchResult rayMarch_secondary(vec3 ro, vec3 rd) {
     
     return result;
 }
+
+/// Axis indicators
+//
+// This creates the axis indicator display as an SDF because
+// somehow I'm not smart enough to find the analytical solution
+// to draw the axes correctly. This wants fixing.
+
+float map_axis(vec3 p, vec3 axis) {
+    p = rotatePoint(p);
+    float h = clamp(dot(p,axis)/dot(axis,axis), 0.0, 1.0);
+    return length(p - axis * h) - 0.01;
+}
+float raymarch_axis(vec3 ro, vec3 rd, vec3 axis) {
+    for (int i = 0; i < 100; i++) {
+        float d = map_axis(ro, axis);
+        if (d < 0.001) {
+            return d;
+        }
+        ro += rd * d;
+    }
+    return 1000.0;
+}
+vec4 drawAxisIndicator(vec2 uv) {
+    vec2 axisCentre = vec2(0.05, 0.05);
+    vec2 axisSize = vec2(0.1, 0.1);
+
+    uv -= axisCentre;
+    uv /= axisSize;
+
+    // if uv is outside axis indicator, return black
+    if (uv.x < -0.5 || uv.x > 0.5 || uv.y < -0.5 || uv.y > 0.5) {
+        return vec4(0.0, 0.0, 0.0, 0.0);
+    }
+
+    // Camera setup
+    vec3 ro = uCameraPosition; // Ray origin (camera position)
+    vec3 target = uCameraTarget; // Look at point
+    
+    // Camera frame
+    vec3 forward = normalize(target - ro);
+    vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
+    vec3 up = cross(forward, right);
+    
+    // Apply zoom - for orthographic, this scales the view size
+    float zoom = uCameraZoom;
+    
+    // ORTHOGRAPHIC PROJECTION
+    // In orthographic projection, all rays are parallel to the forward direction
+    // The ray origin is offset based on the screen coordinates
+    vec3 rd = normalize(forward);
+    // Adjust the ray origin based on screen position and zoom
+    ro = ro + (uv.x * right + uv.y * up);
+
+    vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
+
+    // Ray march to find distance
+    float length = 0.4;
+    float dx = raymarch_axis(ro, rd, length * vec3(1.0, 0.0, 0.0));
+    float dy = raymarch_axis(ro, rd, length * vec3(0.0, 1.0, 0.0));
+    float dz = raymarch_axis(ro, rd, length * vec3(0.0, 0.0, 1.0));
+
+    if (dx < 1000.0) color += vec4(1.0, 0.0, 0.0, 1.0);
+    if (dy < 1000.0) color += vec4(0.0, 1.0, 0.0, 1.0);
+    if (dz < 1000.0) color += vec4(0.0, 0.0, 1.0, 1.0);
+
+    return color;
+}
+
+/// Main
 
 void main() {
     // Normalized coordinates (0.0 to 1.0)
