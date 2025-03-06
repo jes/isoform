@@ -338,7 +338,6 @@ const ui = {
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     evaluateAndUpdate();
-                    input.blur(); // Remove focus after evaluation
                 }
             });
         } 
@@ -396,7 +395,6 @@ const ui = {
                 componentInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         evaluateAndUpdate();
-                        componentInput.blur(); // Remove focus after evaluation
                     }
                 });
                 
