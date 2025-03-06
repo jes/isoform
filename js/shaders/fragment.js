@@ -41,7 +41,7 @@ float map(vec3 p) {
 
 // Calculate normal at a point
 vec3 calcNormal(vec3 p) {
-    const float eps = 0.00001;
+    const float eps = 0.0001;
     const vec2 h = vec2(eps, 0.0);
     return normalize(vec3(
         map(p + h.xyy) - map(p - h.xyy),
@@ -54,7 +54,7 @@ vec3 calcNormal(vec3 p) {
 float detectEdge(vec3 p, vec3 normal) {
     // Calculate screen-space consistent offset based on distance from camera
     float distanceToCamera = length(p - uCameraPosition);
-    float offset = 0.0005 * distanceToCamera * (1.0 / uCameraZoom);
+    float offset = 0.000005 * distanceToCamera * (1.0 / uCameraZoom);
     
     // Sample normals at nearby points
     vec3 n1 = calcNormal(p + vec3(offset, 0.0, 0.0));
@@ -76,59 +76,40 @@ float detectEdge(vec3 p, vec3 normal) {
 }
 
 // Ray marching
-float rayMarch(vec3 ro, vec3 rd) {
-    float t = 0.0;
-    for (int i = 0; i < 100; i++) {
-        vec3 p = ro + rd * t;
-        float d = map(p);
-        if (d < 0.001 || t > 1000000.0) break;
-        t += d;
-    }
-    return t;
-}
-
-// Material information
-struct Material {
-    vec3 color;
-    float metallic;
-    float roughness;
+struct MarchResult {
+    float distance;    // Total distance marched
+    float minDistance; // Minimum distance encountered during march
+    bool hit;          // Whether we hit something
+    vec3 hitPosition; // Position of the hit
 };
 
-// Get material based on position and normal
-Material getMaterial(vec3 p, vec3 normal) {
-    Material mat;
-    
-    // Default material
-    mat.color = vec3(0.5);
-    mat.metallic = 0.2;
-    mat.roughness = 0.5;
-    
-    // Apply rotation to match the scene rotation
-    p = rotatePoint(p);
-    
-    // Check if we're on the ground plane
-    if (abs(p.y + 2.0) < 0.01) {
-        // Checkerboard pattern for ground
-        float checker = mod(floor(p.x) + floor(p.z), 2.0);
-        mat.color = mix(vec3(0.2), vec3(0.4), checker);
-        mat.roughness = 0.9;
-        return mat;
-    }
-    
-    return mat;
-}
+MarchResult rayMarch(vec3 ro, vec3 rd) {
+    MarchResult result;
+    result.distance = 0.0;
+    result.minDistance = 1000000.0;
+    result.hit = false;
 
-// Simple ambient occlusion
-float calcAO(vec3 p, vec3 n) {
-    float occ = 0.0;
-    float sca = 1.0;
-    for (int i = 0; i < 5; i++) {
-        float h = 0.01 + 0.12 * float(i) / 4.0;
-        float d = map(p + h * n);
-        occ += (h - d) * sca;
-        sca *= 0.95;
+    vec3 p = ro;
+    
+    for (int i = 0; i < 100; i++) {
+        float d = map(p);
+        
+        // Track minimum distance encountered
+        result.minDistance = min(result.minDistance, d);
+        
+        if (d < 0.001) {
+            result.hit = true;
+            result.hitPosition = p;
+            break;
+        }
+
+        p += rd * d;
+        
+        if (result.distance > 1000000.0) break;
+        result.distance += d;
     }
-    return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
+    
+    return result;
 }
 
 void main() {
@@ -160,51 +141,45 @@ void main() {
     ro = ro + (p.x * right + p.y * up) / zoom;
     
     // Ray march to find distance
-    float t = rayMarch(ro, rd);
+    MarchResult marchResult = rayMarch(ro, rd);
+    float t = marchResult.distance;
     
     // Default background color
     vec3 color = vec3(0.1, 0.1, 0.1);
     
     // If we hit something
-    if (t < 1000000.0) {
+    if (marchResult.hit) {
         // Calculate hit position and normal
-        vec3 pos = ro + rd * t;
+        vec3 pos = marchResult.hitPosition;
         vec3 normal = calcNormal(pos);
-        
-        // Get material properties
-        Material mat = getMaterial(pos, normal);
         
         // Detect edges
         float edge = detectEdge(pos, normal);
         
         // Lighting setup
-        vec3 lightPos = vec3(500.0, 500.0, 0.0);
-        vec3 lightDir = normalize(lightPos - pos);
-        vec3 viewDir = normalize(ro - pos);
-        vec3 halfDir = normalize(lightDir + viewDir);
+        vec3 lightDir = vec3(0.0, 0.0, -1.0);
         
         // Ambient light
-        float ao = calcAO(pos, normal);
-        vec3 ambient = vec3(0.2) * mat.color * ao;
+        vec3 ambient = vec3(0.1);
         
         // Diffuse light
         float diff = max(dot(normal, lightDir), 0.0);
         // Soft shadows
-        vec3 diffuse = vec3(0.8) * diff * mat.color;
+        vec3 diffuse = vec3(0.4) * diff;
         
         // Combine lighting components
         color = ambient + diffuse;
-        
-        // Add rim lighting
-        float rim = 1.0 - max(dot(normal, viewDir), 0.0);
-        rim = pow(rim, 4.0);
-        color += rim * 0.2 * vec3(1.0);
         
         // Apply edge highlighting
         vec3 edgeColor = vec3(1.0, 1.0, 1.0); // White edge highlight
         // Only apply edge highlighting if enabled
         float edgeMixFactor = uShowEdges ? edge * 1.5 : 0.0; // Amplify the edge effect when enabled
         color = mix(color, edgeColor, clamp(edgeMixFactor, 0.0, 1.0));
+    }
+    // If we didn't hit but got very close (within 1mm = 0.001 units)
+    else if (marchResult.minDistance < 0.1) {
+        // Use a distinct color for near-misses
+        //color = vec3(1.0, 0.3, 0.0); // Bright orange for near-misses
     }
     
     // Gamma correction
