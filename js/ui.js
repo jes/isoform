@@ -273,7 +273,7 @@ const ui = {
         // Add a heading showing the node type
         const nodeTypeHeading = document.createElement('h3');
         nodeTypeHeading.className = 'node-type-heading';
-        nodeTypeHeading.textContent = this.selectedNode.name || 'Unknown Node';
+        nodeTypeHeading.textContent = (this.selectedNode.name || 'Unknown Node') + ' (' + this.selectedNode.getCategory() + ')';
         this.propertyEditor.appendChild(nodeTypeHeading);
         
         // Get the generic properties first (if the method exists)

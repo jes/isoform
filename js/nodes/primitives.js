@@ -4,6 +4,10 @@ class SphereNode extends TreeNode {
     this.radius = radius;
   }
 
+  getCategory() {
+    return TreeNode.EXACT;
+  }
+
   properties() {
     return {"radius": "float"};
   }
@@ -31,6 +35,10 @@ class CylinderNode extends TreeNode {
     this.radius = radius;
     this.height = height;
     this.roundRadius = roundRadius;
+  }
+
+  getCategory() {
+    return TreeNode.EXACT;
   }
 
   properties() {
@@ -71,6 +79,10 @@ class BoxNode extends TreeNode {
     this.radius = radius;
   }
 
+  getCategory() {
+    return TreeNode.EXACT;
+  }
+
   properties() {
     return {"size": "vec3", "radius": "float"};
   }
@@ -106,6 +118,10 @@ class TorusNode extends TreeNode {
     super("Torus");
     this.majorRadius = majorRadius;
     this.minorRadius = minorRadius;
+  }
+
+  getCategory() {
+    return TreeNode.EXACT;
   }
 
   properties() {

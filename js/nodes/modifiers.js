@@ -9,6 +9,10 @@ class TransformNode extends TreeNode {
     this.addChild(children);
   }
 
+  getCategory() {
+    return TreeNode.EXACT;
+  }
+
   properties() {
     return {
       "translation": "vec3", 
@@ -84,6 +88,10 @@ class RoughnessNode extends TreeNode {
     this.frequency = frequency; // Controls how dense the roughness pattern is
     this.maxChildren = 1;
     this.addChild(children);
+  }
+
+  getCategory() {
+    return TreeNode.ISOSURFACE;
   }
 
   properties() {

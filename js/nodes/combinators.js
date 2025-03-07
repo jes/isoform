@@ -6,6 +6,10 @@ class UnionNode extends TreeNode {
       this.smoothK = smoothK;
     }
 
+    getCategory() {
+      return TreeNode.LOWERBOUND;
+    }
+
     properties() {
       return {"smoothK": "float"};
     }
@@ -50,6 +54,10 @@ class IntersectionNode extends TreeNode {
     this.smoothK = smoothK;
   }
 
+  getCategory() {
+    return TreeNode.LOWERBOUND;
+  }
+
   properties() {
     return {"smoothK": "float"};
   }
@@ -92,6 +100,10 @@ class SubtractionNode extends TreeNode {
     this.maxChildren = null;
     this.addChild(children);
     this.smoothK = smoothK;
+  }
+
+  getCategory() {
+    return TreeNode.LOWERBOUND;
   }
 
   properties() {

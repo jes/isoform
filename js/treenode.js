@@ -4,6 +4,10 @@ class TreeNode {
 
   static _secondaryNode = null; // object to do secondary for, if any
 
+  static EXACT = "exact";
+  static LOWERBOUND = "lowerbound";
+  static ISOSURFACE = "isosurface";
+
   constructor(name = "Node") {
     this.name = name; // internal node type name
     this.uniqueId = TreeNode.nextId++; // unique identifier per node
@@ -28,6 +32,10 @@ class TreeNode {
   markClean() {
     this.isDirty = false;
     this.children.forEach(child => child.markClean());
+  }
+
+  getCategory() {
+    return TreeNode.ISOSURFACE;
   }
 
   properties() {
