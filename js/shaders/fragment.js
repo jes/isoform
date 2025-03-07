@@ -104,17 +104,19 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
 
     vec3 p = ro;
     
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 500; i++) {
         float d = map(p);
         
         // Track minimum distance encountered
         result.minDistance = min(result.minDistance, d);
-        
-        if (d < 0.001) {
+
+        if (d < 0.0) {
             result.hit = true;
             result.hitPosition = p;
             break;
         }
+        
+        d = max(0.001, d);
 
         p += rd * d;
         
@@ -132,17 +134,19 @@ MarchResult rayMarch_secondary(vec3 ro, vec3 rd) {
 
     vec3 p = ro;
     
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 500; i++) {
         float d = map_secondary(p);
         
         // Track minimum distance encountered
         result.minDistance = min(result.minDistance, d);
-        
-        if (d < 0.001) {
+
+        if (d < 0.0) {
             result.hit = true;
             result.hitPosition = p;
             break;
         }
+        
+        d = max(0.001, d);
 
         p += rd * d;
         
