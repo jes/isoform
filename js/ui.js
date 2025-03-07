@@ -282,11 +282,19 @@ const ui = {
         // Get the specific properties for this node
         const specificProperties = this.selectedNode.properties();
         
+        // Track the first input element to focus it later
+        let firstInput = null;
+        
         // Create form elements for generic properties first
         if (Object.keys(genericProperties).length > 0) {
             for (const [propName, propType] of Object.entries(genericProperties)) {
                 const propValue = this.selectedNode.getProperty(propName);
-                this.createPropertyInput(propName, propType, propValue);
+                const input = this.createPropertyInput(propName, propType, propValue);
+                
+                // Store the first input element we create
+                if (!firstInput && input && (input.tagName === 'INPUT' || input.querySelector('input'))) {
+                    firstInput = input.tagName === 'INPUT' ? input : input.querySelector('input');
+                }
             }
             
             // Add a separator if we have both generic and specific properties
@@ -300,7 +308,17 @@ const ui = {
         // Create form elements for specific properties
         for (const [propName, propType] of Object.entries(specificProperties)) {
             const propValue = this.selectedNode.getProperty(propName);
-            this.createPropertyInput(propName, propType, propValue);
+            const input = this.createPropertyInput(propName, propType, propValue);
+            
+            // Store the first input element if we haven't found one yet
+            if (!firstInput && input && (input.tagName === 'INPUT' || input.querySelector('input'))) {
+                firstInput = input.tagName === 'INPUT' ? input : input.querySelector('input');
+            }
+        }
+        
+        // Focus the first input element if one exists
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 0);
         }
     },
 
@@ -405,6 +423,9 @@ const ui = {
         
         propContainer.appendChild(input);
         this.propertyEditor.appendChild(propContainer);
+        
+        // Return the input element so we can focus it if needed
+        return input;
     },
     
     updateTreeIfNeeded(propName) {
