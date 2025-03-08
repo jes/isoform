@@ -131,24 +131,6 @@ class TreeNode {
   // make sure that functions with different content have different names,
   // and similarly that functions with the same name are exactly identical including whitespace and comments
   shaderImplementation() {
-    if (TreeNode._secondaryNode) {
-      if (this == TreeNode._secondaryNode) {
-        // switch off secondary mode and render the node and its children in full
-        TreeNode._secondaryNode = null;
-        const impl = this.generateShaderImplementation();
-        TreeNode._secondaryNode = this;
-        return impl;
-      }
-      if (this.applyToSecondary) {
-        return this.generateShaderImplementation();
-      }
-      // otherwise noop
-      return "";
-    }
-
-    if (this.isDisabled) {
-      return "";
-    }
     return this.generateShaderImplementation();
   }
 
@@ -194,10 +176,8 @@ class TreeNode {
       return [];
     }
     TreeNode._secondaryNode = node;
-    TreeNode._scope = "secondary";
     const implementations = this.allShaderImplementations();
     TreeNode._secondaryNode = null;
-    TreeNode._scope = "";
     return implementations;
   }
 
@@ -213,12 +193,7 @@ class TreeNode {
   // return the shader code for the node, respecting isDisabled and _secondaryNode
   shaderCode() {
     if (TreeNode._secondaryNode) {
-      if (this == TreeNode._secondaryNode) {
-        // switch off secondary mode and render the node and its children in full
-        TreeNode._secondaryNode = null;
-        return this.generateShaderCode();
-      }
-      if (this.applyToSecondary) {
+      if (this == TreeNode._secondaryNode || this.applyToSecondary) {
         return this.generateShaderCode();
       }
       // otherwise only do the subtree that contains the secondary node
