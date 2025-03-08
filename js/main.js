@@ -38,12 +38,15 @@ const app = {
         // Track the current secondary node
         const currentSecondaryNode = ui.getSecondaryNode();
         
-        // Check if document is dirty or if secondary node has changed
-        if (this.document.dirty() || currentSecondaryNode !== this.lastSecondaryNode) {
+        // Check if document is dirty or if a new secondary node is selected
+        // (but don't recompile when just deselecting)
+        if (this.document.dirty() || 
+            (currentSecondaryNode !== null && currentSecondaryNode !== this.lastSecondaryNode)) {
             renderer.createShaderProgram(renderer.vertexShaderSource, scene.generateShaderCode(this.document));
-            // Update the last secondary node reference
-            this.lastSecondaryNode = currentSecondaryNode;
         }
+        
+        // Always update the last secondary node reference
+        this.lastSecondaryNode = currentSecondaryNode;
         
         // Render the scene
         try {
