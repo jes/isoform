@@ -577,43 +577,35 @@ const ui = {
     },
 
     buildCombinatorOptions(contextMenu, node) {
-        // Add transformation options
-        this.addMenuItem(contextMenu, 'Union', () => {
-            this.replaceNode(node, new UnionNode(), true);
-            contextMenu.remove();
-        });
-
-        this.addMenuItem(contextMenu, 'Intersection', () => {
-            this.replaceNode(node, new IntersectionNode(), true);
-            contextMenu.remove();
-        });
+        // Define combinators in a simple array of objects
+        const combinators = [
+            { name: 'Union', constructor: UnionNode },
+            { name: 'Intersection', constructor: IntersectionNode },
+            { name: 'Subtraction', constructor: SubtractionNode }
+        ];
         
-        this.addMenuItem(contextMenu, 'Subtraction', () => {
-            this.replaceNode(node, new SubtractionNode(), true);
-            contextMenu.remove();
+        combinators.forEach(combinator => {
+            this.addMenuItem(contextMenu, combinator.name, () => {
+                this.replaceNode(node, new combinator.constructor(), true);
+                contextMenu.remove();
+            });
         });
     },
 
     buildModifierOptions(contextMenu, node) {
-        // Add transformation options
-        this.addMenuItem(contextMenu, 'Transform', () => {
-            this.replaceNode(node, new TransformNode(), true);
-            contextMenu.remove();
-        });
-
-        this.addMenuItem(contextMenu, 'Scale', () => {
-            this.replaceNode(node, new ScaleNode(), true);
-            contextMenu.remove();
-        });
-
-        this.addMenuItem(contextMenu, 'Twist', () => {
-            this.replaceNode(node, new TwistNode(), true);
-            contextMenu.remove();
-        });
+        // Define modifiers in a simple array of objects
+        const modifiers = [
+            { name: 'Transform', constructor: TransformNode },
+            { name: 'Scale', constructor: ScaleNode },
+            { name: 'Twist', constructor: TwistNode },
+            { name: 'Roughen', constructor: RoughnessNode }
+        ];
         
-        this.addMenuItem(contextMenu, 'Roughen', () => {
-            this.replaceNode(node, new RoughnessNode(), true);
-            contextMenu.remove();
+        modifiers.forEach(modifier => {
+            this.addMenuItem(contextMenu, modifier.name, () => {
+                this.replaceNode(node, new modifier.constructor(), true);
+                contextMenu.remove();
+            });
         });
     },
 
