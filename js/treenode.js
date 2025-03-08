@@ -226,7 +226,7 @@ class TreeNode {
   }
 
   noopShaderCode() {
-    return "10000000.0";
+    return "10000042.0";
   }
 
   canAddMoreChildren() {
