@@ -139,9 +139,103 @@ class RoughnessNode extends TreeNode {
   }
 }
 
+class ScaleNode extends TreeNode {
+  constructor(k = 2.0, alongAxis = false, axis = [0, 0, 1], children = []) {
+    super("Scale");
+    this.k = k; // Scale factor
+    this.alongAxis = alongAxis; // Whether to scale along a specific axis
+    this.axis = axis; // The axis to scale along [x, y, z]
+    this.maxChildren = 1;
+    this.applyToSecondary = true;
+    this.addChild(children);
+  }
+
+  getCategory() {
+    return this.alongAxis ? TreeNode.LOWERBOUND : TreeNode.EXACT;
+  }
+
+  properties() {
+    return {
+      "k": "float",
+      "alongAxis": "bool",
+      "axis": "vec3"
+    };
+  }
+
+  generateShaderImplementation() {
+    if (!this.hasChildren()) {
+      this.warn("Scale node has no children to transform");
+      return '';
+    }
+    
+    // Normalize the axis if scaling along axis
+    let normalizedAxis = [0, 0, 1];
+    if (this.alongAxis) {
+      const axisLength = Math.sqrt(
+        this.axis[0] * this.axis[0] + 
+        this.axis[1] * this.axis[1] + 
+        this.axis[2] * this.axis[2]
+      );
+      
+      normalizedAxis = axisLength > 0 ? 
+        this.axis.map(v => (v / axisLength).toFixed(16)) : 
+        [0, 0, 1].map(v => v.toFixed(16));
+    }
+    
+    return `
+      float ${this.getFunctionName()}(vec3 p) {
+        ${this.alongAxis ? `
+        // Scale along specific axis
+        vec3 axis = vec3(${normalizedAxis.join(", ")});
+        float k = ${this.k.toFixed(16)};
+        
+        // Project p onto the axis
+        float projLength = dot(p, axis);
+        vec3 projVec = projLength * axis;
+        
+        // Decompose p into components parallel and perpendicular to axis
+        vec3 perpVec = p - projVec;
+        
+        // Scale only the parallel component
+        p = perpVec + projVec / k;
+        
+        // Compute the distance in the scaled space
+        // we multiply by k only if k <= 1.0, because we can't maintain
+        // the distance property in along-axis mode, but we can still maintain the
+        // lowerbound property
+        if (k > 1.0) {
+          return ${this.children[0].shaderCode()};
+        } else {
+          return ${this.children[0].shaderCode()} * k;
+        }
+        ` : `
+        // Uniform scaling
+        vec3 p0 = p;
+        p = p / ${this.k.toFixed(16)};
+        float dist = ${this.children[0].shaderCode()};
+        p = p0;
+        return dist * ${this.k.toFixed(16)};
+        `}
+      }
+    `;
+  }
+
+  generateShaderCode() {
+    if (!this.hasChildren()) {
+      return this.noopShaderCode();
+    }
+    
+    return `${this.getFunctionName()}(p)`;
+  }
+
+  getIcon() {
+    return "⇲";
+  }
+}
+
 // Detect environment and export accordingly
 (function() {
-  const nodes = { TransformNode, RoughnessNode };
+  const nodes = { TransformNode, RoughnessNode, ScaleNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {

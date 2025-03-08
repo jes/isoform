@@ -359,6 +359,21 @@ const ui = {
                 }
             });
         } 
+        else if (propType === 'bool') {
+            input = document.createElement('input');
+            input.type = 'checkbox';
+            input.checked = propValue === true;
+            
+            input.addEventListener('change', () => {
+                this.selectedNode.setProperty(propName, input.checked);
+                this.updateTreeIfNeeded(propName);
+            });
+            
+            // Adjust styling for checkbox
+            propContainer.style.display = 'flex';
+            propContainer.style.alignItems = 'center';
+            propLabel.style.marginRight = 'auto';
+        }
         else if (propType === 'string') {
             input = document.createElement('input');
             input.type = 'text';
@@ -581,6 +596,11 @@ const ui = {
             this.replaceNode(node, new TransformNode(), true);
             contextMenu.remove();
         });
+
+        this.addMenuItem(contextMenu, 'Scale', () => {
+            this.replaceNode(node, new ScaleNode(), true);
+            contextMenu.remove();
+        });
         
         this.addMenuItem(contextMenu, 'Roughen', () => {
             this.replaceNode(node, new RoughnessNode(), true);
@@ -591,15 +611,15 @@ const ui = {
     buildPrimitiveOptions(contextMenu, node) {
         // Add shape creation options
         const shapes = [
-            { name: 'Box', constructor: BoxNode, args: [[1, 1, 1]] },
-            { name: 'Sphere', constructor: SphereNode, args: [1.0] },
-            { name: 'Cylinder', constructor: CylinderNode, args: [1.0, 1.0] },
-            { name: 'Torus', constructor: TorusNode, args: [1.0, 0.3] }
+            { name: 'Box', constructor: BoxNode },
+            { name: 'Sphere', constructor: SphereNode },
+            { name: 'Cylinder', constructor: CylinderNode },
+            { name: 'Torus', constructor: TorusNode }
         ];
         
         shapes.forEach(shape => {
             this.addMenuItem(contextMenu, `Add ${shape.name}`, () => {
-                const newNode = new shape.constructor(...shape.args);
+                const newNode = new shape.constructor();
                 node.addChild(newNode);
                 contextMenu.remove();
                 this.renderTree();
