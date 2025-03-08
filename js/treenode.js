@@ -214,10 +214,8 @@ class TreeNode {
 
   secondaryShaderCode(node) {
     TreeNode._secondaryNode = node;
-    TreeNode._scope = "secondary";
     const code = this.shaderCode();
     TreeNode._secondaryNode = null;
-    TreeNode._scope = "";
     return code;
   }
 
