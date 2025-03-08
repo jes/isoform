@@ -55,6 +55,13 @@ class TreeNode {
     return this[name];
   }
 
+  hasParent(node) {
+    if (this == node) {
+      return true;
+    }
+    return this.parent?.hasParent(node);
+  }
+
   containsNode(node) {
     if (this == node) {
       return true;
@@ -193,7 +200,7 @@ class TreeNode {
   // return the shader code for the node, respecting isDisabled and _secondaryNode
   shaderCode() {
     if (TreeNode._secondaryNode) {
-      if (this == TreeNode._secondaryNode || this.applyToSecondary) {
+      if (this == TreeNode._secondaryNode || this.applyToSecondary || this.hasParent(TreeNode._secondaryNode)) {
         return this.generateShaderCode();
       }
       // otherwise only do the subtree that contains the secondary node
