@@ -34,7 +34,7 @@ class TreeNode {
     this.children.forEach(child => child.markClean());
   }
 
-  getCategory() {
+  getExactness() {
     return TreeNode.ISOSURFACE;
   }
 

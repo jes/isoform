@@ -273,7 +273,7 @@ const ui = {
         // Add a heading showing the node type
         const nodeTypeHeading = document.createElement('h3');
         nodeTypeHeading.className = 'node-type-heading';
-        nodeTypeHeading.textContent = (this.selectedNode.name || 'Unknown Node') + ' (' + this.selectedNode.getCategory() + ')';
+        nodeTypeHeading.textContent = (this.selectedNode.name || 'Unknown Node') + ' (' + this.selectedNode.getExactness() + ')';
         this.propertyEditor.appendChild(nodeTypeHeading);
         
         // Get the generic properties first (if the method exists)
@@ -346,6 +346,7 @@ const ui = {
                         input.value = result; // Update the input with the evaluated result
                         this.selectedNode.setProperty(propName, result);
                         this.updateTreeIfNeeded(propName);
+                        this.updateNodeTypeHeading(); // Update heading to reflect new exactness
                     }
                 } catch (e) {
                     console.warn('Error evaluating expression:', e);
@@ -367,6 +368,7 @@ const ui = {
             input.addEventListener('change', () => {
                 this.selectedNode.setProperty(propName, input.checked);
                 this.updateTreeIfNeeded(propName);
+                this.updateNodeTypeHeading(); // Update heading to reflect new exactness
             });
             
             // Adjust styling for checkbox
@@ -382,6 +384,7 @@ const ui = {
             input.addEventListener('change', () => {
                 this.selectedNode.setProperty(propName, input.value);
                 this.updateTreeIfNeeded(propName);
+                this.updateNodeTypeHeading(); // Update heading to reflect new exactness
             });
         }
         else if (propType === 'vec3') {
@@ -418,6 +421,7 @@ const ui = {
                             newValue[index] = result;
                             this.selectedNode.setProperty(propName, newValue);
                             this.updateTreeIfNeeded(propName);
+                            this.updateNodeTypeHeading(); // Update heading to reflect new exactness
                         }
                     } catch (e) {
                         console.warn('Error evaluating expression:', e);
@@ -738,6 +742,18 @@ const ui = {
         } catch (error) {
             console.warn('Invalid expression:', expression, error);
             return NaN;
+        }
+    },
+
+    // Add this new method to update the node type heading
+    updateNodeTypeHeading() {
+        if (!this.selectedNode || !this.propertyEditor) return;
+        
+        // Find the existing heading
+        const nodeTypeHeading = this.propertyEditor.querySelector('.node-type-heading');
+        if (nodeTypeHeading) {
+            // Update the heading text with the current exactness
+            nodeTypeHeading.textContent = (this.selectedNode.name || 'Unknown Node') + ' (' + this.selectedNode.getExactness() + ')';
         }
     },
 }; 

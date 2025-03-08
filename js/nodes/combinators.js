@@ -6,7 +6,7 @@ class UnionNode extends TreeNode {
       this.smoothK = smoothK;
     }
 
-    getCategory() {
+    getExactness() {
       return TreeNode.LOWERBOUND;
     }
 
@@ -54,7 +54,7 @@ class IntersectionNode extends TreeNode {
     this.smoothK = smoothK;
   }
 
-  getCategory() {
+  getExactness() {
     return TreeNode.LOWERBOUND;
   }
 
@@ -102,7 +102,7 @@ class SubtractionNode extends TreeNode {
     this.smoothK = smoothK;
   }
 
-  getCategory() {
+  getExactness() {
     return TreeNode.LOWERBOUND;
   }
 

@@ -4,7 +4,7 @@ class SphereNode extends TreeNode {
     this.radius = radius;
   }
 
-  getCategory() {
+  getExactness() {
     return TreeNode.EXACT;
   }
 
@@ -37,7 +37,7 @@ class CylinderNode extends TreeNode {
     this.roundRadius = roundRadius;
   }
 
-  getCategory() {
+  getExactness() {
     return TreeNode.EXACT;
   }
 
@@ -79,7 +79,7 @@ class BoxNode extends TreeNode {
     this.radius = radius;
   }
 
-  getCategory() {
+  getExactness() {
     return TreeNode.EXACT;
   }
 
@@ -120,7 +120,7 @@ class TorusNode extends TreeNode {
     this.minorRadius = minorRadius;
   }
 
-  getCategory() {
+  getExactness() {
     return TreeNode.EXACT;
   }
 

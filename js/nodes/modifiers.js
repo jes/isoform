@@ -9,7 +9,7 @@ class TransformNode extends TreeNode {
     this.addChild(children);
   }
 
-  getCategory() {
+  getExactness() {
     return TreeNode.EXACT;
   }
 
@@ -90,7 +90,7 @@ class RoughnessNode extends TreeNode {
     this.addChild(children);
   }
 
-  getCategory() {
+  getExactness() {
     return TreeNode.ISOSURFACE;
   }
 
@@ -150,7 +150,7 @@ class ScaleNode extends TreeNode {
     this.addChild(children);
   }
 
-  getCategory() {
+  getExactness() {
     return this.alongAxis ? TreeNode.LOWERBOUND : TreeNode.EXACT;
   }
 
