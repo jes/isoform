@@ -48,11 +48,11 @@ class CylinderNode extends TreeNode {
   generateShaderImplementation() {
     return `
       float sdCylinder(vec3 p, float r, float h) {
-        vec2 d = vec2(length(p.xz) - r, abs(p.y) - h);
+        vec2 d = vec2(length(p.xy) - r, abs(p.z) - h);
         return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
       }
       float sdRoundCylinder(vec3 p, float r, float h, float r2) {
-        vec2 d = vec2(length(p.xz) - r + r2, abs(p.y) - h + r2);
+        vec2 d = vec2(length(p.xy) - r + r2, abs(p.z) - h + r2);
         return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - r2;
       }
     `;

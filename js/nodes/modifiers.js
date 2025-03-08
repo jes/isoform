@@ -239,7 +239,6 @@ class TwistNode extends TreeNode {
     this.height = height;
     this.axis = axis; // Axis of twist [x, y, z]
     this.maxChildren = 1;
-    this.applyToSecondary = true;
     this.addChild(children);
   }
 
