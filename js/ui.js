@@ -707,6 +707,21 @@ const ui = {
                 camera.showEdges = e.target.checked;
             });
         }
+        
+        // Add step factor control
+        const stepFactorInput = document.getElementById('step-factor');
+        if (stepFactorInput) {
+            // Set initial value
+            stepFactorInput.value = camera.stepFactor;
+            
+            // Add event listener
+            stepFactorInput.addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                if (!isNaN(value) && value > 0) {
+                    camera.stepFactor = value;
+                }
+            });
+        }
     },
 
     // return the object that should be rendered as the "secondary" object, this is so that

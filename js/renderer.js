@@ -108,6 +108,7 @@ const renderer = {
                 rotationY: this.gl.getUniformLocation(program, 'uRotationY'),
                 showEdges: this.gl.getUniformLocation(program, 'uShowEdges'),
                 showSecondary: this.gl.getUniformLocation(program, 'uShowSecondary'),
+                stepFactor: this.gl.getUniformLocation(program, 'stepFactor'),
             },
         };
         
@@ -148,6 +149,9 @@ const renderer = {
         
         // Set showSecondary uniform based on whether a node is selected
         this.gl.uniform1i(this.programInfo.uniformLocations.showSecondary, ui.getSecondaryNode() ? 1 : 0);
+        
+        // Set stepFactor uniform
+        this.gl.uniform1f(this.programInfo.uniformLocations.stepFactor, camera.stepFactor);
         
         // Draw the quad
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);

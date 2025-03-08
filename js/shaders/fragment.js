@@ -10,6 +10,7 @@ uniform float uRotationX;
 uniform float uRotationY;
 uniform bool uShowEdges;
 uniform bool uShowSecondary;
+uniform float stepFactor;
 
 // Apply rotation to a point
 vec3 rotatePoint(vec3 p) {
@@ -147,7 +148,7 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
         
         d = max(0.001, d);
 
-        p += rd * d;
+        p += rd * d * stepFactor;
         
         if (result.distance > 1000000.0) break;
         result.distance += d;
@@ -177,7 +178,7 @@ MarchResult rayMarch_secondary(vec3 ro, vec3 rd) {
         
         d = max(0.001, d);
 
-        p += rd * d;
+        p += rd * d * stepFactor;
         
         if (result.distance > 1000000.0) break;
         result.distance += d;

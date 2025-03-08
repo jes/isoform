@@ -234,7 +234,7 @@ class ScaleNode extends TreeNode {
 }
 
 class TwistNode extends TreeNode {
-  constructor(height = 0.0, axis = [0, 0, 1], children = []) {
+  constructor(height = 100.0, axis = [0, 0, 1], children = []) {
     super("Twist");
     this.height = height;
     this.axis = axis; // Axis of twist [x, y, z]
@@ -283,13 +283,15 @@ class TwistNode extends TreeNode {
         // Apply twist around the z-axis (which is now aligned with our axis)
         // The twist angle is proportional to the distance along the axis
         // A smaller height value means more twisting (2π radians per 'height' units)
-        float angle = (2.0 * 3.14159265359 * q.z) / height;
-        float c = cos(angle);
-        float s = sin(angle);
-        q = vec3(c * q.x - s * q.y, s * q.x + c * q.y, q.z);
+        if (height != 0.0) {
+          float angle = (2.0 * 3.14159265359 * q.z) / height;
+          float c = cos(angle);
+          float s = sin(angle);
+          q = vec3(c * q.x - s * q.y, s * q.x + c * q.y, q.z);
         
-        // Transform back to original space
-        p = fromAxisSpace * q;
+          // Transform back to original space
+          p = fromAxisSpace * q;
+        }
         
         return ${this.children[0].shaderCode()};
       }

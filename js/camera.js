@@ -12,6 +12,7 @@ const camera = {
     zoomSpeed: 0.1,
     panSpeed: 0.01,
     showEdges: true,
+    stepFactor: 1.0,
     
     init(canvas) {
         // Mouse event handlers

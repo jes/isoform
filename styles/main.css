@@ -263,3 +263,23 @@ input[type="checkbox"] {
     border-bottom: 1px solid #ddd;
     padding-bottom: 8px;
 }
+
+.control-item {
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.control-item label {
+    margin-right: 10px;
+}
+
+.control-item input[type="number"] {
+    width: 60px;
+    background-color: rgba(60, 60, 70, 0.8);
+    color: white;
+    border: 1px solid #555;
+    padding: 3px 5px;
+    border-radius: 3px;
+}
