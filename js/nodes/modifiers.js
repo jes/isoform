@@ -23,7 +23,7 @@ class TransformNode extends TreeNode {
 
   generateShaderImplementation() {
     if (!this.hasChildren()) {
-      this.warn("Transform node has no children to transform");
+      this.warn("Transform node has no child to transform");
       return '';
     }
     
@@ -100,10 +100,10 @@ class RoughnessNode extends TreeNode {
 
   generateShaderImplementation() {
     if (!this.hasChildren()) {
-      this.warn("Roughness node has no children to transform");
+      this.warn("Roughness node has no child to transform");
       return '';
     }
-    
+
     return `
       float ${this.getFunctionName()}(vec3 p) {
         // Get the base distance from the child
@@ -142,9 +142,9 @@ class RoughnessNode extends TreeNode {
 class ScaleNode extends TreeNode {
   constructor(k = 2.0, alongAxis = false, axis = [0, 0, 1], children = []) {
     super("Scale");
-    this.k = k; // Scale factor
-    this.alongAxis = alongAxis; // Whether to scale along a specific axis
-    this.axis = axis; // The axis to scale along [x, y, z]
+    this.k = k;
+    this.alongAxis = alongAxis;
+    this.axis = axis;
     this.maxChildren = 1;
     this.applyToSecondary = true;
     this.addChild(children);
@@ -164,7 +164,7 @@ class ScaleNode extends TreeNode {
 
   generateShaderImplementation() {
     if (!this.hasChildren()) {
-      this.warn("Scale node has no children to transform");
+      this.warn("Scale node has no child to transform");
       return '';
     }
     
@@ -233,9 +233,86 @@ class ScaleNode extends TreeNode {
   }
 }
 
+class TwistNode extends TreeNode {
+  constructor(height = 0.0, axis = [0, 0, 1], children = []) {
+    super("Twist");
+    this.height = height;
+    this.axis = axis; // Axis of twist [x, y, z]
+    this.maxChildren = 1;
+    this.applyToSecondary = true;
+    this.addChild(children);
+  }
+
+  getExactness() {
+    return TreeNode.ISOSURFACE;
+  }
+
+  properties() {
+    return {"height": "float", "axis": "vec3"};
+  }
+  
+  generateShaderImplementation() {
+    if (!this.hasChildren()) {
+      this.warn("Twist node has no child to transform");
+      return '';
+    }
+
+    // Normalize the axis
+    const axisLength = Math.sqrt(
+      this.axis[0] * this.axis[0] + 
+      this.axis[1] * this.axis[1] + 
+      this.axis[2] * this.axis[2]
+    );
+    
+    const normalizedAxis = axisLength > 0 ? 
+      this.axis.map(v => (v / axisLength).toFixed(16)) : 
+      [0, 1, 0].map(v => v.toFixed(16));
+
+    return `
+      float ${this.getFunctionName()}(vec3 p) {
+        float height = ${this.height.toFixed(16)};
+        vec3 axis = vec3(${normalizedAxis.join(", ")});
+        
+        // Rotate point to align with axis
+        mat3 toAxisSpace = rotateToAxis(axis);
+        mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
+        
+        // Transform to axis-aligned space
+        vec3 q = toAxisSpace * p;
+        
+        // Apply twist around the z-axis (which is now aligned with our axis)
+        // The twist angle is proportional to the distance along the axis
+        // A smaller height value means more twisting (2π radians per 'height' units)
+        float angle = (2.0 * 3.14159265359 * q.z) / height;
+        float c = cos(angle);
+        float s = sin(angle);
+        q = vec3(c * q.x - s * q.y, s * q.x + c * q.y, q.z);
+        
+        // Transform back to original space
+        p = fromAxisSpace * q;
+        
+        return ${this.children[0].shaderCode()};
+      }
+    `;
+  }
+
+  generateShaderCode() {
+    if (!this.hasChildren()) {
+      this.warn("Twist node has no child to transform");
+      return this.noopShaderCode();
+    }
+    
+    return `${this.getFunctionName()}(p)`;
+  }
+
+  getIcon() {
+    return "🔄";
+  }
+}
+
 // Detect environment and export accordingly
 (function() {
-  const nodes = { TransformNode, RoughnessNode, ScaleNode };
+  const nodes = { TransformNode, RoughnessNode, ScaleNode, TwistNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {

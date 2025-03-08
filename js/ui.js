@@ -605,6 +605,11 @@ const ui = {
             this.replaceNode(node, new ScaleNode(), true);
             contextMenu.remove();
         });
+
+        this.addMenuItem(contextMenu, 'Twist', () => {
+            this.replaceNode(node, new TwistNode(), true);
+            contextMenu.remove();
+        });
         
         this.addMenuItem(contextMenu, 'Roughen', () => {
             this.replaceNode(node, new RoughnessNode(), true);

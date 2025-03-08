@@ -34,6 +34,35 @@ vec3 rotatePoint(vec3 p) {
     return p;
 }
 
+// Creates a rotation matrix that rotates the z-axis to align with the given axis
+mat3 rotateToAxis(vec3 axis) {
+    // Handle the special case where axis is parallel to z-axis
+    if (abs(axis.z) > 0.999999) {
+    float sign = axis.z > 0.0 ? 1.0 : -1.0;
+    return mat3(
+        1.0, 0.0, 0.0,
+        0.0, 1.0, 0.0,
+        0.0, 0.0, sign
+    );
+    }
+    
+    // Compute the rotation matrix using the cross product method
+    vec3 z = normalize(axis);
+    vec3 x = normalize(cross(vec3(0.0, 1.0, 0.0), z));
+    vec3 y = cross(z, x);
+    
+    return mat3(x, y, z);
+}
+
+// Custom matrix transpose function
+mat3 transposeMatrix(mat3 m) {
+    return mat3(
+    m[0][0], m[1][0], m[2][0],
+    m[0][1], m[1][1], m[2][1],
+    m[0][2], m[1][2], m[2][2]
+    );
+}
+
 // begin scene
 float map(vec3 p) {
     return 1000.0;
