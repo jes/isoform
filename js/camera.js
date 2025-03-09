@@ -154,5 +154,17 @@ const camera = {
             // Zoom in
             this.zoom *= zoomFactor;
         }
+    },
+    
+    setStandardView(rotationMatrix) {
+        // Set both base and active rotation matrices to the standard view
+        this.baseRotationMatrix = [...rotationMatrix];
+        this.activeRotationMatrix = [...rotationMatrix];
+        
+        // Reset any ongoing drag operation
+        this.isDragging = false;
+        
+        // Reset the drag start rotation
+        this.dragStartRotation = [...rotationMatrix];
     }
 }; 

@@ -76,6 +76,9 @@ const ui = {
         // Initialize display options
         this.initDisplayOptions();
         
+        // Initialize view toolbar
+        this.initViewToolbar();
+        
         // Initial render of the tree
         this.renderTree();
     },
@@ -450,5 +453,44 @@ const ui = {
             this.treeViewComponent.setSelectedNode(sourceNode);
             this.propertyEditorComponent.render(sourceNode);
         }, 0);
+    },
+
+    initViewToolbar() {
+        // Get the view buttons
+        const viewXYButton = document.getElementById('view-xy');
+        const viewXZButton = document.getElementById('view-xz');
+        const viewYZButton = document.getElementById('view-yz');
+        
+        if (!viewXYButton || !viewXZButton || !viewYZButton) return;
+        
+        // XY view (top view)
+        viewXYButton.addEventListener('click', () => {
+            // Set rotation matrix to look at XY plane (from above)
+            camera.setStandardView([
+                1, 0, 0,
+                0, 1, 0,
+                0, 0, 1
+            ]);
+        });
+        
+        // XZ view (front view)
+        viewXZButton.addEventListener('click', () => {
+            // Set rotation matrix to look at XZ plane (from front)
+            camera.setStandardView([
+                1, 0, 0,
+                0, 0, 1,
+                0, -1, 0
+            ]);
+        });
+        
+        // YZ view (side view)
+        viewYZButton.addEventListener('click', () => {
+            // Set rotation matrix to look at YZ plane (from side)
+            camera.setStandardView([
+                0, 0, 1,
+                0, 1, 0,
+                -1, 0, 0
+            ]);
+        });
     }
 }; 

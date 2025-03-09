@@ -312,3 +312,36 @@ input[type="checkbox"] {
 .tree-node-label-container[draggable="true"]:active {
     cursor: grabbing;
 }
+
+#view-toolbar {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(40, 40, 50, 0.8);
+    border-radius: 5px;
+    padding: 5px;
+    display: flex;
+    gap: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+
+.view-button {
+    background-color: rgba(60, 60, 80, 0.8);
+    color: white;
+    border: 1px solid #555;
+    border-radius: 3px;
+    padding: 5px 10px;
+    font-family: Arial, sans-serif;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.view-button:hover {
+    background-color: rgba(80, 80, 120, 0.8);
+}
+
+.view-button:active {
+    background-color: rgba(100, 100, 150, 0.8);
+}
