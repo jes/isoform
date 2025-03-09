@@ -314,7 +314,8 @@ const ui = {
             { name: 'Twist', constructor: TwistNode },
             { name: 'Roughen', constructor: RoughnessNode },
             { name: 'Mirror', constructor: MirrorNode },
-            { name: 'Linear Pattern', constructor: LinearPatternNode }
+            { name: 'Linear Pattern', constructor: LinearPatternNode },
+            { name: 'Polar Pattern', constructor: PolarPatternNode }
         ];
         
         modifiers.forEach(modifier => {

@@ -354,7 +354,7 @@ class LinearPatternNode extends TreeNode {
    * for all the children with bounding boxes that overlap `p`, and then just union
    * the results of those ones.
    */
-  constructor(axis = [0, 0, 1], spacing = 1.0, copies = 1, children = []) {
+  constructor(axis = [0, 0, 1], spacing = 100.0, copies = 2, children = []) {
     super("LinearPattern");
     this.maxChildren = 1;
     this.axis = axis;
@@ -389,7 +389,91 @@ class LinearPatternNode extends TreeNode {
   getIcon() {
     return "🔀";
   }
+}
 
+class PolarPatternNode extends TreeNode {
+  constructor(copies = 2, axis = [0, 0, 1], angle = 360.0, children = []) {
+    super("PolarPattern");
+    this.maxChildren = 1;
+    this.copies = copies;
+    this.axis = axis;
+    this.angle = angle;
+    this.addChild(children);
+  }
+
+  properties() {
+    return {"copies": "int", "axis": "vec3", "angle": "float"};
+  }
+
+  generateShaderImplementation() {
+    if (!this.hasChildren()) {
+      this.warn("PolarPattern node has no child to transform");
+      return '';
+    }
+
+    // Normalize the axis
+    const axisLength = Math.sqrt(
+      this.axis[0] * this.axis[0] + 
+      this.axis[1] * this.axis[1] + 
+      this.axis[2] * this.axis[2]
+    );
+    
+    const normalizedAxis = axisLength > 0 ? 
+      this.axis.map(v => (v / axisLength).toFixed(16)) : 
+      [0, 0, 1].map(v => v.toFixed(16));
+
+    return `
+      float ${this.getFunctionName()}(vec3 p) {
+        vec3 axis = vec3(${normalizedAxis.join(", ")});
+        float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
+        int copies = ${this.copies};
+        
+        // Rotate point to align with axis
+        mat3 toAxisSpace = rotateToAxis(axis);
+        mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
+        
+        // Transform to axis-aligned space
+        vec3 q = toAxisSpace * p;
+        
+        // Calculate the angle increment between copies
+        float angleIncrement = totalAngle / float(copies);
+        
+        // Evaluate the first copy at the original position
+        float d = ${this.children[0].shaderCode()};
+        
+        // Create the remaining copies by rotating around the axis
+        for (int i = 1; i < ${this.copies}; i++) {
+          // Calculate rotation angle for this copy
+          float angle = float(i) * angleIncrement;
+          
+          // Apply rotation around the z-axis (which is aligned with our axis in this space)
+          float c = cos(angle);
+          float s = sin(angle);
+          vec3 rotated = vec3(
+            c * q.x - s * q.y,
+            s * q.x + c * q.y,
+            q.z
+          );
+          
+          // Transform back to original space
+          p = fromAxisSpace * rotated;
+          
+          // Union with the current copy
+          d = min(d, ${this.children[0].shaderCode()});
+        }
+        
+        return d;
+      }
+    `;
+  }
+
+  generateShaderCode() {
+    return `${this.getFunctionName()}(p)`;
+  }
+
+  getIcon() {
+    return "🔀";
+  }
 }
 
 // Detect environment and export accordingly
