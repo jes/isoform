@@ -30,9 +30,9 @@ class SphereNode extends TreeNode {
 }
 
 class CylinderNode extends TreeNode {
-  constructor(radius = 5.0, height = 10.0, roundRadius = 0.0) {
+  constructor(diameter = 10.0, height = 10.0, roundRadius = 0.0) {
     super("Cylinder");
-    this.radius = radius;
+    this.diameter = diameter;
     this.height = height;
     this.roundRadius = roundRadius;
   }
@@ -42,7 +42,7 @@ class CylinderNode extends TreeNode {
   }
 
   properties() {
-    return {"radius": "float", "height": "float", "roundRadius": "float"};
+    return {"diameter": "float", "height": "float", "roundRadius": "float"};
   }
   
   generateShaderImplementation() {
@@ -60,9 +60,9 @@ class CylinderNode extends TreeNode {
 
   generateShaderCode() {
     if (this.roundRadius > 0.0) {
-      return `sdRoundCylinder(p, ${this.radius.toFixed(16)}, ${(this.height/2).toFixed(16)}, ${this.roundRadius.toFixed(16)})`;
+      return `sdRoundCylinder(p, ${(this.diameter/2).toFixed(16)}, ${(this.height/2).toFixed(16)}, ${this.roundRadius.toFixed(16)})`;
     } else {
-      return `sdCylinder(p, ${this.radius.toFixed(16)}, ${(this.height/2).toFixed(16)})`;
+      return `sdCylinder(p, ${(this.diameter/2).toFixed(16)}, ${(this.height/2).toFixed(16)})`;
     }
   }
 
