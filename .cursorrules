@@ -66,7 +66,7 @@ The document is edited as a tree of nodes. Node types are:
 
 ## Rendering
 
-We compile the SDFs to GLSL.
+We compile the SDFs to GLSL, rendered with ray marching.
 
 There are 2 parts to this, firstly a node can implement `generateShaderImplementation()`
 which returns GLSL code that is used *by* the node, for example the `SphereNode` creates
@@ -117,3 +117,7 @@ projection, that is not what we want.
 ## Units
 
 The intended units are millimetres.
+
+## UI Structure
+
+The application has a tree view for node hierarchy and a property editor for node properties. The UI panel can be resized, and there are display options for showing edges and adjusting the step factor for ray marching.
