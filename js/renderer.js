@@ -104,8 +104,7 @@ const renderer = {
                 cameraPosition: this.gl.getUniformLocation(program, 'uCameraPosition'),
                 cameraTarget: this.gl.getUniformLocation(program, 'uCameraTarget'),
                 cameraZoom: this.gl.getUniformLocation(program, 'uCameraZoom'),
-                rotationX: this.gl.getUniformLocation(program, 'uRotationX'),
-                rotationY: this.gl.getUniformLocation(program, 'uRotationY'),
+                rotationMatrix: this.gl.getUniformLocation(program, 'uRotationMatrix'),
                 showEdges: this.gl.getUniformLocation(program, 'uShowEdges'),
                 showSecondary: this.gl.getUniformLocation(program, 'uShowSecondary'),
                 stepFactor: this.gl.getUniformLocation(program, 'stepFactor'),
@@ -143,8 +142,14 @@ const renderer = {
         this.gl.uniform3f(this.programInfo.uniformLocations.cameraTarget, 
             camera.target[0], camera.target[1], camera.target[2]);
         this.gl.uniform1f(this.programInfo.uniformLocations.cameraZoom, camera.zoom);
-        this.gl.uniform1f(this.programInfo.uniformLocations.rotationX, camera.rotationX);
-        this.gl.uniform1f(this.programInfo.uniformLocations.rotationY, camera.rotationY);
+        
+        // Pass rotation matrix instead of Euler angles
+        this.gl.uniformMatrix3fv(
+            this.programInfo.uniformLocations.rotationMatrix, 
+            false, 
+            new Float32Array(camera.activeRotationMatrix)
+        );
+        
         this.gl.uniform1i(this.programInfo.uniformLocations.showEdges, camera.showEdges ? 1 : 0);
         
         // Set showSecondary uniform based on whether a node is selected

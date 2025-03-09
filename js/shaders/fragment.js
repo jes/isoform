@@ -6,33 +6,14 @@ uniform vec2 uResolution;
 uniform vec3 uCameraPosition;
 uniform vec3 uCameraTarget;
 uniform float uCameraZoom;
-uniform float uRotationX;
-uniform float uRotationY;
+uniform mat3 uRotationMatrix; // Replace rotation angles with rotation matrix
 uniform bool uShowEdges;
 uniform bool uShowSecondary;
 uniform float stepFactor;
 
-// Apply rotation to a point
+// Apply rotation to a point using the rotation matrix
 vec3 rotatePoint(vec3 p) {
-    // Rotate around Y axis
-    float cosY = cos(uRotationY);
-    float sinY = sin(uRotationY);
-    p = vec3(
-        p.x * cosY - p.z * sinY,
-        p.y,
-        p.x * sinY + p.z * cosY
-    );
-    
-    // Rotate around X axis
-    float cosX = cos(uRotationX);
-    float sinX = sin(uRotationX);
-    p = vec3(
-        p.x,
-        p.y * cosX - p.z * sinX,
-        p.y * sinX + p.z * cosX
-    );
-    
-    return p;
+    return uRotationMatrix * p;
 }
 
 // Creates a rotation matrix that rotates the z-axis to align with the given axis
