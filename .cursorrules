@@ -82,6 +82,22 @@ evaluate child nodes, do it like:
 
     return `min(${this.children[0].generateShaderCode()}, ${this.children[1].generateShaderCode()})`;
 
+Floating point values should always be formatted in shaders with 16 decimal places, for example:
+
+    `return ${this.fooValue.toFixed(16)}`;
+
+## Secondary node
+
+When the user is editing a node, the "secondary node" is that node. We render it in red
+on top of the main scene, with reduced opacity, so that the user can see what they're working
+on.
+
+To make secondary node rendering work, you basically only have to set `this.applyToSecondary`
+correctly. If set to "true", then that node will apply to the secondary node (you want things
+for things like translation and rotation so that the user sees the node they're editing in
+its correct location). For most nodes just don't set it, because you don't want to apply
+your transformations to the secondary node. When the user is editing your node it will automatically be applied even if `applyToSecondary` is false.
+
 ## Orthographic Projection
 
 When you're working in `fragment.js` please bear in mind that as a CAD application
