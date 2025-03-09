@@ -290,10 +290,12 @@ input[type="checkbox"] {
     background-color: rgba(80, 80, 100, 0.3);
     font-family: Arial, Helvetica, sans-serif;
     color: white;
+    font-size: 0.9em;
 }
 
 .dragging-node {
     opacity: 0.5;
+    font-size: 0.9em;
     font-family: Arial, Helvetica, sans-serif;
     color: white;
 }
