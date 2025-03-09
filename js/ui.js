@@ -12,6 +12,25 @@ const ui = {
         this.treeView = document.getElementById('tree-view');
         this.propertyEditor = document.getElementById('property-editor');
         
+        // Initialize the TreeView component
+        this.treeViewComponent = new TreeView(this.treeView, {
+            onNodeSelected: (node) => {
+                this.selectedNode = node;
+                this.renderPropertyEditor();
+            },
+            onNodeContextMenu: (e, node) => {
+                this.showContextMenu(e, node);
+                
+                // Mark the document as dirty to regenerate the shader
+                if (app.document) {
+                    app.document.markDirty();
+                }
+            },
+            onTreeUpdated: () => {
+                // Any additional logic needed after tree updates
+            }
+        });
+        
         // Initialize resize functionality
         this.initResizeHandle();
         
@@ -95,173 +114,8 @@ const ui = {
     renderTree() {
         if (!this.document || !this.treeView) return;
         
-        // Save scroll position before rebuilding
-        this.scrollPosition = this.treeView.scrollTop;
-        
-        // Clear the tree view
-        this.treeView.innerHTML = '';
-        
-        // Create the tree structure
-        const treeRoot = this.createTreeNode(this.document, 0, this.document.isDisabled);
-        this.treeView.appendChild(treeRoot);
-
-        // Restore scroll position and adjust tree lines
-        setTimeout(() => {
-            this.treeView.scrollTop = this.scrollPosition;
-            this.adjustTreeLines();
-            
-            // Restore selection if the selected node still exists
-            if (this.selectedNode) {
-                const nodeLabel = document.querySelector(`.tree-node-label[data-node-id="${this.selectedNode.uniqueId}"]`);
-                if (nodeLabel) {
-                    nodeLabel.classList.add('selected');
-                    this.highlightChildNodes(this.selectedNode, true);
-                }
-            }
-        }, 0);
-    },
-    
-    createTreeNode(node, level, disabledParent = false) {
-        const container = document.createElement('div');
-        container.className = 'tree-node';
-        
-        // Create the node label container with toggle and label
-        const labelContainer = document.createElement('div');
-        labelContainer.className = 'tree-node-label-container';
-        
-        // Create toggle button for collapsing/expanding if node has children
-        const hasChildren = node.children && node.children.length > 0;
-        const toggleBtn = document.createElement('div');
-        toggleBtn.className = 'tree-toggle';
-        // Check if this node was previously collapsed
-        if (this.collapsedNodeIds.has(node.uniqueId)) {
-            toggleBtn.innerHTML = '►';
-        } else {
-            toggleBtn.innerHTML = '▼';
-        }
-        labelContainer.appendChild(toggleBtn);
-        
-        // Create node icon
-        const nodeIcon = document.createElement('span');
-        nodeIcon.className = 'tree-node-icon';
-        nodeIcon.innerHTML = node.getIcon ? node.getIcon() : '📄';
-        labelContainer.appendChild(nodeIcon);
-
-        // Create the node label
-        const label = document.createElement('div');
-        label.className = 'tree-node-label';
-        label.textContent = node.displayName;
-        label.dataset.nodeId = node.uniqueId || Math.random().toString(36).substr(2, 9);
-        
-        // Add strikethrough style if node is disabled
-        if (node.isDisabled === true) {
-            label.style.textDecoration = 'line-through';
-            label.style.opacity = '0.7';
-        }
-        
-        // Add greyed out style if any parent is disabled (without strikethrough)
-        if (disabledParent) {
-            label.style.opacity = '0.5';
-        }
-        
-        labelContainer.appendChild(label);
-        container.appendChild(labelContainer);
-        
-        // Add click handler to select the node
-        label.addEventListener('click', (e) => {
-            e.stopPropagation();
-            
-            // Remove selected class from all nodes
-            const selectedLabels = document.querySelectorAll('.tree-node-label.selected');
-            selectedLabels.forEach(el => el.classList.remove('selected'));
-            
-            // Remove child highlight from all nodes
-            const childHighlightLabels = document.querySelectorAll('.tree-node-label.child-of-selected');
-            childHighlightLabels.forEach(el => el.classList.remove('child-of-selected'));
-            
-            // Add selected class to this node
-            label.classList.add('selected');
-            
-            // Highlight all children of this node
-            this.highlightChildNodes(node, true);
-            
-            // Update the property editor
-            this.selectedNode = node;
-            this.renderPropertyEditor();
-        });
-        
-        // Add context menu functionality
-        labelContainer.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            this.showContextMenu(e, node);
-            
-            // Also select the node on right-click
-            const selectedLabels = document.querySelectorAll('.tree-node-label.selected');
-            selectedLabels.forEach(el => el.classList.remove('selected'));
-            
-            // Remove child highlight from all nodes
-            const childHighlightLabels = document.querySelectorAll('.tree-node-label.child-of-selected');
-            childHighlightLabels.forEach(el => el.classList.remove('child-of-selected'));
-            
-            label.classList.add('selected');
-            this.selectedNode = node;
-            
-            // Highlight all children of this node
-            this.highlightChildNodes(node, true);
-            
-            // Mark the document as dirty to regenerate the shader
-            if (app.document) {
-                app.document.markDirty();
-            }
-        });
-        
-        // Add toggle functionality
-        if (hasChildren) {
-            toggleBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const childrenContainer = container.querySelector('.tree-children');
-                const isCollapsed = toggleBtn.innerHTML === '►';
-                
-                // Toggle the children visibility
-                if (isCollapsed) {
-                    toggleBtn.innerHTML = '▼';
-                    childrenContainer.style.display = 'block';
-                    // Remove from collapsed set
-                    this.collapsedNodeIds.delete(node.uniqueId);
-                    
-                    // Recalculate line heights when expanding
-                    setTimeout(() => this.adjustTreeLines(), 0);
-                } else {
-                    toggleBtn.innerHTML = '►';
-                    childrenContainer.style.display = 'none';
-                    // Add to collapsed set
-                    this.collapsedNodeIds.add(node.uniqueId);
-                }
-            });
-        }
-        
-        // Recursively add children
-        if (hasChildren) {
-            const childrenContainer = document.createElement('div');
-            childrenContainer.className = 'tree-children';
-            
-            node.children.forEach((child, index) => {
-                // Set parent reference for connection lines
-                child.parent = node;
-                child.isLastChild = index === node.children.length - 1;
-                const childNode = this.createTreeNode(child, level + 1, disabledParent || node.isDisabled);
-                childrenContainer.appendChild(childNode);
-            });
-            
-            container.appendChild(childrenContainer);
-            
-            // Apply collapsed state if needed
-            if (this.collapsedNodeIds.has(node.uniqueId)) {
-                childrenContainer.style.display = 'none';
-            }
-        }
-        
-        return container;
+        // Use the TreeView component to render the tree
+        this.treeViewComponent.render(this.document);
     },
     
     renderPropertyEditor() {
@@ -450,15 +304,8 @@ const ui = {
     updateTreeIfNeeded(propName) {
         // Check if the property that changed requires a tree update
         if (propName === 'displayName') {
-            // Find the tree node label that corresponds to the selected node
-            const nodeLabel = document.querySelector(`.tree-node-label[data-node-id="${this.selectedNode.uniqueId}"]`);
-            if (nodeLabel) {
-                // Update just the label text without rebuilding the entire tree
-                nodeLabel.textContent = this.selectedNode.displayName;
-            } else {
-                // If we can't find the specific node, rebuild the entire tree
-                this.renderTree();
-            }
+            // Use the TreeView component to update just the node label
+            this.treeViewComponent.updateNodeLabel(this.selectedNode);
         }
         
         // Add other properties that might require tree updates here
@@ -487,6 +334,12 @@ const ui = {
         // Only set selectedNode to transformNode if it's a TreeNode instance
         // Otherwise set it to null
         this.selectedNode = transformNode instanceof TreeNode ? transformNode : null;
+        
+        // If we have a valid selected node, set it in the TreeView component
+        if (this.selectedNode) {
+            this.treeViewComponent.setSelectedNode(this.selectedNode);
+        }
+        
         this.renderPropertyEditor();
     },
 
@@ -660,32 +513,6 @@ const ui = {
         separator.className = 'context-menu-separator';
         menu.appendChild(separator);
         return separator;
-    },
-
-    highlightChildNodes(node, highlight = true) {
-        if (!node || !node.children || node.children.length === 0) return;
-        
-        // Process each child recursively
-        const processChildren = (currentNode) => {
-            if (!currentNode.children) return;
-            
-            currentNode.children.forEach(child => {
-                // Find the DOM element for this child
-                const childLabel = document.querySelector(`.tree-node-label[data-node-id="${child.uniqueId}"]`);
-                if (childLabel) {
-                    if (highlight) {
-                        childLabel.classList.add('child-of-selected');
-                    } else {
-                        childLabel.classList.remove('child-of-selected');
-                    }
-                }
-                
-                // Process this child's children recursively
-                processChildren(child);
-            });
-        };
-        
-        processChildren(node);
     },
 
     initDisplayOptions() {
