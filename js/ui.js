@@ -16,7 +16,7 @@ const ui = {
         this.treeViewComponent = new TreeView(this.treeView, {
             onNodeSelected: (node) => {
                 this.selectedNode = node;
-                this.renderPropertyEditor();
+                this.propertyEditorComponent.render(node);
             },
             onNodeContextMenu: (e, node) => {
                 this.showContextMenu(e, node);
@@ -28,6 +28,26 @@ const ui = {
             },
             onTreeUpdated: () => {
                 // Any additional logic needed after tree updates
+            }
+        });
+        
+        // Initialize the PropertyEditor component
+        this.propertyEditorComponent = new PropertyEditor(this.propertyEditor, {
+            onPropertyChanged: (node, propName) => {
+                this.updateTreeIfNeeded(node, propName);
+                
+                // Mark the document as dirty to regenerate the shader
+                if (app.document) {
+                    app.document.markDirty();
+                }
+            },
+            onInputFocused: (node) => {
+                // Store the node that's being edited for secondary rendering
+                this.editingNode = node;
+            },
+            onInputBlurred: () => {
+                // Clear the editing node when focus is lost
+                this.editingNode = null;
             }
         });
         
@@ -118,194 +138,11 @@ const ui = {
         this.treeViewComponent.render(this.document);
     },
     
-    renderPropertyEditor() {
-        if (!this.selectedNode || !this.propertyEditor) return;
-        
-        // Clear the property editor
-        this.propertyEditor.innerHTML = '';
-        
-        // Add a heading showing the node type
-        const nodeTypeHeading = document.createElement('h3');
-        nodeTypeHeading.className = 'node-type-heading';
-        nodeTypeHeading.textContent = (this.selectedNode.name || 'Unknown Node') + ' (' + this.selectedNode.getExactness() + ')';
-        this.propertyEditor.appendChild(nodeTypeHeading);
-        
-        // Get the generic properties first (if the method exists)
-        const genericProperties = this.selectedNode.genericProperties ? this.selectedNode.genericProperties() : {};
-        
-        // Get the specific properties for this node
-        const specificProperties = this.selectedNode.properties();
-        
-        // Track the first input element to focus it later
-        let firstInput = null;
-        
-        // Create form elements for generic properties first
-        if (Object.keys(genericProperties).length > 0) {
-            for (const [propName, propType] of Object.entries(genericProperties)) {
-                const propValue = this.selectedNode.getProperty(propName);
-                const input = this.createPropertyInput(propName, propType, propValue);
-                
-                // Store the first input element we create
-                if (!firstInput && input && (input.tagName === 'INPUT' || input.querySelector('input'))) {
-                    firstInput = input.tagName === 'INPUT' ? input : input.querySelector('input');
-                }
-            }
-            
-            // Add a separator if we have both generic and specific properties
-            if (Object.keys(specificProperties).length > 0) {
-                const separator = document.createElement('hr');
-                separator.className = 'property-separator';
-                this.propertyEditor.appendChild(separator);
-            }
-        }
-        
-        // Create form elements for specific properties
-        for (const [propName, propType] of Object.entries(specificProperties)) {
-            const propValue = this.selectedNode.getProperty(propName);
-            const input = this.createPropertyInput(propName, propType, propValue);
-            
-            // Store the first input element if we haven't found one yet
-            if (!firstInput && input && (input.tagName === 'INPUT' || input.querySelector('input'))) {
-                firstInput = input.tagName === 'INPUT' ? input : input.querySelector('input');
-            }
-        }
-        
-        // Focus the first input element if one exists
-        if (firstInput) {
-            setTimeout(() => firstInput.focus(), 0);
-        }
-    },
-
-    createPropertyInput(propName, propType, propValue) {
-        const propContainer = document.createElement('div');
-        propContainer.className = 'property-item';
-        
-        const propLabel = document.createElement('label');
-        propLabel.textContent = propName;
-        propContainer.appendChild(propLabel);
-        
-        // Create appropriate input based on property type
-        let input;
-        
-        if (propType === 'float') {
-            input = document.createElement('input');
-            input.type = 'text'; // Changed from 'number' to 'text' to allow expressions
-            input.value = propValue;
-            
-            // Handle both blur and Enter key for evaluation
-            const evaluateAndUpdate = () => {
-                try {
-                    const result = this.evaluateExpression(input.value);
-                    if (!isNaN(result)) {
-                        input.value = result; // Update the input with the evaluated result
-                        this.selectedNode.setProperty(propName, result);
-                        this.updateTreeIfNeeded(propName);
-                        this.updateNodeTypeHeading(); // Update heading to reflect new exactness
-                    }
-                } catch (e) {
-                    console.warn('Error evaluating expression:', e);
-                }
-            };
-            
-            input.addEventListener('blur', evaluateAndUpdate);
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    evaluateAndUpdate();
-                }
-            });
-        } 
-        else if (propType === 'bool') {
-            input = document.createElement('input');
-            input.type = 'checkbox';
-            input.checked = propValue === true;
-            
-            input.addEventListener('change', () => {
-                this.selectedNode.setProperty(propName, input.checked);
-                this.updateTreeIfNeeded(propName);
-                this.updateNodeTypeHeading(); // Update heading to reflect new exactness
-            });
-            
-            // Adjust styling for checkbox
-            propContainer.style.display = 'flex';
-            propContainer.style.alignItems = 'center';
-            propLabel.style.marginRight = 'auto';
-        }
-        else if (propType === 'string') {
-            input = document.createElement('input');
-            input.type = 'text';
-            input.value = propValue || '';
-            
-            input.addEventListener('change', () => {
-                this.selectedNode.setProperty(propName, input.value);
-                this.updateTreeIfNeeded(propName);
-                this.updateNodeTypeHeading(); // Update heading to reflect new exactness
-            });
-        }
-        else if (propType === 'vec3') {
-            // Create a container for the vector inputs
-            input = document.createElement('div');
-            input.className = 'vector-input';
-            input.style.display = 'flex';
-            input.style.flexDirection = 'column';
-            input.style.gap = '4px';
-            
-            // Create inputs for each component
-            ['x', 'y', 'z'].forEach((component, index) => {
-                const componentContainer = document.createElement('div');
-                componentContainer.style.display = 'flex';
-                componentContainer.style.alignItems = 'center';
-                
-                const componentInput = document.createElement('input');
-                componentInput.type = 'text'; // Changed from 'number' to 'text' to allow expressions
-                componentInput.value = propValue[index];
-                componentInput.style.flex = '1';
-                
-                // Add more subtle, professional colored borders for each component (red, green, blue)
-                const colors = ['rgba(220, 53, 69, 0.5)', 'rgba(40, 167, 69, 0.5)', 'rgba(0, 123, 255, 0.5)']; // Muted red, green, blue
-                componentInput.style.borderColor = colors[index];
-                componentInput.style.borderWidth = '1px';
-                
-                // Handle both blur and Enter key for evaluation
-                const evaluateAndUpdate = () => {
-                    try {
-                        const result = this.evaluateExpression(componentInput.value);
-                        if (!isNaN(result)) {
-                            componentInput.value = result; // Update the input with the evaluated result
-                            const newValue = [...this.selectedNode.getProperty(propName)];
-                            newValue[index] = result;
-                            this.selectedNode.setProperty(propName, newValue);
-                            this.updateTreeIfNeeded(propName);
-                            this.updateNodeTypeHeading(); // Update heading to reflect new exactness
-                        }
-                    } catch (e) {
-                        console.warn('Error evaluating expression:', e);
-                    }
-                };
-                
-                componentInput.addEventListener('blur', evaluateAndUpdate);
-                componentInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        evaluateAndUpdate();
-                    }
-                });
-                
-                componentContainer.appendChild(componentInput);
-                input.appendChild(componentContainer);
-            });
-        }
-        
-        propContainer.appendChild(input);
-        this.propertyEditor.appendChild(propContainer);
-        
-        // Return the input element so we can focus it if needed
-        return input;
-    },
-    
-    updateTreeIfNeeded(propName) {
+    updateTreeIfNeeded(node, propName) {
         // Check if the property that changed requires a tree update
         if (propName === 'displayName') {
             // Use the TreeView component to update just the node label
-            this.treeViewComponent.updateNodeLabel(this.selectedNode);
+            this.treeViewComponent.updateNodeLabel(node);
         }
         
         // Add other properties that might require tree updates here
@@ -338,9 +175,8 @@ const ui = {
         // If we have a valid selected node, set it in the TreeView component
         if (this.selectedNode) {
             this.treeViewComponent.setSelectedNode(this.selectedNode);
+            this.propertyEditorComponent.render(this.selectedNode);
         }
-        
-        this.renderPropertyEditor();
     },
 
     showContextMenu(event, node) {
@@ -479,7 +315,8 @@ const ui = {
                 this.renderTree();
                 // Select the newly added node
                 this.selectedNode = newNode;
-                this.renderPropertyEditor();
+                this.treeViewComponent.setSelectedNode(newNode);
+                this.propertyEditorComponent.render(newNode);
             });
         });
     },
@@ -546,53 +383,7 @@ const ui = {
     // return the object that should be rendered as the "secondary" object, this is so that
     // you can see what you're working on when editing properties
     getSecondaryNode() {
-        // Check if any property input is currently focused
-        const activeElement = document.activeElement;
-        const propertyEditor = document.getElementById('property-editor');
-        
-        // Only return the selected node if a property input within the property editor is focused
-        if (propertyEditor && 
-            activeElement && 
-            (activeElement.tagName === 'INPUT' || activeElement.tagName === 'SELECT') && 
-            propertyEditor.contains(activeElement)) {
-            return this.selectedNode;
-        }
-        
-        // Otherwise return null
-        return null;
-    },
-
-    // Add this function to the ui object to evaluate arithmetic expressions
-    evaluateExpression(expression) {
-        try {
-            // Replace common math functions with their JavaScript equivalents
-            const preparedExpression = expression
-                .replace(/sin\(/g, 'Math.sin(')
-                .replace(/cos\(/g, 'Math.cos(')
-                .replace(/tan\(/g, 'Math.tan(')
-                .replace(/sqrt\(/g, 'Math.sqrt(')
-                .replace(/abs\(/g, 'Math.abs(')
-                .replace(/pow\(/g, 'Math.pow(')
-                .replace(/PI/g, 'Math.PI')
-                .replace(/E/g, 'Math.E');
-            
-            // Evaluate the expression
-            return Function(`"use strict"; return (${preparedExpression});`)();
-        } catch (error) {
-            console.warn('Invalid expression:', expression, error);
-            return NaN;
-        }
-    },
-
-    // Add this new method to update the node type heading
-    updateNodeTypeHeading() {
-        if (!this.selectedNode || !this.propertyEditor) return;
-        
-        // Find the existing heading
-        const nodeTypeHeading = this.propertyEditor.querySelector('.node-type-heading');
-        if (nodeTypeHeading) {
-            // Update the heading text with the current exactness
-            nodeTypeHeading.textContent = (this.selectedNode.name || 'Unknown Node') + ' (' + this.selectedNode.getExactness() + ')';
-        }
-    },
+        // Return the node being edited if there is one
+        return this.editingNode || null;
+    }
 }; 

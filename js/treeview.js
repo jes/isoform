@@ -1,4 +1,3 @@
-// TreeView.js - Tree view component for displaying hierarchical data
 class TreeView {
     constructor(container, options = {}) {
         this.container = container;
