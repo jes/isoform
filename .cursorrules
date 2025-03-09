@@ -1,0 +1,93 @@
+# Isoform
+
+This is an SDF-based CAD program. It runs in the browser. It has no external dependencies
+and is designed to be able to be used by downloading it locally and opening `index.html`.
+
+That means:
+
+ * don't introduce new dependencies unless you have to
+ * especially don't load anything from a CDN etc.
+ * if you do introduce new dependencies they have to be some js file we can download and commit to the repo
+ * you can't use ES modules, we have to use <script> tags in index.html and export classes into `window`
+
+ Export classes like so:
+
+    class MyClass {
+        // ...
+    }
+
+    // Detect environment and export accordingly
+    (function() {
+    const nodes = { MyClass };
+    
+    // Check if we're in a module environment
+    if (typeof exports !== 'undefined') {
+        // Node.js or ES modules environment
+        if (typeof module !== 'undefined' && module.exports) {
+        // CommonJS (Node.js)
+        Object.assign(module.exports, nodes);
+        } else {
+        // ES modules
+        Object.keys(nodes).forEach(key => {
+            exports[key] = nodes[key];
+        });
+        }
+    } else if (typeof window !== 'undefined') {
+        // Browser environment with script tags
+        Object.keys(nodes).forEach(key => {
+        window[key] = nodes[key];
+        });
+    }
+    })();
+
+ ## SDFs
+
+ I'm sure you already know what SDFs are so I won't bore you with it, but in our application
+ we classify SDFs into 3 categories based on their exactness:
+
+ * Exact: The SDF is exact, meaning it is the exact distance to the surface of the object.
+ * Lower Bound: The SDF is a lower bound on the distance to the surface of the object.
+ * Isosurface: The SDF is an isosurface of the object.
+
+When you're writing an SDF please try to keep track of which category it falls into, and
+update the node's exactness property accordingly. It is OK if the exactness property
+depends on other properties of the node, just make sure `getExactness()` never over-estimates
+the exactness.
+
+## Rendering
+
+We compile the SDFs to GLSL.
+
+There are 2 parts to this, firstly a node can implement `generateShaderImplementation()`
+which returns GLSL code that is used *by* the node, for example the `SphereNode` creates
+an `sdSphere()` function. `generateShaderImplementation()` is evaluated for the entire
+tree and only the unique implementations are included in the final shader.
+
+If you need the same implementation for every instantiation of the node type, you can use
+a fixed function name like `sdSphere()`. If you need different code for each instance,
+you can give it a unique name like:
+
+    return `
+      float ${this.getFunctionName()}(vec3 p) {
+        // ...
+      }
+    `;
+
+The `getFunctionName()` method is implemented by the `TreeNode` class and returns a string
+like `sdSphere_123` which is unique for each instance of the node.
+
+And then the main rendering code is provided by `generateShaderCode()` which returns a string
+like `sdSphere(p)` which is used in the vertex shader to evaluate the SDF. If you need to
+evaluate child nodes, do it like:
+
+    return `min(${this.children[0].generateShaderCode()}, ${this.children[1].generateShaderCode()})`;
+
+## Orthographic Projection
+
+When you're working in `fragment.js` please bear in mind that as a CAD application
+we are using **orthographic projection**. Please do not rewrite it to use perspective
+projection, that is not what we want.
+
+## Units
+
+The intended units are millimetres.
