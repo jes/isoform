@@ -28,6 +28,25 @@ const ui = {
             },
             onTreeUpdated: () => {
                 // Any additional logic needed after tree updates
+            },
+            onNodeDragStart: (node) => {
+                // Store the dragging node
+                this.draggingNode = node;
+            },
+            onNodeDragEnd: (node) => {
+                // Clear the dragging node
+                this.draggingNode = null;
+                
+                // Force a complete re-render of the tree
+                this.renderTree();
+            },
+            onNodeDrop: (draggedNode, targetNode) => {
+                // Handle the node drop
+                this.moveNode(draggedNode, targetNode);
+            },
+            // Provide a way to get the document root
+            getDocument: () => {
+                return this.document;
             }
         });
         
@@ -385,5 +404,60 @@ const ui = {
     getSecondaryNode() {
         // Return the node being edited if there is one
         return this.editingNode || null;
+    },
+
+    // Add this new method to handle node movement
+    moveNode(sourceNode, targetNode) {
+        if (!sourceNode || !targetNode) return;
+        
+        // Check if the target can accept more children
+        if (!targetNode.canAddMoreChildren()) {
+            console.warn("Target node cannot accept more children");
+            return;
+        }
+        
+        // Check if source is not already a child of target
+        if (sourceNode.parent === targetNode) {
+            console.warn("Source is already a child of target");
+            return;
+        }
+        
+        // Check if target is not a descendant of source (would create circular reference)
+        let current = targetNode;
+        while (current) {
+            if (current === sourceNode) {
+                console.warn("Cannot move a node to its descendant");
+                return;
+            }
+            current = current.parent;
+        }
+        
+        // Remove the node from its current parent
+        const originalParent = sourceNode.parent;
+        if (originalParent) {
+            originalParent.removeChild(sourceNode);
+        }
+        
+        // Add the node to the target
+        targetNode.addChild(sourceNode);
+        
+        // Mark the document as dirty
+        if (app.document) {
+            app.document.markDirty();
+        }
+        
+        // Reset the dragging state in the TreeView component
+        this.treeViewComponent.draggingNode = null;
+        this.treeViewComponent.dragOverNode = null;
+        
+        // Update the tree view - make sure this happens after all DOM operations
+        setTimeout(() => {
+            this.renderTree();
+            
+            // Select the moved node
+            this.selectedNode = sourceNode;
+            this.treeViewComponent.setSelectedNode(sourceNode);
+            this.propertyEditorComponent.render(sourceNode);
+        }, 0);
     }
 }; 

@@ -283,3 +283,30 @@ input[type="checkbox"] {
     padding: 3px 5px;
     border-radius: 3px;
 }
+
+/* Drag and drop styles */
+.tree-node-label-container.dragging {
+    opacity: 0.5;
+    background-color: rgba(80, 80, 100, 0.3);
+    font-family: Arial, Helvetica, sans-serif;
+    color: white;
+}
+
+.dragging-node {
+    opacity: 0.5;
+    font-family: Arial, Helvetica, sans-serif;
+    color: white;
+}
+
+.tree-node-label-container.drag-over {
+    background-color: rgba(100, 150, 200, 0.3);
+}
+
+/* Add cursor style to indicate draggable elements */
+.tree-node-label-container[draggable="true"] {
+    cursor: grab;
+}
+
+.tree-node-label-container[draggable="true"]:active {
+    cursor: grabbing;
+}

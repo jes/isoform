@@ -4,12 +4,17 @@ class TreeView {
         this.options = Object.assign({
             onNodeSelected: null,
             onNodeContextMenu: null,
-            onTreeUpdated: null
+            onTreeUpdated: null,
+            onNodeDragStart: null,
+            onNodeDragEnd: null,
+            onNodeDrop: null
         }, options);
         
         this.selectedNode = null;
         this.collapsedNodeIds = new Set();
         this.scrollPosition = 0;
+        this.draggingNode = null;
+        this.dragOverNode = null;
     }
     
     render(rootNode) {
@@ -47,12 +52,23 @@ class TreeView {
     }
     
     createTreeNode(node, level, disabledParent = false) {
+        // Don't skip rendering the dragging node, but style it differently
         const container = document.createElement('div');
         container.className = 'tree-node';
+        
+        // If this is the node being dragged, add a special class
+        if (this.draggingNode === node) {
+            container.classList.add('dragging-node');
+        }
         
         // Create the node label container with toggle and label
         const labelContainer = document.createElement('div');
         labelContainer.className = 'tree-node-label-container';
+        
+        // If this is the dragging node, add the dragging class
+        if (this.draggingNode === node) {
+            labelContainer.classList.add('dragging');
+        }
         
         // Create toggle button for collapsing/expanding if node has children
         const hasChildren = node.children && node.children.length > 0;
@@ -91,6 +107,9 @@ class TreeView {
         
         labelContainer.appendChild(label);
         container.appendChild(labelContainer);
+        
+        // Add drag and drop functionality
+        this.setupDragAndDrop(labelContainer, node);
         
         // Add click handler to select the node
         label.addEventListener('click', (e) => {
@@ -174,6 +193,9 @@ class TreeView {
             childrenContainer.className = 'tree-children';
             
             node.children.forEach((child, index) => {
+                // Skip if this is the dragging node
+                if (this.draggingNode === child) return;
+                
                 // Set parent reference for connection lines
                 child.parent = node;
                 child.isLastChild = index === node.children.length - 1;
@@ -190,6 +212,171 @@ class TreeView {
         }
         
         return container;
+    }
+    
+    setupDragAndDrop(element, node) {
+        // Make the element draggable
+        element.setAttribute('draggable', 'true');
+        
+        // Add drag start event
+        element.addEventListener('dragstart', (e) => {
+            // Don't allow dragging the root node
+            if (!node.parent) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Clear any previous dragging state
+            if (this.draggingNode) {
+                console.log("Clearing previous drag state");
+                this.draggingNode = null;
+            }
+            
+            // Set the dragging node
+            this.draggingNode = node;
+            
+            // Add a class to the element being dragged
+            element.classList.add('dragging');
+            
+            // Set drag data
+            e.dataTransfer.setData('text/plain', node.uniqueId);
+            e.dataTransfer.effectAllowed = 'move';
+            
+            // Use a custom drag image if needed
+            const dragImage = element.cloneNode(true);
+            dragImage.style.width = `${element.offsetWidth}px`;
+            dragImage.style.height = `${element.offsetHeight}px`;
+            dragImage.style.opacity = '0.7';
+            document.body.appendChild(dragImage);
+            e.dataTransfer.setDragImage(dragImage, 10, 10);
+            setTimeout(() => document.body.removeChild(dragImage), 0);
+            
+            // Notify about drag start
+            if (this.options.onNodeDragStart) {
+                this.options.onNodeDragStart(node);
+            }
+            
+            // We'll delay the re-render to ensure the drag image is captured first
+            setTimeout(() => {
+                // Re-render the tree to hide the dragged node
+                this.render(this.getRootNode());
+            }, 10);
+        });
+        
+        // Add drag end event
+        element.addEventListener('dragend', (e) => {
+            element.classList.remove('dragging');
+            
+            // Clear the dragging node state
+            const draggedNode = this.draggingNode;
+            this.draggingNode = null;
+            this.dragOverNode = null;
+            
+            // Remove any remaining drag-over highlights
+            const highlights = this.container.querySelectorAll('.drag-over');
+            highlights.forEach(el => el.classList.remove('drag-over'));
+            
+            // Notify about drag end
+            if (this.options.onNodeDragEnd && draggedNode) {
+                this.options.onNodeDragEnd(draggedNode);
+            }
+            
+            // Re-render the tree to restore the dragged node
+            // Use getRootNode to ensure we have the correct root node
+            const rootNode = this.getRootNode();
+            if (rootNode) {
+                setTimeout(() => {
+                    this.render(rootNode);
+                }, 0);
+            }
+        });
+        
+        // Add drag over event
+        element.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            
+            // Only allow dropping if the node can accept children
+            if (this.draggingNode && node !== this.draggingNode && !this.isChildOf(node, this.draggingNode)) {
+                if (node.canAddMoreChildren && node.canAddMoreChildren()) {
+                    e.dataTransfer.dropEffect = 'move';
+                    
+                    // Add visual feedback
+                    if (this.dragOverNode !== node) {
+                        // Remove previous drag over highlight
+                        const prevHighlight = this.container.querySelector('.drag-over');
+                        if (prevHighlight) {
+                            prevHighlight.classList.remove('drag-over');
+                        }
+                        
+                        // Add highlight to current target
+                        element.classList.add('drag-over');
+                        this.dragOverNode = node;
+                    }
+                } else {
+                    e.dataTransfer.dropEffect = 'none';
+                }
+            } else {
+                e.dataTransfer.dropEffect = 'none';
+            }
+        });
+        
+        // Add drag leave event
+        element.addEventListener('dragleave', (e) => {
+            element.classList.remove('drag-over');
+            if (this.dragOverNode === node) {
+                this.dragOverNode = null;
+            }
+        });
+        
+        // Add drop event
+        element.addEventListener('drop', (e) => {
+            e.preventDefault();
+            element.classList.remove('drag-over');
+            
+            // Check if we have a valid drop
+            if (this.draggingNode && node !== this.draggingNode && !this.isChildOf(node, this.draggingNode)) {
+                if (node.canAddMoreChildren && node.canAddMoreChildren()) {
+                    // Notify about the drop
+                    if (this.options.onNodeDrop) {
+                        this.options.onNodeDrop(this.draggingNode, node);
+                    }
+                }
+            }
+            
+            // Clear drag state
+            this.draggingNode = null;
+            this.dragOverNode = null;
+        });
+    }
+    
+    isChildOf(potentialChild, potentialParent) {
+        // Check if potentialChild is a descendant of potentialParent
+        let current = potentialChild;
+        while (current) {
+            if (current === potentialParent) {
+                return true;
+            }
+            current = current.parent;
+        }
+        return false;
+    }
+    
+    getRootNode() {
+        // If we have a document reference from the UI, use that
+        if (this.options.getDocument) {
+            return this.options.getDocument();
+        }
+        
+        // Otherwise try to find the root by traversing up from the selected node
+        if (this.selectedNode) {
+            let root = this.selectedNode;
+            while (root.parent) {
+                root = root.parent;
+            }
+            return root;
+        }
+        
+        return null;
     }
     
     adjustTreeLines() {
