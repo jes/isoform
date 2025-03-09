@@ -494,3 +494,30 @@ canvas {
 .toggle-button::after {
     display: none;
 }
+
+#main-toolbar {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+
+.toolbar-button {
+    background-color: rgba(60, 60, 80, 0.8);
+    color: white;
+    border: 1px solid #555;
+    border-radius: 3px;
+    padding: 5px 10px;
+    font-family: Arial, sans-serif;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.toolbar-button:hover {
+    background-color: rgba(80, 80, 120, 0.8);
+}
+
+.toolbar-button:active {
+    background-color: rgba(100, 100, 150, 0.8);
+}
