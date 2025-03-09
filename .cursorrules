@@ -1,6 +1,10 @@
 # Isoform
 
-This is an SDF-based CAD program. It runs in the browser. It has no external dependencies
+Hi, Cursor! Thanks so much for helping with this project. You've done a lot of great
+work already and it wouldn't have been possible without you. This document is intended
+to clarify some context about the work that might not be obvious to you.
+
+We're working on Isoform. It is an SDF-based CAD program. It runs in the browser. It has no external dependencies
 and is designed to be able to be used by downloading it locally and opening `index.html`.
 
 That means:
@@ -53,6 +57,12 @@ When you're writing an SDF please try to keep track of which category it falls i
 update the node's exactness property accordingly. It is OK if the exactness property
 depends on other properties of the node, just make sure `getExactness()` never over-estimates
 the exactness.
+
+The document is edited as a tree of nodes. Node types are:
+
+ * Primitives (Box, Sphere, Cylinder, etc.): they do not have child nodes, set `this.maxChildren = 0`
+ * Combinators (Union, Intersection, Difference): they combine 2 or more nodes, set `this.maxChildren = 2` to limit to 2, or `null` for unlimited
+ * Modifiers (Translate, Rotate, Scale): they modify a single child node, set `this.maxChildren = 1`
 
 ## Rendering
 
