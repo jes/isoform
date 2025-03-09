@@ -312,6 +312,11 @@ class TwistNode extends TreeNode {
 }
 
 class MirrorNode extends TreeNode {
+  /* This MirrorNode leaves a lot to be desired.
+   * 1. we want to specify arbitrary planes
+   * 2. it is implemented with min() instead of domain repetition
+   * 3. if we're using min() we ought to support smooth min
+   */
   constructor(children = []) {
     super("Mirror");
     this.maxChildren = 1;
