@@ -313,6 +313,7 @@ input[type="checkbox"] {
     cursor: grabbing;
 }
 
+/* Update view toolbar and buttons */
 #view-toolbar {
     position: absolute;
     bottom: 20px;
@@ -331,11 +332,17 @@ input[type="checkbox"] {
     color: white;
     border: 1px solid #555;
     border-radius: 3px;
-    padding: 5px 10px;
+    padding: 5px;
     font-family: Arial, sans-serif;
-    font-size: 0.9em;
+    font-size: 0.8em;
     cursor: pointer;
     transition: background-color 0.2s;
+    position: relative;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .view-button:hover {
@@ -344,4 +351,52 @@ input[type="checkbox"] {
 
 .view-button:active {
     background-color: rgba(100, 100, 150, 0.8);
+}
+
+/* Add axis indicators to view buttons */
+.view-button::before,
+.view-button::after {
+    content: '';
+    position: absolute;
+    background-color: #555;
+}
+
+/* Horizontal axis line (bottom) */
+.view-button::before {
+    height: 2px;
+    bottom: 3px;
+    left: 3px;
+    right: 3px;
+}
+
+/* Vertical axis line (left) */
+.view-button::after {
+    width: 2px;
+    left: 3px;
+    top: 3px;
+    bottom: 3px;
+}
+
+/* XY view button */
+#view-xy::before {
+    background-color: rgba(255, 0, 0, 0.8); /* X-axis: red */
+}
+#view-xy::after {
+    background-color: rgba(0, 255, 0, 0.8); /* Y-axis: green */
+}
+
+/* XZ view button */
+#view-xz::before {
+    background-color: rgba(255, 0, 0, 0.8); /* X-axis: red */
+}
+#view-xz::after {
+    background-color: rgba(0, 0, 255, 0.8); /* Z-axis: blue */
+}
+
+/* YZ view button */
+#view-yz::before {
+    background-color: rgba(0, 0, 255, 0.8); /* Y-axis: green */
+}
+#view-yz::after {
+    background-color: rgba(0, 255, 0, 0.8); /* Z-axis: blue */
 }
