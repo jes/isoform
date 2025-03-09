@@ -312,7 +312,8 @@ const ui = {
             { name: 'Transform', constructor: TransformNode },
             { name: 'Scale', constructor: ScaleNode },
             { name: 'Twist', constructor: TwistNode },
-            { name: 'Roughen', constructor: RoughnessNode }
+            { name: 'Roughen', constructor: RoughnessNode },
+            { name: 'Mirror', constructor: MirrorNode }
         ];
         
         modifiers.forEach(modifier => {

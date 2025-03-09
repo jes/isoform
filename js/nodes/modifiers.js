@@ -311,9 +311,41 @@ class TwistNode extends TreeNode {
   }
 }
 
+class MirrorNode extends TreeNode {
+  constructor(children = []) {
+    super("Mirror");
+    this.maxChildren = 1;
+    this.plane = "XY";
+    this.addChild(children);
+  }
+
+  properties() {
+    return {"plane": ["XY", "XZ", "YZ"]};
+  }
+
+  generateShaderImplementation() {
+    const axis = this.plane === "XY" ? "z" : this.plane === "XZ" ? "y" : "x";
+    return `
+      float ${this.getFunctionName()}(vec3 p) {
+        float d0 = ${this.children[0].shaderCode()};
+        p.${axis} = -p.${axis};
+        return min(d0, ${this.children[0].shaderCode()});
+      }
+    `;
+  }
+
+  generateShaderCode() {
+    return `${this.getFunctionName()}(p)`;
+  }
+
+  getIcon() {
+    return "🪞";
+  }
+}
+
 // Detect environment and export accordingly
 (function() {
-  const nodes = { TransformNode, RoughnessNode, ScaleNode, TwistNode };
+  const nodes = { TransformNode, RoughnessNode, ScaleNode, TwistNode, MirrorNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {

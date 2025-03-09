@@ -226,6 +226,31 @@ class PropertyEditor {
                 input.appendChild(componentContainer);
             });
         }
+        else if (Array.isArray(propType)) {
+            // Create a dropdown for array type properties
+            input = document.createElement('select');
+            
+            // Add options based on the array values
+            propType.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option;
+                
+                // Set the current value as selected
+                if (option === propValue) {
+                    optionElement.selected = true;
+                }
+                
+                input.appendChild(optionElement);
+            });
+            
+            // Handle change event
+            input.addEventListener('change', () => {
+                this.selectedNode.setProperty(propName, input.value);
+                this.notifyPropertyChanged(propName);
+                this.updateNodeTypeHeading(); // Update heading to reflect new exactness
+            });
+        }
         
         propContainer.appendChild(input);
         this.container.appendChild(propContainer);
