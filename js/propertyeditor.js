@@ -81,7 +81,7 @@ class PropertyEditor {
         // Create appropriate input based on property type
         let input;
         
-        if (propType === 'float') {
+        if (propType === 'float' || propType === 'int') {
             input = document.createElement('input');
             input.type = 'text'; // Using text to allow expressions
             input.value = propValue;
@@ -89,7 +89,12 @@ class PropertyEditor {
             // Handle both blur and Enter key for evaluation
             const evaluateAndUpdate = () => {
                 try {
-                    const result = this.evaluateExpression(input.value);
+                    let result = this.evaluateExpression(input.value);
+                    // For int type, truncate to integer
+                    if (propType === 'int') {
+                        result = Math.floor(result);
+                    }
+                    
                     if (!isNaN(result)) {
                         input.value = result; // Update the input with the evaluated result
                         this.selectedNode.setProperty(propName, result);

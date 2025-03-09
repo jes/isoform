@@ -348,6 +348,50 @@ class MirrorNode extends TreeNode {
   }
 }
 
+class LinearPatternNode extends TreeNode {
+  /* We ought to be able to do this with domain repetition instead of an explicit union.
+   * I think we just need to know how to permute the point `p` to evaluate the child
+   * for all the children with bounding boxes that overlap `p`, and then just union
+   * the results of those ones.
+   */
+  constructor(axis = [0, 0, 1], spacing = 1.0, copies = 1, children = []) {
+    super("LinearPattern");
+    this.maxChildren = 1;
+    this.axis = axis;
+    this.spacing = spacing;
+    this.copies = copies;
+    this.addChild(children);
+  }
+
+  properties() {
+    return {"axis": "vec3", "spacing": "float", "copies": "int"};
+  }
+
+  generateShaderImplementation() {
+    return `
+      float ${this.getFunctionName()}(vec3 p) {
+        vec3 axis = normalize(vec3(${this.axis.map(v => v.toFixed(16)).join(", ")}));
+        float spacing = ${this.spacing.toFixed(16)};
+        float d = ${this.children[0].shaderCode()};
+        for (int i = 1; i < ${this.copies}; i++) {
+          p += axis * spacing;
+          d = min(d, ${this.children[0].shaderCode()});
+        }
+        return d;
+      }
+    `;
+  }
+
+  generateShaderCode() {
+    return `${this.getFunctionName()}(p)`;
+  }
+
+  getIcon() {
+    return "🔀";
+  }
+
+}
+
 // Detect environment and export accordingly
 (function() {
   const nodes = { TransformNode, RoughnessNode, ScaleNode, TwistNode, MirrorNode };
