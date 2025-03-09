@@ -47,7 +47,7 @@ Export classes like so:
 ## File structure
 
 JavaScript code is under the `js/` directory. When you refer to JavaScript filenames,
-please use the relative path from the root of the project (e.g. `js/ui.js`) so that the
+please use the relative path from the root of the project (e.g. `js/ui.js` or `js/nodes/treenode.js`) so that the
 editor knows which file to apply the changes to.
 
 ## SDFs
