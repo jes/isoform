@@ -17,7 +17,7 @@ canvas {
     min-width: 250px; /* Ensure it has a minimum width */
     background-color: rgba(30, 30, 40, 0.8);
     color: white;
-    padding: 15px;
+    padding: 5px 10px 5px 5px;
     font-family: Arial, sans-serif;
     overflow-y: auto;
     position: relative; /* For the resize handle */
@@ -29,8 +29,8 @@ canvas {
 }
 h3 {
     margin-top: 0;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #555;
+    margin-bottom: 0px;
+    /*border-bottom: 1px solid #555;*/
     padding-bottom: 5px;
 }
 label {
