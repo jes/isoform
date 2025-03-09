@@ -492,5 +492,21 @@ const ui = {
                 -1, 0, 0
             ]);
         });
+
+        // Get the rotation buttons
+        const rotateCWButton = document.getElementById('rotate-cw');
+        const rotateCCWButton = document.getElementById('rotate-ccw');
+
+        if (rotateCWButton && rotateCCWButton) {
+            // Clockwise rotation (negative angle)
+            rotateCWButton.addEventListener('click', () => {
+                camera.rotateAroundViewingDirection(-15);
+            });
+            
+            // Counter-clockwise rotation (positive angle)
+            rotateCCWButton.addEventListener('click', () => {
+                camera.rotateAroundViewingDirection(15);
+            });
+        }
     }
 }; 

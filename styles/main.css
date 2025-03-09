@@ -441,3 +441,29 @@ canvas {
     font-size: 14px;
     pointer-events: none;
 }
+
+/* Rotation buttons */
+.rotate-button {
+    font-size: 1.2em;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Remove the axis indicators for rotation buttons */
+.rotate-button::before,
+.rotate-button::after {
+    display: none;
+}
+
+/* Add hover effect for better user feedback */
+.rotate-button:hover {
+    background-color: rgba(100, 100, 150, 0.8);
+}
+
+/* Add active effect for when the button is clicked */
+.rotate-button:active {
+    background-color: rgba(120, 120, 170, 0.8);
+    transform: scale(0.95);
+}

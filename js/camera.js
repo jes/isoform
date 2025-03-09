@@ -166,5 +166,69 @@ const camera = {
         
         // Reset the drag start rotation
         this.dragStartRotation = [...rotationMatrix];
+    },
+    
+    // Helper function to create a rotation matrix around Z axis
+    createRotationMatrixZ(angle) {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        return [
+            cos, -sin, 0,
+            sin, cos, 0,
+            0, 0, 1
+        ];
+    },
+    
+    // Rotate around the viewing direction (forward axis)
+    rotateAroundViewingDirection(angleDegrees) {
+        // Convert angle to radians
+        const angleRad = angleDegrees * Math.PI / 180.0;
+        
+        // Calculate the viewing direction (forward vector)
+        const forward = [
+            this.target[0] - this.position[0],
+            this.target[1] - this.position[1],
+            this.target[2] - this.position[2]
+        ];
+        
+        // Normalize the forward vector
+        const length = Math.sqrt(
+            forward[0] * forward[0] + 
+            forward[1] * forward[1] + 
+            forward[2] * forward[2]
+        );
+        
+        const normalizedForward = [
+            forward[0] / length,
+            forward[1] / length,
+            forward[2] / length
+        ];
+        
+        // Create a rotation matrix around the viewing direction
+        // Using Rodrigues' rotation formula
+        const c = Math.cos(angleRad);
+        const s = Math.sin(angleRad);
+        const t = 1 - c;
+        
+        const x = normalizedForward[0];
+        const y = normalizedForward[1];
+        const z = normalizedForward[2];
+        
+        // Create rotation matrix around arbitrary axis (viewing direction)
+        const rotMatrix = [
+            t*x*x + c,    t*x*y - s*z,  t*x*z + s*y,
+            t*x*y + s*z,  t*y*y + c,    t*y*z - s*x,
+            t*x*z - s*y,  t*y*z + s*x,  t*z*z + c
+        ];
+        
+        // Apply rotation to the current rotation matrix
+        this.baseRotationMatrix = this.multiplyMatrices(rotMatrix, this.baseRotationMatrix);
+        this.activeRotationMatrix = [...this.baseRotationMatrix];
+        
+        // Reset any ongoing drag operation
+        this.isDragging = false;
+        
+        // Reset the drag start rotation
+        this.dragStartRotation = [...this.baseRotationMatrix];
     }
 }; 
