@@ -416,12 +416,6 @@ const ui = {
             return;
         }
         
-        // Check if source is not already a child of target
-        if (sourceNode.parent === targetNode) {
-            console.warn("Source is already a child of target");
-            return;
-        }
-        
         // Check if target is not a descendant of source (would create circular reference)
         let current = targetNode;
         while (current) {
