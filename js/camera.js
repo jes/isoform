@@ -19,7 +19,6 @@ const camera = {
     lastMouseY: 0,
     rotationSpeed: 0.01,
     zoomSpeed: 0.1,
-    panSpeed: 0.01,
     showEdges: true,
     stepFactor: 1.0,
     dragStartX: 0,
@@ -101,14 +100,32 @@ const camera = {
         const deltaY = e.clientY - this.dragStartY;
         
         if (e.shiftKey) {
-            // Pan camera in screen space
-            const panX = -(e.clientX - this.lastMouseX) * this.panSpeed;
-            const panY = (e.clientY - this.lastMouseY) * this.panSpeed;
+            // Get canvas dimensions for proper scaling
+            const canvasWidth = renderer.canvas.width;
+            const canvasHeight = renderer.canvas.height;
             
-            this.target[0] += panX;
-            this.target[1] += panY;
-            this.position[0] += panX;
-            this.position[1] += panY;
+            // Calculate aspect ratio
+            const aspectRatio = canvasWidth / canvasHeight;
+            
+            // Convert pixel movement to normalized device coordinates (-1 to 1)
+            // and then to world space units
+            const pixelMoveX = e.clientX - this.lastMouseX;
+            const pixelMoveY = e.clientY - this.lastMouseY;
+            
+            // Scale based on canvas size (2.0 represents the full NDC range from -1 to 1)
+            const ndcMoveX = (pixelMoveX / canvasWidth) * 2.0;
+            const ndcMoveY = (pixelMoveY / canvasHeight) * 2.0;
+            
+            // Convert to world space (accounting for aspect ratio and zoom)
+            // Negate X movement to match expected direction
+            const worldMoveX = -ndcMoveX * (aspectRatio / this.zoom);
+            const worldMoveY = ndcMoveY * (1.0 / this.zoom);
+            
+            // Apply the movement to both camera position and target
+            this.target[0] += worldMoveX;
+            this.target[1] += worldMoveY;
+            this.position[0] += worldMoveX;
+            this.position[1] += worldMoveY;
         } else {
             // Create rotation matrices based on total mouse movement from drag start
             const rotX = this.createRotationMatrixX(-deltaY * this.rotationSpeed);
