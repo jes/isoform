@@ -362,6 +362,29 @@ const ui = {
             contextMenu.remove();
             this.renderTree();
         });
+        
+        // Only add move options for non-root nodes
+        if (node.parent) {
+            // Find the index of this node in its parent's children array
+            const siblings = node.parent.children;
+            const nodeIndex = siblings.indexOf(node);
+            
+            // Add "Move Up" if not the first child
+            if (nodeIndex > 0) {
+                this.addMenuItem(contextMenu, 'Move Up', () => {
+                    this.moveNodeInDirection(node, -1);
+                    contextMenu.remove();
+                });
+            }
+            
+            // Add "Move Down" if not the last child
+            if (nodeIndex < siblings.length - 1) {
+                this.addMenuItem(contextMenu, 'Move Down', () => {
+                    this.moveNodeInDirection(node, 1);
+                    contextMenu.remove();
+                });
+            }
+        }
     },
 
     addMenuItem(menu, text, onClick) {
@@ -551,5 +574,35 @@ const ui = {
                 }
             });
         }
-    }
+    },
+
+    moveNodeInDirection(node, direction) {
+        if (!node || !node.parent) return;
+        
+        const parent = node.parent;
+        const siblings = parent.children;
+        const nodeIndex = siblings.indexOf(node);
+        
+        // Calculate target index based on direction
+        const targetIndex = nodeIndex + direction;
+        
+        // Check bounds
+        if (targetIndex < 0 || targetIndex >= siblings.length) return;
+        
+        // Swap with the target sibling
+        const temp = siblings[nodeIndex];
+        siblings[nodeIndex] = siblings[targetIndex];
+        siblings[targetIndex] = temp;
+        
+        // Mark the parent as dirty to regenerate the shader
+        parent.markDirty();
+        
+        // Update the tree view
+        this.renderTree();
+        
+        // Keep the node selected
+        this.selectedNode = node;
+        this.treeViewComponent.setSelectedNode(node);
+        this.propertyEditorComponent.render(node);
+    },
 }; 
