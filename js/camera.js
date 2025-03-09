@@ -2,7 +2,7 @@
 const camera = {
     position: [0.0, 0.0, -1000.0],
     target: [0.0, 0.0, 0.0],
-    zoom: 0.1,
+    zoom: 0.05,
     rotationX: 0.0,
     rotationY: 0.0,
     isDragging: false,
