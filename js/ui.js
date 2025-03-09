@@ -375,17 +375,6 @@ const ui = {
     },
 
     initDisplayOptions() {
-        const showEdgesCheckbox = document.getElementById('show-edges');
-        if (showEdgesCheckbox) {
-            // Set initial state based on camera setting
-            showEdgesCheckbox.checked = camera.showEdges;
-            
-            // Add event listener
-            showEdgesCheckbox.addEventListener('change', (e) => {
-                camera.showEdges = e.target.checked;
-            });
-        }
-        
         // Add step factor control
         const stepFactorInput = document.getElementById('step-factor');
         if (stepFactorInput) {
@@ -506,6 +495,28 @@ const ui = {
             // Counter-clockwise rotation (positive angle)
             rotateCCWButton.addEventListener('click', () => {
                 camera.rotateAroundViewingDirection(15);
+            });
+        }
+        
+        // Add the toggle edges button functionality
+        const toggleEdgesButton = document.getElementById('toggle-edges');
+        if (toggleEdgesButton) {
+            // Set initial state based on camera setting
+            if (camera.showEdges) {
+                toggleEdgesButton.classList.add('active');
+            }
+            
+            // Add event listener
+            toggleEdgesButton.addEventListener('click', () => {
+                // Toggle the camera setting
+                camera.showEdges = !camera.showEdges;
+                
+                // Update the button appearance
+                if (camera.showEdges) {
+                    toggleEdgesButton.classList.add('active');
+                } else {
+                    toggleEdgesButton.classList.remove('active');
+                }
             });
         }
     }

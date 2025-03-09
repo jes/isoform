@@ -467,3 +467,20 @@ canvas {
     background-color: rgba(120, 120, 170, 0.8);
     transform: scale(0.95);
 }
+
+/* Toggle button styles */
+.toggle-button {
+    background-color: rgba(60, 60, 80, 0.8);
+    color: white;
+}
+
+.toggle-button.active {
+    background-color: rgba(100, 150, 200, 0.8);
+    border-color: rgba(150, 200, 255, 0.8);
+}
+
+/* Remove the axis indicators for toggle buttons */
+.toggle-button::before,
+.toggle-button::after {
+    display: none;
+}
