@@ -436,15 +436,12 @@ const ui = {
         const originalParent = sourceNode.parent;
         if (originalParent) {
             originalParent.removeChild(sourceNode);
+            originalParent.markDirty();
         }
         
         // Add the node to the target
         targetNode.addChild(sourceNode);
-        
-        // Mark the document as dirty
-        if (app.document) {
-            app.document.markDirty();
-        }
+        targetNode.markDirty();
         
         // Reset the dragging state in the TreeView component
         this.treeViewComponent.draggingNode = null;
