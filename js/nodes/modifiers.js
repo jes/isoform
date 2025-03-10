@@ -76,6 +76,16 @@ class TransformNode extends TreeNode {
     return `${this.getFunctionName()}(p)`;
   }
 
+  sdf(p) {
+    if (!this.hasChildren()) {
+      return this.noopSDF();
+    }
+
+    p = p.sub(this.translation);
+    p = p.rotateAround(this.rotationAxis, this.rotationAngle);
+    return this.children[0].sdf(p);
+  }
+
   getIcon() {
     return "🔄";
   }
@@ -134,6 +144,25 @@ class RoughnessNode extends TreeNode {
     return `${this.getFunctionName()}(p)`;
   }
 
+  sdf(p) {
+    if (!this.hasChildren()) {
+      return this.noopSDF();
+    }
+    
+    const d = this.children[0].sdf(p);
+
+    const noise = Math.sin(p.x * this.frequency) * 
+                  Math.sin(p.y * this.frequency) * 
+                  Math.sin(p.z * this.frequency) * 
+                  Math.sin((p.x + p.y + p.z) * (this.frequency * 1.5));
+
+    const noise2 = 0.5 * Math.sin(p.x * (this.frequency * 2.0)) * 
+                    Math.sin(p.y * (this.frequency * 2.0)) * 
+                    Math.sin(p.z * (this.frequency * 2.0));
+
+    return d + noise * this.amplitude + noise2 * this.amplitude;
+  }
+
   getIcon() {
     return "〰️";
   }
@@ -179,6 +208,15 @@ class ThicknessNode extends TreeNode {
     }
 
     return `${this.getFunctionName()}(p)`;
+  }
+
+  sdf(p) {
+    if (!this.hasChildren()) {
+      return this.noopSDF();
+    }
+    
+    const d = this.children[0].sdf(p);
+    return this.inside ? max(d, -d - this.thickness) : max(d - this.thickness, -d);
   }
 
   getIcon() {
@@ -275,6 +313,31 @@ class ScaleNode extends TreeNode {
     return `${this.getFunctionName()}(p)`;
   }
 
+  sdf(p) {
+    if (!this.hasChildren()) {
+      return this.noopSDF();
+    }
+    
+    if (this.alongAxis) {
+      // scaling along one axis
+      const axis = this.axis.normalize();
+      const projLength = p.dot(axis);
+      const projVec = axis.mul(projLength);
+      const perpVec = p.sub(projVec);
+
+      p = perpVec.add(projVec.div(this.k));
+
+      if (this.k > 1.0) {
+        return this.children[0].sdf(p);
+      } else {
+        return this.children[0].sdf(p) * this.k;
+      }
+    } else {
+      // uniform scaling
+      return this.children[0].sdf(p.div(this.k)) * this.k;
+    }
+  }
+
   getIcon() {
     return "⇲";
   }
@@ -353,6 +416,28 @@ class TwistNode extends TreeNode {
     return `${this.getFunctionName()}(p)`;
   }
 
+  sdf(p) {
+    if (!this.hasChildren()) {
+      return this.noopSDF();
+    }
+
+    const axis = this.axis.normalize();
+
+    const toAxisSpace = new Mat3().rotateToAxis(axis);
+    const fromAxisSpace = toAxisSpace.transpose();
+
+    let q = toAxisSpace.mulVec3(p);
+
+    if (this.height != 0.0) {
+      const angle = (2.0 * Math.PI * q.z) / this.height;
+      const c = Math.cos(angle);
+      const s = Math.sin(angle);
+      q = new Vec3(c * q.x - s * q.y, s * q.x + c * q.y, q.z);
+      p = fromAxisSpace.mulVec3(q);
+    }
+
+    return this.children[0].sdf(p);
+  }
   getIcon() {
     return "🔄";
   }
@@ -394,6 +479,18 @@ class MirrorNode extends TreeNode {
     return `${this.getFunctionName()}(p)`;
   }
 
+  sdf(p) {
+    if (!this.hasChildren()) {
+      return this.noopSDF();
+    }
+
+    const axis = this.plane === "XY" ? "z" : this.plane === "XZ" ? "y" : "x";
+    const d0 = this.children[0].sdf(p);
+    p[axis] = -p[axis];
+    const d1 = this.children[0].sdf(p);
+    return min(d0, d1);
+  }
+
   getIcon() {
     return "🪞";
   }
@@ -425,11 +522,11 @@ class LinearPatternNode extends TreeNode {
   generateShaderImplementation() {
     return `
       float ${this.getFunctionName()}(vec3 p) {
-        vec3 axis = normalize(vec3(${this.axis.map(v => v.toFixed(16)).join(", ")}));
         float spacing = ${this.spacing.toFixed(16)};
+        vec3 step = spacing * normalize(vec3(${this.axis.map(v => v.toFixed(16)).join(", ")}));
         float d = ${this.children[0].shaderCode()};
         for (int i = 1; i < ${this.copies}; i++) {
-          p += axis * spacing;
+          p += step;
           d = min(d, ${this.children[0].shaderCode()});
         }
         return d;
@@ -439,6 +536,20 @@ class LinearPatternNode extends TreeNode {
 
   generateShaderCode() {
     return `${this.getFunctionName()}(p)`;
+  }
+
+  sdf(p) {
+    if (!this.hasChildren()) {
+      return this.noopSDF();
+    }
+
+    const step = this.spacing * this.axis.normalize();
+    let d = this.children[0].sdf(p);
+    for (let i = 1; i < this.copies; i++) {
+      p = p.add(step);
+      d = min(d, this.children[0].sdf(p));
+    }
+    return d;
   }
 
   getIcon() {

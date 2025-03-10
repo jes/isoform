@@ -24,6 +24,14 @@ class SphereNode extends TreeNode {
     return `sdSphere(p, ${this.radius.toFixed(16)})`;
   }
 
+  sdSphere(p, r) {
+    return p.length() - r;
+  }
+
+  sdf(p) {
+    return this.sdSphere(p, this.radius);
+  }
+
   getIcon() {
     return "🔴";
   }
@@ -44,7 +52,7 @@ class CylinderNode extends TreeNode {
   properties() {
     return {"diameter": "float", "height": "float", "roundRadius": "float"};
   }
-  
+
   generateShaderImplementation() {
     return `
       float sdCylinder(vec3 p, float r, float h) {
@@ -63,6 +71,24 @@ class CylinderNode extends TreeNode {
       return `sdRoundCylinder(p, ${(this.diameter/2).toFixed(16)}, ${(this.height/2).toFixed(16)}, ${this.roundRadius.toFixed(16)})`;
     } else {
       return `sdCylinder(p, ${(this.diameter/2).toFixed(16)}, ${(this.height/2).toFixed(16)})`;
+    }
+  }
+
+  sdCylinder(p, r, h) {
+    const d = new Vec3(length(p.xy) - r, abs(p.z) - h, 0.0);
+    return min(max(d.x, d.y), 0.0) + Math.length(max(d, 0.0));
+  }
+
+  sdRoundCylinder(p, r, h, r2) {
+    const d = new Vec3(length(p.xy) - r + r2, abs(p.z) - h + r2, 0.0);
+    return min(max(d.x, d.y), 0.0) + Math.length(max(d, 0.0)) - r2;
+  }
+ 
+  sdf(p) {
+    if (this.roundRadius > 0.0) {
+      return this.sdRoundCylinder(p, this.diameter/2, this.height/2, this.roundRadius);
+    } else {
+      return this.sdCylinder(p, this.diameter/2, this.height/2);
     }
   }
 
@@ -108,6 +134,23 @@ class BoxNode extends TreeNode {
     }
   }
 
+  sdBox(p, b) {
+    const d = p.abs().sub(b);
+    return Math.length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0);
+  }
+
+  sdRoundBox(p, b, r) {
+    const d = p.abs().sub(b).add(r);
+    return Math.length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0) - r;
+  }
+
+  sdf(p) {
+    if (this.radius > 0.0) {
+      return this.sdRoundBox(p, this.size, this.radius);
+    } else {
+      return this.sdBox(p, this.size);
+    }
+  }
   getIcon() {
     return "📦";
   }
@@ -139,6 +182,15 @@ class TorusNode extends TreeNode {
 
   generateShaderCode() {
     return `sdTorus(p, vec2(${(this.majorDiameter/2).toFixed(16)}, ${(this.minorDiameter/2).toFixed(16)}))`;
+  }
+
+  sdTorus(p, t) {
+    const q = new Vec3(p.xy().length() - t.x, p.z, 0.0);
+    return q.length() - t.y;
+  }
+
+  sdf(p) {
+    return this.sdTorus(p, this.majorDiameter/2, this.minorDiameter/2);
   }
 
   getIcon() {

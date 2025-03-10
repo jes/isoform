@@ -238,6 +238,15 @@ class TreeNode {
     return "10000042.0";
   }
 
+  // p is a Vec3
+  sdf(p) {
+    return this.noopSDF();
+  }
+
+  noopSDF(p) {
+    return 10000042.0;
+  }
+
   canAddMoreChildren() {
     if (this.maxChildren === null) return true;
     return this.children.length < this.maxChildren;
