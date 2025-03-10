@@ -20,11 +20,6 @@ const ui = {
             },
             onNodeContextMenu: (e, node) => {
                 this.showContextMenu(e, node);
-                
-                // Mark the document as dirty to regenerate the shader
-                if (app.document) {
-                    app.document.markDirty();
-                }
             },
             onTreeUpdated: () => {
                 // Any additional logic needed after tree updates
@@ -54,11 +49,6 @@ const ui = {
         this.propertyEditorComponent = new PropertyEditor(this.propertyEditor, {
             onPropertyChanged: (node, propName) => {
                 this.updateTreeIfNeeded(node, propName);
-                
-                // Mark the document as dirty to regenerate the shader
-                if (app.document) {
-                    app.document.markDirty();
-                }
             },
             onInputFocused: (node) => {
                 // Store the node that's being edited for secondary rendering
@@ -573,9 +563,6 @@ const ui = {
                     this.selectedNode = newDoc;
                     this.treeViewComponent.setSelectedNode(newDoc);
                     this.propertyEditorComponent.render(newDoc);
-                    
-                    // Mark the document as dirty to regenerate the shader
-                    app.document.markDirty();
                 }
             });
         }

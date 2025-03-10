@@ -97,9 +97,14 @@ class PropertyEditor {
                     
                     if (!isNaN(result)) {
                         input.value = result; // Update the input with the evaluated result
-                        this.selectedNode.setProperty(propName, result);
-                        this.notifyPropertyChanged(propName);
-                        this.updateNodeTypeHeading(); // Update heading to reflect new exactness
+                        
+                        // Only update and notify if the value has actually changed
+                        const currentValue = this.selectedNode.getProperty(propName);
+                        if (currentValue !== result) {
+                            this.selectedNode.setProperty(propName, result);
+                            this.notifyPropertyChanged(propName);
+                            this.updateNodeTypeHeading(); // Update heading to reflect new exactness
+                        }
                     }
                 } catch (e) {
                     console.warn('Error evaluating expression:', e);
@@ -132,9 +137,14 @@ class PropertyEditor {
             input.checked = propValue === true;
             
             input.addEventListener('change', () => {
-                this.selectedNode.setProperty(propName, input.checked);
-                this.notifyPropertyChanged(propName);
-                this.updateNodeTypeHeading(); // Update heading to reflect new exactness
+                const newValue = input.checked;
+                const currentValue = this.selectedNode.getProperty(propName);
+                
+                if (currentValue !== newValue) {
+                    this.selectedNode.setProperty(propName, newValue);
+                    this.notifyPropertyChanged(propName);
+                    this.updateNodeTypeHeading(); // Update heading to reflect new exactness
+                }
             });
             
             // Adjust styling for checkbox
@@ -148,9 +158,14 @@ class PropertyEditor {
             input.value = propValue || '';
             
             input.addEventListener('change', () => {
-                this.selectedNode.setProperty(propName, input.value);
-                this.notifyPropertyChanged(propName);
-                this.updateNodeTypeHeading(); // Update heading to reflect new exactness
+                const newValue = input.value;
+                const currentValue = this.selectedNode.getProperty(propName);
+                
+                if (currentValue !== newValue) {
+                    this.selectedNode.setProperty(propName, newValue);
+                    this.notifyPropertyChanged(propName);
+                    this.updateNodeTypeHeading(); // Update heading to reflect new exactness
+                }
             });
             
             // Add focus/blur event handlers
@@ -196,11 +211,16 @@ class PropertyEditor {
                         const result = this.evaluateExpression(componentInput.value);
                         if (!isNaN(result)) {
                             componentInput.value = result; // Update the input with the evaluated result
-                            const newValue = [...this.selectedNode.getProperty(propName)];
-                            newValue[index] = result;
-                            this.selectedNode.setProperty(propName, newValue);
-                            this.notifyPropertyChanged(propName);
-                            this.updateNodeTypeHeading(); // Update heading to reflect new exactness
+                            const currentValue = this.selectedNode.getProperty(propName);
+                            
+                            // Only update if the component value has changed
+                            if (currentValue[index] !== result) {
+                                const newValue = [...currentValue];
+                                newValue[index] = result;
+                                this.selectedNode.setProperty(propName, newValue);
+                                this.notifyPropertyChanged(propName);
+                                this.updateNodeTypeHeading(); // Update heading to reflect new exactness
+                            }
                         }
                     } catch (e) {
                         console.warn('Error evaluating expression:', e);
@@ -251,9 +271,14 @@ class PropertyEditor {
             
             // Handle change event
             input.addEventListener('change', () => {
-                this.selectedNode.setProperty(propName, input.value);
-                this.notifyPropertyChanged(propName);
-                this.updateNodeTypeHeading(); // Update heading to reflect new exactness
+                const newValue = input.value;
+                const currentValue = this.selectedNode.getProperty(propName);
+                
+                if (currentValue !== newValue) {
+                    this.selectedNode.setProperty(propName, newValue);
+                    this.notifyPropertyChanged(propName);
+                    this.updateNodeTypeHeading(); // Update heading to reflect new exactness
+                }
             });
         }
         

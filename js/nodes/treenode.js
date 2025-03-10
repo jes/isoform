@@ -48,7 +48,9 @@ class TreeNode {
 
   setProperty(name, value) {
     this[name] = value;
-    this.markDirty();
+    if (name != "displayName") {
+      this.markDirty();
+    }
   }
 
   getProperty(name) {

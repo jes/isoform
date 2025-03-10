@@ -15,6 +15,10 @@ const app = {
         // Initialize UI with the document
         ui.init(this.document);
         
+        // Get references to UI elements
+        this.fpsCounter = document.getElementById('fps-counter');
+        this.shaderLoading = document.getElementById('shader-loading');
+        
         // Start the render loop
         this.render();
     },
@@ -35,6 +39,20 @@ const app = {
         return doc;
     },
     
+    showLoadingIndicator() {
+        if (this.fpsCounter && this.shaderLoading) {
+            this.fpsCounter.style.display = 'none';
+            this.shaderLoading.style.display = 'flex';
+        }
+    },
+    
+    hideLoadingIndicator() {
+        if (this.fpsCounter && this.shaderLoading) {
+            this.fpsCounter.style.display = 'block';
+            this.shaderLoading.style.display = 'none';
+        }
+    },
+    
     async render() {
         // Track the current secondary node
         const currentSecondaryNode = ui.getSecondaryNode();
@@ -42,9 +60,9 @@ const app = {
         // Check if document is dirty or if a new secondary node is selected
         if (this.document.dirty() || 
             (currentSecondaryNode !== null && currentSecondaryNode !== this.lastSecondaryNode)) {
-            
-            // Show a loading indicator or message
-            // ...
+
+            // Show loading indicator
+            this.showLoadingIndicator();
             
             // Compile shaders asynchronously
             await renderer.createShaderProgram(
@@ -53,11 +71,11 @@ const app = {
             );
             
             // Hide loading indicator
-            // ...
+            this.hideLoadingIndicator();
+
+            // update the last secondary node reference when we recompile
+            this.lastSecondaryNode = currentSecondaryNode;
         }
-        
-        // Always update the last secondary node reference
-        this.lastSecondaryNode = currentSecondaryNode;
         
         // Render the scene
         try {
