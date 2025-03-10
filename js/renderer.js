@@ -17,7 +17,7 @@ const renderer = {
     
     async init() {
         this.canvas = document.getElementById('glCanvas');
-        this.gl = this.canvas.getContext('webgl');
+        this.gl = this.canvas.getContext('webgl2');
         if (!this.gl) {
             alert('Unable to initialize WebGL. Your browser may not support it.');
             return false;
