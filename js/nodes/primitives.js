@@ -114,10 +114,10 @@ class BoxNode extends TreeNode {
 }
 
 class TorusNode extends TreeNode {
-  constructor(majorRadius = 10.0, minorRadius = 3.0) {
+  constructor(majorDiameter = 10.0, minorDiameter = 3.0) {
     super("Torus");
-    this.majorRadius = majorRadius;
-    this.minorRadius = minorRadius;
+    this.majorDiameter = majorDiameter;
+    this.minorDiameter = minorDiameter;
   }
 
   getExactness() {
@@ -125,7 +125,7 @@ class TorusNode extends TreeNode {
   }
 
   properties() {
-    return {"majorRadius": "float", "minorRadius": "float"};
+    return {"majorDiameter": "float", "minorDiameter": "float"};
   }
 
   generateShaderImplementation() {
@@ -138,7 +138,7 @@ class TorusNode extends TreeNode {
   }
 
   generateShaderCode() {
-    return `sdTorus(p, vec2(${this.majorRadius.toFixed(16)}, ${this.minorRadius.toFixed(16)}))`;
+    return `sdTorus(p, vec2(${(this.majorDiameter/2).toFixed(16)}, ${(this.minorDiameter/2).toFixed(16)}))`;
   }
 
   getIcon() {
