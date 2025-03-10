@@ -128,6 +128,7 @@ const renderer = {
                 showEdges: this.gl.getUniformLocation(program, 'uShowEdges'),
                 showSecondary: this.gl.getUniformLocation(program, 'uShowSecondary'),
                 stepFactor: this.gl.getUniformLocation(program, 'stepFactor'),
+                msaaSamples: this.gl.getUniformLocation(program, 'uMsaaSamples'),
             },
         };
         
@@ -135,6 +136,10 @@ const renderer = {
     },
     
     render() {
+        if (!this.programInfo) {
+            return;
+        }
+
         const currentTime = (Date.now() - this.startTime) / 1000;
         
         // Clear the canvas
@@ -177,6 +182,9 @@ const renderer = {
         
         // Set stepFactor uniform
         this.gl.uniform1f(this.programInfo.uniformLocations.stepFactor, camera.stepFactor);
+        
+        // Pass MSAA samples
+        this.gl.uniform1i(this.programInfo.uniformLocations.msaaSamples, camera.msaaSamples);
         
         // Draw the quad
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);

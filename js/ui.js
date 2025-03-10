@@ -597,4 +597,8 @@ const ui = {
         this.treeViewComponent.setSelectedNode(node);
         this.propertyEditorComponent.render(node);
     },
-}; 
+};
+
+document.getElementById('msaa-level').addEventListener('change', function(e) {
+    camera.msaaSamples = parseInt(e.target.value);
+}); 
