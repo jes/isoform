@@ -32,10 +32,19 @@ class UnionNode extends TreeNode {
 
       let shaderCode = this.children[0].shaderCode();
       for (let i = 1; i < this.children.length; i++) {
+        const childCode = this.children[i].shaderCode();
+        // Check if either operand is a noop value
+        if (childCode === this.noopShaderCode()) {
+          continue; // Skip this child
+        } else if (shaderCode === this.noopShaderCode()) {
+          shaderCode = childCode;
+          continue;
+        }
+        
         if (this.smoothK > 0) {
-          shaderCode = `opSmoothUnion(${shaderCode}, ${this.children[i].shaderCode()}, ${this.smoothK.toFixed(16)})`;
+          shaderCode = `opSmoothUnion(${shaderCode}, ${childCode}, ${this.smoothK.toFixed(16)})`;
         } else {
-          shaderCode = `opUnion(${shaderCode}, ${this.children[i].shaderCode()})`;
+          shaderCode = `opUnion(${shaderCode}, ${childCode})`;
         }
       }
       return shaderCode;
@@ -79,11 +88,23 @@ class IntersectionNode extends TreeNode {
     }
 
     let shaderCode = this.children[0].shaderCode();
+    if (shaderCode === this.noopShaderCode()) {
+      return this.noopShaderCode(); // If first child is noop, result is noop
+    }
+ 
     for (let i = 1; i < this.children.length; i++) {
+      const childCode = this.children[i].shaderCode();
+      // Check if either operand is a noop value
+      if (shaderCode === this.noopShaderCode()) {
+        return this.noopShaderCode(); // For intersection, if any is noop, result is noop
+      } else if (childCode === this.noopShaderCode()) {
+        continue; // Skip this child
+      }
+      
       if (this.smoothK > 0) {
-        shaderCode = `opSmoothIntersection(${shaderCode}, ${this.children[i].shaderCode()}, ${this.smoothK.toFixed(16)})`;
+        shaderCode = `opSmoothIntersection(${shaderCode}, ${childCode}, ${this.smoothK.toFixed(16)})`;
       } else {
-        shaderCode = `opIntersection(${shaderCode}, ${this.children[i].shaderCode()})`;
+        shaderCode = `opIntersection(${shaderCode}, ${childCode})`;
       }
     }
     return shaderCode;
@@ -127,11 +148,21 @@ class SubtractionNode extends TreeNode {
     }
 
     let shaderCode = this.children[0].shaderCode();
+    if (shaderCode === this.noopShaderCode()) {
+      return this.noopShaderCode(); // If first child is noop, result is noop
+    }
+    
     for (let i = 1; i < this.children.length; i++) {
+      const childCode = this.children[i].shaderCode();
+      // Check if subtrahend is a noop value
+      if (childCode === this.noopShaderCode()) {
+        continue; // Skip this child
+      }
+      
       if (this.smoothK > 0) {
-        shaderCode = `opSmoothSubtraction(${shaderCode}, ${this.children[i].shaderCode()}, ${this.smoothK.toFixed(16)})`;
+        shaderCode = `opSmoothSubtraction(${shaderCode}, ${childCode}, ${this.smoothK.toFixed(16)})`;
       } else {
-        shaderCode = `opSubtraction(${shaderCode}, ${this.children[i].shaderCode()})`;
+        shaderCode = `opSubtraction(${shaderCode}, ${childCode})`;
       }
     }
     return shaderCode;
