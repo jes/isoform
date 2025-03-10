@@ -241,12 +241,16 @@ const ui = {
         }
 
         // Only show delete options for non-root nodes or nodes with children
-        if (node.parent && (node.children.length == 1 || (node.children.length > 1 && node.parent.canAddMoreChildren()))) {
-            this.addMenuItem(contextMenu, 'Delete this', () => {
-                this.replaceNode(node, [...node.children]);
-                contextMenu.remove();
-                this.renderTree();
-            });
+        if (node.parent) {
+            const infiniteChildren = node.parent.maxChildren == null;
+            const canAddChildren = infiniteChildren || (node.parent.maxChildren - node.parent.children.length) >= node.children.length;
+            if (node.children.length == 1 || (node.children.length > 1 && canAddChildren)) {
+                this.addMenuItem(contextMenu, 'Delete this', () => {
+                    this.replaceNode(node, [...node.children]);
+                    contextMenu.remove();
+                    this.renderTree();
+                });
+            }
         }
         
         if (node.children.length > 0) {
