@@ -64,23 +64,43 @@ const renderer = {
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     },
     
-    compileShader(source, type) {
+    async compileShader(source, type) {
+        // Create shader object
         const shader = this.gl.createShader(type);
         this.gl.shaderSource(shader, source);
+        
+        // Start compilation
         this.gl.compileShader(shader);
-
-        if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-            console.warn('Shader source:', source);
-            console.error('Shader compilation error:', this.gl.getShaderInfoLog(shader));
-            this.gl.deleteShader(shader);
-            return null;
-        }
+        
+        // Use requestAnimationFrame to yield to the UI thread
+        await new Promise(resolve => {
+            const checkCompilation = () => {
+                // Check if compilation is complete
+                if (this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+                    resolve(shader);
+                } else {
+                    console.warn('Shader source:', source);
+                    console.error('Shader compilation error:', this.gl.getShaderInfoLog(shader));
+                    this.gl.deleteShader(shader);
+                    resolve(null);
+                }
+            };
+            
+            // Use setTimeout to give the browser a chance to compile the shader
+            // without blocking the UI thread
+            setTimeout(checkCompilation, 0);
+        });
+        
         return shader;
     },
     
-    createShaderProgram(vsSource, fsSource) {
-        const vertexShader = this.compileShader(vsSource, this.gl.VERTEX_SHADER);
-        const fragmentShader = this.compileShader(fsSource, this.gl.FRAGMENT_SHADER);
+    async createShaderProgram(vsSource, fsSource) {
+        const vertexShader = await this.compileShader(vsSource, this.gl.VERTEX_SHADER);
+        const fragmentShader = await this.compileShader(fsSource, this.gl.FRAGMENT_SHADER);
+        
+        if (!vertexShader || !fragmentShader) {
+            return null;
+        }
 
         const program = this.gl.createProgram();
         this.gl.attachShader(program, vertexShader);

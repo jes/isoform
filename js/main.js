@@ -35,15 +35,25 @@ const app = {
         return doc;
     },
     
-    render() {
+    async render() {
         // Track the current secondary node
         const currentSecondaryNode = ui.getSecondaryNode();
         
         // Check if document is dirty or if a new secondary node is selected
-        // (but don't recompile when just deselecting)
         if (this.document.dirty() || 
             (currentSecondaryNode !== null && currentSecondaryNode !== this.lastSecondaryNode)) {
-            renderer.createShaderProgram(renderer.vertexShaderSource, scene.generateShaderCode(this.document));
+            
+            // Show a loading indicator or message
+            // ...
+            
+            // Compile shaders asynchronously
+            await renderer.createShaderProgram(
+                renderer.vertexShaderSource, 
+                scene.generateShaderCode(this.document)
+            );
+            
+            // Hide loading indicator
+            // ...
         }
         
         // Always update the last secondary node reference
