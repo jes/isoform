@@ -313,6 +313,7 @@ const ui = {
             { name: 'Scale', constructor: ScaleNode },
             { name: 'Twist', constructor: TwistNode },
             { name: 'Roughen', constructor: RoughnessNode },
+            { name: 'Thickness', constructor: ThicknessNode },
             { name: 'Mirror', constructor: MirrorNode },
             { name: 'Linear Pattern', constructor: LinearPatternNode },
             { name: 'Polar Pattern', constructor: PolarPatternNode }

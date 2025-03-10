@@ -139,6 +139,53 @@ class RoughnessNode extends TreeNode {
   }
 }
 
+class ThicknessNode extends TreeNode {
+  constructor(thickness = 1.0, inside = false, children = []) {
+    super("Thickness");
+    this.thickness = thickness;
+    this.inside = inside;
+    this.maxChildren = 1;
+    this.addChild(children);
+  }
+
+  getExactness() {
+    return TreeNode.EXACT;
+  }
+
+  properties() {
+    return {"thickness": "float", "inside": "bool"};
+  }
+
+  generateShaderImplementation() {
+    if (!this.hasChildren()) {
+      this.warn("Thickness node has no child to transform");
+      return '';
+    }
+
+    return `
+      float ${this.getFunctionName()}(vec3 p) {
+        float d = ${this.children[0].shaderCode()};
+        float thickness = ${this.thickness.toFixed(16)};
+        return ${this.inside ? 
+          `max(d, -d - thickness)` : 
+          `max(d - thickness, -d)`};
+      }
+    `;
+  }
+
+  generateShaderCode() {
+    if (!this.hasChildren()) {
+      return this.noopShaderCode();
+    }
+
+    return `${this.getFunctionName()}(p)`;
+  }
+
+  getIcon() {
+    return this.inside ? "🔍" : "🔍";
+  }
+}
+
 class ScaleNode extends TreeNode {
   constructor(k = 2.0, alongAxis = false, axis = [0, 0, 1], children = []) {
     super("Scale");
@@ -478,7 +525,7 @@ class PolarPatternNode extends TreeNode {
 
 // Detect environment and export accordingly
 (function() {
-  const nodes = { TransformNode, RoughnessNode, ScaleNode, TwistNode, MirrorNode };
+  const nodes = { TransformNode, RoughnessNode, ThicknessNode, ScaleNode, TwistNode, MirrorNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {
