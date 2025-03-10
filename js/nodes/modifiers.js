@@ -371,6 +371,10 @@ class MirrorNode extends TreeNode {
     this.addChild(children);
   }
 
+  getExactness() {
+    return TreeNode.LOWERBOUND;
+  }
+
   properties() {
     return {"plane": ["XY", "XZ", "YZ"]};
   }
@@ -410,6 +414,10 @@ class LinearPatternNode extends TreeNode {
     this.addChild(children);
   }
 
+  getExactness() {
+    return TreeNode.LOWERBOUND;
+  }
+
   properties() {
     return {"axis": "vec3", "spacing": "float", "copies": "int"};
   }
@@ -446,6 +454,10 @@ class PolarPatternNode extends TreeNode {
     this.axis = axis;
     this.angle = angle;
     this.addChild(children);
+  }
+
+  getExactness() {
+    return TreeNode.LOWERBOUND;
   }
 
   properties() {
