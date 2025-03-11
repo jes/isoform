@@ -104,9 +104,11 @@ const renderer = {
     },
     
     async createShaderProgram(vsSource, fsSource) {
+        const startTime = performance.now();
+
         const vertexShader = await this.compileShader(vsSource, this.gl.VERTEX_SHADER);
         const fragmentShader = await this.compileShader(fsSource, this.gl.FRAGMENT_SHADER);
-        
+
         if (!vertexShader || !fragmentShader) {
             return null;
         }
@@ -120,8 +122,7 @@ const renderer = {
             console.error('Program linking error:', this.gl.getProgramInfoLog(program));
             return null;
         }
-        
-        // Set up program info
+
         this.programInfo = {
             program: program,
             attribLocations: {
@@ -140,7 +141,9 @@ const renderer = {
                 msaaSamples: this.gl.getUniformLocation(program, 'uMsaaSamples'),
             },
         };
-        
+
+        const endTime = performance.now();
+        console.log(`Shader program creation took ${(endTime - startTime).toFixed(3)} ms`);
         return program;
     },
     
