@@ -70,12 +70,30 @@ const renderer = {
         
         // Check if the canvas is not the same size
         if (this.canvas.width !== renderWidth || this.canvas.height !== renderHeight) {
+            // Save the current canvas content
+            let oldCanvas = document.createElement('canvas');
+            oldCanvas.width = this.canvas.width;
+            oldCanvas.height = this.canvas.height;
+            let oldCtx = oldCanvas.getContext('2d');
+            oldCtx.drawImage(this.canvas, 0, 0);
+            
             // Update the canvas size to match the scaled resolution
             this.canvas.width = renderWidth;
             this.canvas.height = renderHeight;
+            
+            // Set viewport to new size
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+            
+            // Draw the old content stretched to the new size to prevent flickering
+            // This will be replaced by the next render call
+            this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+            
+            // Force an immediate render to prevent seeing the blank canvas
+            this.render();
+        } else {
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         }
-        
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     },
     
     // Update to allow values above 1.0
