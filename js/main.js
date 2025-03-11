@@ -2,7 +2,11 @@
 const app = {
     document: null,
     lastSecondaryNode: null,
-    
+    lastFrameEnd: 0,
+    frameExcessTime: 0, // cumulative ms since quality adjustment
+    targetFrameTime: 30, // ms
+    framesSinceQualityAdjustment: 0,
+
     async init() {
         // Initialize components
         if (!await renderer.init()) return;
@@ -89,8 +93,49 @@ const app = {
             console.error(e);
         }
         
+        this.controlQuality();
+       
         // Request next frame
         requestAnimationFrame(() => this.render());
+    },
+
+    controlQuality() {
+        // Update the average FPS with time-based weighting
+        const currentTime = performance.now();
+        const frameTime = currentTime - this.lastFrameEnd;
+        this.frameExcessTime += frameTime - this.targetFrameTime;
+
+        if (this.framesSinceQualityAdjustment > 0) {
+            this.excessPerFrame = this.frameExcessTime / this.framesSinceQualityAdjustment;
+
+            if (this.framesSinceQualityAdjustment > 3 && this.excessPerFrame > 5) {
+                this.reduceQuality();
+                this.framesSinceQualityAdjustment = 0;
+                this.frameExcessTime = 0;
+            } else if (this.framesSinceQualityAdjustment > 300 && this.excessPerFrame < -5) {
+                this.increaseQuality();
+                this.framesSinceQualityAdjustment = 0;
+                this.frameExcessTime = 0;
+            }
+        }
+        
+        // Update the last frame time
+        this.lastFrameEnd = currentTime;
+        this.framesSinceQualityAdjustment++;
+    },
+
+    reduceQuality() {
+        if (camera.msaaSamples > 1) {
+            camera.msaaSamples--;
+            document.getElementById('msaa-level').value = camera.msaaSamples;
+        }
+    },
+    
+    increaseQuality() {
+        if (camera.msaaSamples < 4) {
+            camera.msaaSamples++;
+            document.getElementById('msaa-level').value = camera.msaaSamples;
+        }
     }
 };
 
