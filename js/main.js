@@ -2,10 +2,8 @@
 const app = {
     document: null,
     lastSecondaryNode: null,
-    lastFrameEnd: 0,
-    sumFrameTime: 0, // cumulative ms since quality adjustment
-    targetFrameTime: 30, // ms
-    framesSinceQualityAdjustment: 0,
+    lastAdjustmentTime: 0,
+    adjustmentInterval: 5000, // ms
 
     async init() {
         // Initialize components
@@ -100,39 +98,16 @@ const app = {
     },
 
     controlQuality() {
-        // Update the average FPS with time-based weighting
-        const currentTime = performance.now();
-        const frameTime = currentTime - this.lastFrameEnd;
-
-        if (this.framesSinceQualityAdjustment > 0) {
-            this.sumFrameTime += frameTime;
-            const avgFrameTime= this.sumFrameTime / this.framesSinceQualityAdjustment;
-            const frameTimeRatio = avgFrameTime / this.targetFrameTime;
-            if (this.framesSinceQualityAdjustment > 60 && frameTimeRatio > 1.5) {
-                this.reduceQuality();
-                this.framesSinceQualityAdjustment = 0;
-                this.sumFrameTime = 0;
-            } else if (this.framesSinceQualityAdjustment > 60 && frameTimeRatio < 0.75) {
-                this.increaseQuality();
-                this.framesSinceQualityAdjustment = 0;
-                this.sumFrameTime = 0;
+        const timeSinceLastAdjustment = Date.now() - this.lastAdjustmentTime;
+        if (timeSinceLastAdjustment > this.adjustmentInterval) {
+            const fpsRatio = renderer.currentFps / 45;
+            if (fpsRatio > 1.25 || fpsRatio < 0.75) {
+                renderer.setResolutionScale(renderer.resolutionScale * Math.sqrt(fpsRatio));
+                document.getElementById('resolution-scale').textContent = renderer.resolutionScale.toFixed(3);
+                this.lastAdjustmentTime = Date.now();
             }
         }
-        
-        // Update the last frame time
-        this.lastFrameEnd = currentTime;
-        this.framesSinceQualityAdjustment++;
     },
-
-    reduceQuality() {
-        renderer.setResolutionScale(renderer.resolutionScale * 0.9);
-        document.getElementById('resolution-scale').textContent = renderer.resolutionScale.toFixed(3);
-    },
-    
-    increaseQuality() {
-        renderer.setResolutionScale(renderer.resolutionScale / 0.9);
-        document.getElementById('resolution-scale').textContent = renderer.resolutionScale.toFixed(3);
-    }
 };
 
 // Start the application when the page loads
