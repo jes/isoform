@@ -602,3 +602,4 @@ const ui = {
 document.getElementById('msaa-level').addEventListener('change', function(e) {
     camera.msaaSamples = parseInt(e.target.value);
 }); 
+camera.msaaSamples = document.getElementById('msaa-level').value;
