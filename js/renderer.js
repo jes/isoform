@@ -8,12 +8,13 @@ const renderer = {
     vertexShaderSource: null,
     fragmentShaderSource: null,
     
-    // Add these properties for FPS calculation
     frameCount: 0,
     lastFpsUpdateTime: 0,
     fpsUpdateInterval: 500, // Update FPS display every 500ms
     fpsElement: null,
     currentFps: 0,
+    
+    resolutionScale: 1.0, // Values > 1.0 = supersampling, < 1.0 = downsampling
     
     async init() {
         this.canvas = document.getElementById('glCanvas');
@@ -63,14 +64,26 @@ const renderer = {
         const displayWidth = this.canvas.clientWidth;
         const displayHeight = this.canvas.clientHeight;
         
+        // Apply resolution scaling (allow values > 1.0 for supersampling)
+        const renderWidth = Math.floor(displayWidth * this.resolutionScale);
+        const renderHeight = Math.floor(displayHeight * this.resolutionScale);
+        
         // Check if the canvas is not the same size
-        if (this.canvas.width !== displayWidth || this.canvas.height !== displayHeight) {
-            // Update the canvas size to match its display size
-            this.canvas.width = displayWidth;
-            this.canvas.height = displayHeight;
+        if (this.canvas.width !== renderWidth || this.canvas.height !== renderHeight) {
+            // Update the canvas size to match the scaled resolution
+            this.canvas.width = renderWidth;
+            this.canvas.height = renderHeight;
         }
         
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    },
+    
+    // Update to allow values above 1.0
+    setResolutionScale(scale) {
+        if (scale > 0.1) {
+            this.resolutionScale = scale;
+            this.resizeCanvas();
+        }
     },
     
     async compileShader(source, type) {
@@ -138,7 +151,6 @@ const renderer = {
                 showEdges: this.gl.getUniformLocation(program, 'uShowEdges'),
                 showSecondary: this.gl.getUniformLocation(program, 'uShowSecondary'),
                 stepFactor: this.gl.getUniformLocation(program, 'stepFactor'),
-                msaaSamples: this.gl.getUniformLocation(program, 'uMsaaSamples'),
             },
         };
 
@@ -194,9 +206,6 @@ const renderer = {
         
         // Set stepFactor uniform
         this.gl.uniform1f(this.programInfo.uniformLocations.stepFactor, camera.stepFactor);
-        
-        // Pass MSAA samples
-        this.gl.uniform1i(this.programInfo.uniformLocations.msaaSamples, camera.msaaSamples);
         
         // Draw the quad
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);

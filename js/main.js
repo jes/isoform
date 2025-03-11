@@ -3,7 +3,7 @@ const app = {
     document: null,
     lastSecondaryNode: null,
     lastFrameEnd: 0,
-    frameExcessTime: 0, // cumulative ms since quality adjustment
+    sumFrameTime: 0, // cumulative ms since quality adjustment
     targetFrameTime: 30, // ms
     framesSinceQualityAdjustment: 0,
 
@@ -38,11 +38,11 @@ const app = {
 
         doc.addChild(torus);
         doc.addChild(new SubtractionNode([box, new TransformNode([0, 10, 0], [0, 1, 0], 0, sphere)], 0.5));
-        doc.addChild(new SketchNode([
+        /*doc.addChild(new SketchNode([
             { type: 'line', start: { x: 0, y: 0 }, end: { x: 20, y: 0 } },
             { type: 'line', start: { x: 20, y: 0 }, end: { x: 20, y: 20 } },
             { type: 'line', start: { x: 20, y: 20 }, end: { x: 0, y: 0 } },
-        ]));
+        ]));*/
         
         this.document = doc;
         return doc;
@@ -103,19 +103,19 @@ const app = {
         // Update the average FPS with time-based weighting
         const currentTime = performance.now();
         const frameTime = currentTime - this.lastFrameEnd;
-        this.frameExcessTime += frameTime - this.targetFrameTime;
 
         if (this.framesSinceQualityAdjustment > 0) {
-            this.excessPerFrame = this.frameExcessTime / this.framesSinceQualityAdjustment;
-
-            if (this.framesSinceQualityAdjustment > 3 && this.excessPerFrame > 5) {
+            this.sumFrameTime += frameTime;
+            const avgFrameTime= this.sumFrameTime / this.framesSinceQualityAdjustment;
+            const frameTimeRatio = avgFrameTime / this.targetFrameTime;
+            if (this.framesSinceQualityAdjustment > 60 && frameTimeRatio > 1.5) {
                 this.reduceQuality();
                 this.framesSinceQualityAdjustment = 0;
-                this.frameExcessTime = 0;
-            } else if (this.framesSinceQualityAdjustment > 300 && this.excessPerFrame < -5) {
+                this.sumFrameTime = 0;
+            } else if (this.framesSinceQualityAdjustment > 60 && frameTimeRatio < 0.75) {
                 this.increaseQuality();
                 this.framesSinceQualityAdjustment = 0;
-                this.frameExcessTime = 0;
+                this.sumFrameTime = 0;
             }
         }
         
@@ -125,17 +125,13 @@ const app = {
     },
 
     reduceQuality() {
-        if (camera.msaaSamples > 1) {
-            camera.msaaSamples--;
-            document.getElementById('msaa-level').value = camera.msaaSamples;
-        }
+        renderer.setResolutionScale(renderer.resolutionScale * 0.9);
+        document.getElementById('resolution-scale').textContent = renderer.resolutionScale.toFixed(3);
     },
     
     increaseQuality() {
-        if (camera.msaaSamples < 4) {
-            camera.msaaSamples++;
-            document.getElementById('msaa-level').value = camera.msaaSamples;
-        }
+        renderer.setResolutionScale(renderer.resolutionScale / 0.9);
+        document.getElementById('resolution-scale').textContent = renderer.resolutionScale.toFixed(3);
     }
 };
 

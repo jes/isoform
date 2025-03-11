@@ -28,7 +28,6 @@ const camera = {
         0, 1, 0,
         0, 0, 1
     ],
-    msaaSamples: 2, // Default to 2x2 MSAA (4 samples)
     
     init(canvas) {
         // Mouse event handlers
