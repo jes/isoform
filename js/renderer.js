@@ -17,6 +17,15 @@ const renderer = {
     
     async init() {
         this.canvas = document.getElementById('glCanvas');
+        this.canvas.addEventListener('webglcontextlost', (event) => {
+            console.log('WebGL context lost');
+            alert('WebGL context lost! Sorry');
+            event.preventDefault();
+        });
+        this.canvas.addEventListener('webglcontextrestored', (event) => {
+            console.log('WebGL context restored');
+            event.preventDefault();
+        });
         this.gl = this.canvas.getContext('webgl2');
         if (!this.gl) {
             alert('Unable to initialize WebGL. Your browser may not support it.');
