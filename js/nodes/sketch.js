@@ -4,6 +4,7 @@ class SketchNode extends TreeNode {
     // New representation: first point is start, rest are end points of segments
     this.polycurves = points.length > 0 ? [points] : [];
     this.maxChildren = 0; // Primitive node with no children
+    this.is2d = true;
   }
 
   getExactness() {
@@ -72,20 +73,19 @@ class SketchNode extends TreeNode {
     return `
       float ${this.getFunctionName()}(vec3 p) {
         ${code}
-        // the max() turns it from an infinite extrusion into a 0.01mm thick surface
-        return max(d, abs(p.z)-0.005);
+        return d;
       }
     `;
   }
 
-  generateShaderCode() {
-    if (this.polycurves.length === 0 || this.polycurves[0].length < 2) {
-      return this.noopShaderCode();
-    }
-
+  generateShaderCode2d() {
     return `
       ${this.getFunctionName()}(p)
     `;
+  }
+
+  generateShaderCode() {
+    return `max(abs(p.z)-0.005, ${this.getFunctionName()}(p))`;
   }
 
   sdf(p) {

@@ -671,14 +671,11 @@ class ExtrudeNode extends TreeNode {
     return `
       float ${this.getFunctionName()}(vec3 p) {
         float halfHeight = ${(this.height/2).toFixed(16)};
-        vec3 q = p;
-        p.z = 0.0;
-        
         // First get the 2D SDF by evaluating with z=0
-        float d2d = ${this.children[0].shaderCode()};
+        float d2d = ${this.children[0].shaderCode2d()};
         
         // Calculate distance to the boundary based on z position
-        float dz = abs(q.z) - halfHeight;
+        float dz = abs(p.z) - halfHeight;
         
         if (dz <= 0.0) {
           // Inside the extrusion height - just use the 2D distance

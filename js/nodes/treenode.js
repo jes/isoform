@@ -19,6 +19,7 @@ class TreeNode {
     this.isDirty = true; // whether the shader needs to be recompiled
     this.isDisabled = false; // whether the node is disabled (i.e. hidden)
     this.applyToSecondary = false; // whether the node should be applied to the secondary display object (e.g. translate/rotate should still apply but combinators should not)
+    this.is2d = false; // whether the node is a 2d node
   }
 
   // "dirty" means the shader needs to be recompiled
@@ -236,6 +237,14 @@ class TreeNode {
 
   noopShaderCode() {
     return "10000042.0";
+  }
+
+  shaderCode2d() {
+    return this.generateShaderCode2d();
+  }
+
+  generatedShaderCode2d() {
+    return this.noopShaderCode();
   }
 
   // p is a Vec3
