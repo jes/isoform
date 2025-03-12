@@ -48,10 +48,12 @@ mat3 transposeMatrix(mat3 m) {
 
 // begin scene
 float map(vec3 p) {
-    return 1000.0;
+    p = rotatePoint(p);
+    return 1000.0; // this will be replaced at runtime with an SDF of the object
 }
 float map_secondary(vec3 p) {
-    return 1000.0;
+    p = rotatePoint(p);
+    return 1000.0; // this will be replaced at runtime with an SDF of the object
 }
 // end scene
 
