@@ -221,6 +221,7 @@ const renderer = {
                 } else {
                     console.warn('Shader source:', source);
                     console.error('Shader compilation error:', this.gl.getShaderInfoLog(shader));
+                    alert('Shader compilation error:\n' + this.gl.getShaderInfoLog(shader));
                     this.gl.deleteShader(shader);
                     resolve(null);
                 }

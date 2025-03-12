@@ -646,9 +646,52 @@ class PolarPatternNode extends TreeNode {
   }
 }
 
+class ExtrudeNode extends TreeNode {
+  constructor(height = 100.0, children = []) {
+    super("Extrude");
+    this.height = height;
+    this.maxChildren = 1;
+    this.addChild(children);
+  }
+
+  getExactness() {
+    return TreeNode.EXACT;
+  }
+
+  properties() {
+    return {"height": "float"};
+  }
+
+  generateShaderImplementation() {
+    if (!this.hasChildren()) {
+      this.warn("Extrude node has no child to transform");
+      return '';
+    }
+
+    return `
+      float ${this.getFunctionName()}(vec3 p) {
+        if (abs(p.z) < ${(this.height/2).toFixed(16)}) {
+          p.z = 0.0;
+        } else {
+          p.z = sign(p.z) * (abs(p.z) - ${(this.height/2).toFixed(16)});
+        }
+        return ${this.children[0].shaderCode()};
+      }
+    `;
+  }
+
+  generateShaderCode() {
+    return `${this.getFunctionName()}(p)`;
+  }
+
+  getIcon() {
+    return "⬆️";
+  }
+}
+
 // Detect environment and export accordingly
 (function() {
-  const nodes = { TransformNode, RoughnessNode, ThicknessNode, ScaleNode, TwistNode, MirrorNode, LinearPatternNode, PolarPatternNode };
+  const nodes = { TransformNode, RoughnessNode, ThicknessNode, ScaleNode, TwistNode, MirrorNode, LinearPatternNode, PolarPatternNode, ExtrudeNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {

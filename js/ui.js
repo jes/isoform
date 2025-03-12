@@ -317,7 +317,8 @@ const ui = {
             { name: 'Thickness', constructor: ThicknessNode },
             { name: 'Mirror', constructor: MirrorNode },
             { name: 'Linear Pattern', constructor: LinearPatternNode },
-            { name: 'Polar Pattern', constructor: PolarPatternNode }
+            { name: 'Polar Pattern', constructor: PolarPatternNode },
+            { name: 'Extrude', constructor: ExtrudeNode }
         ];
         
         modifiers.forEach(modifier => {
