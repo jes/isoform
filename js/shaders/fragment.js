@@ -249,13 +249,13 @@ vec4 drawAxisIndicator(vec2 uv) {
     }
 
     // Camera setup
-    vec3 ro = vec3(0.0, 0.0, -10.0); // Ray origin (camera position)
+    vec3 ro = vec3(0.0, 0.0, 10.0); // Ray origin (camera position)
     vec3 target = vec3(0.0, 0.0, 0.0); // Look at point
     
     // Camera frame
     vec3 forward = normalize(target - ro);
-    vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
-    vec3 up = cross(forward, right);
+    vec3 right = normalize(cross(forward, vec3(0.0, 1.0, 0.0)));
+    vec3 up = cross(right, forward);
     
     // Apply zoom - for orthographic, this scales the view size
     float zoom = uCameraZoom;
@@ -302,8 +302,8 @@ void main() {
     
     // Camera frame
     vec3 forward = normalize(target - ro);
-    vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
-    vec3 up = cross(forward, right);
+    vec3 right = normalize(cross(forward, vec3(0.0, 1.0, 0.0)));
+    vec3 up = cross(right, forward);
     
     // Apply zoom - for orthographic, this scales the view size
     float zoom = uCameraZoom;
@@ -331,7 +331,7 @@ void main() {
         float edge = detectEdge(pos, normal);
         
         // Lighting setup
-        vec3 lightDir = vec3(0.0, 0.0, -1.0);
+        vec3 lightDir = vec3(0.0, 0.0, 1.0);
         
         // Ambient light
         vec3 ambient = vec3(0.1);
@@ -360,7 +360,7 @@ void main() {
             vec3 normal = calcNormal_secondary(pos);
             
             // Lighting setup
-            vec3 lightDir = vec3(0.0, 0.0, -1.0);
+            vec3 lightDir = vec3(0.0, 0.0, 1.0);
             
             // Ambient light
             vec3 ambient = vec3(0.1);

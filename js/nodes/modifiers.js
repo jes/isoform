@@ -401,7 +401,8 @@ class TwistNode extends TreeNode {
         // The twist angle is proportional to the distance along the axis
         // A smaller height value means more twisting (2π radians per 'height' units)
         if (height != 0.0) {
-          float angle = (2.0 * 3.14159265359 * q.z) / height;
+          // Negative angle for right-handed rotation around Z
+          float angle = (-2.0 * 3.14159265359 * q.z) / height;
           float c = cos(angle);
           float s = sin(angle);
           q = vec3(c * q.x - s * q.y, s * q.x + c * q.y, q.z);
@@ -437,7 +438,7 @@ class TwistNode extends TreeNode {
     let q = toAxisSpace.mulVec3(p);
 
     if (this.height != 0.0) {
-      const angle = (2.0 * Math.PI * q.z) / this.height;
+      const angle = (-2.0 * Math.PI * q.z) / this.height;
       const c = Math.cos(angle);
       const s = Math.sin(angle);
       q = new Vec3(c * q.x - s * q.y, s * q.x + c * q.y, q.z);
@@ -537,7 +538,7 @@ class LinearPatternNode extends TreeNode {
           vec3 step = spacing * normalize(vec3(${this.axis.map(v => v.toFixed(16)).join(", ")}));
           float d = ${this.children[0].shaderCode()};
           for (int i = 1; i < ${this.copies}; i++) {
-            p += step;
+            p -= step;
             d = min(d, ${this.children[0].shaderCode()});
           }
           return d;

@@ -1,6 +1,6 @@
 // Camera controls
 const camera = {
-    position: [0.0, 0.0, -1000.0],
+    position: [0.0, 0.0, 1000.0],
     target: [0.0, 0.0, 0.0],
     zoom: 0.05,
     // Replace Euler angles with rotation matrices
@@ -128,8 +128,8 @@ const camera = {
             this.position[1] += worldMoveY;
         } else {
             // Create rotation matrices based on total mouse movement from drag start
-            const rotX = this.createRotationMatrixX(-deltaY * this.rotationSpeed);
-            const rotY = this.createRotationMatrixY(-deltaX * this.rotationSpeed);
+            const rotX = this.createRotationMatrixX(deltaY * this.rotationSpeed);
+            const rotY = this.createRotationMatrixY(deltaX * this.rotationSpeed);
             
             // Apply rotations to the drag start rotation matrix
             const combinedRotation = this.multiplyMatrices(rotX, rotY);
@@ -258,9 +258,9 @@ const camera = {
         
         const worldUp = { x: 0, y: 1, z: 0 };
         const right = {
-            x: worldUp.y * forward.z - worldUp.z * forward.y,
-            y: worldUp.z * forward.x - worldUp.x * forward.z,
-            z: worldUp.x * forward.y - worldUp.y * forward.x
+            x: forward.y * worldUp.z - forward.z * worldUp.y,
+            y: forward.z * worldUp.x - forward.x * worldUp.z,
+            z: forward.x * worldUp.y - forward.y * worldUp.x
         };
         const rLength = Math.sqrt(right.x*right.x + right.y*right.y + right.z*right.z);
         if (rLength < 1e-12) {
@@ -335,9 +335,9 @@ const camera = {
         
         const worldUp = { x: 0, y: 1, z: 0 };
         const right = {
-            x: worldUp.y * forward.z - worldUp.z * forward.y,
-            y: worldUp.z * forward.x - worldUp.x * forward.z,
-            z: worldUp.x * forward.y - worldUp.y * forward.x
+            x: forward.y * worldUp.z - forward.z * worldUp.y,
+            y: forward.z * worldUp.x - forward.x * worldUp.z,
+            z: forward.x * worldUp.y - forward.y * worldUp.x
         };
         const rLength = Math.sqrt(right.x*right.x + right.y*right.y + right.z*right.z);
         if (rLength < 1e-12) {

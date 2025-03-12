@@ -492,7 +492,7 @@ const ui = {
             camera.setStandardView([
                 1, 0, 0,
                 0, 1, 0,
-                0, 0, 1
+                0, 0, -1  // Flip Z for right-handed system
             ]);
         });
         
@@ -501,8 +501,8 @@ const ui = {
             // Set rotation matrix to look at XZ plane (from front)
             camera.setStandardView([
                 1, 0, 0,
-                0, 0, 1,
-                0, -1, 0
+                0, 0, -1, // Flip Z for right-handed system
+                0, 1, 0
             ]);
         });
         
@@ -510,9 +510,9 @@ const ui = {
         viewYZButton.addEventListener('click', () => {
             // Set rotation matrix to look at YZ plane (from side)
             camera.setStandardView([
-                0, 0, 1,
+                0, 0, -1, // Flip Z for right-handed system
                 0, 1, 0,
-                -1, 0, 0
+                1, 0, 0
             ]);
         });
 
