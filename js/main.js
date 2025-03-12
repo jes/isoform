@@ -3,7 +3,7 @@ const app = {
     document: null,
     lastSecondaryNode: null,
     lastAdjustmentTime: 0,
-    adjustmentInterval: 5000, // ms
+    adjustmentInterval: 1000, // ms
 
     async init() {
         // Initialize components
