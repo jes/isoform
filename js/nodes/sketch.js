@@ -86,8 +86,8 @@ class SketchNode extends TreeNode {
 
       float ${this.getFunctionName()}(vec3 p) {
         ${code}
-        // the max() turns it from an infinite extrusion into a 0.002mm thick surface
-        return max(d, abs(p.z)-0.001);
+        // the max() turns it from an infinite extrusion into a 0.01mm thick surface
+        return max(d, abs(p.z)-0.005);
       }
     `;
   }
