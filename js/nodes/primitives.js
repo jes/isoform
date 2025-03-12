@@ -163,6 +163,10 @@ class TorusNode extends TreeNode {
     this.minorDiameter = minorDiameter;
   }
 
+  boundingSphere() {
+    return { centre: [0, 0, 0], radius: this.majorDiameter/2 + this.minorDiameter/2 };
+  }
+
   getExactness() {
     return TreeNode.EXACT;
   }

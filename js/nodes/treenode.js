@@ -25,6 +25,10 @@ class TreeNode {
     return false;
   }
 
+  boundingSphere() {
+    return { centre: [0, 0, 0], radius: Infinity };
+  }
+
   // "dirty" means the shader needs to be recompiled
   dirty() {
     return this.isDirty;

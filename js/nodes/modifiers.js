@@ -528,18 +528,36 @@ class LinearPatternNode extends TreeNode {
   }
 
   generateShaderImplementation() {
-    return `
-      float ${this.getFunctionName()}(vec3 p) {
-        float spacing = ${this.spacing.toFixed(16)};
-        vec3 step = spacing * normalize(vec3(${this.axis.map(v => v.toFixed(16)).join(", ")}));
-        float d = ${this.children[0].shaderCode()};
-        for (int i = 1; i < ${this.copies}; i++) {
-          p += step;
-          d = min(d, ${this.children[0].shaderCode()});
+    if (this.spacing < 2*this.children[0].boundingSphere().radius) {
+      console.log("bounding volumes overlap");
+      // the bounding volumes overlap, so we need to do an explicit union
+      return `
+        float ${this.getFunctionName()}(vec3 p) {
+          float spacing = ${this.spacing.toFixed(16)};
+          vec3 step = spacing * normalize(vec3(${this.axis.map(v => v.toFixed(16)).join(", ")}));
+          float d = ${this.children[0].shaderCode()};
+          for (int i = 1; i < ${this.copies}; i++) {
+            p += step;
+            d = min(d, ${this.children[0].shaderCode()});
+          }
+          return d;
         }
-        return d;
-      }
-    `;
+      `;
+    } else {
+      console.log("bounding volumes do not overlap");
+      // the bounding volumes do not overlap, so we can use domain repetition
+      const halfSpacing = this.spacing / 2.0;
+      const bs = this.children[0].boundingSphere();
+      return `
+        float ${this.getFunctionName()}(vec3 p) {
+          vec3 centre = vec3(${bs.centre.map(v => v.toFixed(16)).join(", ")});
+          vec3 step = ${this.spacing.toFixed(16)} * normalize(vec3(${this.axis.map(v => v.toFixed(16)).join(", ")}));
+          float halfSpacing = ${halfSpacing.toFixed(16)};
+          p = mod(p+halfSpacing-centre, step)-halfSpacing+centre;
+          return ${this.children[0].shaderCode()};
+        }
+      `;
+    }
   }
 
   generateShaderCode() {
