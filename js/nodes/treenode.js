@@ -240,11 +240,14 @@ class TreeNode {
   }
 
   shaderCode2d() {
+    if (this.isDisabled) {
+      return this.noopShaderCode();
+    }
     return this.generateShaderCode2d();
   }
 
-  generatedShaderCode2d() {
-    return this.noopShaderCode();
+  generateShaderCode2d() {
+    return this.generateShaderCode();
   }
 
   // p is a Vec3

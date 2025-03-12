@@ -318,7 +318,8 @@ const ui = {
             { name: 'Mirror', constructor: MirrorNode },
             { name: 'Linear Pattern', constructor: LinearPatternNode },
             { name: 'Polar Pattern', constructor: PolarPatternNode },
-            { name: 'Extrude', constructor: ExtrudeNode }
+            { name: 'Extrude', constructor: ExtrudeNode },
+            { name: 'Revolve', constructor: RevolveNode }
         ];
         
         modifiers.forEach(modifier => {
@@ -335,7 +336,8 @@ const ui = {
             { name: 'Box', constructor: BoxNode },
             { name: 'Sphere', constructor: SphereNode },
             { name: 'Cylinder', constructor: CylinderNode },
-            { name: 'Torus', constructor: TorusNode }
+            { name: 'Torus', constructor: TorusNode },
+            { name: 'Sketch', constructor: SketchNode }
         ];
         
         shapes.forEach(shape => {

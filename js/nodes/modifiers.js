@@ -663,17 +663,8 @@ class ExtrudeNode extends TreeNode {
   }
 
   generateShaderImplementation() {
-    if (!this.hasChildren()) {
-      this.warn("Extrude node has no child to transform");
-      return '';
-    }
-
     return `
-      float ${this.getFunctionName()}(vec3 p) {
-        float halfHeight = ${(this.height/2).toFixed(16)};
-        // First get the 2D SDF by evaluating with z=0
-        float d2d = ${this.children[0].shaderCode2d()};
-        
+      float opExtrude(float d2d, vec3 p, float halfHeight) {
         // Calculate distance to the boundary based on z position
         float dz = abs(p.z) - halfHeight;
         
@@ -690,7 +681,11 @@ class ExtrudeNode extends TreeNode {
   }
 
   generateShaderCode() {
-    return `${this.getFunctionName()}(p)`;
+    if (!this.hasChildren()) {
+      this.warn("Extrude node has no child to transform");
+      return this.noopShaderCode();
+    }
+    return `opExtrude(${this.children[0].shaderCode2d()}, p, ${(this.height/2).toFixed(16)})`;
   }
 
   getIcon() {
@@ -698,9 +693,53 @@ class ExtrudeNode extends TreeNode {
   }
 }
 
+class RevolveNode extends TreeNode {
+  constructor(children = []) {
+    super("Revolve");
+    this.maxChildren = 1;
+    this.addChild(children);
+  }
+
+  getExactness() {
+    return TreeNode.EXACT;
+  }
+
+  properties() {
+    return {"angle": "float"};
+  }
+
+  generateShaderImplementation() {
+    if (!this.hasChildren()) {
+      this.warn("Revolve node has no child to transform");
+      return "";
+    }
+
+    return `
+      float ${this.getFunctionName()}(vec3 p) {
+        p = vec3(length(p.xz), p.y, 0.0);
+        return ${this.children[0].shaderCode2d()};
+      }
+    `;
+  }
+
+  generateShaderCode() {
+    if (!this.hasChildren()) {
+      return this.noopShaderCode();
+    }
+
+    return `${this.getFunctionName()}(p)`;
+  }
+
+  getIcon() {
+    return "🔄";
+  }
+}
+
 // Detect environment and export accordingly
 (function() {
-  const nodes = { TransformNode, RoughnessNode, ThicknessNode, ScaleNode, TwistNode, MirrorNode, LinearPatternNode, PolarPatternNode, ExtrudeNode };
+  const nodes = { TransformNode, RoughnessNode, ThicknessNode, ScaleNode,
+    TwistNode, MirrorNode, LinearPatternNode, PolarPatternNode, ExtrudeNode,
+    RevolveNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {

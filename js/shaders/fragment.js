@@ -60,6 +60,10 @@ vec2 sdSqLine(vec2 p, vec2 a, vec2 b) {
     return vec2(dot2(d), ba.x*pa.y-ba.y*pa.x);
 }
 
+vec3 opTo2d(vec3 p) {
+    return vec3(p.x, p.y, 0.0);
+}
+
 // begin scene
 float map(vec3 p) {
     p = rotatePoint(p);
