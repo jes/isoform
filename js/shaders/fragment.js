@@ -51,6 +51,16 @@ float dot2(vec2 v) {
     return dot(v, v);
 }
 
+float smin(float a, float b, float k) {
+    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+float smax(float a, float b, float k) {
+    float h = clamp(0.5 - 0.5 * (b - a) / k, 0.0, 1.0);
+    return mix(b, a, h) + k * h * (1.0 - h);
+}
+
 // Squared distance and projection factor to a line segment
 vec2 sdSqLine(vec2 p, vec2 a, vec2 b) {
     vec2 pa = p - a;

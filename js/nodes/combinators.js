@@ -14,16 +14,6 @@ class UnionNode extends TreeNode {
       return {"blendRadius": "float"};
     }
 
-    generateShaderImplementation() {
-      return `
-        float opUnion(float d1, float d2) { return min(d1, d2); }
-        float opSmoothUnion(float d1, float d2, float k) {
-          float h = clamp(0.5 + 0.5 * (d2 - d1) / k, 0.0, 1.0);
-          return mix(d2, d1, h) - k * h * (1.0 - h);
-        }
-      `;
-    }
-  
     generateShaderCode() {
       if (this.children.length < 1) {
         this.warn("Union node needs at least one child");
@@ -42,9 +32,9 @@ class UnionNode extends TreeNode {
         }
         
         if (this.blendRadius > 0) {
-          shaderCode = `opSmoothUnion(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
+          shaderCode = `smin(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
         } else {
-          shaderCode = `opUnion(${shaderCode}, ${childCode})`;
+          shaderCode = `min(${shaderCode}, ${childCode})`;
         }
       }
       return shaderCode;
@@ -102,16 +92,6 @@ class IntersectionNode extends TreeNode {
     return {"blendRadius": "float"};
   }
 
-  generateShaderImplementation() {
-    return `
-      float opIntersection(float d1, float d2) { return max(d1, d2); }
-      float opSmoothIntersection(float d1, float d2, float k) {
-        float h = clamp(0.5 - 0.5 * (d2 - d1) / k, 0.0, 1.0);
-        return mix(d2, d1, h) + k * h * (1.0 - h);
-      }
-    `;
-  }
-
   generateShaderCode() {
     if (this.children.length < 1) {
       this.warn("Intersection node needs at least one child");
@@ -133,9 +113,9 @@ class IntersectionNode extends TreeNode {
       }
       
       if (this.blendRadius > 0) {
-        shaderCode = `opSmoothIntersection(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
+        shaderCode = `smax(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
       } else {
-        shaderCode = `opIntersection(${shaderCode}, ${childCode})`;
+        shaderCode = `max(${shaderCode}, ${childCode})`;
       }
     }
     return shaderCode;
