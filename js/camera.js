@@ -230,5 +230,68 @@ const camera = {
         
         // Reset the drag start rotation
         this.dragStartRotation = [...this.baseRotationMatrix];
+    },
+    
+    worldToScreen(worldPos) {
+        const canvas = document.getElementById('glCanvas');
+        
+        // Subtract camera position
+        const relativePos = {
+            x: worldPos.x - this.position[0],
+            y: worldPos.y - this.position[1],
+            z: (worldPos.z || 0) - this.position[2]
+        };
+        
+        // Apply rotation matrix
+        const viewX = this.activeRotationMatrix[0] * relativePos.x + 
+                     this.activeRotationMatrix[1] * relativePos.y + 
+                     this.activeRotationMatrix[2] * relativePos.z;
+        const viewY = this.activeRotationMatrix[3] * relativePos.x + 
+                     this.activeRotationMatrix[4] * relativePos.y + 
+                     this.activeRotationMatrix[5] * relativePos.z;
+        
+        // Calculate aspect ratio
+        const aspectRatio = canvas.width / canvas.height;
+        
+        // Apply zoom and convert to normalized device coordinates
+        const ndcX = viewX * this.zoom / aspectRatio;
+        const ndcY = viewY * this.zoom;
+        
+        // Convert to screen coordinates
+        return {
+            x: (ndcX + 1.0) * 0.5 * canvas.width,
+            y: (1.0 - ndcY) * 0.5 * canvas.height
+        };
+    },
+    
+    screenToWorld(screenPos) {
+        const canvas = document.getElementById('glCanvas');
+        
+        // Normalize to [-1, 1] range with correct aspect ratio
+        const aspectRatio = canvas.width / canvas.height;
+        const normalizedX = (2.0 * screenPos.x / canvas.width - 1.0) * aspectRatio;
+        const normalizedY = 1.0 - (2.0 * screenPos.y / canvas.height);
+        
+        // Create a point in view space
+        const viewSpacePoint = [normalizedX / this.zoom, normalizedY / this.zoom, 0];
+        
+        // Create inverse rotation matrix (transpose)
+        const invRotation = [
+            this.activeRotationMatrix[0], this.activeRotationMatrix[3], this.activeRotationMatrix[6],
+            this.activeRotationMatrix[1], this.activeRotationMatrix[4], this.activeRotationMatrix[7],
+            this.activeRotationMatrix[2], this.activeRotationMatrix[5], this.activeRotationMatrix[8]
+        ];
+        
+        // Apply inverse rotation
+        const worldX = invRotation[0] * viewSpacePoint[0] + invRotation[1] * viewSpacePoint[1] + invRotation[2] * viewSpacePoint[2];
+        const worldY = invRotation[3] * viewSpacePoint[0] + invRotation[4] * viewSpacePoint[1] + invRotation[5] * viewSpacePoint[2];
+        const worldZ = invRotation[6] * viewSpacePoint[0] + invRotation[7] * viewSpacePoint[1] + invRotation[8] * viewSpacePoint[2];
+        
+        // Add camera position
+        return { 
+            x: worldX + this.position[0], 
+            y: worldY + this.position[1],
+            z: worldZ + this.position[2]
+        };
     }
 }; 

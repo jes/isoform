@@ -554,3 +554,21 @@ canvas {
   align-items: center;
   pointer-events: none;
 }
+
+#sketch-editor-canvas {
+    pointer-events: auto;
+}
+
+.tool-button {
+    color: white;
+    font-size: 16px;
+    transition: background-color 0.2s;
+}
+
+.tool-button:hover {
+    background-color: #444 !important;
+}
+
+.tool-button.active {
+    background-color: #555 !important;
+}

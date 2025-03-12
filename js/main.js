@@ -17,6 +17,9 @@ const app = {
         // Initialize UI with the document
         ui.init(this.document);
         
+        // Initialize sketch editor
+        ui.initSketchEditor();
+        
         // Get references to UI elements
         this.fpsCounter = document.getElementById('fps-counter');
         this.shaderLoading = document.getElementById('shader-loading');
@@ -36,11 +39,7 @@ const app = {
 
         doc.addChild(torus);
         doc.addChild(new SubtractionNode([box, new TransformNode([0, 10, 0], [0, 1, 0], 0, sphere)], 0.5));
-        doc.addChild(new SketchNode([
-            { type: 'line', start: { x: 0, y: 0 }, end: { x: 20, y: 0 } },
-            { type: 'line', start: { x: 20, y: 0 }, end: { x: 20, y: 20 } },
-            { type: 'line', start: { x: 20, y: 20 }, end: { x: 0, y: 0 } },
-        ]));
+        doc.addChild(new SketchNode([ {x:0, y:0}, {x:20, y:0}, {x:20, y:20} ]));
         
         this.document = doc;
         return doc;

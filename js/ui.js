@@ -17,6 +17,13 @@ const ui = {
             onNodeSelected: (node) => {
                 this.selectedNode = node;
                 this.propertyEditorComponent.render(node);
+                // Open sketch editor if it's a SketchNode
+                if (node instanceof SketchNode) {
+                    this.openSketchEditor(node);
+                } else {
+                    // Close sketch editor if open
+                    this.sketchEditor.close();
+                }
             },
             onNodeContextMenu: (e, node) => {
                 this.showContextMenu(e, node);
@@ -596,5 +603,19 @@ const ui = {
         this.selectedNode = node;
         this.treeViewComponent.setSelectedNode(node);
         this.propertyEditorComponent.render(node);
+    },
+
+    initSketchEditor() {
+        this.sketchEditor = new SketchEditor(null, document.getElementById('canvas-container'));
+        
+        // Hide initially
+        this.sketchEditor.close();
+    },
+
+    // Call this when a SketchNode is selected
+    openSketchEditor(node) {
+        if (node instanceof SketchNode) {
+            this.sketchEditor.open(node);
+        }
     },
 };

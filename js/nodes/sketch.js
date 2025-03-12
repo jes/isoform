@@ -1,23 +1,32 @@
 class SketchNode extends TreeNode {
-  constructor(polycurves = []) {
+  constructor(points = []) {
     super("Sketch");
-    this.polycurves = polycurves;
+    // New representation: first point is start, rest are end points of segments
+    this.polycurves = points.length > 0 ? [points] : [];
     this.maxChildren = 0; // Primitive node with no children
-    this.exactness = "Exact"; // Assuming the sketch SDF is exact
+  }
+
+  getExactness() {
+    return TreeNode.EXACT;
   }
 
   generateShaderImplementation() {
-    // Get the starting point of the first curve
-    const firstPoint = this.polycurves[0].start;
+    if (this.polycurves.length === 0 || this.polycurves[0].length < 2) {
+      return `
+        float ${this.getFunctionName()}(vec3 p) {
+          return 1000.0; // Large distance if no valid sketch
+        }
+      `;
+    }
     
-    let code = ``;
+    const polycurve = this.polycurves[0];
+    const startPoint = polycurve[0];
     
-    // Generate the sketch SDF directly without closure
-    code += `
+    let code = `
       vec2 p2d = p.xy;
       
       // Starting point
-      vec2 vb = vec2(${firstPoint.x.toFixed(16)}, ${firstPoint.y.toFixed(16)});
+      vec2 vb = vec2(${startPoint.x.toFixed(16)}, ${startPoint.y.toFixed(16)});
       
       float d = dot2(p2d - vb);
       float s = 1.0;
@@ -26,28 +35,16 @@ class SketchNode extends TreeNode {
       bvec3 cond;
     `;
     
-    // Generate code for each curve segment
-    for (let i = 0; i < this.polycurves.length; i++) {
-      const curve = this.polycurves[i];
+    // Generate code for each line segment
+    for (let i = 1; i < polycurve.length; i++) {
+      const endPoint = polycurve[i];
       
       code += `
-      // Segment ${i + 1}
+      // Segment ${i}
       va = vb;
-      `;
-      
-      if (curve.type === "line") {
-        code += `
-      vb = vec2(${curve.end.x.toFixed(16)}, ${curve.end.y.toFixed(16)});
+      vb = vec2(${endPoint.x.toFixed(16)}, ${endPoint.y.toFixed(16)});
       ds = sdSqLine(p2d, va, vb);
-        `;
-      } else if (curve.type === "arc") {
-        code += `
-      vb = vec2(${curve.end.x.toFixed(16)}, ${curve.end.y.toFixed(16)});
-      ds = sdSqArc(p2d, va, vb, ${curve.radius.toFixed(16)}, d);
-        `;
-      }
       
-      code += `
       // in/out test
       cond = bvec3(p.y>=va.y, p.y<vb.y, ds.y>0.0);
       if (all(cond) || all(not(cond))) s *= -1.0;
@@ -56,7 +53,19 @@ class SketchNode extends TreeNode {
       `;
     }
     
+    // Add closing segment back to start point
     code += `
+      // Closing segment
+      va = vb;
+      vb = vec2(${startPoint.x.toFixed(16)}, ${startPoint.y.toFixed(16)});
+      ds = sdSqLine(p2d, va, vb);
+      
+      // in/out test
+      cond = bvec3(p.y>=va.y, p.y<vb.y, ds.y>0.0);
+      if (all(cond) || all(not(cond))) s *= -1.0;
+      
+      d = min(d, ds.x);
+      
       d = s * sqrt(d);
     `;
 
@@ -75,32 +84,16 @@ class SketchNode extends TreeNode {
         return vec2(dot2(d), ba.x*pa.y-ba.y*pa.x);
       }
 
-      // Squared distance and projection factor to an arc
-      vec2 sdSqArc(vec2 p, vec2 a, vec2 b, float r, float d) {
-        vec2 ba = b - a;
-        vec2 pa = p - a;
-        float l = length(ba);
-        float h = clamp(dot(pa, ba) / (l * l), 0.0, 1.0);
-        
-        // Calculate center more robustly
-        vec2 perp = normalize(vec2(ba.y, -ba.x));
-        vec2 mid = a + ba * h;
-        vec2 c = mid - perp * r;
-        
-        return vec2(dot2(p - c) - r * r, h);
-      }
-
       float ${this.getFunctionName()}(vec3 p) {
         ${code}
-        // the max() turns it from an infinite extrusion into a 0.002mm thick surface;
-        // long term we may want to distinguish 2d and 3d SDFs?
+        // the max() turns it from an infinite extrusion into a 0.002mm thick surface
         return max(d, abs(p.z)-0.001);
       }
     `;
   }
 
   generateShaderCode() {
-    if (this.polycurves.length === 0) {
+    if (this.polycurves.length === 0 || this.polycurves[0].length < 2) {
       return this.noopShaderCode();
     }
 
@@ -111,68 +104,61 @@ class SketchNode extends TreeNode {
 
   sdf(p) {
     // JavaScript implementation of the SDF
-    if (this.polycurves.length === 0) {
-      return 1000.0; // Large distance if no curves
+    if (this.polycurves.length === 0 || this.polycurves[0].length < 2) {
+      return 1000.0; // Large distance if no valid sketch
     }
     
     // Project to 2D (assuming sketch is in XY plane)
     const p2d = new Vec2(p.x, p.y);
     
-    // Starting point
-    const firstPoint = this.polycurves[0].start;
-    let vb = new Vec2(firstPoint.x, firstPoint.y);
+    const polycurve = this.polycurves[0];
+    const startPoint = polycurve[0];
+    let vb = new Vec2(startPoint.x, startPoint.y);
     
     let d = p2d.sub(vb).lengthSq();
     let s = 1.0;
     
-    for (const curve of this.polycurves) {
+    // Process all segments
+    for (let i = 1; i < polycurve.length; i++) {
       const va = vb.clone();
-      let ds;
+      const endPoint = polycurve[i];
+      vb = new Vec2(endPoint.x, endPoint.y);
       
-      if (curve.type === "line") {
-        vb = new Vec2(curve.end.x, curve.end.y);
-        ds = this.sdSqLine(p2d, va, vb);
-      } else if (curve.type === "arc") {
-        vb = new Vec2(curve.end.x, curve.end.y);
-        ds = this.sdSqArc(p2d, va, vb, curve.radius, d);
-      }
+      const ds = this.sdSqLine(p2d, va, vb);
       
       // in/out test
-      if (va.y <= p2d.y && p2d.y < vb.y) {
-        // Crossing upward
-        if (ds.y > 0.0) s *= -1.0;
-      } else if (vb.y <= p2d.y && p2d.y < va.y) {
-        // Crossing downward
-        if (ds.y > 0.0) s *= -1.0;
+      if ((p2d.y >= va.y && p2d.y < vb.y && ds.y > 0.0) ||
+          (p2d.y < va.y && p2d.y >= vb.y && ds.y <= 0.0)) {
+        s *= -1.0;
       }
       
       d = Math.min(d, ds.x);
     }
     
+    // Process closing segment back to start
+    const va = vb.clone();
+    vb = new Vec2(startPoint.x, startPoint.y);
+    
+    const ds = this.sdSqLine(p2d, va, vb);
+    
+    // in/out test
+    if ((p2d.y >= va.y && p2d.y < vb.y && ds.y > 0.0) ||
+        (p2d.y < va.y && p2d.y >= vb.y && ds.y <= 0.0)) {
+      s *= -1.0;
+    }
+    
+    d = Math.min(d, ds.x);
+    
     return s * Math.sqrt(d);
   }
   
-  // Helper functions for JavaScript implementation
+  // Helper function for JavaScript implementation
   sdSqLine(p, a, b) {
     const pa = p.sub(a);
     const ba = b.sub(a);
     const h = Math.max(0, Math.min(1, pa.dot(ba) / ba.lengthSq()));
     const d = pa.sub(ba.mul(h));
-    return { x: d.lengthSq(), y: h };
-  }
-  
-  sdSqArc(p, a, b, r, d) {
-    const ba = b.sub(a);
-    const pa = p.sub(a);
-    const l = ba.length();
-    const h = Math.max(0, Math.min(1, pa.dot(ba) / (l * l)));
-    
-    // Calculate center more robustly
-    const perp = new Vec2(ba.y, -ba.x).normalize();
-    const mid = a.add(ba.mul(h));
-    const c = mid.sub(perp.mul(r));
-    
-    return { x: p.sub(c).lengthSq() - r * r, y: h };
+    return { x: d.lengthSq(), y: ba.x * pa.y - ba.y * pa.x };
   }
 
   getIcon() {
@@ -183,6 +169,35 @@ class SketchNode extends TreeNode {
     return [
       // Properties for editing the sketch would go here
     ];
+  }
+
+  // Add a new vertex to the sketch
+  addVertex(polycurveIndex, segmentIndex, position) {
+    if (!this.polycurves[polycurveIndex]) return;
+    
+    // Insert the new point after the specified segment index
+    this.polycurves[polycurveIndex].splice(segmentIndex + 1, 0, position);
+    this.markDirty();
+  }
+
+  // Update a vertex position
+  updateVertex(polycurveIndex, vertexIndex, position) {
+    if (!this.polycurves[polycurveIndex] || 
+        vertexIndex >= this.polycurves[polycurveIndex].length) return;
+    
+    this.polycurves[polycurveIndex][vertexIndex] = position;
+    this.markDirty();
+  }
+
+  // Remove a vertex from the sketch
+  removeVertex(polycurveIndex, vertexIndex) {
+    if (!this.polycurves[polycurveIndex]) return;
+    
+    // Don't remove if we would have fewer than 3 points (need at least a triangle)
+    if (this.polycurves[polycurveIndex].length <= 3) return;
+    
+    this.polycurves[polycurveIndex].splice(vertexIndex, 1);
+    this.markDirty();
   }
 }
 
