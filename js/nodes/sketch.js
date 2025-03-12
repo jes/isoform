@@ -23,6 +23,7 @@ class SketchNode extends TreeNode {
       float s = 1.0;
       vec2 va;
       vec2 ds;
+      bvec3 cond;
     `;
     
     // Generate code for each curve segment
@@ -48,20 +49,15 @@ class SketchNode extends TreeNode {
       
       code += `
       // in/out test
-      if (va.y <= p2d.y && p2d.y < vb.y) {
-        // Crossing upward
-        if (ds.y > 0.0) s *= -1.0;
-      } else if (vb.y <= p2d.y && p2d.y < va.y) {
-        // Crossing downward
-        if (ds.y > 0.0) s *= -1.0;
-      }
+      cond = bvec3(p.y>=va.y, p.y<vb.y, ds.y>0.0);
+      if (all(cond) || all(not(cond))) s *= -1.0;
       
       d = min(d, ds.x);
       `;
     }
     
     code += `
-      return s * sqrt(d) * 0.01;
+      d = s * sqrt(d);
     `;
 
     return `
@@ -74,9 +70,9 @@ class SketchNode extends TreeNode {
       vec2 sdSqLine(vec2 p, vec2 a, vec2 b) {
         vec2 pa = p - a;
         vec2 ba = b - a;
-        float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+        float h = clamp(dot(pa, ba) / dot2(ba), 0.0, 1.0);
         vec2 d = pa - ba * h;
-        return vec2(dot2(d), h);
+        return vec2(dot2(d), ba.x*pa.y-ba.y*pa.x);
       }
 
       // Squared distance and projection factor to an arc
@@ -95,10 +91,10 @@ class SketchNode extends TreeNode {
       }
 
       float ${this.getFunctionName()}(vec3 p) {
-        if (abs(p.z) > 2.0) {
-            return 1000.0;
-        }
         ${code}
+        // the max() turns it from an infinite extrusion into a 0.002mm thick surface;
+        // long term we may want to distinguish 2d and 3d SDFs?
+        return max(d, abs(p.z)-0.001);
       }
     `;
   }
