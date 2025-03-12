@@ -239,17 +239,6 @@ class TreeNode {
     return "10000042.0";
   }
 
-  shaderCode2d() {
-    if (this.isDisabled) {
-      return this.noopShaderCode();
-    }
-    return this.generateShaderCode2d();
-  }
-
-  generateShaderCode2d() {
-    return this.generateShaderCode();
-  }
-
   // p is a Vec3
   sdf(p) {
     return this.noopSDF();

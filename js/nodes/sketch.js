@@ -78,14 +78,10 @@ class SketchNode extends TreeNode {
     `;
   }
 
-  generateShaderCode2d() {
+  generateShaderCode() {
     return `
       ${this.getFunctionName()}(p)
     `;
-  }
-
-  generateShaderCode() {
-    return `max(abs(p.z)-0.005, ${this.getFunctionName()}(p))`;
   }
 
   sdf(p) {

@@ -685,7 +685,7 @@ class ExtrudeNode extends TreeNode {
       this.warn("Extrude node has no child to transform");
       return this.noopShaderCode();
     }
-    return `opExtrude(${this.children[0].shaderCode2d()}, p, ${(this.height/2).toFixed(16)})`;
+    return `opExtrude(${this.children[0].shaderCode()}, p, ${(this.height/2).toFixed(16)})`;
   }
 
   getIcon() {
@@ -717,7 +717,7 @@ class RevolveNode extends TreeNode {
     return `
       float ${this.getFunctionName()}(vec3 p) {
         p = vec3(length(p.xz), p.y, 0.0);
-        return ${this.children[0].shaderCode2d()};
+        return ${this.children[0].shaderCode()};
       }
     `;
   }
