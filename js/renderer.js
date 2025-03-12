@@ -16,6 +16,12 @@ const renderer = {
     
     resolutionScale: 1.0, // Values > 1.0 = supersampling, < 1.0 = downsampling
     
+    renderTarget: null,
+    renderTexture: null,
+    renderBuffer: null,
+    quadBuffer: null,
+    displayProgram: null,
+    
     async init() {
         this.canvas = document.getElementById('glCanvas');
         this.canvas.addEventListener('webglcontextlost', (event) => {
@@ -32,9 +38,6 @@ const renderer = {
             alert('Unable to initialize WebGL. Your browser may not support it.');
             return false;
         }
-        
-        this.resizeCanvas();
-        window.addEventListener('resize', () => this.resizeCanvas());
         
         // Create buffer for full-screen quad
         const positions = [-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0];
@@ -56,7 +59,83 @@ const renderer = {
         this.fpsElement = document.getElementById('fps-counter');
         this.lastFpsUpdateTime = Date.now();
         
+        // Create the framebuffer and texture objects (but don't initialize them yet)
+        this.setupRenderTarget();
+        
+        // Create a simple shader program for displaying the texture
+        await this.createDisplayProgram();
+        
+        // Now resize the canvas, which will properly initialize the render target
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+        
         return true;
+    },
+    
+    setupRenderTarget() {
+        const gl = this.gl;
+        
+        // Create framebuffer
+        this.renderTarget = gl.createFramebuffer();
+        
+        // Create a texture to render to
+        this.renderTexture = gl.createTexture();
+        
+        // Create a renderbuffer for depth
+        this.renderBuffer = gl.createRenderbuffer();
+        
+        // We'll initialize the actual sizes in resizeCanvas
+        // This avoids the "no width/height" errors
+    },
+    
+    async createDisplayProgram() {
+        // Simple vertex shader that just passes through position and texture coordinates
+        const displayVertexShader = `
+            attribute vec2 position;
+            varying vec2 vTexCoord;
+            void main() {
+                vTexCoord = position * 0.5 + 0.5;
+                gl_Position = vec4(position, 0.0, 1.0);
+            }
+        `;
+        
+        // Simple fragment shader that samples from the texture
+        const displayFragmentShader = `
+            precision highp float;
+            varying vec2 vTexCoord;
+            uniform sampler2D uTexture;
+            void main() {
+                gl_FragColor = texture2D(uTexture, vTexCoord);
+            }
+        `;
+        
+        const vertexShader = await this.compileShader(displayVertexShader, this.gl.VERTEX_SHADER);
+        const fragmentShader = await this.compileShader(displayFragmentShader, this.gl.FRAGMENT_SHADER);
+        
+        if (!vertexShader || !fragmentShader) {
+            console.error("Failed to compile display shaders");
+            return;
+        }
+        
+        const program = this.gl.createProgram();
+        this.gl.attachShader(program, vertexShader);
+        this.gl.attachShader(program, fragmentShader);
+        this.gl.linkProgram(program);
+        
+        if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
+            console.error('Display program linking error:', this.gl.getProgramInfoLog(program));
+            return;
+        }
+        
+        this.displayProgram = {
+            program: program,
+            attribLocations: {
+                position: this.gl.getAttribLocation(program, 'position'),
+            },
+            uniformLocations: {
+                texture: this.gl.getUniformLocation(program, 'uTexture'),
+            }
+        };
     },
     
     resizeCanvas() {
@@ -64,36 +143,57 @@ const renderer = {
         const displayWidth = this.canvas.clientWidth;
         const displayHeight = this.canvas.clientHeight;
         
-        // Apply resolution scaling (allow values > 1.0 for supersampling)
-        const renderWidth = Math.floor(displayWidth * this.resolutionScale);
-        const renderHeight = Math.floor(displayHeight * this.resolutionScale);
-        
-        // Check if the canvas is not the same size
-        if (this.canvas.width !== renderWidth || this.canvas.height !== renderHeight) {
-            // Save the current canvas content
-            let oldCanvas = document.createElement('canvas');
-            oldCanvas.width = this.canvas.width;
-            oldCanvas.height = this.canvas.height;
-            let oldCtx = oldCanvas.getContext('2d');
-            oldCtx.drawImage(this.canvas, 0, 0);
-            
-            // Update the canvas size to match the scaled resolution
-            this.canvas.width = renderWidth;
-            this.canvas.height = renderHeight;
-            
-            // Set viewport to new size
-            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-            
-            // Draw the old content stretched to the new size to prevent flickering
-            // This will be replaced by the next render call
-            this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
-            this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-            
-            // Force an immediate render to prevent seeing the blank canvas
-            this.render();
-        } else {
-            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        // Make sure the canvas drawing buffer matches the display size
+        if (this.canvas.width !== displayWidth || this.canvas.height !== displayHeight) {
+            this.canvas.width = displayWidth;
+            this.canvas.height = displayHeight;
         }
+        
+        // Calculate the render target size based on resolution scale
+        const renderWidth = Math.max(1, Math.floor(displayWidth * this.resolutionScale));
+        const renderHeight = Math.max(1, Math.floor(displayHeight * this.resolutionScale));
+        
+        const gl = this.gl;
+        
+        // Set up the framebuffer and its attachments with proper dimensions
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.renderTarget);
+        
+        // Set up the texture with proper dimensions
+        gl.bindTexture(gl.TEXTURE_2D, this.renderTexture);
+        gl.texImage2D(
+            gl.TEXTURE_2D, 0, gl.RGBA, 
+            renderWidth, renderHeight, 0, 
+            gl.RGBA, gl.UNSIGNED_BYTE, null
+        );
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        
+        // Set up the renderbuffer with proper dimensions
+        gl.bindRenderbuffer(gl.RENDERBUFFER, this.renderBuffer);
+        gl.renderbufferStorage(
+            gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, 
+            renderWidth, renderHeight
+        );
+        
+        // Attach texture and renderbuffer to framebuffer
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.renderTexture, 0);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.renderBuffer);
+        
+        // Check if the framebuffer is complete
+        const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+        if (status !== gl.FRAMEBUFFER_COMPLETE) {
+            console.error('Framebuffer not complete:', status);
+        }
+        
+        // Reset bindings
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        
+        // Set viewport to match the canvas size
+        gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     },
     
     // Update to allow values above 1.0
@@ -178,55 +278,89 @@ const renderer = {
     },
     
     render() {
-        if (!this.programInfo) {
+        if (!this.programInfo || !this.displayProgram) {
             return;
         }
 
         const currentTime = (Date.now() - this.startTime) / 1000;
+        const gl = this.gl;
         
-        // Clear the canvas
-        this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        // 1. Render to the offscreen texture at the scaled resolution
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.renderTarget);
         
-        // Use our shader program
-        this.gl.useProgram(this.programInfo.program);
+        // Set viewport to the render target size
+        const renderWidth = Math.floor(this.canvas.width * this.resolutionScale);
+        const renderHeight = Math.floor(this.canvas.height * this.resolutionScale);
+        gl.viewport(0, 0, renderWidth, renderHeight);
+        
+        // Clear the framebuffer
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        
+        // Use our main shader program
+        gl.useProgram(this.programInfo.program);
         
         // Set up vertex attribute
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
-        this.gl.vertexAttribPointer(
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+        gl.vertexAttribPointer(
             this.programInfo.attribLocations.vertexPosition,
-            2, this.gl.FLOAT, false, 0, 0
+            2, gl.FLOAT, false, 0, 0
         );
-        this.gl.enableVertexAttribArray(this.programInfo.attribLocations.vertexPosition);
+        gl.enableVertexAttribArray(this.programInfo.attribLocations.vertexPosition);
         
         // Set uniforms
-        this.gl.uniform2f(this.programInfo.uniformLocations.resolution, this.canvas.width, this.canvas.height);
-        this.gl.uniform1f(this.programInfo.uniformLocations.time, currentTime);
+        gl.uniform2f(this.programInfo.uniformLocations.resolution, renderWidth, renderHeight);
+        gl.uniform1f(this.programInfo.uniformLocations.time, currentTime);
         
         // Add camera uniforms
-        this.gl.uniform3f(this.programInfo.uniformLocations.cameraPosition, 
+        gl.uniform3f(this.programInfo.uniformLocations.cameraPosition, 
             camera.position[0], camera.position[1], camera.position[2]);
-        this.gl.uniform3f(this.programInfo.uniformLocations.cameraTarget, 
+        gl.uniform3f(this.programInfo.uniformLocations.cameraTarget, 
             camera.target[0], camera.target[1], camera.target[2]);
-        this.gl.uniform1f(this.programInfo.uniformLocations.cameraZoom, camera.zoom);
+        gl.uniform1f(this.programInfo.uniformLocations.cameraZoom, camera.zoom);
         
         // Pass rotation matrix instead of Euler angles
-        this.gl.uniformMatrix3fv(
+        gl.uniformMatrix3fv(
             this.programInfo.uniformLocations.rotationMatrix, 
             false, 
             new Float32Array(camera.activeRotationMatrix)
         );
         
-        this.gl.uniform1i(this.programInfo.uniformLocations.showEdges, camera.showEdges ? 1 : 0);
+        gl.uniform1i(this.programInfo.uniformLocations.showEdges, camera.showEdges ? 1 : 0);
         
         // Set showSecondary uniform based on whether a node is selected
-        this.gl.uniform1i(this.programInfo.uniformLocations.showSecondary, ui.getSecondaryNode() ? 1 : 0);
+        gl.uniform1i(this.programInfo.uniformLocations.showSecondary, ui.getSecondaryNode() ? 1 : 0);
         
         // Set stepFactor uniform
-        this.gl.uniform1f(this.programInfo.uniformLocations.stepFactor, camera.stepFactor);
+        gl.uniform1f(this.programInfo.uniformLocations.stepFactor, camera.stepFactor);
+        
+        // Draw the quad to the offscreen texture
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        
+        // 2. Render the texture to the canvas
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Clear the canvas
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        
+        // Use the display program
+        gl.useProgram(this.displayProgram.program);
+        
+        // Bind the texture
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.renderTexture);
+        gl.uniform1i(this.displayProgram.uniformLocations.texture, 0);
         
         // Draw the quad
-        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+        gl.vertexAttribPointer(
+            this.displayProgram.attribLocations.position,
+            2, gl.FLOAT, false, 0, 0
+        );
+        gl.enableVertexAttribArray(this.displayProgram.attribLocations.position);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         
         // Update FPS counter
         this.updateFpsCounter();

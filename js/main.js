@@ -82,6 +82,8 @@ const app = {
 
             // update the last secondary node reference when we recompile
             this.lastSecondaryNode = currentSecondaryNode;
+
+            this.lastAdjustmentTime = Date.now();
         }
         
         // Render the scene
