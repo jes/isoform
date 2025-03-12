@@ -552,14 +552,44 @@ class LinearPatternNode extends TreeNode {
     } else {
       console.log("bounding volumes do not overlap");
       // the bounding volumes do not overlap, so we can use domain repetition
-      const halfSpacing = this.spacing / 2.0;
-      const bs = this.children[0].boundingSphere();
+      // Normalize the axis
+      const axisLength = Math.sqrt(
+        this.axis[0] * this.axis[0] + 
+        this.axis[1] * this.axis[1] + 
+        this.axis[2] * this.axis[2]
+      );
+      
+      const normalizedAxis = axisLength > 0 ? 
+        this.axis.map(v => (v / axisLength).toFixed(16)) : 
+        [0, 0, 1].map(v => v.toFixed(16));
+        
       return `
         float ${this.getFunctionName()}(vec3 p) {
-          vec3 centre = vec3(${bs.centre.map(v => v.toFixed(16)).join(", ")});
-          vec3 step = ${this.spacing.toFixed(16)} * normalize(vec3(${this.axis.map(v => v.toFixed(16)).join(", ")}));
-          float halfSpacing = ${halfSpacing.toFixed(16)};
-          p = mod(p+halfSpacing-centre, step)-halfSpacing+centre;
+          // Rotate point to align with pattern axis
+          vec3 axis = vec3(${normalizedAxis.join(", ")});
+          mat3 toAxisSpace = rotateToAxis(axis);
+          mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
+          
+          // Transform to axis-aligned space
+          vec3 q = toAxisSpace * p;
+          
+          // Apply modulo along the z-axis (which is now aligned with our pattern axis)
+          float spacing = ${this.spacing.toFixed(16)};
+          float halfSpacing = ${(this.spacing / 2.0).toFixed(16)};
+          float offset = spacing * float(${this.copies - 1}) / 2.0;
+          
+          // Center the pattern
+          q.z += offset;
+          
+          // Apply modulo operation
+          q.z = mod(q.z, spacing);
+          
+          // Shift back to original range
+          q.z -= halfSpacing;
+          
+          // Transform back to original space
+          p = fromAxisSpace * q;
+          
           return ${this.children[0].shaderCode()};
         }
       `;
@@ -575,6 +605,8 @@ class LinearPatternNode extends TreeNode {
       return this.noopSDF();
     }
 
+    // For the JavaScript implementation, we'll still use the explicit union approach
+    // as it's more reliable and easier to debug
     const step = this.spacing * this.axis.normalize();
     let d = this.children[0].sdf(p);
     for (let i = 1; i < this.copies; i++) {
