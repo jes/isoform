@@ -306,15 +306,19 @@ const camera = {
     screenToWorld(screenPos) {
         const canvas = document.getElementById('glCanvas');
         
-        // 1. Convert screen coordinates to normalized device coordinates (-1 to 1)
-        const ndcX = (2.0 * screenPos.x / canvas.width - 1.0);
-        const ndcY = (1.0 - 2.0 * screenPos.y / canvas.height); // Flip Y to match WebGL convention
+        // 1. Convert from screen coordinates to NDC (-1 to 1)
+        const ndcX = (screenPos.x / canvas.width) * 2.0 - 1.0;
+        const ndcY = 1.0 - (screenPos.y / canvas.height) * 2.0;
         
         // 2. Apply aspect ratio correction
         const aspectRatio = canvas.width / canvas.height;
         const correctedNdcX = ndcX * aspectRatio;
         
-        // 3. Build the camera basis vectors (same as in the shader)
+        // 3. Remove zoom factor
+        const viewSpaceX = correctedNdcX / this.zoom;
+        const viewSpaceY = ndcY / this.zoom;
+        
+        // 4. Build the camera basis vectors
         const forward = {
             x: this.target[0] - this.position[0],
             y: this.target[1] - this.position[1],
@@ -322,7 +326,7 @@ const camera = {
         };
         const fLength = Math.sqrt(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
         if (fLength < 1e-12) {
-            return { x: Number.NaN, y: Number.NaN, z: Number.NaN };
+            return { x: Number.NaN, y: Number.NaN, z: 0 };
         }
         forward.x /= fLength;
         forward.y /= fLength;
@@ -336,7 +340,7 @@ const camera = {
         };
         const rLength = Math.sqrt(right.x*right.x + right.y*right.y + right.z*right.z);
         if (rLength < 1e-12) {
-            return { x: Number.NaN, y: Number.NaN, z: Number.NaN };
+            return { x: Number.NaN, y: Number.NaN, z: 0 };
         }
         right.x /= rLength;
         right.y /= rLength;
@@ -348,15 +352,35 @@ const camera = {
             z: forward.x * right.y - forward.y * right.x
         };
         
-        // 4. Calculate the point in view space (scaled by zoom)
-        const viewSpaceX = correctedNdcX / this.zoom;
-        const viewSpaceY = ndcY / this.zoom;
-        
-        // 5. Calculate the world space point by adding offsets to camera position
-        return {
+        // 5. Calculate a point on the camera's view plane
+        const viewPlanePoint = {
             x: this.position[0] + viewSpaceX * right.x + viewSpaceY * up.x,
             y: this.position[1] + viewSpaceX * right.y + viewSpaceY * up.y,
             z: this.position[2] + viewSpaceX * right.z + viewSpaceY * up.z
         };
+        
+        // 6. Cast ray from viewPlanePoint in the forward direction
+        // To find intersection with world z=0 plane
+        
+        // If the ray is parallel to the z=0 plane, return NaN
+        if (Math.abs(forward.z) < 1e-12) {
+            return { x: Number.NaN, y: Number.NaN, z: 0 };
+        }
+        
+        // Calculate t where ray intersects z=0 plane
+        // For a ray p(t) = viewPlanePoint + t * forward
+        // Intersection with z=0 plane occurs when p(t).z = 0
+        // So, viewPlanePoint.z + t * forward.z = 0
+        // Therefore, t = -viewPlanePoint.z / forward.z
+        const t = -viewPlanePoint.z / forward.z;
+        
+        // Calculate intersection point
+        const worldPos = {
+            x: viewPlanePoint.x + t * forward.x,
+            y: viewPlanePoint.y + t * forward.y,
+            z: 0  // Exactly 0 by construction
+        };
+        
+        return worldPos;
     }
 }; 
