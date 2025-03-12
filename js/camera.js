@@ -303,6 +303,7 @@ const camera = {
         return { x: screenX, y: screenY };
     },
     
+    // XXX: this seems to be slightly wrong
     screenToWorld(screenPos) {
         const canvas = document.getElementById('glCanvas');
         
