@@ -233,134 +233,130 @@ const camera = {
     },
     
     worldToScreen(worldPos) {
-        const canvas = document.getElementById('glCanvas');
+        worldPos.z ||= 0;
         
-        // Convert world position to camera space
-        // First, translate relative to camera position
-        const relativePos = {
-            x: worldPos.x - this.position[0],
-            y: worldPos.y - this.position[1],
-            z: (worldPos.z || 0) - this.position[2]
+        // Apply the active rotation matrix to the world position
+        const rotatedPos = {
+            x: this.activeRotationMatrix[0] * worldPos.x + this.activeRotationMatrix[1] * worldPos.y + this.activeRotationMatrix[2] * worldPos.z,
+            y: this.activeRotationMatrix[3] * worldPos.x + this.activeRotationMatrix[4] * worldPos.y + this.activeRotationMatrix[5] * worldPos.z,
+            z: this.activeRotationMatrix[6] * worldPos.x + this.activeRotationMatrix[7] * worldPos.y + this.activeRotationMatrix[8] * worldPos.z
         };
         
-        // Create a vector from the relative position
-        const worldVector = [relativePos.x, relativePos.y, relativePos.z];
-        
-        // Apply the same rotation that happens in the fragment shader
-        // This is critical - we need to rotate the point just like in the shader
-        const rotatedVector = [
-            this.activeRotationMatrix[0] * worldVector[0] + 
-            this.activeRotationMatrix[1] * worldVector[1] + 
-            this.activeRotationMatrix[2] * worldVector[2],
-            
-            this.activeRotationMatrix[3] * worldVector[0] + 
-            this.activeRotationMatrix[4] * worldVector[1] + 
-            this.activeRotationMatrix[5] * worldVector[2],
-            
-            this.activeRotationMatrix[6] * worldVector[0] + 
-            this.activeRotationMatrix[7] * worldVector[1] + 
-            this.activeRotationMatrix[8] * worldVector[2]
-        ];
-        
-        // Calculate camera frame vectors
+        // 1. Build the camera basis vectors (same as in screenToWorld)
         const forward = {
             x: this.target[0] - this.position[0],
             y: this.target[1] - this.position[1],
             z: this.target[2] - this.position[2]
         };
+        const fLength = Math.sqrt(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
+        if (fLength < 1e-12) {
+            return { x: Number.NaN, y: Number.NaN };
+        }
+        forward.x /= fLength;
+        forward.y /= fLength;
+        forward.z /= fLength;
         
-        // Normalize forward vector
-        const forwardLength = Math.sqrt(
-            forward.x * forward.x + 
-            forward.y * forward.y + 
-            forward.z * forward.z
-        );
-        
-        forward.x /= forwardLength;
-        forward.y /= forwardLength;
-        forward.z /= forwardLength;
-        
-        // Right vector (cross product of up and forward)
         const worldUp = { x: 0, y: 1, z: 0 };
         const right = {
             x: worldUp.y * forward.z - worldUp.z * forward.y,
             y: worldUp.z * forward.x - worldUp.x * forward.z,
             z: worldUp.x * forward.y - worldUp.y * forward.x
         };
+        const rLength = Math.sqrt(right.x*right.x + right.y*right.y + right.z*right.z);
+        if (rLength < 1e-12) {
+            return { x: Number.NaN, y: Number.NaN };
+        }
+        right.x /= rLength;
+        right.y /= rLength;
+        right.z /= rLength;
         
-        // Normalize right vector
-        const rightLength = Math.sqrt(
-            right.x * right.x + 
-            right.y * right.y + 
-            right.z * right.z
-        );
-        
-        right.x /= rightLength;
-        right.y /= rightLength;
-        right.z /= rightLength;
-        
-        // Up vector (cross product of forward and right)
         const up = {
             x: forward.y * right.z - forward.z * right.y,
             y: forward.z * right.x - forward.x * right.z,
             z: forward.x * right.y - forward.y * right.x
         };
         
-        // Project the rotated position onto the camera's right and up vectors
-        const viewX = (
-            right.x * rotatedVector[0] + 
-            right.y * rotatedVector[1] + 
-            right.z * rotatedVector[2]
-        );
-        
-        const viewY = (
-            up.x * rotatedVector[0] + 
-            up.y * rotatedVector[1] + 
-            up.z * rotatedVector[2]
-        );
-        
-        // Calculate aspect ratio
-        const aspectRatio = canvas.width / canvas.height;
-        
-        // Apply zoom and convert to normalized device coordinates
-        const ndcX = viewX * this.zoom / aspectRatio;
-        const ndcY = viewY * this.zoom;
-        
-        // Convert to screen coordinates
-        return {
-            x: (ndcX + 1.0) * 0.5 * canvas.width,
-            y: (1.0 - ndcY) * 0.5 * canvas.height
+        // 2. Calculate vector from camera position to rotated world position
+        const offset = {
+            x: rotatedPos.x - this.position[0],
+            y: rotatedPos.y - this.position[1],
+            z: rotatedPos.z - this.position[2]
         };
+        
+        // 3. Project offset onto right and up vectors to get view space coordinates
+        const viewSpaceX = offset.x * right.x + offset.y * right.y + offset.z * right.z;
+        const viewSpaceY = offset.x * up.x + offset.y * up.y + offset.z * up.z;
+        
+        // 4. Apply zoom factor
+        const ndcX = viewSpaceX * this.zoom;
+        const ndcY = viewSpaceY * this.zoom;
+        
+        // 5. Apply aspect ratio correction
+        const canvas = document.getElementById('glCanvas');
+        const aspectRatio = canvas.width / canvas.height;
+        const correctedNdcX = ndcX / aspectRatio;
+        
+        // 6. Convert from NDC to screen coordinates
+        const screenX = (correctedNdcX + 1.0) * 0.5 * canvas.width;
+        const screenY = (1.0 - (ndcY + 1.0) * 0.5) * canvas.height; // Flip Y to match screen coordinates
+        
+        return { x: screenX, y: screenY };
     },
     
     screenToWorld(screenPos) {
         const canvas = document.getElementById('glCanvas');
         
-        // Normalize to [-1, 1] range with correct aspect ratio
+        // 1. Convert screen coordinates to normalized device coordinates (-1 to 1)
+        const ndcX = (2.0 * screenPos.x / canvas.width - 1.0);
+        const ndcY = (1.0 - 2.0 * screenPos.y / canvas.height); // Flip Y to match WebGL convention
+        
+        // 2. Apply aspect ratio correction
         const aspectRatio = canvas.width / canvas.height;
-        const normalizedX = (2.0 * screenPos.x / canvas.width - 1.0) * aspectRatio;
-        const normalizedY = 1.0 - (2.0 * screenPos.y / canvas.height);
+        const correctedNdcX = ndcX * aspectRatio;
         
-        // Create a point in view space
-        const viewSpacePoint = [normalizedX / this.zoom, normalizedY / this.zoom, 0];
+        // 3. Build the camera basis vectors (same as in the shader)
+        const forward = {
+            x: this.target[0] - this.position[0],
+            y: this.target[1] - this.position[1],
+            z: this.target[2] - this.position[2]
+        };
+        const fLength = Math.sqrt(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
+        if (fLength < 1e-12) {
+            return { x: Number.NaN, y: Number.NaN, z: Number.NaN };
+        }
+        forward.x /= fLength;
+        forward.y /= fLength;
+        forward.z /= fLength;
         
-        // Create inverse rotation matrix (transpose)
-        const invRotation = [
-            this.activeRotationMatrix[0], this.activeRotationMatrix[3], this.activeRotationMatrix[6],
-            this.activeRotationMatrix[1], this.activeRotationMatrix[4], this.activeRotationMatrix[7],
-            this.activeRotationMatrix[2], this.activeRotationMatrix[5], this.activeRotationMatrix[8]
-        ];
+        const worldUp = { x: 0, y: 1, z: 0 };
+        const right = {
+            x: worldUp.y * forward.z - worldUp.z * forward.y,
+            y: worldUp.z * forward.x - worldUp.x * forward.z,
+            z: worldUp.x * forward.y - worldUp.y * forward.x
+        };
+        const rLength = Math.sqrt(right.x*right.x + right.y*right.y + right.z*right.z);
+        if (rLength < 1e-12) {
+            return { x: Number.NaN, y: Number.NaN, z: Number.NaN };
+        }
+        right.x /= rLength;
+        right.y /= rLength;
+        right.z /= rLength;
         
-        // Apply inverse rotation
-        const worldX = invRotation[0] * viewSpacePoint[0] + invRotation[1] * viewSpacePoint[1] + invRotation[2] * viewSpacePoint[2];
-        const worldY = invRotation[3] * viewSpacePoint[0] + invRotation[4] * viewSpacePoint[1] + invRotation[5] * viewSpacePoint[2];
-        const worldZ = invRotation[6] * viewSpacePoint[0] + invRotation[7] * viewSpacePoint[1] + invRotation[8] * viewSpacePoint[2];
+        const up = {
+            x: forward.y * right.z - forward.z * right.y,
+            y: forward.z * right.x - forward.x * right.z,
+            z: forward.x * right.y - forward.y * right.x
+        };
         
-        // Add camera position
-        return { 
-            x: worldX + this.position[0], 
-            y: worldY + this.position[1],
-            z: worldZ + this.position[2]
+        // 4. Calculate the point in view space (scaled by zoom)
+        const viewSpaceX = correctedNdcX / this.zoom;
+        const viewSpaceY = ndcY / this.zoom;
+        
+        // 5. Calculate the world space point by adding offsets to camera position
+        return {
+            x: this.position[0] + viewSpaceX * right.x + viewSpaceY * up.x,
+            y: this.position[1] + viewSpaceX * right.y + viewSpaceY * up.y,
+            z: this.position[2] + viewSpaceX * right.z + viewSpaceY * up.z
         };
     }
 }; 
