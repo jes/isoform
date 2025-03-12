@@ -4,6 +4,7 @@ class UnionNode extends TreeNode {
       this.maxChildren = null;
       this.addChild(children);
       this.blendRadius = blendRadius;
+      this.chamfer = false;
     }
 
     getExactness() {
@@ -11,7 +12,7 @@ class UnionNode extends TreeNode {
     }
 
     properties() {
-      return {"blendRadius": "float"};
+      return {"blendRadius": "float", "chamfer": "bool"};
     }
 
     generateShaderCode() {
@@ -32,7 +33,11 @@ class UnionNode extends TreeNode {
         }
         
         if (this.blendRadius > 0) {
-          shaderCode = `smin(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
+          if (this.chamfer) {
+            shaderCode = `chmin(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
+          } else {
+            shaderCode = `smin(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
+          }
         } else {
           shaderCode = `min(${shaderCode}, ${childCode})`;
         }
@@ -82,6 +87,7 @@ class IntersectionNode extends TreeNode {
     this.maxChildren = null;
     this.addChild(children);
     this.blendRadius = blendRadius;
+    this.chamfer = false;
   }
 
   getExactness() {
@@ -89,7 +95,7 @@ class IntersectionNode extends TreeNode {
   }
 
   properties() {
-    return {"blendRadius": "float"};
+    return {"blendRadius": "float", "chamfer": "bool"};
   }
 
   generateShaderCode() {
@@ -113,7 +119,11 @@ class IntersectionNode extends TreeNode {
       }
       
       if (this.blendRadius > 0) {
-        shaderCode = `smax(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
+        if (this.chamfer) {
+          shaderCode = `chmax(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
+        } else {
+          shaderCode = `smax(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
+        }
       } else {
         shaderCode = `max(${shaderCode}, ${childCode})`;
       }
@@ -167,6 +177,7 @@ class SubtractionNode extends TreeNode {
     this.maxChildren = null;
     this.addChild(children);
     this.blendRadius = blendRadius;
+    this.chamfer = false;
   }
 
   getExactness() {
@@ -174,7 +185,7 @@ class SubtractionNode extends TreeNode {
   }
 
   properties() {
-    return {"blendRadius": "float"};
+    return {"blendRadius": "float", "chamfer": "bool"};
   }
 
   generateShaderImplementation() {
@@ -206,9 +217,13 @@ class SubtractionNode extends TreeNode {
       }
       
       if (this.blendRadius > 0) {
-        shaderCode = `opSmoothSubtraction(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
+        if (this.chamfer) {
+          shaderCode = `chmax(${shaderCode}, -(${childCode}), ${this.blendRadius.toFixed(16)})`;
+        } else {
+          shaderCode = `smax(${shaderCode}, -(${childCode}), ${this.blendRadius.toFixed(16)})`;
+        }
       } else {
-        shaderCode = `opSubtraction(${shaderCode}, ${childCode})`;
+        shaderCode = `max(${shaderCode}, -(${childCode}))`;
       }
     }
     return shaderCode;

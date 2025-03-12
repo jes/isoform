@@ -61,6 +61,21 @@ float smax(float a, float b, float k) {
     return mix(b, a, h) + k * h * (1.0 - h);
 }
 
+float chmin(float a, float b, float k) {
+    if (abs(a) < k && abs(b) < k) {
+        return a+b-k;
+    } else {
+        return min(a,b);
+    }
+}
+
+float chmax(float a, float b, float k) {
+    if (abs(a) < k && abs(b) < k) {
+        return a+b+k;
+    } else {
+        return max(a,b);
+    }
+}
 // Squared distance and projection factor to a line segment
 vec2 sdSqLine(vec2 p, vec2 a, vec2 b) {
     vec2 pa = p - a;
