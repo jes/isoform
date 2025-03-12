@@ -31,7 +31,7 @@ const app = {
     createDocument() {
         const doc = new UnionNode([]);
         doc.setProperty('displayName', 'Document');
-        const sphere = new SphereNode(11);
+        /*const sphere = new SphereNode(11);
         const box = new TransformNode([0, 0, 0], [1, 0, 0], 45, 
                      new RoughnessNode(0.1, 2.0, new BoxNode([20, 20, 20], 1.0)));
         const torus = new TorusNode(10, 3);
@@ -39,7 +39,15 @@ const app = {
 
         doc.addChild(torus);
         doc.addChild(new SubtractionNode([box, new TransformNode([0, 10, 0], [0, 1, 0], 0, sphere)], 0.5));
-        doc.addChild(new ExtrudeNode(new SketchNode([ {x:0, y:0}, {x:20, y:0}, {x:20, y:20} ])));
+        doc.addChild(new ExtrudeNode(new SketchNode([ {x:0, y:0}, {x:20, y:0}, {x:20, y:20} ])));*/
+        const originSphere = new SphereNode(1);
+        const xSphere = new TransformNode([10, 0, 0], [1, 0, 0], 0, [new SphereNode(2)]);
+        const ySphere = new TransformNode([0, 10, 0], [0, 1, 0], 0, [new SphereNode(3)]);
+        const zSphere = new TransformNode([0, 0, 10], [0, 0, 1], 0, [new SphereNode(4)]);
+        doc.addChild(originSphere);
+        doc.addChild(xSphere);
+        doc.addChild(ySphere);
+        doc.addChild(zSphere);
         
         this.document = doc;
         return doc;

@@ -529,6 +529,11 @@ class LinearPatternNode extends TreeNode {
   }
 
   generateShaderImplementation() {
+    if (!this.hasChildren()) {
+      this.warn("LinearPattern node has no child");
+      return '';
+    }
+
     if (this.spacing < 2*this.children[0].boundingSphere().radius) {
       console.log("bounding volumes overlap");
       // the bounding volumes overlap, so we need to do an explicit union
