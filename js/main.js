@@ -39,7 +39,7 @@ const app = {
 
         doc.addChild(torus);
         doc.addChild(new SubtractionNode([box, new TransformNode([0, 10, 0], [0, 1, 0], 0, sphere)], 0.5));
-        doc.addChild(new SketchNode([ {x:0, y:0}, {x:20, y:0}, {x:20, y:20} ]));
+        doc.addChild(new ExtrudeNode(new SketchNode([ {x:0, y:0}, {x:20, y:0}, {x:20, y:20} ])));
         
         this.document = doc;
         return doc;

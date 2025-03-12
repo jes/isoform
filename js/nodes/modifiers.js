@@ -655,9 +655,9 @@ class PolarPatternNode extends TreeNode {
 }
 
 class ExtrudeNode extends TreeNode {
-  constructor(height = 100.0, children = []) {
+  constructor(children = []) {
     super("Extrude");
-    this.height = height;
+    this.height = 100.0;
     this.maxChildren = 1;
     this.addChild(children);
   }
