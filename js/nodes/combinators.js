@@ -1,9 +1,9 @@
 class UnionNode extends TreeNode {
-    constructor(children = [], smoothK = 0) {
+    constructor(children = [], blendRadius = 0) {
       super("Union");
       this.maxChildren = null;
       this.addChild(children);
-      this.smoothK = smoothK;
+      this.blendRadius = blendRadius;
     }
 
     getExactness() {
@@ -11,7 +11,7 @@ class UnionNode extends TreeNode {
     }
 
     properties() {
-      return {"smoothK": "float"};
+      return {"blendRadius": "float"};
     }
 
     generateShaderImplementation() {
@@ -41,8 +41,8 @@ class UnionNode extends TreeNode {
           continue;
         }
         
-        if (this.smoothK > 0) {
-          shaderCode = `opSmoothUnion(${shaderCode}, ${childCode}, ${this.smoothK.toFixed(16)})`;
+        if (this.blendRadius > 0) {
+          shaderCode = `opSmoothUnion(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
         } else {
           shaderCode = `opUnion(${shaderCode}, ${childCode})`;
         }
@@ -71,8 +71,8 @@ class UnionNode extends TreeNode {
           continue;
         }
         const d1 = this.children[i].sdf(p);
-        if (this.smoothK > 0) {
-          d = this.opSmoothUnion(d, d1, this.smoothK);
+        if (this.blendRadius > 0) {
+          d = this.opSmoothUnion(d, d1, this.blendRadius);
         } else {
           d = this.opUnion(d, d1);
         }
@@ -87,11 +87,11 @@ class UnionNode extends TreeNode {
   }
 
 class IntersectionNode extends TreeNode {
-  constructor(children = [], smoothK = 0) {
+  constructor(children = [], blendRadius = 0) {
     super("Intersection");
     this.maxChildren = null;
     this.addChild(children);
-    this.smoothK = smoothK;
+    this.blendRadius = blendRadius;
   }
 
   getExactness() {
@@ -99,7 +99,7 @@ class IntersectionNode extends TreeNode {
   }
 
   properties() {
-    return {"smoothK": "float"};
+    return {"blendRadius": "float"};
   }
 
   generateShaderImplementation() {
@@ -132,8 +132,8 @@ class IntersectionNode extends TreeNode {
         continue; // Skip this child
       }
       
-      if (this.smoothK > 0) {
-        shaderCode = `opSmoothIntersection(${shaderCode}, ${childCode}, ${this.smoothK.toFixed(16)})`;
+      if (this.blendRadius > 0) {
+        shaderCode = `opSmoothIntersection(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
       } else {
         shaderCode = `opIntersection(${shaderCode}, ${childCode})`;
       }
@@ -166,8 +166,8 @@ class IntersectionNode extends TreeNode {
         continue;
       }
       const d1 = this.children[i].sdf(p);
-      if (this.smoothK > 0) {
-        d = this.opSmoothIntersection(d, d1, this.smoothK);
+      if (this.blendRadius > 0) {
+        d = this.opSmoothIntersection(d, d1, this.blendRadius);
       } else {
         d = this.opIntersection(d, d1);
       }
@@ -182,11 +182,11 @@ class IntersectionNode extends TreeNode {
 }
 
 class SubtractionNode extends TreeNode {
-  constructor(children = [], smoothK = 0) {
+  constructor(children = [], blendRadius = 0) {
     super("Subtraction");
     this.maxChildren = null;
     this.addChild(children);
-    this.smoothK = smoothK;
+    this.blendRadius = blendRadius;
   }
 
   getExactness() {
@@ -194,7 +194,7 @@ class SubtractionNode extends TreeNode {
   }
 
   properties() {
-    return {"smoothK": "float"};
+    return {"blendRadius": "float"};
   }
 
   generateShaderImplementation() {
@@ -225,8 +225,8 @@ class SubtractionNode extends TreeNode {
         continue; // Skip this child
       }
       
-      if (this.smoothK > 0) {
-        shaderCode = `opSmoothSubtraction(${shaderCode}, ${childCode}, ${this.smoothK.toFixed(16)})`;
+      if (this.blendRadius > 0) {
+        shaderCode = `opSmoothSubtraction(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
       } else {
         shaderCode = `opSubtraction(${shaderCode}, ${childCode})`;
       }
@@ -259,8 +259,8 @@ class SubtractionNode extends TreeNode {
         continue;
       }
       const d1 = this.children[i].sdf(p);
-      if (this.smoothK > 0) {
-        d = this.opSmoothSubtraction(d, d1, this.smoothK);
+      if (this.blendRadius > 0) {
+        d = this.opSmoothSubtraction(d, d1, this.blendRadius);
       } else {
         d = this.opSubtraction(d, d1);
       }
