@@ -235,20 +235,89 @@ const camera = {
     worldToScreen(worldPos) {
         const canvas = document.getElementById('glCanvas');
         
-        // Subtract camera position
+        // Convert world position to camera space
+        // First, translate relative to camera position
         const relativePos = {
             x: worldPos.x - this.position[0],
             y: worldPos.y - this.position[1],
             z: (worldPos.z || 0) - this.position[2]
         };
         
-        // Apply rotation matrix
-        const viewX = this.activeRotationMatrix[0] * relativePos.x + 
-                     this.activeRotationMatrix[1] * relativePos.y + 
-                     this.activeRotationMatrix[2] * relativePos.z;
-        const viewY = this.activeRotationMatrix[3] * relativePos.x + 
-                     this.activeRotationMatrix[4] * relativePos.y + 
-                     this.activeRotationMatrix[5] * relativePos.z;
+        // Create a vector from the relative position
+        const worldVector = [relativePos.x, relativePos.y, relativePos.z];
+        
+        // Apply the same rotation that happens in the fragment shader
+        // This is critical - we need to rotate the point just like in the shader
+        const rotatedVector = [
+            this.activeRotationMatrix[0] * worldVector[0] + 
+            this.activeRotationMatrix[1] * worldVector[1] + 
+            this.activeRotationMatrix[2] * worldVector[2],
+            
+            this.activeRotationMatrix[3] * worldVector[0] + 
+            this.activeRotationMatrix[4] * worldVector[1] + 
+            this.activeRotationMatrix[5] * worldVector[2],
+            
+            this.activeRotationMatrix[6] * worldVector[0] + 
+            this.activeRotationMatrix[7] * worldVector[1] + 
+            this.activeRotationMatrix[8] * worldVector[2]
+        ];
+        
+        // Calculate camera frame vectors
+        const forward = {
+            x: this.target[0] - this.position[0],
+            y: this.target[1] - this.position[1],
+            z: this.target[2] - this.position[2]
+        };
+        
+        // Normalize forward vector
+        const forwardLength = Math.sqrt(
+            forward.x * forward.x + 
+            forward.y * forward.y + 
+            forward.z * forward.z
+        );
+        
+        forward.x /= forwardLength;
+        forward.y /= forwardLength;
+        forward.z /= forwardLength;
+        
+        // Right vector (cross product of up and forward)
+        const worldUp = { x: 0, y: 1, z: 0 };
+        const right = {
+            x: worldUp.y * forward.z - worldUp.z * forward.y,
+            y: worldUp.z * forward.x - worldUp.x * forward.z,
+            z: worldUp.x * forward.y - worldUp.y * forward.x
+        };
+        
+        // Normalize right vector
+        const rightLength = Math.sqrt(
+            right.x * right.x + 
+            right.y * right.y + 
+            right.z * right.z
+        );
+        
+        right.x /= rightLength;
+        right.y /= rightLength;
+        right.z /= rightLength;
+        
+        // Up vector (cross product of forward and right)
+        const up = {
+            x: forward.y * right.z - forward.z * right.y,
+            y: forward.z * right.x - forward.x * right.z,
+            z: forward.x * right.y - forward.y * right.x
+        };
+        
+        // Project the rotated position onto the camera's right and up vectors
+        const viewX = (
+            right.x * rotatedVector[0] + 
+            right.y * rotatedVector[1] + 
+            right.z * rotatedVector[2]
+        );
+        
+        const viewY = (
+            up.x * rotatedVector[0] + 
+            up.y * rotatedVector[1] + 
+            up.z * rotatedVector[2]
+        );
         
         // Calculate aspect ratio
         const aspectRatio = canvas.width / canvas.height;
