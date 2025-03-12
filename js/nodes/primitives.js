@@ -4,6 +4,10 @@ class SphereNode extends TreeNode {
     this.radius = radius;
   }
 
+  boundingSphere() {
+    return { centre: [0, 0, 0], radius: this.radius };
+  }
+
   getExactness() {
     return TreeNode.EXACT;
   }
