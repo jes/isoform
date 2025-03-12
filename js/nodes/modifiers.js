@@ -648,7 +648,7 @@ class PolarPatternNode extends TreeNode {
 
 // Detect environment and export accordingly
 (function() {
-  const nodes = { TransformNode, RoughnessNode, ThicknessNode, ScaleNode, TwistNode, MirrorNode };
+  const nodes = { TransformNode, RoughnessNode, ThicknessNode, ScaleNode, TwistNode, MirrorNode, LinearPatternNode, PolarPatternNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {
