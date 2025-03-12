@@ -4,7 +4,10 @@ class SketchNode extends TreeNode {
     // New representation: first point is start, rest are end points of segments
     this.polycurves = points.length > 0 ? [points] : [];
     this.maxChildren = 0; // Primitive node with no children
-    this.is2d = true;
+  }
+
+  is2d() {
+    return true;
   }
 
   getExactness() {

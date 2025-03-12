@@ -9,6 +9,10 @@ class TransformNode extends TreeNode {
     this.addChild(children);
   }
 
+  is2d() {
+    return this.children.length > 0 && this.children[0].is2d();
+  }
+
   getExactness() {
     return TreeNode.EXACT;
   }
@@ -233,6 +237,10 @@ class ScaleNode extends TreeNode {
     this.maxChildren = 1;
     this.applyToSecondary = true;
     this.addChild(children);
+  }
+
+  is2d() {
+    return this.children.length > 0 && this.children[0].is2d();
   }
 
   getExactness() {
@@ -685,6 +693,10 @@ class ExtrudeNode extends TreeNode {
       this.warn("Extrude node has no child to transform");
       return this.noopShaderCode();
     }
+    if (!this.children[0].is2d()) {
+      this.warn("Extrude node requires a 2D child");
+      return this.noopShaderCode();
+    }
     return `opExtrude(${this.children[0].shaderCode()}, p, ${(this.height/2).toFixed(16)})`;
   }
 
@@ -712,6 +724,10 @@ class RevolveNode extends TreeNode {
     if (!this.hasChildren()) {
       this.warn("Revolve node has no child to transform");
       return "";
+    }
+    if (!this.children[0].is2d()) {
+      this.warn("Revolve node requires a 2D child");
+      return this.noopShaderCode();
     }
 
     return `
