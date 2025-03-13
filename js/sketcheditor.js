@@ -385,6 +385,76 @@ class SketchEditor {
         this.ctx.arc(origin.x, origin.y, 3, 0, Math.PI * 2);
         this.ctx.fillStyle = 'white';
         this.ctx.fill();
+
+        // Calculate adaptive grid size
+        // Get two points 1000mm apart in world space and find their screen distance
+        const testPoint1 = camera.worldToScreen({x: 0, y: 0, z: 0});
+        const testPoint2 = camera.worldToScreen({x: 100000, y: 0, z: 0});
+        const screenDistPer1000mm = Math.abs(testPoint2.x - testPoint1.x);
+        const screenDistPerMM = screenDistPer1000mm / 1000;
+        
+        // We want between 10 and 100 grid lines across 1000mm
+        const baseGridSize = 10; // Start with 10mm
+        let gridSize = baseGridSize;
+        
+        // Scale up grid size by powers of 10 until we have a reasonable number of lines
+        while (1000 / gridSize > 100 || screenDistPer1000mm / (1000 / gridSize) < 10) {
+            gridSize *= 10;
+        }
+        // Scale down grid size by powers of 10 until we have a reasonable number of lines
+        while (1000 / gridSize < 10 || screenDistPer1000mm / (1000 / gridSize) > 100) {
+            gridSize /= 10;
+        }
+
+        const gridExtent = 1000; // How far the grid extends in each direction
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        this.ctx.lineWidth = 1;
+
+        // Get screen-space direction vectors for the axes
+        const xAxisDelta = {
+            x: xDir.x - origin.x,
+            y: xDir.y - origin.y
+        };
+        const yAxisDelta = {
+            x: yDir.x - origin.x,
+            y: yDir.y - origin.y
+        };
+
+        // Normalize the direction vectors
+        const xAxisLength = Math.sqrt(xAxisDelta.x * xAxisDelta.x + xAxisDelta.y * xAxisDelta.y);
+        const yAxisLength = Math.sqrt(yAxisDelta.x * yAxisDelta.x + yAxisDelta.y * yAxisDelta.y);
+        const xDir2D = {
+            x: xAxisDelta.x / xAxisLength,
+            y: xAxisDelta.y / xAxisLength
+        };
+        const yDir2D = {
+            x: yAxisDelta.x / yAxisLength,
+            y: yAxisDelta.y / yAxisLength
+        };
+
+        // Vertical grid lines (parallel to Y axis)
+        for (let x = -gridExtent; x <= gridExtent; x += gridSize) {
+            if (x === 0) continue; // Skip origin line as it's already drawn
+            const offset = x * screenDistPerMM;
+            const startX = origin.x + offset * xDir2D.x;
+            const startY = origin.y + offset * xDir2D.y;
+            this.ctx.beginPath();
+            this.ctx.moveTo(startX - yAxisDelta.x, startY - yAxisDelta.y);
+            this.ctx.lineTo(startX + yAxisDelta.x, startY + yAxisDelta.y);
+            this.ctx.stroke();
+        }
+
+        // Horizontal grid lines (parallel to X axis)
+        for (let y = -gridExtent; y <= gridExtent; y += gridSize) {
+            if (y === 0) continue; // Skip origin line as it's already drawn
+            const offset = y * screenDistPerMM;
+            const startX = origin.x + offset * yDir2D.x;
+            const startY = origin.y + offset * yDir2D.y;
+            this.ctx.beginPath();
+            this.ctx.moveTo(startX - xAxisDelta.x, startY - xAxisDelta.y);
+            this.ctx.lineTo(startX + xAxisDelta.x, startY + xAxisDelta.y);
+            this.ctx.stroke();
+        }
         
         // If there are no polycurves, nothing to render
         if (!this.sketchNode.polycurves.length) return;
