@@ -24,8 +24,8 @@ class SketchEditor {
         this.canvas.style.position = 'absolute';
         this.canvas.style.top = '0';
         this.canvas.style.left = '0';
-        this.canvas.style.pointerEvents = 'auto'; // Allow mouse events
-        this.canvas.style.zIndex = '10'; // Above the WebGL canvas
+        this.canvas.style.pointerEvents = 'none'; // Changed from 'auto' to 'none'
+        this.canvas.style.zIndex = '10';
         
         // Match the size of the WebGL canvas
         const glCanvas = document.getElementById('glCanvas');
@@ -38,7 +38,7 @@ class SketchEditor {
         // Get the 2D context
         this.ctx = this.canvas.getContext('2d');
         
-        // Add event listeners
+        // Instead of adding listeners to the canvas, add them to the container
         this.addEventListeners();
     }
     
@@ -116,9 +116,10 @@ class SketchEditor {
     }
     
     addEventListeners() {
-        this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
-        this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
-        this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
+        // Add listeners to the container instead of the canvas
+        this.container.addEventListener('mousedown', this.onMouseDown.bind(this));
+        this.container.addEventListener('mousemove', this.onMouseMove.bind(this));
+        this.container.addEventListener('mouseup', this.onMouseUp.bind(this));
         
         // Handle canvas resize
         window.addEventListener('resize', this.onResize.bind(this));
@@ -136,6 +137,11 @@ class SketchEditor {
     
     onMouseDown(e) {
         if (!this.active) return;
+        
+        // Allow camera controls when modifier keys are pressed
+        if (e.shiftKey || e.altKey) {
+            return;
+        }
         
         this.isDragging = true;
         this.lastMousePos = this.getMousePosition(e);
@@ -159,6 +165,11 @@ class SketchEditor {
     onMouseMove(e) {
         if (!this.active) return;
         
+        // Allow camera controls when modifier keys are pressed
+        if (e.shiftKey || e.altKey) {
+            return;
+        }
+        
         const mousePos = this.getMousePosition(e);
         
         if (this.isDragging && this.selectedTool === 'select' && this.selectedVertex !== null) {
@@ -176,8 +187,13 @@ class SketchEditor {
         this.render();
     }
     
-    onMouseUp() {
+    onMouseUp(e) {
         if (!this.active) return;
+        
+        // Allow camera controls when modifier keys are pressed
+        if (e.shiftKey || e.altKey) {
+            return;
+        }
         
         this.isDragging = false;
         
@@ -530,10 +546,6 @@ class SketchEditor {
         this.canvas.style.display = 'block';
         this.toolbar.style.display = 'flex';
         
-        // Disable camera rotation
-        this.originalCameraMouseDown = camera.onMouseDown;
-        camera.onMouseDown = () => {}; // Disable camera rotation
-        
         this.render();
     }
     
@@ -544,12 +556,6 @@ class SketchEditor {
 
         if (this.sketchNode && !this.wasDisabled) {
             this.sketchNode.enable();
-        }
-        
-        // Re-enable camera rotation
-        if (this.originalCameraMouseDown) {
-            camera.onMouseDown = this.originalCameraMouseDown;
-            this.originalCameraMouseDown = null;
         }
     }
 }
