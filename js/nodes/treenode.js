@@ -3,6 +3,7 @@ class TreeNode {
   static nextId = 1;
 
   static _secondaryNode = null; // object to do secondary for, if any
+  static _showBoundingSphere = false; // whether to show the bounding sphere
 
   static EXACT = "exact";
   static LOWERBOUND = "lowerbound";
@@ -183,7 +184,7 @@ class TreeNode {
     if (thisImpl && !implementations.includes(thisImpl)) {
       implementations.push(thisImpl);
     }
-    
+
     // Return the array (now ordered from bottom to top)
     return implementations;
   }
@@ -210,6 +211,15 @@ class TreeNode {
   // return the shader code for the node, respecting isDisabled and _secondaryNode
   shaderCode() {
     if (TreeNode._secondaryNode) {
+      if (this == TreeNode._secondaryNode && TreeNode._showBoundingSphere) {
+        const boundingSphere = this.boundingSphere();
+        const centre = boundingSphere.centre;
+        let radius = boundingSphere.radius;
+        if (radius == Infinity) {
+          radius = 10000043.0;
+        }
+        return `length(p-vec3(${centre[0].toFixed(16)},${centre[1].toFixed(16)},${centre[2].toFixed(16)}))-${radius.toFixed(16)}`;
+      }
       if (this == TreeNode._secondaryNode || this.applyToSecondary || this.hasParent(TreeNode._secondaryNode)) {
         return this.generateShaderCode();
       }
@@ -229,10 +239,12 @@ class TreeNode {
     return this.generateShaderCode();
   }
 
-  secondaryShaderCode(node) {
+  secondaryShaderCode(node, showBoundingSphere = false) {
     TreeNode._secondaryNode = node;
+    TreeNode._showBoundingSphere = showBoundingSphere;
     const code = this.shaderCode();
     TreeNode._secondaryNode = null;
+    TreeNode._showBoundingSphere = false;
     return code;
   }
 

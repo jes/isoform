@@ -6,6 +6,8 @@ const ui = {
     document: null,
     collapsedNodeIds: new Set(),
     scrollPosition: 0,
+    showBoundingSphere: false,
+    secondaryNode: null,
     
     init(doc) {
         this.document = doc;
@@ -58,12 +60,11 @@ const ui = {
                 this.updateTreeIfNeeded(node, propName);
             },
             onInputFocused: (node) => {
-                // Store the node that's being edited for secondary rendering
-                this.editingNode = node;
+                this.secondaryNode = node;
             },
             onInputBlurred: () => {
                 // Clear the editing node when focus is lost
-                this.editingNode = null;
+                this.secondaryNode = null;
             }
         });
         
@@ -428,8 +429,8 @@ const ui = {
     // return the object that should be rendered as the "secondary" object, this is so that
     // you can see what you're working on when editing properties
     getSecondaryNode() {
-        // Return the node being edited if there is one
-        return this.editingNode || null;
+        // Return the node being edited if there is one (original behavior)
+        return this.secondaryNode;
     },
 
     // Add this new method to handle node movement
@@ -550,6 +551,32 @@ const ui = {
                     toggleEdgesButton.classList.add('active');
                 } else {
                     toggleEdgesButton.classList.remove('active');
+                }
+            });
+        }
+        
+        // Add the toggle bounds button functionality
+        const toggleBoundsButton = document.getElementById('toggle-bounds');
+        if (toggleBoundsButton) {
+            // Set initial state
+            if (this.showBoundingSphere) {
+                toggleBoundsButton.classList.add('active');
+            }
+            
+            // Add event listener
+            toggleBoundsButton.addEventListener('click', () => {
+                // Toggle the bounding sphere display
+                this.showBoundingSphere = !this.showBoundingSphere;
+
+                if (this.getSecondaryNode()) {
+                    app.document.markDirty();
+                }
+                
+                // Update the button appearance
+                if (this.showBoundingSphere) {
+                    toggleBoundsButton.classList.add('active');
+                } else {
+                    toggleBoundsButton.classList.remove('active');
                 }
             });
         }

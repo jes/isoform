@@ -96,7 +96,7 @@ const app = {
             // Compile shaders asynchronously
             await renderer.createShaderProgram(
                 renderer.vertexShaderSource, 
-                scene.generateShaderCode(this.document)
+                scene.generateShaderCode(this.document, ui.showBoundingSphere)
             );
             
             // Hide loading indicator
