@@ -610,6 +610,8 @@ class LinearPatternNode extends TreeNode {
     this.spacing = spacing;
     this.copies = copies;
     this.allowDomainRepetition = true;
+    this.blendRadius = 0.0;
+    this.chamfer = false;
     this.addChild(children);
   }
 
@@ -618,7 +620,7 @@ class LinearPatternNode extends TreeNode {
   }
 
   properties() {
-    return {"axis": "vec3", "spacing": "float", "copies": "int", "allowDomainRepetition": "bool"};
+    return {"axis": "vec3", "spacing": "float", "copies": "int", "allowDomainRepetition": "bool", "blendRadius": "float", "chamfer": "bool"};
   }
 
   generateShaderImplementation() {
@@ -638,7 +640,16 @@ class LinearPatternNode extends TreeNode {
       this.axis.map(v => (v / axisLength).toFixed(16)) : 
       [0, 0, 1].map(v => v.toFixed(16));
 
-    const radiusOverlaps = Math.ceil(2*this.children[0].boundingSphere().radius / this.spacing);
+    const radiusOverlaps = Math.ceil(2*(this.children[0].boundingSphere().radius + this.blendRadius) / this.spacing);
+
+    let minfn = "min(d, d1)";
+    if (this.blendRadius > 0.0) {
+      if (this.chamfer) {
+        minfn = `chmin(d, d1, ${this.blendRadius.toFixed(16)})`;
+      } else {
+        minfn = `smin(d, d1, ${this.blendRadius.toFixed(16)})`;
+      }
+    }
 
     if (!this.allowDomainRepetition || radiusOverlaps > this.copies) {
       // Explicit union of exactly the requested number of copies
@@ -649,13 +660,13 @@ class LinearPatternNode extends TreeNode {
           float d = ${this.children[0].shaderCode()};
           for (int i = 1; i < ${this.copies}; i++) {
             p -= step;
-            d = min(d, ${this.children[0].shaderCode()});
+            float d1 = ${this.children[0].shaderCode()};
+            d = ${minfn};
           }
           return d;
         }
       `;
     } else if (this.spacing < 2*this.children[0].boundingSphere().radius) {
-      console.log("radiusOverlaps", radiusOverlaps);
       return `
         float ${this.getFunctionName()}(vec3 p) {
           // Rotate point to align with pattern axis
@@ -684,7 +695,8 @@ class LinearPatternNode extends TreeNode {
           float d = ${this.children[0].shaderCode()};
           for (int i = 1; i < ${radiusOverlaps}; i++) {
             p -= step;
-            d = min(d, ${this.children[0].shaderCode()});
+            float d1 = ${this.children[0].shaderCode()};
+            d = ${minfn};
           }
           return d;
 
