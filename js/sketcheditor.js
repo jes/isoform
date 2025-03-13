@@ -375,6 +375,19 @@ class SketchEditor {
         // Clear the canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
+        // Calculate screen corners in world space
+        const corners = [
+            camera.screenToWorld({x: 0, y: 0}),
+            camera.screenToWorld({x: this.canvas.width, y: 0}),
+            camera.screenToWorld({x: this.canvas.width, y: this.canvas.height}),
+            camera.screenToWorld({x: 0, y: this.canvas.height})
+        ];
+
+        // Find the maximum extent in both directions
+        const maxX = Math.max(...corners.map(c => Math.abs(c.x)));
+        const maxY = Math.max(...corners.map(c => Math.abs(c.y)));
+        const gridExtent = Math.max(maxX, maxY);
+
         // Draw local axes
         const origin = camera.worldToScreen({x: 0, y: 0, z: 0});
         const xDir = camera.worldToScreen({x: 100000, y: 0, z: 0});
@@ -403,28 +416,21 @@ class SketchEditor {
         this.ctx.fill();
 
         // Calculate adaptive grid size
-        // Get two points 1000mm apart in world space and find their screen distance
         const testPoint1 = camera.worldToScreen({x: 0, y: 0, z: 0});
         const testPoint2 = camera.worldToScreen({x: 100000, y: 0, z: 0});
         const screenDistPer1000mm = Math.abs(testPoint2.x - testPoint1.x);
         const screenDistPerMM = screenDistPer1000mm / 1000;
         
-        // We want between 10 and 100 grid lines across 1000mm
-        const baseGridSize = 10; // Start with 10mm
-        let gridSize = baseGridSize;
-        
-        // Scale up grid size by powers of 10 until we have a reasonable number of lines
+        let gridSize = 10;
         while (1000 / gridSize > 100 || screenDistPer1000mm / (1000 / gridSize) < 10) {
             gridSize *= 10;
         }
-        // Scale down grid size by powers of 10 until we have a reasonable number of lines
         while (1000 / gridSize < 10 || screenDistPer1000mm / (1000 / gridSize) > 100) {
             gridSize /= 10;
         }
 
-        const gridExtent = 1000; // How far the grid extends in each direction
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-        this.ctx.lineWidth = 1;
+        // Round gridExtent up to the nearest multiple of gridSize
+        const roundedGridExtent = Math.ceil(gridExtent / gridSize) * gridSize;
 
         // Get screen-space direction vectors for the axes
         const xAxisDelta = {
@@ -448,9 +454,12 @@ class SketchEditor {
             y: yAxisDelta.y / yAxisLength
         };
 
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        this.ctx.lineWidth = 1;
+
         // Vertical grid lines (parallel to Y axis)
-        for (let x = -gridExtent; x <= gridExtent; x += gridSize) {
-            if (x === 0) continue; // Skip origin line as it's already drawn
+        for (let x = -roundedGridExtent; x <= roundedGridExtent; x += gridSize) {
+            if (x === 0) continue;
             const offset = x * screenDistPerMM;
             const startX = origin.x + offset * xDir2D.x;
             const startY = origin.y + offset * xDir2D.y;
@@ -461,8 +470,8 @@ class SketchEditor {
         }
 
         // Horizontal grid lines (parallel to X axis)
-        for (let y = -gridExtent; y <= gridExtent; y += gridSize) {
-            if (y === 0) continue; // Skip origin line as it's already drawn
+        for (let y = -roundedGridExtent; y <= roundedGridExtent; y += gridSize) {
+            if (y === 0) continue;
             const offset = y * screenDistPerMM;
             const startX = origin.x + offset * yDir2D.x;
             const startY = origin.y + offset * yDir2D.y;
