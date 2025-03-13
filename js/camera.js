@@ -112,6 +112,7 @@ const camera = {
             this.target[1] += worldMoveY;
             this.position[0] += worldMoveX;
             this.position[1] += worldMoveY;
+            app.coordinateSystemChanged();
         } else if (e.altKey) {
             // Rotate: Update rotation matrices
             const deltaX = (e.clientX - this.dragStartX) * 0.01;
@@ -124,6 +125,7 @@ const camera = {
             // Apply rotations to the drag start rotation matrix
             const combinedRotation = this.multiplyMatrices(rotX, rotY);
             this.activeRotationMatrix = this.multiplyMatrices(combinedRotation, this.dragStartRotation);
+            app.coordinateSystemChanged();
         }
 
         this.lastMouseX = e.clientX;
@@ -144,6 +146,8 @@ const camera = {
             // Zoom in
             this.zoom *= zoomFactor;
         }
+
+        app.coordinateSystemChanged();
     },
     
     setStandardView(rotationMatrix) {
@@ -156,6 +160,8 @@ const camera = {
         
         // Reset the drag start rotation
         this.dragStartRotation = [...rotationMatrix];
+
+        app.coordinateSystemChanged();
     },
     
     // Helper function to create a rotation matrix around Z axis

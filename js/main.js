@@ -76,6 +76,12 @@ const app = {
             this.shaderLoading.style.display = 'none';
         }
     },
+
+    coordinateSystemChanged() {
+        if (ui.sketchEditor) {
+            ui.sketchEditor.render();
+        }
+    },
     
     async render() {
         // Track the current secondary node

@@ -2,6 +2,7 @@
 const ui = {
     treeView: null,
     propertyEditor: null,
+    sketchEditor: null,
     selectedNode: null,
     document: null,
     collapsedNodeIds: new Set(),
