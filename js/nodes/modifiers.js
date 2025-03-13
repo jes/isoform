@@ -842,6 +842,7 @@ class ExtrudeNode extends TreeNode {
     this.maxChildren = 1;
     this.blendRadius = 0.0;
     this.chamfer = false;
+    this.draftAngle = 0.0;
     this.addChild(children);
   }
 
@@ -850,7 +851,7 @@ class ExtrudeNode extends TreeNode {
   }
 
   properties() {
-    return {"height": "float", "blendRadius": "float", "chamfer": "bool"};
+    return {"height": "float", "blendRadius": "float", "chamfer": "bool", "draftAngle": "float"};
   }
 
   generateShaderImplementation() {
@@ -863,13 +864,18 @@ class ExtrudeNode extends TreeNode {
         maxfn = `smax(d2d, dz, ${this.blendRadius.toFixed(16)})`;
       }
     }
+
+    const kp = Math.tan(this.draftAngle * Math.PI / 180.0);
+    const cosAngle = Math.cos(this.draftAngle * Math.PI / 180.0);
+
     return `
       float ${this.getFunctionName()}(vec3 p) {
-        // Calculate distance to the boundary based on z position
         float dz = abs(p.z) - ${(this.height/2).toFixed(16)};
 
+        // pz is the position in z where 0 is the start of the extrusion, used for applying draft angle
+        float pz = clamp(p.z + ${(this.height/2).toFixed(16)}, 0.0, ${this.height.toFixed(16)});
         p.z = 0.0;
-        float d2d = ${this.children[0].shaderCode()};
+        float d2d = (${this.children[0].shaderCode()})*${cosAngle.toFixed(16)} + pz*${kp.toFixed(16)};
         
         return ${maxfn};
       }
