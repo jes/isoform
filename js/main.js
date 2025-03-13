@@ -103,7 +103,9 @@ const app = {
             this.hideLoadingIndicator();
 
             // update the last secondary node reference when we recompile
-            this.lastSecondaryNode = currentSecondaryNode;
+            if (currentSecondaryNode !== null) {
+                this.lastSecondaryNode = currentSecondaryNode;
+            }
 
             this.lastAdjustmentTime = Date.now();
         }
