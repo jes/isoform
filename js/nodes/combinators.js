@@ -7,6 +7,55 @@ class UnionNode extends TreeNode {
       this.chamfer = false;
     }
 
+    boundingSphere() {
+      if (this.children.length === 0) {
+        return { centre: [0, 0, 0], radius: 0 };
+      }
+
+      if (this.children.length === 1) {
+        return this.children[0].boundingSphere();
+      }
+
+      // Find the center of the bounding sphere by averaging all centers
+      let centerX = 0, centerY = 0, centerZ = 0;
+      let maxRadius = 0;
+      
+      // First pass: calculate the average center
+      for (const child of this.children) {
+        const childSphere = child.boundingSphere();
+        centerX += childSphere.centre[0];
+        centerY += childSphere.centre[1];
+        centerZ += childSphere.centre[2];
+      }
+      
+      centerX /= this.children.length;
+      centerY /= this.children.length;
+      centerZ /= this.children.length;
+      
+      // Second pass: find the maximum distance from the center to any child sphere's edge
+      for (const child of this.children) {
+        const childSphere = child.boundingSphere();
+        
+        // Calculate distance from our center to the child's center
+        const dx = childSphere.centre[0] - centerX;
+        const dy = childSphere.centre[1] - centerY;
+        const dz = childSphere.centre[2] - centerZ;
+        const distanceToCenter = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        
+        // The radius needs to include the child's radius plus the distance to its center
+        const totalRadius = distanceToCenter + childSphere.radius;
+        
+        if (totalRadius > maxRadius) {
+          maxRadius = totalRadius;
+        }
+      }
+      
+      return {
+        centre: [centerX, centerY, centerZ],
+        radius: maxRadius
+      };
+    }
+
     getExactness() {
       return TreeNode.LOWERBOUND;
     }
@@ -169,6 +218,38 @@ class IntersectionNode extends TreeNode {
   getIcon() {
     return "🔄";
   }
+
+  boundingSphere() {
+    if (this.children.length === 0) {
+      return { centre: [0, 0, 0], radius: 0 };
+    }
+
+    // For intersection, we can return the smallest bounding sphere that contains
+    // the intersection of all child bounding spheres.
+    // However, this is a complex calculation, and a conservative approach is to
+    // return the smallest of the child bounding spheres, as the intersection
+    // cannot be larger than any of its components.
+    
+    let smallestRadius = Infinity;
+    let smallestSphereIndex = -1;
+    
+    // Find the child with the smallest bounding sphere
+    for (let i = 0; i < this.children.length; i++) {
+      const childSphere = this.children[i].boundingSphere();
+      if (childSphere.radius < smallestRadius) {
+        smallestRadius = childSphere.radius;
+        smallestSphereIndex = i;
+      }
+    }
+    
+    // If we found a valid child, return its bounding sphere
+    if (smallestSphereIndex >= 0) {
+      return this.children[smallestSphereIndex].boundingSphere();
+    }
+    
+    // Fallback (should not happen if we have children)
+    return { centre: [0, 0, 0], radius: 0 };
+  }
 }
 
 class SubtractionNode extends TreeNode {
@@ -266,6 +347,16 @@ class SubtractionNode extends TreeNode {
 
   getIcon() {
     return "➖";
+  }
+
+  boundingSphere() {
+    if (this.children.length === 0) {
+      return { centre: [0, 0, 0], radius: 0 };
+    }
+
+    // For subtraction, the result cannot be larger than the first shape
+    // (the one we're subtracting from), so we can simply return its bounding sphere
+    return this.children[0].boundingSphere();
   }
 }
 

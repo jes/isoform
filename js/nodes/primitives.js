@@ -49,6 +49,11 @@ class CylinderNode extends TreeNode {
     this.roundRadius = roundRadius;
   }
 
+  boundingSphere() {
+    const v = new Vec3(this.diameter/2, this.height/2, 0.0);
+    return { centre: [0, 0, 0], radius: v.length() };
+  }
+
   getExactness() {
     return TreeNode.EXACT;
   }
@@ -107,6 +112,11 @@ class BoxNode extends TreeNode {
     super("Box");
     this.size = size;
     this.radius = radius;
+  }
+
+  boundingSphere() {
+    const v = new Vec3(this.size[0]/2, this.size[1]/2, this.size[2]/2);
+    return { centre: [0, 0, 0], radius: v.length() };
   }
 
   getExactness() {

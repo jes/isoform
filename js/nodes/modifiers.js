@@ -9,6 +9,61 @@ class TransformNode extends TreeNode {
     this.addChild(children);
   }
 
+  boundingSphere() {
+    if (!this.hasChildren()) {
+      return { centre: [0, 0, 0], radius: 0 };
+    }
+    
+    // Get the child's bounding sphere
+    const childSphere = this.children[0].boundingSphere();
+    
+    // If the radius is infinite, no need to transform
+    if (childSphere.radius === Infinity) {
+      return childSphere;
+    }
+    
+    // Create Vec3 for the center
+    const center = new Vec3(
+      childSphere.centre[0], 
+      childSphere.centre[1], 
+      childSphere.centre[2]
+    );
+    
+    // Apply rotation if there's a non-zero angle
+    if (this.rotationAngle !== 0) {
+      // Normalize the rotation axis
+      const axisLength = Math.sqrt(
+        this.rotationAxis[0] * this.rotationAxis[0] + 
+        this.rotationAxis[1] * this.rotationAxis[1] + 
+        this.rotationAxis[2] * this.rotationAxis[2]
+      );
+      
+      const normalizedAxis = axisLength > 0 ? 
+        new Vec3(
+          this.rotationAxis[0] / axisLength,
+          this.rotationAxis[1] / axisLength,
+          this.rotationAxis[2] / axisLength
+        ) : 
+        new Vec3(0, 1, 0);
+      
+      // Rotate the center point
+      center.rotateAround(normalizedAxis, this.rotationAngle);
+      
+      // Rotation doesn't change the radius of the bounding sphere
+    }
+    
+    // Apply translation
+    center.x += this.translation[0];
+    center.y += this.translation[1];
+    center.z += this.translation[2];
+    
+    // Return the transformed bounding sphere
+    return {
+      centre: [center.x, center.y, center.z],
+      radius: childSphere.radius
+    };
+ 0}
+
   is2d() {
     return this.children.length > 0 && this.children[0].is2d();
   }
@@ -104,6 +159,14 @@ class RoughnessNode extends TreeNode {
     this.addChild(children);
   }
 
+  boundingSphere() {
+    const childSphere = this.children[0].boundingSphere();
+    return {
+      centre: childSphere.centre,
+      radius: childSphere.radius + 1.5 * this.amplitude
+    };
+  }
+
   getExactness() {
     return TreeNode.ISOSURFACE;
   }
@@ -181,6 +244,18 @@ class ThicknessNode extends TreeNode {
     this.addChild(children);
   }
 
+  boundingSphere() {
+    const childSphere = this.children[0].boundingSphere();
+    if (this.inside) {
+      return childSphere;
+    } else {
+      return {
+        centre: childSphere.centre,
+        radius: childSphere.radius + this.thickness
+      };
+    }
+  }
+
   getExactness() {
     return TreeNode.EXACT;
   }
@@ -237,6 +312,14 @@ class ScaleNode extends TreeNode {
     this.maxChildren = 1;
     this.applyToSecondary = true;
     this.addChild(children);
+  }
+
+  boundingSphere() {
+    const childSphere = this.children[0].boundingSphere();
+    return {
+      centre: childSphere.centre,
+      radius: childSphere.radius * this.k
+    };
   }
 
   is2d() {
@@ -463,6 +546,15 @@ class MirrorNode extends TreeNode {
     this.maxChildren = 1;
     this.plane = "XY";
     this.addChild(children);
+  }
+
+  boundingSphere() {
+    const childSphere = this.children[0].boundingSphere();
+    const v = new Vec3(childSphere.centre[0], childSphere.centre[1], childSphere.centre[2]);
+    return {
+      centre: [0,0,0],
+      radius: v.length() + childSphere.radius,
+    };
   }
 
   getExactness() {
