@@ -17,7 +17,6 @@ const camera = {
     isDragging: false,
     lastMouseX: 0,
     lastMouseY: 0,
-    rotationSpeed: 0.01,
     zoomSpeed: 0.1,
     showEdges: true,
     stepFactor: 1.0,
@@ -30,35 +29,28 @@ const camera = {
     ],
     
     init(canvas) {
-        // Mouse event handlers
-        canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
-        canvas.addEventListener('mouseup', () => this.onMouseUp());
-        canvas.addEventListener('mouseleave', () => this.onMouseLeave());
+        // Only need mousemove and wheel events now
         canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
         canvas.addEventListener('wheel', (e) => this.onWheel(e));
-    },
-    
-    onMouseDown(e) {
-        this.isDragging = true;
-        this.lastMouseX = e.clientX;
-        this.lastMouseY = e.clientY;
-        // Store the initial mouse position for this drag operation
-        this.dragStartX = e.clientX;
-        this.dragStartY = e.clientY;
-        // Save the base rotation at the start of the drag
-        this.dragStartRotation = [...this.baseRotationMatrix];
-    },
-    
-    onMouseUp() {
-        this.isDragging = false;
-        // Update base rotation matrix to current active matrix
-        this.baseRotationMatrix = [...this.activeRotationMatrix];
-    },
-    
-    onMouseLeave() {
-        this.isDragging = false;
-        // Update base rotation matrix to current active matrix
-        this.baseRotationMatrix = [...this.activeRotationMatrix];
+        
+        // Handle Alt key press/release
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Alt') {
+                // Store the current rotation as the starting point
+                this.dragStartRotation = [...this.baseRotationMatrix];
+                this.dragStartX = this.lastMouseX;
+                this.dragStartY = this.lastMouseY;
+                e.preventDefault();
+            }
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'Alt') {
+                // Store the final rotation as the new base
+                this.baseRotationMatrix = [...this.activeRotationMatrix];
+                e.preventDefault();
+            }
+        });
     },
     
     // Helper function to create a rotation matrix around X axis
@@ -93,26 +85,20 @@ const camera = {
     },
     
     onMouseMove(e) {
-        if (!this.isDragging) return;
+        // Get canvas dimensions for proper scaling
+        const canvasWidth = renderer.canvas.width;
+        const canvasHeight = renderer.canvas.height;
         
-        // Calculate delta from the start of the drag, not just from the last frame
-        const deltaX = e.clientX - this.dragStartX;
-        const deltaY = e.clientY - this.dragStartY;
+        // Calculate aspect ratio
+        const aspectRatio = canvasWidth / canvasHeight;
+        
+        // Calculate pixel movement
+        const pixelMoveX = e.movementX;
+        const pixelMoveY = e.movementY;
         
         if (e.shiftKey) {
-            // Get canvas dimensions for proper scaling
-            const canvasWidth = renderer.canvas.width;
-            const canvasHeight = renderer.canvas.height;
-            
-            // Calculate aspect ratio
-            const aspectRatio = canvasWidth / canvasHeight;
-            
-            // Convert pixel movement to normalized device coordinates (-1 to 1)
-            // and then to world space units
-            const pixelMoveX = e.clientX - this.lastMouseX;
-            const pixelMoveY = e.clientY - this.lastMouseY;
-            
-            // Scale based on canvas size (2.0 represents the full NDC range from -1 to 1)
+            // Pan: Move both camera position and target
+            // Convert to normalized device coordinates (-1 to 1)
             const ndcMoveX = (pixelMoveX / canvasWidth) * 2.0;
             const ndcMoveY = (pixelMoveY / canvasHeight) * 2.0;
             
@@ -126,16 +112,20 @@ const camera = {
             this.target[1] += worldMoveY;
             this.position[0] += worldMoveX;
             this.position[1] += worldMoveY;
-        } else {
-            // Create rotation matrices based on total mouse movement from drag start
-            const rotX = this.createRotationMatrixX(deltaY * this.rotationSpeed);
-            const rotY = this.createRotationMatrixY(deltaX * this.rotationSpeed);
+        } else if (e.altKey) {
+            // Rotate: Update rotation matrices
+            const deltaX = (e.clientX - this.dragStartX) * 0.01;
+            const deltaY = (e.clientY - this.dragStartY) * 0.01;
+            
+            // Create rotation matrices based on mouse movement
+            const rotX = this.createRotationMatrixX(deltaY);
+            const rotY = this.createRotationMatrixY(deltaX);
             
             // Apply rotations to the drag start rotation matrix
             const combinedRotation = this.multiplyMatrices(rotX, rotY);
             this.activeRotationMatrix = this.multiplyMatrices(combinedRotation, this.dragStartRotation);
         }
-        
+
         this.lastMouseX = e.clientX;
         this.lastMouseY = e.clientY;
     },
