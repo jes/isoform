@@ -62,7 +62,7 @@ class TransformNode extends TreeNode {
       centre: [center.x, center.y, center.z],
       radius: childSphere.radius
     };
- 0}
+  }
 
   is2d() {
     return this.children.length > 0 && this.children[0].is2d();

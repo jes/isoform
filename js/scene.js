@@ -35,7 +35,7 @@ const scene = {
         `;
 
         const mainImpls = document.allShaderImplementations();
-        const secondaryImpls = document.secondaryShaderImplementations(secondaryNode);
+        const secondaryImpls = document.secondaryShaderImplementations(secondaryNode, showBoundingSphere);
         
         // Filter out duplicates from secondaryImpls that are already in mainImpls
         const filteredSecondaryImpls = secondaryImpls.filter(impl => !mainImpls.includes(impl));

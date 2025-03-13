@@ -189,13 +189,15 @@ class TreeNode {
     return implementations;
   }
 
-  secondaryShaderImplementations(node) {
+  secondaryShaderImplementations(node, showBoundingSphere = false) {
     if (node == null) {
       return [];
     }
     TreeNode._secondaryNode = node;
+    TreeNode._showBoundingSphere = showBoundingSphere;
     const implementations = this.allShaderImplementations();
     TreeNode._secondaryNode = null;
+    TreeNode._showBoundingSphere = false;
     return implementations;
   }
 
