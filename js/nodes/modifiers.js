@@ -846,7 +846,7 @@ class ExtrudeNode extends TreeNode {
   }
 
   getExactness() {
-    return TreeNode.EXACT;
+    return TreeNode.LOWERBOUND;
   }
 
   properties() {
