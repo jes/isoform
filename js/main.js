@@ -54,15 +54,10 @@ const app = {
 
         doc.addChild(torus);
         doc.addChild(new SubtractionNode([box, new TransformNode([0, 10, 0], [0, 1, 0], 0, sphere)], 0.5));
-        doc.addChild(new ExtrudeNode(new SketchNode([ {x:0, y:0}, {x:20, y:0}, {x:20, y:20} ])));
-        /*const originSphere = new SphereNode(1);
-        const xSphere = new TransformNode([10, 0, 0], [1, 0, 0], 0, [new SphereNode(2)]);
-        const ySphere = new TransformNode([0, 10, 0], [0, 1, 0], 0, [new SphereNode(3)]);
-        const zSphere = new TransformNode([0, 0, 10], [0, 0, 1], 0, [new SphereNode(4)]);
-        doc.addChild(originSphere);
-        doc.addChild(xSphere);
-        doc.addChild(ySphere);
-        doc.addChild(zSphere);*/
+        const extr = new ExtrudeNode(new SketchNode([ {x:0, y:0}, {x:20, y:0}, {x:20, y:20} ]));
+        extr.setProperty('blendRadius', 1);
+        extr.setProperty('chamfer', true);
+        doc.addChild(new ThicknessNode(1, false, extr));
         
         this.document = doc;
         return doc;
