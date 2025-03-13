@@ -308,7 +308,7 @@ const camera = {
         
         // 1. Convert from screen coordinates to NDC (-1 to 1)
         const ndcX = (screenPos.x / canvas.width) * 2.0 - 1.0;
-        const ndcY = (screenPos.y / canvas.height) * 2.0 - 1.0;
+        const ndcY = 1.0 - (screenPos.y / canvas.height) * 2.0;
         
         // 2. Apply aspect ratio correction
         const aspectRatio = canvas.width / canvas.height;
@@ -385,8 +385,6 @@ const camera = {
             y: inverseRotation[3] * worldPointRotated.x + inverseRotation[4] * worldPointRotated.y + inverseRotation[5] * worldPointRotated.z,
             z: inverseRotation[6] * worldPointRotated.x + inverseRotation[7] * worldPointRotated.y + inverseRotation[8] * worldPointRotated.z
         };
-
-        worldPos.y = -worldPos.y;
         
         return worldPos;
     }
