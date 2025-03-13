@@ -76,6 +76,7 @@ float chmax(float a, float b, float k) {
         return max(a,b);
     }
 }
+
 // Squared distance and projection factor to a line segment
 vec2 sdSqLine(vec2 p, vec2 a, vec2 b) {
     vec2 pa = p - a;
@@ -83,10 +84,6 @@ vec2 sdSqLine(vec2 p, vec2 a, vec2 b) {
     float h = clamp(dot(pa, ba) / dot2(ba), 0.0, 1.0);
     vec2 d = pa - ba * h;
     return vec2(dot2(d), ba.x*pa.y-ba.y*pa.x);
-}
-
-vec3 opTo2d(vec3 p) {
-    return vec3(p.x, p.y, 0.0);
 }
 
 // begin scene
