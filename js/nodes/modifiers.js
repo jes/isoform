@@ -535,9 +535,21 @@ class LinearPatternNode extends TreeNode {
       return '';
     }
 
-    if (!this.allowDomainRepetition || this.spacing < 2*this.children[0].boundingSphere().radius) {
-      console.log("bounding volumes overlap");
-      // the bounding volumes overlap, so we need to do an explicit union
+    // Normalize the axis
+    const axisLength = Math.sqrt(
+      this.axis[0] * this.axis[0] + 
+      this.axis[1] * this.axis[1] + 
+      this.axis[2] * this.axis[2]
+    );
+    
+    const normalizedAxis = axisLength > 0 ? 
+      this.axis.map(v => (v / axisLength).toFixed(16)) : 
+      [0, 0, 1].map(v => v.toFixed(16));
+
+    const radiusOverlaps = Math.ceil(2*this.children[0].boundingSphere().radius / this.spacing);
+
+    if (!this.allowDomainRepetition || radiusOverlaps > this.copies) {
+      // Explicit union of exactly the requested number of copies
       return `
         float ${this.getFunctionName()}(vec3 p) {
           float spacing = ${this.spacing.toFixed(16)};
@@ -550,20 +562,44 @@ class LinearPatternNode extends TreeNode {
           return d;
         }
       `;
+    } else if (this.spacing < 2*this.children[0].boundingSphere().radius) {
+      console.log("radiusOverlaps", radiusOverlaps);
+      return `
+        float ${this.getFunctionName()}(vec3 p) {
+          // Rotate point to align with pattern axis
+          vec3 axis = vec3(${normalizedAxis.join(", ")});
+          mat3 toAxisSpace = rotateToAxis(axis);
+          mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
+          
+          // Transform to axis-aligned space
+          vec3 q = toAxisSpace * p;
+          
+          // Apply modulo along the z-axis (which is now aligned with our pattern axis)
+          float spacing = ${this.spacing.toFixed(16)};
+          float halfSpacing = ${(this.spacing / 2.0).toFixed(16)};
+
+          // Calculate the index of the current copy
+          float idx = clamp(floor((q.z + halfSpacing) / spacing), 0.0, ${(this.copies - radiusOverlaps).toFixed(16)});
+          
+          // Apply modulo operation
+          q.z -= idx * spacing;
+          
+          // Transform back to original space
+          p = fromAxisSpace * q;
+          
+          // do a union of the number of overlapping copies
+          vec3 step = spacing * normalize(vec3(${this.axis.map(v => v.toFixed(16)).join(", ")}));
+          float d = ${this.children[0].shaderCode()};
+          for (int i = 1; i < ${radiusOverlaps}; i++) {
+            p -= step;
+            d = min(d, ${this.children[0].shaderCode()});
+          }
+          return d;
+
+        }
+      `;
     } else {
-      console.log("bounding volumes do not overlap");
-      // the bounding volumes do not overlap, so we can use domain repetition
-      // Normalize the axis
-      const axisLength = Math.sqrt(
-        this.axis[0] * this.axis[0] + 
-        this.axis[1] * this.axis[1] + 
-        this.axis[2] * this.axis[2]
-      );
-      
-      const normalizedAxis = axisLength > 0 ? 
-        this.axis.map(v => (v / axisLength).toFixed(16)) : 
-        [0, 0, 1].map(v => v.toFixed(16));
-        
+      // The bounding volumes do not overlap, so we can use pure domain repetition
       return `
         float ${this.getFunctionName()}(vec3 p) {
           // Rotate point to align with pattern axis
