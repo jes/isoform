@@ -640,7 +640,7 @@ class LinearPatternNode extends TreeNode {
       this.axis.map(v => (v / axisLength).toFixed(16)) : 
       [0, 0, 1].map(v => v.toFixed(16));
 
-    const radiusOverlaps = Math.ceil(2*(this.children[0].boundingSphere().radius + this.blendRadius) / this.spacing);
+    const radiusOverlaps = Math.ceil((this.children[0].boundingSphere().radius + this.blendRadius) / this.spacing);
 
     let minfn = "min(d, d1)";
     if (this.blendRadius > 0.0) {
@@ -651,7 +651,7 @@ class LinearPatternNode extends TreeNode {
       }
     }
 
-    if (!this.allowDomainRepetition || radiusOverlaps > this.copies) {
+    if (!this.allowDomainRepetition || 2*radiusOverlaps >= this.copies) {
       // Explicit union of exactly the requested number of copies
       return `
         float ${this.getFunctionName()}(vec3 p) {
@@ -682,7 +682,7 @@ class LinearPatternNode extends TreeNode {
           float halfSpacing = ${(this.spacing / 2.0).toFixed(16)};
 
           // Calculate the index of the current copy
-          float idx = clamp(floor((q.z + halfSpacing) / spacing), 0.0, ${(this.copies - radiusOverlaps).toFixed(16)});
+          float idx = clamp(floor((q.z + halfSpacing) / spacing), ${radiusOverlaps.toFixed(16)}, ${(this.copies - radiusOverlaps - 1).toFixed(16)});
           
           // Apply modulo operation
           q.z -= idx * spacing;
@@ -692,8 +692,9 @@ class LinearPatternNode extends TreeNode {
           
           // do a union of the number of overlapping copies
           vec3 step = spacing * normalize(vec3(${this.axis.map(v => v.toFixed(16)).join(", ")}));
+          p += step * ${radiusOverlaps.toFixed(16)};
           float d = ${this.children[0].shaderCode()};
-          for (int i = 1; i < ${radiusOverlaps}; i++) {
+          for (int i = 0; i < ${2*radiusOverlaps}; i++) {
             p -= step;
             float d1 = ${this.children[0].shaderCode()};
             d = ${minfn};
