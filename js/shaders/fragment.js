@@ -63,7 +63,7 @@ float smax(float a, float b, float k) {
 
 float chmin(float a, float b, float k) {
     if (abs(a) < k && abs(b) < k) {
-        return a+b-k;
+        return (a+b-k)*0.5;
     } else {
         return min(a,b);
     }
@@ -71,7 +71,7 @@ float chmin(float a, float b, float k) {
 
 float chmax(float a, float b, float k) {
     if (abs(a) < k && abs(b) < k) {
-        return a+b+k;
+        return (a+b+k)*0.5;
     } else {
         return max(a,b);
     }
