@@ -545,6 +545,9 @@ class MirrorNode extends TreeNode {
     super("Mirror");
     this.maxChildren = 1;
     this.plane = "XY";
+    this.allowDomainRepetition = true;
+    this.blendRadius = 0.0;
+    this.chamfer = false;
     this.addChild(children);
   }
 
@@ -562,18 +565,68 @@ class MirrorNode extends TreeNode {
   }
 
   properties() {
-    return {"plane": ["XY", "XZ", "YZ"]};
+    return {"plane": ["XY", "XZ", "YZ"], "allowDomainRepetition": "bool", "blendRadius": "float", "chamfer": "bool"};
   }
 
   generateShaderImplementation() {
-    const axis = this.plane === "XY" ? "z" : this.plane === "XZ" ? "y" : "x";
-    return `
-      float ${this.getFunctionName()}(vec3 p) {
-        float d0 = ${this.children[0].shaderCode()};
-        p.${axis} = -p.${axis};
-        return min(d0, ${this.children[0].shaderCode()});
+    if (!this.hasChildren()) {
+      this.warn("Mirror node has no child to transform");
+      return '';
+    }
+
+    let minfn = "min(d, d1)";
+    if (this.blendRadius > 0.0) {
+      if (this.chamfer) {
+        minfn = `chmin(d, d1, ${this.blendRadius.toFixed(16)})`;
+      } else {
+        minfn = `smin(d, d1, ${this.blendRadius.toFixed(16)})`;
       }
-    `;
+    }
+    const axis = this.plane === "XY" ? "z" : this.plane === "XZ" ? "y" : "x";
+    let domainRepetitionOk = this.allowDomainRepetition;
+    const boundingSphere = this.children[0].boundingSphere();
+    const r = boundingSphere.radius + this.blendRadius;
+    const c = boundingSphere.centre;
+    const neg = "";
+    if (this.plane == "XY") {
+      if (r > Math.abs(c[2])) {
+        domainRepetitionOk = false;
+        if (c[2] < 0.0) {
+          neg = "-";
+        }
+      }
+    } else if (this.plane == "XZ") {
+      if (r > Math.abs(c[1])) {
+        domainRepetitionOk = false;
+        if (c[1] < 0.0) {
+          neg = "-";
+        }
+      }
+    } else {
+      if (r > Math.abs(c[0])) {
+        domainRepetitionOk = false;
+        if (c[0] < 0.0) {
+          neg = "-";
+        }
+      }
+    }
+    if (domainRepetitionOk) {
+      return `
+        float ${this.getFunctionName()}(vec3 p) {
+          p.${axis} = ${neg}abs(p.${axis});
+          return ${this.children[0].shaderCode()};
+        }
+      `;
+    } else {
+      return `
+        float ${this.getFunctionName()}(vec3 p) {
+          float d = ${this.children[0].shaderCode()};
+          p.${axis} = -p.${axis};
+          float d1 = ${this.children[0].shaderCode()};
+          return ${minfn};
+        }
+      `;
+    }
   }
 
   generateShaderCode() {
