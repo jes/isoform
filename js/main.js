@@ -5,6 +5,7 @@ const app = {
     lastAdjustmentTime: 0,
     adjustmentInterval: 1000, // ms
     wasFocused: true, // Track if window was previously focused
+    sketchNeedsRedraw: false,
 
     async init() {
         // Initialize components
@@ -78,9 +79,7 @@ const app = {
     },
 
     coordinateSystemChanged() {
-        if (ui.sketchEditor) {
-            ui.sketchEditor.render();
-        }
+        this.sketchNeedsRedraw = true;
     },
     
     async render() {
@@ -117,6 +116,13 @@ const app = {
         }
         
         this.controlQuality();
+
+        if (this.sketchNeedsRedraw) {
+            if (ui.sketchEditor) {
+                ui.sketchEditor.render();
+            }
+            this.sketchNeedsRedraw = false;
+        }
        
         // Request next frame
         requestAnimationFrame(() => this.render());
