@@ -75,7 +75,11 @@ class SketchNode extends TreeNode {
 
     return `
       float ${this.getFunctionName()}(vec3 p) {
+        // this is an exact 2d SDF at Z=0, we just make a broken 3d SDF so that it looks
+        // like a flat shape before being extruded/revolved, and so that transforms, unions,
+        // etc. of 2d shapes still work
         ${code}
+        if (abs(p.z) > 0.005) return length(vec2(abs(p.z)-0.005, max(d, 0.0)));
         return d;
       }
     `;

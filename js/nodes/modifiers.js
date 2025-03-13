@@ -728,9 +728,12 @@ class ExtrudeNode extends TreeNode {
 
   generateShaderImplementation() {
     return `
-      float opExtrude(float d2d, vec3 p, float halfHeight) {
+      float ${this.getFunctionName()}(vec3 p) {
         // Calculate distance to the boundary based on z position
-        float dz = abs(p.z) - halfHeight;
+        float dz = abs(p.z) - ${(this.height/2).toFixed(16)};
+
+        p.z = 0.0;
+        float d2d = ${this.children[0].shaderCode()};
         
         if (dz <= 0.0) {
           // Inside the extrusion height - just use the 2D distance
@@ -753,7 +756,7 @@ class ExtrudeNode extends TreeNode {
       this.warn("Extrude node requires a 2D child");
       return this.noopShaderCode();
     }
-    return `opExtrude(${this.children[0].shaderCode()}, p, ${(this.height/2).toFixed(16)})`;
+    return `${this.getFunctionName()}(p)`;
   }
 
   getIcon() {
