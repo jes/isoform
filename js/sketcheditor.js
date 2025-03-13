@@ -359,6 +359,33 @@ class SketchEditor {
         // Clear the canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
+        // Draw local axes
+        const origin = camera.worldToScreen({x: 0, y: 0, z: 0});
+        const xDir = camera.worldToScreen({x: 100000, y: 0, z: 0});
+        const yDir = camera.worldToScreen({x: 0, y: 100000, z: 0});
+
+        // Draw X axis (red)
+        this.ctx.beginPath();
+        this.ctx.moveTo(origin.x - xDir.x*this.canvas.width/2, origin.y - xDir.y*this.canvas.height/2);
+        this.ctx.lineTo(origin.x + xDir.x*this.canvas.width/2, origin.y + xDir.y*this.canvas.height/2);
+        this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+        this.ctx.lineWidth = 1;
+        this.ctx.stroke();
+
+        // Draw Y axis (green)
+        this.ctx.beginPath();
+        this.ctx.moveTo(origin.x - yDir.x*this.canvas.width/2, origin.y - yDir.y*this.canvas.height/2);
+        this.ctx.lineTo(origin.x + yDir.x*this.canvas.width/2, origin.y + yDir.y*this.canvas.height/2);
+        this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.8)';
+        this.ctx.lineWidth = 1;
+        this.ctx.stroke();
+
+        // Draw origin point
+        this.ctx.beginPath();
+        this.ctx.arc(origin.x, origin.y, 3, 0, Math.PI * 2);
+        this.ctx.fillStyle = 'white';
+        this.ctx.fill();
+        
         // If there are no polycurves, nothing to render
         if (!this.sketchNode.polycurves.length) return;
         
