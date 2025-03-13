@@ -19,19 +19,30 @@ vec3 rotatePoint(vec3 p) {
 
 // Creates a rotation matrix that rotates the z-axis to align with the given axis
 mat3 rotateToAxis(vec3 axis) {
-    // Handle the special case where axis is parallel to z-axis
+    // Handle special cases where axis is parallel to coordinate axes
+    if (abs(axis.y) > 0.999999) {
+        float sign = axis.y > 0.0 ? 1.0 : -1.0;
+        return mat3(
+            1.0, 0.0, 0.0,
+            0.0, 0.0, sign,  // z -> y
+            0.0, sign, 0.0  // y -> z
+        );
+    }
     if (abs(axis.z) > 0.999999) {
-    float sign = axis.z > 0.0 ? 1.0 : -1.0;
-    return mat3(
-        1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 0.0, sign
-    );
+        float sign = axis.z > 0.0 ? 1.0 : -1.0;
+        return mat3(
+            1.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 0.0, sign
+        );
     }
     
     // Compute the rotation matrix using the cross product method
     vec3 z = normalize(axis);
-    vec3 x = normalize(cross(vec3(0.0, 1.0, 0.0), z));
+    // Use x-axis as reference if close to y-axis
+    vec3 ref = abs(dot(z, vec3(0.0, 1.0, 0.0))) > 0.9 ? 
+               vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
+    vec3 x = normalize(cross(ref, z));
     vec3 y = cross(z, x);
     
     return mat3(x, y, z);
