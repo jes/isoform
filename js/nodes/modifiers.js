@@ -729,9 +729,9 @@ class LinearPatternNode extends TreeNode {
           mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
           
           // Transform to axis-aligned space
-          vec3 q = toAxisSpace * p;
+          vec3 q = fromAxisSpace * p;
 
-          vec3 boundingCentre = toAxisSpace * vec3(${boundingSphere.centre.map(v => v.toFixed(16)).join(", ")});
+          vec3 boundingCentre = fromAxisSpace * vec3(${boundingSphere.centre.map(v => v.toFixed(16)).join(", ")});
           float zOff = boundingCentre.z;
 
           // Apply modulo along the z-axis (which is now aligned with our pattern axis)
@@ -743,11 +743,11 @@ class LinearPatternNode extends TreeNode {
           
           // do a union of the number of overlapping copies
           q.z += spacing * (${radiusOverlaps.toFixed(16)} - idx);
-          p = fromAxisSpace * q;
+          p = toAxisSpace * q;
           float d = ${this.children[0].shaderCode()};
           for (int i = 0; i < ${2*radiusOverlaps}; i++) {
             q.z -= spacing;
-            p = fromAxisSpace * q;
+            p = toAxisSpace * q;
             float d1 = ${this.children[0].shaderCode()};
             d = ${minfn};
           }
