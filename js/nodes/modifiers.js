@@ -693,7 +693,8 @@ class LinearPatternNode extends TreeNode {
       this.axis.map(v => (v / axisLength).toFixed(16)) : 
       [0, 0, 1].map(v => v.toFixed(16));
 
-    const radiusOverlaps = Math.ceil((this.children[0].boundingSphere().radius + this.blendRadius) / this.spacing);
+    const boundingSphere = this.children[0].boundingSphere();
+    const radiusOverlaps = Math.ceil((boundingSphere.radius + this.blendRadius) / this.spacing);
 
     let minfn = "min(d, d1)";
     if (this.blendRadius > 0.0) {
@@ -719,7 +720,7 @@ class LinearPatternNode extends TreeNode {
           return d;
         }
       `;
-    } else if (this.spacing < 2*this.children[0].boundingSphere().radius) {
+    } else if (this.spacing < 2*boundingSphere.radius) {
       return `
         float ${this.getFunctionName()}(vec3 p) {
           // Rotate point to align with pattern axis
@@ -729,26 +730,24 @@ class LinearPatternNode extends TreeNode {
           
           // Transform to axis-aligned space
           vec3 q = toAxisSpace * p;
-          
+
+          vec3 boundingCentre = toAxisSpace * vec3(${boundingSphere.centre.map(v => v.toFixed(16)).join(", ")});
+          float zOff = boundingCentre.z;
+
           // Apply modulo along the z-axis (which is now aligned with our pattern axis)
           float spacing = ${this.spacing.toFixed(16)};
           float halfSpacing = ${(this.spacing / 2.0).toFixed(16)};
 
           // Calculate the index of the current copy
-          float idx = clamp(floor((q.z + halfSpacing) / spacing), ${radiusOverlaps.toFixed(16)}, ${(this.copies - radiusOverlaps - 1).toFixed(16)});
-          
-          // Apply modulo operation
-          q.z -= idx * spacing;
-          
-          // Transform back to original space
-          p = fromAxisSpace * q;
+          float idx = clamp(floor((q.z - zOff + halfSpacing) / spacing), ${radiusOverlaps.toFixed(16)}, ${(this.copies - radiusOverlaps - 1).toFixed(16)});
           
           // do a union of the number of overlapping copies
-          vec3 step = spacing * normalize(vec3(${this.axis.map(v => v.toFixed(16)).join(", ")}));
-          p += step * ${radiusOverlaps.toFixed(16)};
+          q.z += spacing * (${radiusOverlaps.toFixed(16)} - idx);
+          p = fromAxisSpace * q;
           float d = ${this.children[0].shaderCode()};
           for (int i = 0; i < ${2*radiusOverlaps}; i++) {
-            p -= step;
+            q.z -= spacing;
+            p = fromAxisSpace * q;
             float d1 = ${this.children[0].shaderCode()};
             d = ${minfn};
           }
