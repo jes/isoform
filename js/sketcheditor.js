@@ -366,18 +366,18 @@ class SketchEditor {
 
         // Draw X axis (red)
         this.ctx.beginPath();
-        this.ctx.moveTo(origin.x - xDir.x*this.canvas.width/2, origin.y - xDir.y*this.canvas.height/2);
-        this.ctx.lineTo(origin.x + xDir.x*this.canvas.width/2, origin.y + xDir.y*this.canvas.height/2);
+        this.ctx.moveTo(origin.x - xDir.x, origin.y - xDir.y);
+        this.ctx.lineTo(origin.x + xDir.x, origin.y + xDir.y);
         this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
-        this.ctx.lineWidth = 1;
+        this.ctx.lineWidth = 1.5;
         this.ctx.stroke();
 
         // Draw Y axis (green)
         this.ctx.beginPath();
-        this.ctx.moveTo(origin.x - yDir.x*this.canvas.width/2, origin.y - yDir.y*this.canvas.height/2);
-        this.ctx.lineTo(origin.x + yDir.x*this.canvas.width/2, origin.y + yDir.y*this.canvas.height/2);
+        this.ctx.moveTo(origin.x - yDir.x, origin.y - yDir.y);
+        this.ctx.lineTo(origin.x + yDir.x, origin.y + yDir.y);
         this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.8)';
-        this.ctx.lineWidth = 1;
+        this.ctx.lineWidth = 1.5;
         this.ctx.stroke();
 
         // Draw origin point
