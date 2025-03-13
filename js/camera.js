@@ -298,7 +298,7 @@ const camera = {
         
         // 6. Convert from NDC to screen coordinates
         const screenX = (correctedNdcX + 1.0) * 0.5 * canvas.width;
-        const screenY = (1.0 - (ndcY + 1.0) * 0.5) * canvas.height; // Flip Y to match screen coordinates
+        const screenY = ((ndcY + 1.0) * 0.5) * canvas.height; // Flip Y to match screen coordinates
         
         return { x: screenX, y: screenY };
     },
