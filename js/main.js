@@ -4,6 +4,7 @@ const app = {
     lastSecondaryNode: null,
     lastAdjustmentTime: 0,
     adjustmentInterval: 1000, // ms
+    wasFocused: true, // Track if window was previously focused
 
     async init() {
         // Initialize components
@@ -24,14 +25,28 @@ const app = {
         this.fpsCounter = document.getElementById('fps-counter');
         this.shaderLoading = document.getElementById('shader-loading');
         
+        // Add focus/blur event listeners
+        window.addEventListener('focus', this.onWindowFocus.bind(this));
+        window.addEventListener('blur', this.onWindowBlur.bind(this));
+        
         // Start the render loop
         this.render();
+    },
+    
+    onWindowFocus() {
+        // Reset the adjustment time when window regains focus
+        this.lastAdjustmentTime = Date.now();
+        this.wasFocused = true;
+    },
+    
+    onWindowBlur() {
+        this.wasFocused = false;
     },
     
     createDocument() {
         const doc = new UnionNode([]);
         doc.setProperty('displayName', 'Document');
-        /*const sphere = new SphereNode(11);
+        const sphere = new SphereNode(11);
         const box = new TransformNode([0, 0, 0], [1, 0, 0], 45, 
                      new RoughnessNode(0.1, 2.0, new BoxNode([20, 20, 20], 1.0)));
         const torus = new TorusNode(10, 3);
@@ -39,15 +54,15 @@ const app = {
 
         doc.addChild(torus);
         doc.addChild(new SubtractionNode([box, new TransformNode([0, 10, 0], [0, 1, 0], 0, sphere)], 0.5));
-        doc.addChild(new ExtrudeNode(new SketchNode([ {x:0, y:0}, {x:20, y:0}, {x:20, y:20} ])));*/
-        const originSphere = new SphereNode(1);
+        doc.addChild(new ExtrudeNode(new SketchNode([ {x:0, y:0}, {x:20, y:0}, {x:20, y:20} ])));
+        /*const originSphere = new SphereNode(1);
         const xSphere = new TransformNode([10, 0, 0], [1, 0, 0], 0, [new SphereNode(2)]);
         const ySphere = new TransformNode([0, 10, 0], [0, 1, 0], 0, [new SphereNode(3)]);
         const zSphere = new TransformNode([0, 0, 10], [0, 0, 1], 0, [new SphereNode(4)]);
         doc.addChild(originSphere);
         doc.addChild(xSphere);
         doc.addChild(ySphere);
-        doc.addChild(zSphere);
+        doc.addChild(zSphere);*/
         
         this.document = doc;
         return doc;
@@ -107,6 +122,9 @@ const app = {
     },
 
     controlQuality() {
+        // Only adjust quality when the window is focused
+        if (!this.wasFocused) return;
+        
         const timeSinceLastAdjustment = Date.now() - this.lastAdjustmentTime;
         if (timeSinceLastAdjustment > this.adjustmentInterval) {
             const fpsRatio = renderer.currentFps / 45;
