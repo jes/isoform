@@ -182,9 +182,9 @@ class SketchEditor {
             points[vertexIndex] = worldPos;
             
             this.sketchNode.markDirty();
-        }
         
-        this.render();
+            this.render();
+        }
     }
     
     onMouseUp(e) {
