@@ -715,6 +715,8 @@ class ExtrudeNode extends TreeNode {
     super("Extrude");
     this.height = 100.0;
     this.maxChildren = 1;
+    this.blendRadius = 0.0;
+    this.chamfer = false;
     this.addChild(children);
   }
 
@@ -723,10 +725,19 @@ class ExtrudeNode extends TreeNode {
   }
 
   properties() {
-    return {"height": "float"};
+    return {"height": "float", "blendRadius": "float", "chamfer": "boolean"};
   }
 
   generateShaderImplementation() {
+    let maxfn = "max(d2d, dz)";
+    if (this.blendRadius > 0.0) {
+      // XXX: we could allow a different radius at top vs bottom by picking a different `maxfn`based on the sign of `dz`
+      if (this.chamfer) {
+        maxfn = `chmax(d2d, dz, ${this.blendRadius.toFixed(16)})`;
+      } else {
+        maxfn = `smax(d2d, dz, ${this.blendRadius.toFixed(16)})`;
+      }
+    }
     return `
       float ${this.getFunctionName()}(vec3 p) {
         // Calculate distance to the boundary based on z position
@@ -735,14 +746,7 @@ class ExtrudeNode extends TreeNode {
         p.z = 0.0;
         float d2d = ${this.children[0].shaderCode()};
         
-        if (dz <= 0.0) {
-          // Inside the extrusion height - just use the 2D distance
-          return max(d2d, dz);
-        } else {
-          // Outside the extrusion height - combine the outside distance with the 2D distance
-          if (d2d < 0.0) return dz;
-          return length(vec2(d2d, dz));
-        }
+        return ${maxfn};
       }
     `;
   }
