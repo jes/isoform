@@ -517,6 +517,7 @@ class LinearPatternNode extends TreeNode {
     this.axis = axis;
     this.spacing = spacing;
     this.copies = copies;
+    this.allowDomainRepetition = true;
     this.addChild(children);
   }
 
@@ -525,7 +526,7 @@ class LinearPatternNode extends TreeNode {
   }
 
   properties() {
-    return {"axis": "vec3", "spacing": "float", "copies": "int"};
+    return {"axis": "vec3", "spacing": "float", "copies": "int", "allowDomainRepetition": "bool"};
   }
 
   generateShaderImplementation() {
@@ -534,7 +535,7 @@ class LinearPatternNode extends TreeNode {
       return '';
     }
 
-    if (this.spacing < 2*this.children[0].boundingSphere().radius) {
+    if (!this.allowDomainRepetition || this.spacing < 2*this.children[0].boundingSphere().radius) {
       console.log("bounding volumes overlap");
       // the bounding volumes overlap, so we need to do an explicit union
       return `
@@ -576,16 +577,12 @@ class LinearPatternNode extends TreeNode {
           // Apply modulo along the z-axis (which is now aligned with our pattern axis)
           float spacing = ${this.spacing.toFixed(16)};
           float halfSpacing = ${(this.spacing / 2.0).toFixed(16)};
-          float offset = spacing * float(${this.copies - 1}) / 2.0;
-          
-          // Center the pattern
-          q.z += offset;
+
+          // Calculate the index of the current copy
+          float idx = clamp(floor((q.z + halfSpacing) / spacing), 0.0, ${(this.copies - 1).toFixed(16)});
           
           // Apply modulo operation
-          q.z = mod(q.z, spacing);
-          
-          // Shift back to original range
-          q.z -= halfSpacing;
+          q.z -= idx * spacing;
           
           // Transform back to original space
           p = fromAxisSpace * q;
@@ -725,7 +722,7 @@ class ExtrudeNode extends TreeNode {
   }
 
   properties() {
-    return {"height": "float", "blendRadius": "float", "chamfer": "boolean"};
+    return {"height": "float", "blendRadius": "float", "chamfer": "bool"};
   }
 
   generateShaderImplementation() {
