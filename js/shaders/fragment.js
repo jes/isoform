@@ -62,19 +62,11 @@ float smax(float a, float b, float k) {
 }
 
 float chmin(float a, float b, float k) {
-    if (abs(a) < k && abs(b) < k) {
-        return (a+b-k)*0.5;
-    } else {
-        return min(a,b);
-    }
+    return min(min(a, b), (a + b - k) * 0.7071);
 }
 
 float chmax(float a, float b, float k) {
-    if (abs(a) < k && abs(b) < k) {
-        return (a+b+k)*0.5;
-    } else {
-        return max(a,b);
-    }
+    return max(max(a, b), (a + b + k) * 0.7071);
 }
 
 // Squared distance and projection factor to a line segment
