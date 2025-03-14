@@ -313,8 +313,8 @@ vec3 visualizeSteps(int steps) {
     // Using a power function: x^0.4 gives more weight to smaller values
     float weightedSteps = pow(normalizedSteps, 0.4);
     
-    // Create a heat map gradient (blue to red)
-    vec3 color = mix(vec3(0.0, 0.8, 1.0), vec3(1.0, 0.0, 0.0), weightedSteps);
+    // Create a heat map gradient (black to white)
+    vec3 color = mix(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0), weightedSteps);
     
     return color;
 }
