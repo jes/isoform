@@ -826,6 +826,9 @@ class PolarPatternNode extends TreeNode {
     this.copies = copies;
     this.axis = axis;
     this.angle = angle;
+    this.allowDomainRepetition = true;
+    this.blendRadius = 0.0;
+    this.chamfer = false;
     this.addChild(children);
   }
 
@@ -834,7 +837,7 @@ class PolarPatternNode extends TreeNode {
   }
 
   properties() {
-    return {"copies": "int", "axis": "vec3", "angle": "float"};
+    return {"copies": "int", "axis": "vec3", "angle": "float", "allowDomainRepetition": "bool", "blendRadius": "float", "chamfer": "bool"};
   }
 
   generateShaderImplementation() {
@@ -854,49 +857,104 @@ class PolarPatternNode extends TreeNode {
       this.axis.map(v => (v / axisLength).toFixed(16)) : 
       [0, 0, 1].map(v => v.toFixed(16));
 
-    return `
-      float ${this.getFunctionName()}(vec3 p) {
-        vec3 axis = vec3(${normalizedAxis.join(", ")});
-        float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
-        int copies = ${this.copies};
-        
-        // Rotate point to align with axis
-        mat3 toAxisSpace = rotateToAxis(axis);
-        mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
-        
-        // Transform to axis-aligned space
-        vec3 q = toAxisSpace * p;
-        
-        // Calculate the angle increment between copies
-        float angleIncrement = totalAngle / float(copies);
-        
-        // Evaluate the first copy at the original position
-        float d = ${this.children[0].shaderCode()};
-        
-        // Create the remaining copies by rotating around the axis
-        for (int i = 1; i < ${this.copies}; i++) {
-          // Calculate rotation angle for this copy
-          float angle = float(i) * angleIncrement;
+    // Calculate the angle to the bounding sphere center
+    const boundingSphere = this.children[0].boundingSphere();
+    const center = new Vec3(boundingSphere.centre[0], boundingSphere.centre[1], boundingSphere.centre[2]);
+    const toAxisSpace = new Mat3().rotateToAxis(new Vec3(normalizedAxis[0], normalizedAxis[1], normalizedAxis[2]));
+    const centerInAxisSpace = toAxisSpace.mulVec3(center);
+    const centerAngle = Math.atan2(centerInAxisSpace.y, centerInAxisSpace.x);
+
+    if (!this.allowDomainRepetition) {
+      return `
+        float ${this.getFunctionName()}(vec3 p) {
+          vec3 axis = vec3(${normalizedAxis.join(", ")});
+          float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
+          int copies = ${this.copies};
           
-          // Apply rotation around the z-axis (which is aligned with our axis in this space)
-          float c = cos(angle);
-          float s = sin(angle);
-          vec3 rotated = vec3(
+          // Rotate point to align with axis
+          mat3 toAxisSpace = rotateToAxis(axis);
+          mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
+          
+          // Transform to axis-aligned space
+          vec3 q = toAxisSpace * p;
+          
+          // Calculate the angle increment between copies
+          float angleIncrement = totalAngle / float(copies);
+          
+          // Evaluate the first copy at the original position
+          float d = ${this.children[0].shaderCode()};
+          
+          // Create the remaining copies by rotating around the axis
+          for (int i = 1; i < ${this.copies}; i++) {
+            // Calculate rotation angle for this copy
+            float angle = float(i) * angleIncrement;
+            
+            // Apply rotation around the z-axis (which is aligned with our axis in this space)
+            float c = cos(angle);
+            float s = sin(angle);
+            vec3 rotated = vec3(
+              c * q.x - s * q.y,
+              s * q.x + c * q.y,
+              q.z
+            );
+            
+            // Transform back to original space
+            p = fromAxisSpace * rotated;
+            
+            // Union with the current copy
+            d = min(d, ${this.children[0].shaderCode()});
+          }
+          
+          return d;
+        }
+    `;
+    } else {
+      return `
+        float ${this.getFunctionName()}(vec3 p) {
+          vec3 axis = vec3(${normalizedAxis.join(", ")});
+          float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
+          float segmentAngle = totalAngle / float(${this.copies});
+          float halfSegmentAngle = segmentAngle * 0.5;
+          float centerOffset = ${centerAngle.toFixed(16)}; // Angle to bounding sphere center
+          
+          // Rotate point to align with axis
+          mat3 toAxisSpace = rotateToAxis(axis);
+          mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
+          
+          // Transform to axis-aligned space (z is now along rotation axis)
+          vec3 q = toAxisSpace * p;
+          
+          // Get angle in XY plane (around Z axis), offset by the center angle
+          // and half segment to center within segment
+          float angle = atan(q.y, q.x) - centerOffset + halfSegmentAngle;
+          
+          // Normalize angle to [0, totalAngle)
+          if (angle < 0.0) angle += 2.0 * 3.14159265359;
+          if (angle > totalAngle) {
+            float n = floor(angle / totalAngle);
+            angle -= n * totalAngle;
+          }
+          
+          // Map to first segment
+          float segment = floor(angle / segmentAngle);
+          float rotationAngle = -segment * segmentAngle;
+          
+          // Rotate point back to first segment
+          float c = cos(rotationAngle);
+          float s = sin(rotationAngle);
+          q = vec3(
             c * q.x - s * q.y,
             s * q.x + c * q.y,
             q.z
           );
           
           // Transform back to original space
-          p = fromAxisSpace * rotated;
+          p = fromAxisSpace * q;
           
-          // Union with the current copy
-          d = min(d, ${this.children[0].shaderCode()});
+          return ${this.children[0].shaderCode()};
         }
-        
-        return d;
-      }
-    `;
+      `;
+    }
   }
 
   generateShaderCode() {
