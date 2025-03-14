@@ -327,10 +327,10 @@ void main() {
     if (uShowField) {
         // Field visualization mode
         // Calculate the point on the cross-section plane
-        // The cross-section is parallel to the viewing plane and passes through the origin
+        // The cross-section is parallel to the viewing plane and passes through the camera target
         
         // Calculate the point on the cross-section
-        vec3 planePoint = (p.x * right + p.y * up) / zoom;
+        vec3 planePoint = uCameraTarget + (p.x * right + p.y * up) / zoom;
         
         // Sample the SDF at this point
         float fieldValue = map(planePoint);
