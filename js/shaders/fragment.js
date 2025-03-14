@@ -383,19 +383,39 @@ void main() {
             // Detect edges
             float edge = detectEdge(pos, normal);
             
-            // Lighting setup
-            vec3 lightDir = vec3(0.0, 0.0, 1.0);
+            // Improved lighting setup with multiple light sources
+            vec3 lightDir1 = normalize(vec3(0.5, 0.8, 0.6)); // Main light
+            vec3 lightDir2 = normalize(vec3(-0.5, 0.3, 0.2)); // Fill light
+            vec3 lightDir3 = normalize(vec3(0.0, -0.5, 0.8)); // Rim light
+            
+            vec3 lightColor1 = vec3(1.0, 0.98, 0.95) * 0.4; // Warm main light
+            vec3 lightColor2 = vec3(0.8, 0.9, 1.0) * 0.3;   // Cool fill light
+            vec3 lightColor3 = vec3(0.9, 0.9, 1.0) * 0.3;   // Subtle rim light
             
             // Ambient light
-            vec3 ambient = vec3(0.1);
+            vec3 ambient = vec3(0.15, 0.17, 0.2); // Slightly blue ambient
             
-            // Diffuse light
-            float diff = max(dot(normal, lightDir), 0.0);
-            // Soft shadows
-            vec3 diffuse = vec3(0.4) * diff;
+            // Diffuse lighting from multiple sources
+            float diff1 = max(dot(normal, lightDir1), 0.0);
+            float diff2 = max(dot(normal, lightDir2), 0.0);
+            float diff3 = max(dot(normal, lightDir3), 0.0);
+            
+            // Specular lighting
+            vec3 viewDir = normalize(ro - pos);
+            vec3 halfwayDir1 = normalize(lightDir1 + viewDir);
+            vec3 halfwayDir2 = normalize(lightDir2 + viewDir);
+            float spec1 = pow(max(dot(normal, halfwayDir1), 0.0), 32.0);
+            float spec2 = pow(max(dot(normal, halfwayDir2), 0.0), 16.0);
+            
+            vec3 specular = (spec1 * lightColor1 * 0.3 + spec2 * lightColor2 * 0.1);
+            
+            // Fresnel effect for rim lighting
+            float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
+            vec3 rim = fresnel * lightColor3 * 0.5;
             
             // Combine lighting components
-            color = ambient + diffuse;
+            vec3 diffuse = diff1 * lightColor1 + diff2 * lightColor2 + diff3 * lightColor3;
+            color = ambient + diffuse + specular + rim;
             
             // Apply edge highlighting
             vec3 edgeColor = vec3(1.0, 1.0, 1.0); // White edge highlight
@@ -411,20 +431,27 @@ void main() {
                 vec3 pos = marchResult_secondary.hitPosition;
                 vec3 normal = calcNormal_secondary(pos);
                 
-                // Lighting setup
-                vec3 lightDir = vec3(0.0, 0.0, 1.0);
+                // Improved lighting for secondary object
+                vec3 lightDir1 = normalize(vec3(0.5, 0.8, 0.6));
+                vec3 lightDir2 = normalize(vec3(-0.5, 0.3, 0.2));
                 
                 // Ambient light
-                vec3 ambient = vec3(0.1);
+                vec3 ambient = vec3(0.2, 0.05, 0.05);
                 
                 // Diffuse light
-                float diff = max(dot(normal, lightDir), 0.0);
-                // Soft shadows
-                vec3 diffuse = vec3(0.4) * diff;
+                float diff1 = max(dot(normal, lightDir1), 0.0);
+                float diff2 = max(dot(normal, lightDir2), 0.0);
                 
-                // Combine lighting components
+                // Specular highlight
+                vec3 viewDir = normalize(ro - pos);
+                vec3 halfwayDir = normalize(lightDir1 + viewDir);
+                float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
+                
+                // Combine lighting components for red secondary object
+                vec3 secondaryColor = vec3(0.95, 0.1, 0.1) * (ambient + (diff1 * 0.7 + diff2 * 0.3)) + vec3(1.0, 0.6, 0.6) * spec * 0.3;
+                
+                // Blend with transparency
                 float w = 0.75;
-                vec3 secondaryColor = vec3(0.95,0.0,0.0) * (ambient + diffuse);
                 color = secondaryColor * w + color * (1.0 - w);
             }
         }
