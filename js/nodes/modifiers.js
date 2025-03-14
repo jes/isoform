@@ -729,6 +729,7 @@ class LinearPatternNode extends TreeNode {
         }
       `;
     } else if (this.spacing < 2*(boundingSphere.radius+this.blendRadius)) {
+      // union of however many copies overlap, and domain repetition for the rest
       return `
         float ${this.getFunctionName()}(vec3 p) {
           // Rotate point to align with pattern axis
@@ -864,7 +865,24 @@ class PolarPatternNode extends TreeNode {
     const centerInAxisSpace = toAxisSpace.mulVec3(center);
     const centerAngle = Math.atan2(centerInAxisSpace.y, centerInAxisSpace.x);
 
-    if (!this.allowDomainRepetition) {
+    const r = boundingSphere.radius + this.blendRadius;
+    const stepAngle = this.angle / this.copies;
+    const stepX = r * Math.cos(stepAngle * Math.PI / 180.0);
+    const stepY = r * Math.sin(stepAngle * Math.PI / 180.0);
+    const spacing = Math.sqrt((r-stepX)*(r-stepX) + stepY*stepY);
+    const radiusOverlaps = Math.ceil((boundingSphere.radius + this.blendRadius) / spacing);
+
+    let minfn = "min(d,d1)";
+    if (this.blendRadius > 0) {
+      if (this.chamfer) {
+        minfn = `chmin(d,d1,${this.blendRadius.toFixed(16)})`;
+      } else {
+        minfn = `smin(d,d1,${this.blendRadius.toFixed(16)})`;
+      }
+    }
+
+    if (!this.allowDomainRepetition || 2*radiusOverlaps >= this.copies) {
+      // explicit union of all copies
       return `
         float ${this.getFunctionName()}(vec3 p) {
           vec3 axis = vec3(${normalizedAxis.join(", ")});
@@ -902,13 +920,17 @@ class PolarPatternNode extends TreeNode {
             p = fromAxisSpace * rotated;
             
             // Union with the current copy
-            d = min(d, ${this.children[0].shaderCode()});
+            float d1 = ${this.children[0].shaderCode()};
+            d = ${minfn};
           }
           
           return d;
         }
     `;
+    } else if (this.spacing < 2*(boundingSphere.radius+this.blendRadius)) {
+      // union of however many copies overlap, and domain repetition for the rest
     } else {
+      // pure domain repetition, no overlaps
       return `
         float ${this.getFunctionName()}(vec3 p) {
           vec3 axis = vec3(${normalizedAxis.join(", ")});
