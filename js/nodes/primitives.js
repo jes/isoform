@@ -5,7 +5,7 @@ class SphereNode extends TreeNode {
   }
 
   boundingSphere() {
-    return { centre: [0, 0, 0], radius: this.radius };
+    return { centre: new Vec3(0, 0, 0), radius: this.radius };
   }
 
   getExactness() {
@@ -51,7 +51,7 @@ class CylinderNode extends TreeNode {
 
   boundingSphere() {
     const v = new Vec3(this.diameter/2, this.height/2, 0.0);
-    return { centre: [0, 0, 0], radius: v.length() };
+    return { centre: new Vec3(0, 0, 0), radius: v.length() };
   }
 
   getExactness() {
@@ -110,13 +110,15 @@ class CylinderNode extends TreeNode {
 class BoxNode extends TreeNode {
   constructor(size = [10, 10, 10], radius = 0.0) {
     super("Box");
-    this.size = size;
+    this.size = size instanceof Vec3 ? size : new Vec3(size[0]/2, size[1]/2, size[2]/2);
     this.radius = radius;
   }
 
   boundingSphere() {
-    const v = new Vec3(this.size[0]/2, this.size[1]/2, this.size[2]/2);
-    return { centre: [0, 0, 0], radius: v.length() };
+    return { 
+      centre: new Vec3(0, 0, 0), 
+      radius: this.size.length() 
+    };
   }
 
   getExactness() {
@@ -142,9 +144,9 @@ class BoxNode extends TreeNode {
 
   generateShaderCode() {
     if (this.radius > 0.0) {
-      return `sdRoundBox(p, vec3(${(this.size[0]/2).toFixed(16)}, ${(this.size[1]/2).toFixed(16)}, ${(this.size[2]/2).toFixed(16)}), ${this.radius.toFixed(16)})`;
+      return `sdRoundBox(p, ${this.size.glsl()}, ${this.radius.toFixed(16)})`;
     } else {
-      return `sdBox(p, vec3(${(this.size[0]/2).toFixed(16)}, ${(this.size[1]/2).toFixed(16)}, ${(this.size[2]/2).toFixed(16)}))`;
+      return `sdBox(p, ${this.size.glsl()})`;
     }
   }
 
@@ -178,7 +180,10 @@ class TorusNode extends TreeNode {
   }
 
   boundingSphere() {
-    return { centre: [0, 0, 0], radius: this.majorDiameter/2 + this.minorDiameter/2 };
+    return { 
+      centre: new Vec3(0, 0, 0), 
+      radius: this.majorDiameter/2 + this.minorDiameter/2 
+    };
   }
 
   getExactness() {

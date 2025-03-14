@@ -11,7 +11,7 @@ class TransformNode extends TreeNode {
 
   boundingSphere() {
     if (!this.hasChildren()) {
-      return { centre: [0, 0, 0], radius: 0 };
+      return { centre: new Vec3(0, 0, 0), radius: 0 };
     }
     
     // Get the child's bounding sphere
@@ -22,12 +22,8 @@ class TransformNode extends TreeNode {
       return childSphere;
     }
     
-    // Create Vec3 for the center
-    let center = new Vec3(
-      childSphere.centre[0], 
-      childSphere.centre[1], 
-      childSphere.centre[2]
-    );
+    // Create Vec3 for the center (already a Vec3 in the updated version)
+    let center = childSphere.centre;
     
     // Apply rotation if there's a non-zero angle
     if (this.rotationAngle !== 0) {
@@ -43,9 +39,7 @@ class TransformNode extends TreeNode {
         new Vec3(0, 1, 0);
       
       // Rotate the center point
-      center.rotateAround(normalizedAxis, this.rotationAngle);
-      
-      // Rotation doesn't change the radius of the bounding sphere
+      center = center.rotateAround(normalizedAxis, this.rotationAngle * Math.PI / 180.0);
     }
     
     // Apply translation
@@ -53,7 +47,7 @@ class TransformNode extends TreeNode {
     
     // Return the transformed bounding sphere
     return {
-      centre: [center.x, center.y, center.z],
+      centre: center,
       radius: childSphere.radius
     };
   }
@@ -425,6 +419,21 @@ class TwistNode extends TreeNode {
     this.addChild(children);
   }
 
+  boundingSphere() {
+    if (!this.hasChildren()) {
+      return { centre: new Vec3(0, 0, 0), radius: 0 };
+    }
+    
+    const childSphere = this.children[0].boundingSphere();
+    
+    const maxDisplacement = childSphere.centre.length();
+    
+    return {
+      centre: new Vec3(0, 0, 0),
+      radius: childSphere.radius + maxDisplacement
+    };
+  }
+
   getExactness() {
     return TreeNode.ISOSURFACE;
   }
@@ -523,10 +532,9 @@ class MirrorNode extends TreeNode {
 
   boundingSphere() {
     const childSphere = this.children[0].boundingSphere();
-    const v = new Vec3(childSphere.centre[0], childSphere.centre[1], childSphere.centre[2]);
     return {
-      centre: [0,0,0],
-      radius: v.length() + childSphere.radius,
+      centre: new Vec3(0, 0, 0),
+      radius: childSphere.centre.length() + childSphere.radius,
     };
   }
 
@@ -557,25 +565,25 @@ class MirrorNode extends TreeNode {
     const boundingSphere = this.children[0].boundingSphere();
     const r = boundingSphere.radius + this.blendRadius;
     const c = boundingSphere.centre;
-    const neg = "";
+    let neg = "";
     if (this.plane == "XY") {
-      if (r > Math.abs(c[2])) {
+      if (r > Math.abs(c.z)) {
         domainRepetitionOk = false;
-        if (c[2] < 0.0) {
+        if (c.z < 0.0) {
           neg = "-";
         }
       }
     } else if (this.plane == "XZ") {
-      if (r > Math.abs(c[1])) {
+      if (r > Math.abs(c.y)) {
         domainRepetitionOk = false;
-        if (c[1] < 0.0) {
+        if (c.y < 0.0) {
           neg = "-";
         }
       }
     } else {
-      if (r > Math.abs(c[0])) {
+      if (r > Math.abs(c.x)) {
         domainRepetitionOk = false;
-        if (c[0] < 0.0) {
+        if (c.x < 0.0) {
           neg = "-";
         }
       }
@@ -807,13 +815,12 @@ class PolarPatternNode extends TreeNode {
 
     // Calculate the angle to the bounding sphere center
     const boundingSphere = this.children[0].boundingSphere();
-    const center = new Vec3(boundingSphere.centre[0], boundingSphere.centre[1], boundingSphere.centre[2]);
-    const toAxisSpace = new Mat3().rotateToAxis(new Vec3(normalizedAxis[0], normalizedAxis[1], normalizedAxis[2]));
+    const center = boundingSphere.centre;
+    const toAxisSpace = new Mat3().rotateToAxis(normalizedAxis);
     const centerInAxisSpace = toAxisSpace.mulVec3(center);
     const centerAngle = Math.atan2(centerInAxisSpace.y, centerInAxisSpace.x);
 
-    const v = new Vec3(boundingSphere.centre[0], boundingSphere.centre[1], boundingSphere.centre[2]);
-    const r = v.length();
+    const r = center.length();
     const stepAngle = this.angle / this.copies * Math.PI / 180.0; // Convert to radians
     // Calculate the chord length between two consecutive copies
     const spacing = 2 * r * Math.sin(stepAngle / 2);

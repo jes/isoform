@@ -27,7 +27,7 @@ class TreeNode {
   }
 
   boundingSphere() {
-    return { centre: [0, 0, 0], radius: Infinity };
+    return { centre: new Vec3(0, 0, 0), radius: Infinity };
   }
 
   // "dirty" means the shader needs to be recompiled
@@ -226,7 +226,7 @@ class TreeNode {
         if (radius == Infinity) {
           radius = 10000043.0;
         }
-        return `length(p-vec3(${centre[0].toFixed(16)},${centre[1].toFixed(16)},${centre[2].toFixed(16)}))-${radius.toFixed(16)}`;
+        return `length(p-${centre.glsl()})-${radius.toFixed(16)}`;
       }
       if (this == TreeNode._secondaryNode || this.applyToSecondary || this.hasParent(TreeNode._secondaryNode)) {
         return this.generateShaderCode();
