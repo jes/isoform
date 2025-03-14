@@ -764,14 +764,14 @@ class LinearPatternNode extends TreeNode {
       return `
         float ${this.getFunctionName()}(vec3 p) {
           // Rotate point to align with pattern axis
-          vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
+          vec3 axis = ${normalizedAxis.glsl()};
           mat3 toAxisSpace = rotateToAxis(axis);
           mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
           
           // Transform to axis-aligned space
           vec3 q = fromAxisSpace * p;
 
-          vec3 boundingCentre = fromAxisSpace * vec3(${boundingSphere.centre.map(v => v.toFixed(16)).join(", ")});
+          vec3 boundingCentre = fromAxisSpace * ${boundingSphere.centre.glsl()};
           float zOff = boundingCentre.z;
 
           // Apply modulo along the z-axis (which is now aligned with our pattern axis)
@@ -800,19 +800,22 @@ class LinearPatternNode extends TreeNode {
       return `
         float ${this.getFunctionName()}(vec3 p) {
           // Rotate point to align with pattern axis
-          vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
+          vec3 axis = ${normalizedAxis.glsl()};
           mat3 toAxisSpace = rotateToAxis(axis);
           mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
           
           // Transform to axis-aligned space
           vec3 q = fromAxisSpace * p;
+
+          vec3 boundingCentre = fromAxisSpace * ${boundingSphere.centre.glsl()};
+          float zOff = boundingCentre.z;
           
           // Apply modulo along the z-axis (which is now aligned with our pattern axis)
           float spacing = ${this.spacing.toFixed(16)};
           float halfSpacing = ${(this.spacing / 2.0).toFixed(16)};
 
           // Calculate the index of the current copy
-          float idx = clamp(floor((q.z + halfSpacing) / spacing), 0.0, ${(this.copies - 1).toFixed(16)});
+          float idx = clamp(floor((q.z - zOff + halfSpacing) / spacing), 0.0, ${(this.copies - 1).toFixed(16)});
           
           // Apply modulo operation
           q.z -= idx * spacing;
@@ -907,7 +910,7 @@ class PolarPatternNode extends TreeNode {
       // explicit union of all copies
       return `
         float ${this.getFunctionName()}(vec3 p) {
-          vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
+          vec3 axis = ${normalizedAxis.glsl()};
           float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
           int copies = ${this.copies};
           
@@ -953,7 +956,7 @@ class PolarPatternNode extends TreeNode {
       // union of however many copies overlap, and domain repetition for the rest
       return `
         float ${this.getFunctionName()}(vec3 p) {
-          vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
+          vec3 axis = ${normalizedAxis.glsl()};
           float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
           float segmentAngle = totalAngle / float(${this.copies});
           float halfSegmentAngle = segmentAngle * 0.5;
