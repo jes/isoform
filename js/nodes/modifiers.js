@@ -134,9 +134,9 @@ class TransformNode extends TreeNode {
   }
 }
 
-class RoughnessNode extends TreeNode {
+class DomainDeformNode extends TreeNode {
   constructor(amplitude = 0.1, frequency = 1.0, children = []) {
-    super("Roughness");
+    super("DomainDeform");
     this.amplitude = amplitude; // Controls the height of the roughness
     this.frequency = frequency; // Controls how dense the roughness pattern is
     this.maxChildren = 1;
@@ -161,7 +161,68 @@ class RoughnessNode extends TreeNode {
 
   generateShaderImplementation() {
     if (!this.hasChildren()) {
-      this.warn("Roughness node has no child to transform");
+      this.warn("DomainDeform node has no child to transform");
+      return '';
+    }
+    
+    return `
+      float ${this.getFunctionName()}(vec3 p) {
+        // Store original position
+        vec3 p0 = p;
+        
+        // Permute coordinates using sine waves
+        p.x += sin(p.y * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
+        p.y += sin(p.z * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
+        p.z += sin(p.x * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
+        
+        // Evaluate child SDF with permuted coordinates
+        return ${this.children[0].shaderCode()};
+      }
+    `;
+  }
+
+  generateShaderCode() {
+    if (!this.hasChildren()) {
+      return this.noopShaderCode();
+    }
+    
+    return `${this.getFunctionName()}(p)`;
+  }
+
+  getIcon() {
+    return "〰️";
+  }
+}
+
+
+class DistanceDeformNode extends TreeNode {
+  constructor(amplitude = 0.1, frequency = 1.0, children = []) {
+    super("DistanceDeform");
+    this.amplitude = amplitude; // Controls the height of the roughness
+    this.frequency = frequency; // Controls how dense the roughness pattern is
+    this.maxChildren = 1;
+    this.addChild(children);
+  }
+
+  boundingSphere() {
+    const childSphere = this.children[0].boundingSphere();
+    return {
+      centre: childSphere.centre,
+      radius: childSphere.radius + 1.5 * this.amplitude
+    };
+  }
+
+  getExactness() {
+    return TreeNode.ISOSURFACE;
+  }
+
+  properties() {
+    return {"amplitude": "float", "frequency": "float"};
+  }
+
+  generateShaderImplementation() {
+    if (!this.hasChildren()) {
+      this.warn("DistanceDeform node has no child to transform");
       return '';
     }
 

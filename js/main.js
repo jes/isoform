@@ -50,7 +50,7 @@ const app = {
         doc.setProperty('displayName', 'Document');
         const sphere = new SphereNode(11);
         const box = new TransformNode([0, 0, 0], [1, 0, 0], 45, 
-                     new RoughnessNode(0.1, 2.0, new BoxNode([20, 20, 20], 1.0)));
+                     new DistanceDeformNode(0.1, 2.0, new BoxNode([20, 20, 20], 1.0)));
         const torus = new TorusNode(10, 3);
         doc.setProperty('blendRadius', 1);
 
