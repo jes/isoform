@@ -27,6 +27,7 @@ const camera = {
         0, 1, 0,
         0, 0, 1
     ],
+    showField: false,
     
     init(canvas) {
         // Only need mousemove and wheel events now

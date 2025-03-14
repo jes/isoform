@@ -11,6 +11,7 @@ uniform bool uShowEdges;
 uniform bool uShowSecondary;
 uniform float stepFactor;
 uniform int uMsaaSamples;
+uniform bool uShowField;
 
 // Apply rotation to a point using the rotation matrix
 vec3 rotatePoint(vec3 p) {
@@ -285,6 +286,29 @@ vec4 drawAxisIndicator(vec2 uv) {
     return color;
 }
 
+// Add this function to visualize the SDF field
+vec3 visualizeField(float distance) {
+    // Color scheme for the field visualization
+    // Red for negative distances (inside the shape)
+    // Blue-to-white gradient for positive distances (outside the shape)
+    
+    // Normalize the distance for visualization
+    float normDist = clamp(distance * 0.1, -1.0, 1.0);
+    
+    if (normDist < 0.0) {
+        // Inside: red to yellow gradient
+        return vec3(1.0, 1.0 + normDist, 0.0);
+    } else {
+        // Outside: blue to white gradient
+        return vec3(normDist, normDist, 1.0);
+    }
+}
+
+// Add this function to draw the zero isoline
+float drawIsoline(float d, float thickness) {
+    return 1.0 - smoothstep(0.0, thickness, abs(d));
+}
+
 /// Main
 
 void main() {
@@ -310,57 +334,46 @@ void main() {
     
     // Apply zoom - for orthographic, this scales the view size
     float zoom = uCameraZoom;
+
+    vec3 color;
     
-    // ORTHOGRAPHIC PROJECTION
-    // In orthographic projection, all rays are parallel to the forward direction
-    // The ray origin is offset based on the screen coordinates
-    vec3 rd = normalize(forward);
-    // Adjust the ray origin based on screen position and zoom
-    ro = ro + (p.x * right + p.y * up) / zoom;
-    
-    // Ray march to find distance
-    MarchResult marchResult = rayMarch(ro, rd);
-    
-    // Default background color
-    vec3 color = vec3(0.1, 0.1, 0.1);
-    
-    // If we hit something
-    if (marchResult.hit) {
-        // Calculate hit position and normal
-        vec3 pos = marchResult.hitPosition;
-        vec3 normal = calcNormal(pos);
+    if (uShowField) {
+        // Field visualization mode
+        // Calculate the point on the cross-section plane
+        // The cross-section is parallel to the viewing plane and passes through the origin
         
-        // Detect edges
-        float edge = detectEdge(pos, normal);
+        // Calculate the point on the cross-section
+        vec3 planePoint = (p.x * right + p.y * up) / zoom;
         
-        // Lighting setup
-        vec3 lightDir = vec3(0.0, 0.0, 1.0);
+        // Sample the SDF at this point
+        float fieldValue = map(planePoint);
         
-        // Ambient light
-        vec3 ambient = vec3(0.1);
+        // Visualize the field value
+        color = visualizeField(fieldValue);
         
-        // Diffuse light
-        float diff = max(dot(normal, lightDir), 0.0);
-        // Soft shadows
-        vec3 diffuse = vec3(0.4) * diff;
+        // Draw the zero isoline (the surface boundary)
+        float isoline = drawIsoline(fieldValue, 0.003);
+        color = mix(color, vec3(0.0, 0.0, 0.0), isoline);
+    } else {
+        // Regular 3D rendering mode - use the existing code
+        // ORTHOGRAPHIC PROJECTION
+        vec3 rd = normalize(forward);
+        ro = ro + (p.x * right + p.y * up) / zoom;
         
-        // Combine lighting components
-        color = ambient + diffuse;
+        // Ray march to find distance
+        MarchResult marchResult = rayMarch(ro, rd);
         
-        // Apply edge highlighting
-        vec3 edgeColor = vec3(1.0, 1.0, 1.0); // White edge highlight
-        // Only apply edge highlighting if enabled
-        float edgeMixFactor = uShowEdges ? edge * 1.5 : 0.0; // Amplify the edge effect when enabled
-        color = mix(color, edgeColor, clamp(edgeMixFactor, 0.0, 1.0));
-    }
-    
-    if (uShowSecondary) {
-        MarchResult marchResult_secondary = rayMarch_secondary(ro, rd);
+        // Default background color
+        color = vec3(0.1, 0.1, 0.1);
         
-        if (marchResult_secondary.hit) {
+        // If we hit something
+        if (marchResult.hit) {
             // Calculate hit position and normal
-            vec3 pos = marchResult_secondary.hitPosition;
-            vec3 normal = calcNormal_secondary(pos);
+            vec3 pos = marchResult.hitPosition;
+            vec3 normal = calcNormal(pos);
+            
+            // Detect edges
+            float edge = detectEdge(pos, normal);
             
             // Lighting setup
             vec3 lightDir = vec3(0.0, 0.0, 1.0);
@@ -374,9 +387,39 @@ void main() {
             vec3 diffuse = vec3(0.4) * diff;
             
             // Combine lighting components
-            float w = 0.75;
-            vec3 secondaryColor = vec3(0.95,0.0,0.0) * (ambient + diffuse);
-            color = secondaryColor * w + color * (1.0 - w);
+            color = ambient + diffuse;
+            
+            // Apply edge highlighting
+            vec3 edgeColor = vec3(1.0, 1.0, 1.0); // White edge highlight
+            // Only apply edge highlighting if enabled
+            float edgeMixFactor = uShowEdges ? edge * 1.5 : 0.0; // Amplify the edge effect when enabled
+            color = mix(color, edgeColor, clamp(edgeMixFactor, 0.0, 1.0));
+        }
+        
+        if (uShowSecondary) {
+            MarchResult marchResult_secondary = rayMarch_secondary(ro, rd);
+            
+            if (marchResult_secondary.hit) {
+                // Calculate hit position and normal
+                vec3 pos = marchResult_secondary.hitPosition;
+                vec3 normal = calcNormal_secondary(pos);
+                
+                // Lighting setup
+                vec3 lightDir = vec3(0.0, 0.0, 1.0);
+                
+                // Ambient light
+                vec3 ambient = vec3(0.1);
+                
+                // Diffuse light
+                float diff = max(dot(normal, lightDir), 0.0);
+                // Soft shadows
+                vec3 diffuse = vec3(0.4) * diff;
+                
+                // Combine lighting components
+                float w = 0.75;
+                vec3 secondaryColor = vec3(0.95,0.0,0.0) * (ambient + diffuse);
+                color = secondaryColor * w + color * (1.0 - w);
+            }
         }
     }
     

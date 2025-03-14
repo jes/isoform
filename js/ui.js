@@ -581,6 +581,31 @@ const ui = {
                 }
             });
         }
+
+        // Add the field toggle button functionality
+        const toggleFieldButton = document.getElementById('toggle-field');
+        if (toggleFieldButton) {
+            // Set initial state based on camera setting
+            if (camera.showField) {
+                toggleFieldButton.classList.add('active');
+            }
+            
+            // Add event listener
+            toggleFieldButton.addEventListener('click', () => {
+                // Toggle the camera setting
+                camera.showField = !camera.showField;
+                
+                // Update the button appearance
+                if (camera.showField) {
+                    toggleFieldButton.classList.add('active');
+                } else {
+                    toggleFieldButton.classList.remove('active');
+                }
+                
+                // Trigger a redraw
+                app.document.markDirty();
+            });
+        }
     },
 
     initMainToolbar() {

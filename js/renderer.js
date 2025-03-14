@@ -270,6 +270,7 @@ const renderer = {
                 showEdges: this.gl.getUniformLocation(program, 'uShowEdges'),
                 showSecondary: this.gl.getUniformLocation(program, 'uShowSecondary'),
                 stepFactor: this.gl.getUniformLocation(program, 'stepFactor'),
+                uShowField: this.gl.getUniformLocation(program, 'uShowField'),
             },
         };
 
@@ -334,6 +335,9 @@ const renderer = {
         
         // Set stepFactor uniform
         gl.uniform1f(this.programInfo.uniformLocations.stepFactor, camera.stepFactor);
+        
+        // Set uShowField uniform
+        gl.uniform1i(this.programInfo.uniformLocations.uShowField, camera.showField ? 1 : 0);
         
         // Draw the quad to the offscreen texture
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
