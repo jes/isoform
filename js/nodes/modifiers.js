@@ -870,9 +870,7 @@ class PolarPatternNode extends TreeNode {
     const stepAngle = this.angle / this.copies * Math.PI / 180.0; // Convert to radians
     // Calculate the chord length between two consecutive copies
     const spacing = 2 * r * Math.sin(stepAngle / 2);
-    console.log("spacing", spacing, "radius", r, "angle", this.angle, "copies", this.copies);
     const radiusOverlaps = Math.ceil((boundingSphere.radius + this.blendRadius) / spacing);
-    console.log("radiusOverlaps", radiusOverlaps);
 
     let minfn = "min(d,d1)";
     if (this.blendRadius > 0) {
@@ -885,7 +883,6 @@ class PolarPatternNode extends TreeNode {
 
     if (!this.allowDomainRepetition || 2*radiusOverlaps >= this.copies) {
       // explicit union of all copies
-      console.log("explicit union of all copies");
       return `
         float ${this.getFunctionName()}(vec3 p) {
           vec3 axis = vec3(${normalizedAxis.join(", ")});
@@ -931,7 +928,6 @@ class PolarPatternNode extends TreeNode {
         }
     `;
     } else if (spacing < 2*(boundingSphere.radius+this.blendRadius)) {
-      console.log("union of however many copies overlap, and domain repetition for the rest");
       // union of however many copies overlap, and domain repetition for the rest
       return `
         float ${this.getFunctionName()}(vec3 p) {
@@ -997,7 +993,7 @@ class PolarPatternNode extends TreeNode {
         }
       `;
     } else {
-      console.log("pure domain repetition, no overlaps");
+      // pure domain repetition, no overlaps
       return `
         float ${this.getFunctionName()}(vec3 p) {
           vec3 axis = vec3(${normalizedAxis.join(", ")});
