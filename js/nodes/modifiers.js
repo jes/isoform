@@ -524,6 +524,7 @@ class MirrorNode extends TreeNode {
     this.maxChildren = 1;
     this.plane = "XY";
     this.allowDomainRepetition = true;
+    this.naiveDomainRepetition = false;
     this.keepOriginal = true;
     this.blendRadius = 0.0;
     this.chamfer = false;
@@ -543,7 +544,7 @@ class MirrorNode extends TreeNode {
   }
 
   properties() {
-    return {"plane": ["XY", "XZ", "YZ"], "allowDomainRepetition": "bool", "keepOriginal": "bool", "blendRadius": "float", "chamfer": "bool"};
+    return {"plane": ["XY", "XZ", "YZ"], "allowDomainRepetition": "bool", "naiveDomainRepetition": "bool", "keepOriginal": "bool", "blendRadius": "float", "chamfer": "bool"};
   }
 
   generateShaderImplementation() {
@@ -595,7 +596,7 @@ class MirrorNode extends TreeNode {
           return ${this.children[0].shaderCode()};
         }
       `;
-    } else if (domainRepetitionOk) {
+    } else if (domainRepetitionOk || this.naiveDomainRepetition) {
       return `
         float ${this.getFunctionName()}(vec3 p) {
           p.${axis} = ${neg}abs(p.${axis});
@@ -643,6 +644,7 @@ class LinearPatternNode extends TreeNode {
     this.spacing = spacing;
     this.copies = copies;
     this.allowDomainRepetition = true;
+    this.naiveDomainRepetition = false;
     this.blendRadius = 0.0;
     this.chamfer = false;
     this.addChild(children);
@@ -653,7 +655,7 @@ class LinearPatternNode extends TreeNode {
   }
 
   properties() {
-    return {"axis": "vec3", "spacing": "float", "copies": "int", "allowDomainRepetition": "bool", "blendRadius": "float", "chamfer": "bool"};
+    return {"axis": "vec3", "spacing": "float", "copies": "int", "allowDomainRepetition": "bool", "naiveDomainRepetition": "bool", "blendRadius": "float", "chamfer": "bool"};
   }
 
   generateShaderImplementation() {
@@ -677,7 +679,7 @@ class LinearPatternNode extends TreeNode {
       }
     }
 
-    if (!this.allowDomainRepetition || 2*radiusOverlaps >= this.copies) {
+    if (!this.allowDomainRepetition || (2*radiusOverlaps >= this.copies && !this.naiveDomainRepetition)) {
       // Explicit union of exactly the requested number of copies
       return `
         float ${this.getFunctionName()}(vec3 p) {
@@ -692,7 +694,7 @@ class LinearPatternNode extends TreeNode {
           return d;
         }
       `;
-    } else if (this.spacing < 2*(boundingSphere.radius+this.blendRadius)) {
+    } else if (this.spacing < 2*(boundingSphere.radius+this.blendRadius) && !this.naiveDomainRepetition) {
       // union of however many copies overlap, and domain repetition for the rest
       return `
         float ${this.getFunctionName()}(vec3 p) {
@@ -791,6 +793,7 @@ class PolarPatternNode extends TreeNode {
     this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
     this.angle = angle;
     this.allowDomainRepetition = true;
+    this.naiveDomainRepetition = false;
     this.blendRadius = 0.0;
     this.chamfer = false;
     this.addChild(children);
@@ -801,7 +804,7 @@ class PolarPatternNode extends TreeNode {
   }
 
   properties() {
-    return {"copies": "int", "axis": "vec3", "angle": "float", "allowDomainRepetition": "bool", "blendRadius": "float", "chamfer": "bool"};
+    return {"copies": "int", "axis": "vec3", "angle": "float", "allowDomainRepetition": "bool", "naiveDomainRepetition": "bool", "blendRadius": "float", "chamfer": "bool"};
   }
 
   generateShaderImplementation() {
@@ -835,7 +838,7 @@ class PolarPatternNode extends TreeNode {
       }
     }
 
-    if (!this.allowDomainRepetition || 2*radiusOverlaps >= this.copies) {
+    if (!this.allowDomainRepetition || (2*radiusOverlaps >= this.copies && !this.naiveDomainRepetition)) {
       // explicit union of all copies
       return `
         float ${this.getFunctionName()}(vec3 p) {
@@ -881,7 +884,7 @@ class PolarPatternNode extends TreeNode {
           return d;
         }
     `;
-    } else if (spacing < 2*(boundingSphere.radius+this.blendRadius)) {
+    } else if (spacing < 2*(boundingSphere.radius+this.blendRadius) && !this.naiveDomainRepetition) {
       // union of however many copies overlap, and domain repetition for the rest
       return `
         float ${this.getFunctionName()}(vec3 p) {
