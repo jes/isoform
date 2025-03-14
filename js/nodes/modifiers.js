@@ -403,7 +403,7 @@ class ScaleNode extends TreeNode {
       float ${this.getFunctionName()}(vec3 p) {
         ${this.alongAxis ? `
         // Scale along specific axis
-        vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
+        vec3 axis = ${normalizedAxis.glsl()};
         float k = ${this.k.toFixed(16)};
         
         // Project p onto the axis
@@ -519,7 +519,7 @@ class TwistNode extends TreeNode {
     return `
       float ${this.getFunctionName()}(vec3 p) {
         float height = ${this.height.toFixed(16)};
-        vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
+        vec3 axis = ${normalizedAxis.glsl()};
         
         // Rotate point to align with axis
         mat3 toAxisSpace = rotateToAxis(axis);
@@ -749,7 +749,7 @@ class LinearPatternNode extends TreeNode {
       return `
         float ${this.getFunctionName()}(vec3 p) {
           float spacing = ${this.spacing.toFixed(16)};
-          vec3 step = spacing * normalize(vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)}));
+          vec3 step = spacing * ${normalizedAxis.glsl()};
           float d = ${this.children[0].shaderCode()};
           for (int i = 1; i < ${this.copies}; i++) {
             p -= step;
@@ -1021,7 +1021,7 @@ class PolarPatternNode extends TreeNode {
       // pure domain repetition, no overlaps
       return `
         float ${this.getFunctionName()}(vec3 p) {
-          vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
+          vec3 axis = ${normalizedAxis.glsl()};
           float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
           float segmentAngle = totalAngle / float(${this.copies});
           float halfSegmentAngle = segmentAngle * 0.5;
