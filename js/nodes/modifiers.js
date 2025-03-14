@@ -546,6 +546,7 @@ class MirrorNode extends TreeNode {
     this.maxChildren = 1;
     this.plane = "XY";
     this.allowDomainRepetition = true;
+    this.keepOriginal = true;
     this.blendRadius = 0.0;
     this.chamfer = false;
     this.addChild(children);
@@ -565,7 +566,7 @@ class MirrorNode extends TreeNode {
   }
 
   properties() {
-    return {"plane": ["XY", "XZ", "YZ"], "allowDomainRepetition": "bool", "blendRadius": "float", "chamfer": "bool"};
+    return {"plane": ["XY", "XZ", "YZ"], "allowDomainRepetition": "bool", "keepOriginal": "bool", "blendRadius": "float", "chamfer": "bool"};
   }
 
   generateShaderImplementation() {
@@ -610,7 +611,14 @@ class MirrorNode extends TreeNode {
         }
       }
     }
-    if (domainRepetitionOk) {
+    if (!this.keepOriginal) {
+      return `
+        float ${this.getFunctionName()}(vec3 p) {
+          p.${axis} = -p.${axis};
+          return ${this.children[0].shaderCode()};
+        }
+      `;
+    } else if (domainRepetitionOk) {
       return `
         float ${this.getFunctionName()}(vec3 p) {
           p.${axis} = ${neg}abs(p.${axis});
