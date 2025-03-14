@@ -174,6 +174,10 @@ class DomainDeformNode extends TreeNode {
         p.x += sin(p.y * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
         p.y += sin(p.z * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
         p.z += sin(p.x * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
+
+        p.x += 0.5 * cos((p.z+p.y+1.0) * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
+        p.y += 0.5 * cos((p.x+p.z+2.42) * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
+        p.z += 0.5 * cos((p.y+p.x+14.5) * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
         
         // Evaluate child SDF with permuted coordinates
         return ${this.children[0].shaderCode()};
