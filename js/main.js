@@ -6,6 +6,7 @@ const app = {
     adjustmentInterval: 1000, // ms
     wasFocused: true, // Track if window was previously focused
     sketchNeedsRedraw: false,
+    lastBoundingSphereState: false,
 
     async init() {
         // Initialize components
@@ -87,8 +88,10 @@ const app = {
         const currentSecondaryNode = ui.getSecondaryNode();
         
         // Check if document is dirty or if a new secondary node is selected
+        // or if bounding sphere visibility has changed while having a secondary node
         if (this.document.dirty() || 
-            (currentSecondaryNode !== null && currentSecondaryNode !== this.lastSecondaryNode)) {
+            (currentSecondaryNode !== null && currentSecondaryNode !== this.lastSecondaryNode) ||
+            (currentSecondaryNode !== null && ui.showBoundingSphere !== this.lastBoundingSphereState)) {
 
             // Show loading indicator
             this.showLoadingIndicator();
@@ -106,6 +109,9 @@ const app = {
             if (currentSecondaryNode !== null) {
                 this.lastSecondaryNode = currentSecondaryNode;
             }
+            
+            // Update last bounding sphere state
+            this.lastBoundingSphereState = ui.showBoundingSphere;
 
             this.lastAdjustmentTime = Date.now();
         }
