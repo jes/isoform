@@ -740,7 +740,7 @@ class LinearPatternNode extends TreeNode {
           mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
           
           // Transform to axis-aligned space
-          vec3 q = toAxisSpace * p;
+          vec3 q = fromAxisSpace * p;
           
           // Apply modulo along the z-axis (which is now aligned with our pattern axis)
           float spacing = ${this.spacing.toFixed(16)};
@@ -753,7 +753,7 @@ class LinearPatternNode extends TreeNode {
           q.z -= idx * spacing;
           
           // Transform back to original space
-          p = fromAxisSpace * q;
+          p = toAxisSpace * q;
           
           return ${this.children[0].shaderCode()};
         }
