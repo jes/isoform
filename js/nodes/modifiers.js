@@ -1,8 +1,8 @@
 class TransformNode extends TreeNode {
   constructor(translation = [0, 0, 0], rotationAxis = [0, 1, 0], rotationAngle = 0, children = []) {
     super("Transform");
-    this.translation = translation; // Translation vector [x, y, z]
-    this.rotationAxis = rotationAxis; // Axis of rotation [x, y, z]
+    this.translation = translation instanceof Vec3 ? translation : new Vec3(translation[0], translation[1], translation[2]);
+    this.rotationAxis = rotationAxis instanceof Vec3 ? rotationAxis : new Vec3(rotationAxis[0], rotationAxis[1], rotationAxis[2]);
     this.rotationAngle = rotationAngle; // Angle in degrees
     this.maxChildren = 1;
     this.applyToSecondary = true;
@@ -23,7 +23,7 @@ class TransformNode extends TreeNode {
     }
     
     // Create Vec3 for the center
-    const center = new Vec3(
+    let center = new Vec3(
       childSphere.centre[0], 
       childSphere.centre[1], 
       childSphere.centre[2]
@@ -39,11 +39,7 @@ class TransformNode extends TreeNode {
       );
       
       const normalizedAxis = axisLength > 0 ? 
-        new Vec3(
-          this.rotationAxis[0] / axisLength,
-          this.rotationAxis[1] / axisLength,
-          this.rotationAxis[2] / axisLength
-        ) : 
+        this.rotationAxis.div(axisLength) : 
         new Vec3(0, 1, 0);
       
       // Rotate the center point
@@ -53,9 +49,7 @@ class TransformNode extends TreeNode {
     }
     
     // Apply translation
-    center.x += this.translation[0];
-    center.y += this.translation[1];
-    center.z += this.translation[2];
+    center = center.add(this.translation);
     
     // Return the transformed bounding sphere
     return {
@@ -90,25 +84,21 @@ class TransformNode extends TreeNode {
     const angleRad = (this.rotationAngle * Math.PI / 180.0).toFixed(16);
     
     // Normalize the rotation axis
-    const axisLength = Math.sqrt(
-      this.rotationAxis[0] * this.rotationAxis[0] + 
-      this.rotationAxis[1] * this.rotationAxis[1] + 
-      this.rotationAxis[2] * this.rotationAxis[2]
-    );
+    const axisLength = this.rotationAxis.length();
     
     const normalizedAxis = axisLength > 0 ? 
-      this.rotationAxis.map(v => (v / axisLength).toFixed(16)) : 
-      [0, 1, 0].map(v => v.toFixed(16));
+      this.rotationAxis.div(axisLength) : 
+      new Vec3(0, 1, 0);
     
     return `
       float ${this.getFunctionName()}(vec3 p) {
         // Apply translation
-        p = p - vec3(${this.translation.map(v => v.toFixed(16)).join(", ")});
+        p = p - ${this.translation.glsl()};
         
         // Apply rotation using axis-angle
         float angle = ${angleRad};
         if (angle != 0.0) {
-          vec3 axis = vec3(${normalizedAxis.join(", ")});
+          vec3 axis = ${normalizedAxis.glsl()};
           
           // Rodrigues rotation formula
           float cosA = cos(angle);
@@ -304,11 +294,11 @@ class ThicknessNode extends TreeNode {
 }
 
 class ScaleNode extends TreeNode {
-  constructor(k = 2.0, alongAxis = false, axis = [0, 0, 1], children = []) {
+  constructor(k = 2.0, alongAxis = false, axis = new Vec3(0, 0, 1), children = []) {
     super("Scale");
     this.k = k;
     this.alongAxis = alongAxis;
-    this.axis = axis;
+    this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
     this.maxChildren = 1;
     this.applyToSecondary = true;
     this.addChild(children);
@@ -345,24 +335,16 @@ class ScaleNode extends TreeNode {
     }
     
     // Normalize the axis if scaling along axis
-    let normalizedAxis = [0, 0, 1];
+    let normalizedAxis = new Vec3(0, 0, 1);
     if (this.alongAxis) {
-      const axisLength = Math.sqrt(
-        this.axis[0] * this.axis[0] + 
-        this.axis[1] * this.axis[1] + 
-        this.axis[2] * this.axis[2]
-      );
-      
-      normalizedAxis = axisLength > 0 ? 
-        this.axis.map(v => (v / axisLength).toFixed(16)) : 
-        [0, 0, 1].map(v => v.toFixed(16));
+      normalizedAxis = this.axis.normalize();
     }
     
     return `
       float ${this.getFunctionName()}(vec3 p) {
         ${this.alongAxis ? `
         // Scale along specific axis
-        vec3 axis = vec3(${normalizedAxis.join(", ")});
+        vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
         float k = ${this.k.toFixed(16)};
         
         // Project p onto the axis
@@ -435,10 +417,10 @@ class ScaleNode extends TreeNode {
 }
 
 class TwistNode extends TreeNode {
-  constructor(height = 100.0, axis = [0, 0, 1], children = []) {
+  constructor(height = 100.0, axis = new Vec3(0, 0, 1), children = []) {
     super("Twist");
     this.height = height;
-    this.axis = axis; // Axis of twist [x, y, z]
+    this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
     this.maxChildren = 1;
     this.addChild(children);
   }
@@ -458,20 +440,12 @@ class TwistNode extends TreeNode {
     }
 
     // Normalize the axis
-    const axisLength = Math.sqrt(
-      this.axis[0] * this.axis[0] + 
-      this.axis[1] * this.axis[1] + 
-      this.axis[2] * this.axis[2]
-    );
+    const normalizedAxis = this.axis.normalize();
     
-    const normalizedAxis = axisLength > 0 ? 
-      this.axis.map(v => (v / axisLength).toFixed(16)) : 
-      [0, 1, 0].map(v => v.toFixed(16));
-
     return `
       float ${this.getFunctionName()}(vec3 p) {
         float height = ${this.height.toFixed(16)};
-        vec3 axis = vec3(${normalizedAxis.join(", ")});
+        vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
         
         // Rotate point to align with axis
         mat3 toAxisSpace = rotateToAxis(axis);
@@ -536,11 +510,6 @@ class TwistNode extends TreeNode {
 }
 
 class MirrorNode extends TreeNode {
-  /* This MirrorNode leaves a lot to be desired.
-   * 1. we want to specify arbitrary planes
-   * 2. it is implemented with min() instead of domain repetition
-   * 3. if we're using min() we ought to support smooth min
-   */
   constructor(children = []) {
     super("Mirror");
     this.maxChildren = 1;
@@ -659,15 +628,10 @@ class MirrorNode extends TreeNode {
 }
 
 class LinearPatternNode extends TreeNode {
-  /* We ought to be able to do this with domain repetition instead of an explicit union.
-   * I think we just need to know how to permute the point `p` to evaluate the child
-   * for all the children with bounding boxes that overlap `p`, and then just union
-   * the results of those ones.
-   */
-  constructor(axis = [0, 0, 1], spacing = 100.0, copies = 2, children = []) {
+  constructor(axis = new Vec3(0, 0, 1), spacing = 100.0, copies = 2, children = []) {
     super("LinearPattern");
     this.maxChildren = 1;
-    this.axis = axis;
+    this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
     this.spacing = spacing;
     this.copies = copies;
     this.allowDomainRepetition = true;
@@ -691,15 +655,7 @@ class LinearPatternNode extends TreeNode {
     }
 
     // Normalize the axis
-    const axisLength = Math.sqrt(
-      this.axis[0] * this.axis[0] + 
-      this.axis[1] * this.axis[1] + 
-      this.axis[2] * this.axis[2]
-    );
-    
-    const normalizedAxis = axisLength > 0 ? 
-      this.axis.map(v => (v / axisLength).toFixed(16)) : 
-      [0, 0, 1].map(v => v.toFixed(16));
+    const normalizedAxis = this.axis.normalize();
 
     const boundingSphere = this.children[0].boundingSphere();
     const radiusOverlaps = Math.ceil((boundingSphere.radius + this.blendRadius) / this.spacing);
@@ -718,7 +674,7 @@ class LinearPatternNode extends TreeNode {
       return `
         float ${this.getFunctionName()}(vec3 p) {
           float spacing = ${this.spacing.toFixed(16)};
-          vec3 step = spacing * normalize(vec3(${this.axis.map(v => v.toFixed(16)).join(", ")}));
+          vec3 step = spacing * normalize(vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)}));
           float d = ${this.children[0].shaderCode()};
           for (int i = 1; i < ${this.copies}; i++) {
             p -= step;
@@ -733,7 +689,7 @@ class LinearPatternNode extends TreeNode {
       return `
         float ${this.getFunctionName()}(vec3 p) {
           // Rotate point to align with pattern axis
-          vec3 axis = vec3(${normalizedAxis.join(", ")});
+          vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
           mat3 toAxisSpace = rotateToAxis(axis);
           mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
           
@@ -769,7 +725,7 @@ class LinearPatternNode extends TreeNode {
       return `
         float ${this.getFunctionName()}(vec3 p) {
           // Rotate point to align with pattern axis
-          vec3 axis = vec3(${normalizedAxis.join(", ")});
+          vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
           mat3 toAxisSpace = rotateToAxis(axis);
           mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
           
@@ -805,8 +761,7 @@ class LinearPatternNode extends TreeNode {
     }
 
     // For the JavaScript implementation, we'll still use the explicit union approach
-    // as it's more reliable and easier to debug
-    const step = this.spacing * this.axis.normalize();
+    const step = this.axis.normalize().mul(this.spacing);
     let d = this.children[0].sdf(p);
     for (let i = 1; i < this.copies; i++) {
       p = p.add(step);
@@ -821,11 +776,11 @@ class LinearPatternNode extends TreeNode {
 }
 
 class PolarPatternNode extends TreeNode {
-  constructor(copies = 2, axis = [0, 0, 1], angle = 360.0, children = []) {
+  constructor(copies = 2, axis = new Vec3(0, 0, 1), angle = 360.0, children = []) {
     super("PolarPattern");
     this.maxChildren = 1;
     this.copies = copies;
-    this.axis = axis;
+    this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
     this.angle = angle;
     this.allowDomainRepetition = true;
     this.blendRadius = 0.0;
@@ -848,15 +803,7 @@ class PolarPatternNode extends TreeNode {
     }
 
     // Normalize the axis
-    const axisLength = Math.sqrt(
-      this.axis[0] * this.axis[0] + 
-      this.axis[1] * this.axis[1] + 
-      this.axis[2] * this.axis[2]
-    );
-    
-    const normalizedAxis = axisLength > 0 ? 
-      this.axis.map(v => (v / axisLength).toFixed(16)) : 
-      [0, 0, 1].map(v => v.toFixed(16));
+    const normalizedAxis = this.axis.normalize();
 
     // Calculate the angle to the bounding sphere center
     const boundingSphere = this.children[0].boundingSphere();
@@ -885,7 +832,7 @@ class PolarPatternNode extends TreeNode {
       // explicit union of all copies
       return `
         float ${this.getFunctionName()}(vec3 p) {
-          vec3 axis = vec3(${normalizedAxis.join(", ")});
+          vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
           float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
           int copies = ${this.copies};
           
@@ -931,7 +878,7 @@ class PolarPatternNode extends TreeNode {
       // union of however many copies overlap, and domain repetition for the rest
       return `
         float ${this.getFunctionName()}(vec3 p) {
-          vec3 axis = vec3(${normalizedAxis.join(", ")});
+          vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
           float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
           float segmentAngle = totalAngle / float(${this.copies});
           float halfSegmentAngle = segmentAngle * 0.5;
@@ -996,7 +943,7 @@ class PolarPatternNode extends TreeNode {
       // pure domain repetition, no overlaps
       return `
         float ${this.getFunctionName()}(vec3 p) {
-          vec3 axis = vec3(${normalizedAxis.join(", ")});
+          vec3 axis = vec3(${normalizedAxis.x.toFixed(16)}, ${normalizedAxis.y.toFixed(16)}, ${normalizedAxis.z.toFixed(16)});
           float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
           float segmentAngle = totalAngle / float(${this.copies});
           float halfSegmentAngle = segmentAngle * 0.5;

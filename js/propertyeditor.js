@@ -189,20 +189,36 @@ class PropertyEditor {
             input.style.flexDirection = 'column';
             input.style.gap = '4px';
             
+            // Convert array to Vec3 if needed
+            let vecValue = propValue;
+            if (Array.isArray(propValue)) {
+                vecValue = new Vec3(propValue[0], propValue[1], propValue[2]);
+            }
+            
             // Create inputs for each component
-            ['x', 'y', 'z'].forEach((component, index) => {
+            const components = [
+                { name: 'x', color: 'rgba(220, 53, 69, 0.5)' }, // Red
+                { name: 'y', color: 'rgba(40, 167, 69, 0.5)' },  // Green
+                { name: 'z', color: 'rgba(0, 123, 255, 0.5)' }   // Blue
+            ];
+            
+            components.forEach(component => {
                 const componentContainer = document.createElement('div');
                 componentContainer.style.display = 'flex';
                 componentContainer.style.alignItems = 'center';
                 
+                const componentLabel = document.createElement('span');
+                componentLabel.textContent = component.name + ':';
+                componentLabel.style.marginRight = '5px';
+                componentLabel.style.width = '15px';
+                componentLabel.style.color = component.color;
+                componentLabel.style.fontWeight = 'bold';
+                
                 const componentInput = document.createElement('input');
                 componentInput.type = 'text'; // Using text to allow expressions
-                componentInput.value = propValue[index];
+                componentInput.value = vecValue[component.name];
                 componentInput.style.flex = '1';
-                
-                // Add more subtle, professional colored borders for each component (red, green, blue)
-                const colors = ['rgba(220, 53, 69, 0.5)', 'rgba(40, 167, 69, 0.5)', 'rgba(0, 123, 255, 0.5)']; // Muted red, green, blue
-                componentInput.style.borderColor = colors[index];
+                componentInput.style.borderColor = component.color;
                 componentInput.style.borderWidth = '1px';
                 
                 // Handle both blur and Enter key for evaluation
@@ -211,15 +227,28 @@ class PropertyEditor {
                         const result = this.evaluateExpression(componentInput.value);
                         if (!isNaN(result)) {
                             componentInput.value = result; // Update the input with the evaluated result
-                            const currentValue = this.selectedNode.getProperty(propName);
+                            
+                            // Get current value (might be array or Vec3)
+                            let currentValue = this.selectedNode.getProperty(propName);
+                            let newValue;
+                            
+                            // Convert to Vec3 if it's an array
+                            if (Array.isArray(currentValue)) {
+                                currentValue = new Vec3(currentValue[0], currentValue[1], currentValue[2]);
+                            }
                             
                             // Only update if the component value has changed
-                            if (currentValue[index] !== result) {
-                                const newValue = [...currentValue];
-                                newValue[index] = result;
+                            if (currentValue[component.name] !== result) {
+                                // Create a new Vec3 with the updated component
+                                newValue = new Vec3(
+                                    component.name === 'x' ? result : currentValue.x,
+                                    component.name === 'y' ? result : currentValue.y,
+                                    component.name === 'z' ? result : currentValue.z
+                                );
+                                
                                 this.selectedNode.setProperty(propName, newValue);
                                 this.notifyPropertyChanged(propName);
-                                this.updateNodeTypeHeading(); // Update heading to reflect new exactness
+                                this.updateNodeTypeHeading();
                             }
                         }
                     } catch (e) {
@@ -247,6 +276,7 @@ class PropertyEditor {
                     }
                 });
                 
+                componentContainer.appendChild(componentLabel);
                 componentContainer.appendChild(componentInput);
                 input.appendChild(componentContainer);
             });

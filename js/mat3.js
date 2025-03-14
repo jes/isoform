@@ -26,6 +26,14 @@ function Mat3(m00, m01, m02, m10, m11, m12, m20, m21, m22) {
     }
 }
 
+Mat3.prototype.glsl = function() {
+    return `mat3(
+        ${this.m[0][0].toFixed(16)}, ${this.m[1][0].toFixed(16)}, ${this.m[2][0].toFixed(16)},
+        ${this.m[0][1].toFixed(16)}, ${this.m[1][1].toFixed(16)}, ${this.m[2][1].toFixed(16)},
+        ${this.m[0][2].toFixed(16)}, ${this.m[1][2].toFixed(16)}, ${this.m[2][2].toFixed(16)}
+    )`;
+};
+
 // Creates a rotation matrix that rotates the z-axis to align with the given axis
 Mat3.prototype.rotateToAxis = function(axis) {
     // Handle the special case where axis is parallel to z-axis

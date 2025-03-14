@@ -130,3 +130,22 @@ The intended units are millimetres.
 ## UI Structure
 
 The application has a tree view for node hierarchy and a property editor for node properties. The UI panel can be resized, and there are display options for showing edges and adjusting the step factor for ray marching.
+
+## Vectors, matrices
+
+We have a `Vec3` and a `Mat3` class in `js/vec3.js` and `js/mat3.js`. Please use these for vector and matrix operations.
+If you don't know what functions exist, just guess, and we'll implement them later if they're missing.
+
+The general form is that you combine them like:
+
+    const v = new Vec3(1, 2, 3);
+    const v2 = v.add(new Vec3(4, 5, 6));
+    const m = new Mat3(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    const u = m.mulVec3(v);
+
+So each operation returns a new vector/matrix instead of modifying the existing one.
+
+Convert them to GLSL shader code like so:
+
+    vec3 v = ${v.glsl()};
+    mat3 m = ${m.glsl()};

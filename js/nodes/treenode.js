@@ -55,15 +55,21 @@ class TreeNode {
     return {"displayName": "string"};
   }
 
-  setProperty(name, value) {
-    this[name] = value;
-    if (name != "displayName") {
-      this.markDirty();
+  setProperty(propName, value) {
+    // Convert arrays to Vec3 objects for vec3 properties
+    if (Array.isArray(value) && value.length === 3) {
+        const propType = this.properties()[propName];
+        if (propType === 'vec3') {
+            value = new Vec3(value[0], value[1], value[2]);
+        }
     }
+    
+    this[propName] = value;
+    this.markDirty();
   }
 
-  getProperty(name) {
-    return this[name];
+  getProperty(propName) {
+    return this[propName];
   }
 
   hasParent(node) {

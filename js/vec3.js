@@ -4,6 +4,10 @@ function Vec3(x, y, z) {
     this.z = z;
 }
 
+Vec3.prototype.glsl = function() {
+    return `vec3(${this.x.toFixed(16)}, ${this.y.toFixed(16)}, ${this.z.toFixed(16)})`;
+};
+
 Vec3.prototype.add = function(v) {
     return new Vec3(this.x + v.x, this.y + v.y, this.z + v.z);
 };
