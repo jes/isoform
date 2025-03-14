@@ -98,9 +98,9 @@ const camera = {
             const rotX = this.createRotationMatrixX(deltaY);
             const rotY = this.createRotationMatrixY(deltaX);
             
-            // Apply rotations to the drag start rotation matrix
-            const combinedRotation = rotX.mul(rotY);
-            this.activeRotationMatrix = combinedRotation.mul(this.dragStartRotation);
+            const combinedRotation = rotY.mul(rotX);
+            this.activeRotationMatrix = this.dragStartRotation.mul(combinedRotation);
+            
             app.coordinateSystemChanged();
         }
 
