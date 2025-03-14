@@ -491,31 +491,31 @@ const ui = {
         // XY view (top view)
         viewXYButton.addEventListener('click', () => {
             // Set rotation matrix to look at XY plane (from above)
-            camera.setStandardView([
+            camera.setStandardView(new Mat3(
                 1, 0, 0,
                 0, 1, 0,
                 0, 0, -1  // Flip Z for right-handed system
-            ]);
+            ));
         });
         
         // XZ view (front view)
         viewXZButton.addEventListener('click', () => {
             // Set rotation matrix to look at XZ plane (from front)
-            camera.setStandardView([
+            camera.setStandardView(new Mat3(
                 1, 0, 0,
                 0, 0, -1, // Flip Z for right-handed system
                 0, 1, 0
-            ]);
+            ));
         });
         
         // YZ view (side view)
         viewYZButton.addEventListener('click', () => {
             // Set rotation matrix to look at YZ plane (from side)
-            camera.setStandardView([
+            camera.setStandardView(new Mat3(
                 0, 0, -1, // Flip Z for right-handed system
                 0, 1, 0,
                 1, 0, 0
-            ]);
+            ));
         });
 
         // Get the rotation buttons

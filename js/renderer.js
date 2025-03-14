@@ -314,18 +314,18 @@ const renderer = {
         gl.uniform2f(this.programInfo.uniformLocations.resolution, renderWidth, renderHeight);
         gl.uniform1f(this.programInfo.uniformLocations.time, currentTime);
         
-        // Add camera uniforms
+        // Add camera uniforms - now using Vec3 objects
         gl.uniform3f(this.programInfo.uniformLocations.cameraPosition, 
-            camera.position[0], camera.position[1], camera.position[2]);
+            camera.position.x, camera.position.y, camera.position.z);
         gl.uniform3f(this.programInfo.uniformLocations.cameraTarget, 
-            camera.target[0], camera.target[1], camera.target[2]);
+            camera.target.x, camera.target.y, camera.target.z);
         gl.uniform1f(this.programInfo.uniformLocations.cameraZoom, camera.zoom);
         
-        // Pass rotation matrix instead of Euler angles
+        // Pass rotation matrix - now using Mat3 object converted to array
         gl.uniformMatrix3fv(
             this.programInfo.uniformLocations.rotationMatrix, 
             false, 
-            new Float32Array(camera.activeRotationMatrix)
+            new Float32Array(camera.getRotationMatrixArray())
         );
         
         gl.uniform1i(this.programInfo.uniformLocations.showEdges, camera.showEdges ? 1 : 0);

@@ -1,19 +1,11 @@
 // Camera controls
 const camera = {
-    position: [0.0, 0.0, 1000.0],
-    target: [0.0, 0.0, 0.0],
+    position: new Vec3(0.0, 0.0, 1000.0),
+    target: new Vec3(0.0, 0.0, 0.0),
     zoom: 0.015,
-    // Replace Euler angles with rotation matrices
-    baseRotationMatrix: [
-        1, 0, 0,
-        0, 1, 0,
-        0, 0, 1
-    ],
-    activeRotationMatrix: [
-        1, 0, 0,
-        0, 1, 0,
-        0, 0, 1
-    ],
+    // Replace flat arrays with Mat3 objects
+    baseRotationMatrix: new Mat3(), // Identity matrix
+    activeRotationMatrix: new Mat3(), // Identity matrix
     isDragging: false,
     lastMouseX: 0,
     lastMouseY: 0,
@@ -22,11 +14,7 @@ const camera = {
     stepFactor: 1.0,
     dragStartX: 0,
     dragStartY: 0,
-    dragStartRotation: [
-        1, 0, 0,
-        0, 1, 0,
-        0, 0, 1
-    ],
+    dragStartRotation: new Mat3(), // Identity matrix
     showField: false,
     
     init(canvas) {
@@ -39,7 +27,7 @@ const camera = {
             if (e.key === 'Alt') {
                 // Store the current rotation as the starting point
                 if (!this.isDragging) {
-                    this.dragStartRotation = [...this.baseRotationMatrix];
+                    this.dragStartRotation = this.baseRotationMatrix;
                     this.dragStartX = this.lastMouseX;
                     this.dragStartY = this.lastMouseY;
                     this.isDragging = true;
@@ -51,7 +39,7 @@ const camera = {
         window.addEventListener('keyup', (e) => {
             if (e.key === 'Alt') {
                 // Store the final rotation as the new base
-                this.baseRotationMatrix = [...this.activeRotationMatrix];
+                this.baseRotationMatrix = this.activeRotationMatrix;
                 this.isDragging = false;
                 e.preventDefault();
             }
@@ -60,33 +48,17 @@ const camera = {
     
     // Helper function to create a rotation matrix around X axis
     createRotationMatrixX(angle) {
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        return [
-            1, 0, 0,
-            0, cos, -sin,
-            0, sin, cos
-        ];
+        return new Mat3().rotateX(angle);
     },
     
     // Helper function to create a rotation matrix around Y axis
     createRotationMatrixY(angle) {
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        return [
-            cos, 0, sin,
-            0, 1, 0,
-            -sin, 0, cos
-        ];
+        return new Mat3().rotateY(angle);
     },
     
-    // Helper function to multiply two 3x3 matrices
-    multiplyMatrices(a, b) {
-        return [
-            a[0]*b[0] + a[1]*b[3] + a[2]*b[6], a[0]*b[1] + a[1]*b[4] + a[2]*b[7], a[0]*b[2] + a[1]*b[5] + a[2]*b[8],
-            a[3]*b[0] + a[4]*b[3] + a[5]*b[6], a[3]*b[1] + a[4]*b[4] + a[5]*b[7], a[3]*b[2] + a[4]*b[5] + a[5]*b[8],
-            a[6]*b[0] + a[7]*b[3] + a[8]*b[6], a[6]*b[1] + a[7]*b[4] + a[8]*b[7], a[6]*b[2] + a[7]*b[5] + a[8]*b[8]
-        ];
+    // Helper function to create a rotation matrix around Z axis
+    createRotationMatrixZ(angle) {
+        return new Mat3().rotateZ(angle);
     },
     
     onMouseMove(e) {
@@ -113,23 +85,22 @@ const camera = {
             const worldMoveY = ndcMoveY * (1.0 / this.zoom);
             
             // Apply the movement to both camera position and target
-            this.target[0] += worldMoveX;
-            this.target[1] += worldMoveY;
-            this.position[0] += worldMoveX;
-            this.position[1] += worldMoveY;
+            const moveVec = new Vec3(worldMoveX, worldMoveY, 0);
+            this.target = this.target.add(moveVec);
+            this.position = this.position.add(moveVec);
             app.coordinateSystemChanged();
         } else if (e.altKey) {
             // Rotate: Update rotation matrices
-            const deltaX = (e.clientX - this.dragStartX) * 0.01;
-            const deltaY = (e.clientY - this.dragStartY) * 0.01;
+            const deltaX = (this.dragStartX - e.clientX) * 0.01;
+            const deltaY = (this.dragStartY - e.clientY) * 0.01;
             
             // Create rotation matrices based on mouse movement
             const rotX = this.createRotationMatrixX(deltaY);
             const rotY = this.createRotationMatrixY(deltaX);
             
             // Apply rotations to the drag start rotation matrix
-            const combinedRotation = this.multiplyMatrices(rotX, rotY);
-            this.activeRotationMatrix = this.multiplyMatrices(combinedRotation, this.dragStartRotation);
+            const combinedRotation = rotX.mul(rotY);
+            this.activeRotationMatrix = combinedRotation.mul(this.dragStartRotation);
             app.coordinateSystemChanged();
         }
 
@@ -157,27 +128,16 @@ const camera = {
     
     setStandardView(rotationMatrix) {
         // Set both base and active rotation matrices to the standard view
-        this.baseRotationMatrix = [...rotationMatrix];
-        this.activeRotationMatrix = [...rotationMatrix];
+        this.baseRotationMatrix = rotationMatrix;
+        this.activeRotationMatrix = rotationMatrix;
         
         // Reset any ongoing drag operation
         this.isDragging = false;
         
         // Reset the drag start rotation
-        this.dragStartRotation = [...rotationMatrix];
+        this.dragStartRotation = rotationMatrix;
 
         app.coordinateSystemChanged();
-    },
-    
-    // Helper function to create a rotation matrix around Z axis
-    createRotationMatrixZ(angle) {
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        return [
-            cos, -sin, 0,
-            sin, cos, 0,
-            0, 0, 1
-        ];
     },
     
     // Rotate around the viewing direction (forward axis)
@@ -186,107 +146,74 @@ const camera = {
         const angleRad = angleDegrees * Math.PI / 180.0;
         
         // Calculate the viewing direction (forward vector)
-        const forward = [
-            this.target[0] - this.position[0],
-            this.target[1] - this.position[1],
-            this.target[2] - this.position[2]
-        ];
+        const forward = this.target.sub(this.position);
         
         // Normalize the forward vector
-        const length = Math.sqrt(
-            forward[0] * forward[0] + 
-            forward[1] * forward[1] + 
-            forward[2] * forward[2]
-        );
+        const normalizedForward = forward.normalize();
         
-        const normalizedForward = [
-            forward[0] / length,
-            forward[1] / length,
-            forward[2] / length
-        ];
-        
-        // Create a rotation matrix around the viewing direction
-        // Using Rodrigues' rotation formula
+        // Create a rotation matrix around the viewing direction using Rodrigues' formula
         const c = Math.cos(angleRad);
         const s = Math.sin(angleRad);
         const t = 1 - c;
         
-        const x = normalizedForward[0];
-        const y = normalizedForward[1];
-        const z = normalizedForward[2];
+        const x = normalizedForward.x;
+        const y = normalizedForward.y;
+        const z = normalizedForward.z;
         
         // Create rotation matrix around arbitrary axis (viewing direction)
-        const rotMatrix = [
+        const rotMatrix = new Mat3(
             t*x*x + c,    t*x*y - s*z,  t*x*z + s*y,
             t*x*y + s*z,  t*y*y + c,    t*y*z - s*x,
             t*x*z - s*y,  t*y*z + s*x,  t*z*z + c
-        ];
+        );
         
         // Apply rotation to the current rotation matrix
-        this.baseRotationMatrix = this.multiplyMatrices(rotMatrix, this.baseRotationMatrix);
-        this.activeRotationMatrix = [...this.baseRotationMatrix];
+        this.baseRotationMatrix = rotMatrix.mul(this.baseRotationMatrix);
+        this.activeRotationMatrix = this.baseRotationMatrix;
         
         // Reset any ongoing drag operation
         this.isDragging = false;
         
         // Reset the drag start rotation
-        this.dragStartRotation = [...this.baseRotationMatrix];
+        this.dragStartRotation = this.baseRotationMatrix;
+        
+        app.coordinateSystemChanged();
     },
     
     worldToScreen(worldPos) {
         worldPos.z ||= 0;
         
+        // Convert to Vec3 if it's not already
+        const worldPosVec = (worldPos instanceof Vec3) ? 
+            worldPos : new Vec3(worldPos.x, worldPos.y, worldPos.z);
+        
         // Apply the active rotation matrix to the world position
-        const rotatedPos = {
-            x: this.activeRotationMatrix[0] * worldPos.x + this.activeRotationMatrix[1] * worldPos.y + this.activeRotationMatrix[2] * worldPos.z,
-            y: this.activeRotationMatrix[3] * worldPos.x + this.activeRotationMatrix[4] * worldPos.y + this.activeRotationMatrix[5] * worldPos.z,
-            z: this.activeRotationMatrix[6] * worldPos.x + this.activeRotationMatrix[7] * worldPos.y + this.activeRotationMatrix[8] * worldPos.z
-        };
+        const rotatedPos = this.activeRotationMatrix.mulVec3(worldPosVec);
         
         // 1. Build the camera basis vectors (same as in screenToWorld)
-        const forward = {
-            x: this.target[0] - this.position[0],
-            y: this.target[1] - this.position[1],
-            z: this.target[2] - this.position[2]
-        };
-        const fLength = Math.sqrt(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
+        const forward = this.target.sub(this.position);
+        const fLength = forward.length();
+        
         if (fLength < 1e-12) {
             return { x: Number.NaN, y: Number.NaN };
         }
-        forward.x /= fLength;
-        forward.y /= fLength;
-        forward.z /= fLength;
         
-        const worldUp = { x: 0, y: 1, z: 0 };
-        const right = {
-            x: forward.y * worldUp.z - forward.z * worldUp.y,
-            y: forward.z * worldUp.x - forward.x * worldUp.z,
-            z: forward.x * worldUp.y - forward.y * worldUp.x
-        };
-        const rLength = Math.sqrt(right.x*right.x + right.y*right.y + right.z*right.z);
-        if (rLength < 1e-12) {
+        const forwardNorm = forward.normalize();
+        const worldUp = new Vec3(0, 1, 0);
+        const right = forwardNorm.cross(worldUp).normalize();
+        
+        if (right.length() < 1e-12) {
             return { x: Number.NaN, y: Number.NaN };
         }
-        right.x /= rLength;
-        right.y /= rLength;
-        right.z /= rLength;
         
-        const up = {
-            x: forward.y * right.z - forward.z * right.y,
-            y: forward.z * right.x - forward.x * right.z,
-            z: forward.x * right.y - forward.y * right.x
-        };
+        const up = forwardNorm.cross(right);
         
         // 2. Calculate vector from camera position to rotated world position
-        const offset = {
-            x: rotatedPos.x - this.position[0],
-            y: rotatedPos.y - this.position[1],
-            z: rotatedPos.z - this.position[2]
-        };
+        const offset = rotatedPos.sub(this.position);
         
         // 3. Project offset onto right and up vectors to get view space coordinates
-        const viewSpaceX = offset.x * right.x + offset.y * right.y + offset.z * right.z;
-        const viewSpaceY = offset.x * up.x + offset.y * up.y + offset.z * up.z;
+        const viewSpaceX = offset.dot(right);
+        const viewSpaceY = offset.dot(up);
         
         // 4. Apply zoom factor
         const ndcX = viewSpaceX * this.zoom;
@@ -320,73 +247,50 @@ const camera = {
         const viewSpaceY = -ndcY / this.zoom; // Flip Y axis to match worldToScreen
         
         // 4. Build camera basis vectors (right and up vectors for the view plane)
-        const forward = {
-            x: this.target[0] - this.position[0],
-            y: this.target[1] - this.position[1],
-            z: this.target[2] - this.position[2]
-        };
-        const fLength = Math.sqrt(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
-        forward.x /= fLength;
-        forward.y /= fLength;
-        forward.z /= fLength;
+        const forward = this.target.sub(this.position);
+        const forwardNorm = forward.normalize();
         
-        const worldUp = { x: 0, y: 1, z: 0 };
-        const right = {
-            x: forward.y * worldUp.z - forward.z * worldUp.y,
-            y: forward.z * worldUp.x - forward.x * worldUp.z,
-            z: forward.x * worldUp.y - forward.y * worldUp.x
-        };
-        const rLength = Math.sqrt(right.x*right.x + right.y*right.y + right.z*right.z);
-        right.x /= rLength;
-        right.y /= rLength;
-        right.z /= rLength;
-        
-        const up = {
-            x: forward.y * right.z - forward.z * right.y,
-            y: forward.z * right.x - forward.x * right.z,
-            z: forward.x * right.y - forward.y * right.x
-        };
+        const worldUp = new Vec3(0, 1, 0);
+        const right = forwardNorm.cross(worldUp).normalize();
+        const up = forwardNorm.cross(right);
         
         // 5. For orthographic projection, calculate position on the view plane
-        const viewPlanePoint = {
-            x: this.position[0] + viewSpaceX * right.x + viewSpaceY * up.x,
-            y: this.position[1] + viewSpaceX * right.y + viewSpaceY * up.y,
-            z: this.position[2] + viewSpaceX * right.z + viewSpaceY * up.z
-        };
+        const viewPlanePoint = this.position.add(
+            right.mul(viewSpaceX).add(up.mul(viewSpaceY))
+        );
         
         // 6. Cast ray from this point along the forward direction
         // Since we want Z=0, calculate where this ray intersects the Z=0 plane
-        if (Math.abs(forward.z) < 1e-6) {
+        if (Math.abs(forwardNorm.z) < 1e-6) {
             // Ray is parallel to XY plane, no intersection
             return { x: Number.NaN, y: Number.NaN, z: 0 };
         }
         
         // Calculate t where ray intersects z=0 plane
-        const t = -viewPlanePoint.z / forward.z;
+        const t = -viewPlanePoint.z / forwardNorm.z;
         
         // Calculate intersection point in world space
-        const worldPointRotated = {
-            x: viewPlanePoint.x + t * forward.x,
-            y: viewPlanePoint.y + t * forward.y,
-            z: 0  // Exactly 0 by construction
-        };
+        const worldPointRotated = viewPlanePoint.add(forwardNorm.mul(t));
         
         // 7. Since the rotation is applied to objects (not the camera view),
         // we need to apply the inverse rotation to get back to original world coordinates
         // Inverse of rotation matrix is its transpose for orthogonal matrices
-        const inverseRotation = [
-            this.activeRotationMatrix[0], this.activeRotationMatrix[3], this.activeRotationMatrix[6],
-            this.activeRotationMatrix[1], this.activeRotationMatrix[4], this.activeRotationMatrix[7],
-            this.activeRotationMatrix[2], this.activeRotationMatrix[5], this.activeRotationMatrix[8]
-        ];
+        const inverseRotation = this.activeRotationMatrix.transpose();
         
         // Apply inverse rotation
-        const worldPos = {
-            x: inverseRotation[0] * worldPointRotated.x + inverseRotation[1] * worldPointRotated.y + inverseRotation[2] * worldPointRotated.z,
-            y: inverseRotation[3] * worldPointRotated.x + inverseRotation[4] * worldPointRotated.y + inverseRotation[5] * worldPointRotated.z,
-            z: inverseRotation[6] * worldPointRotated.x + inverseRotation[7] * worldPointRotated.y + inverseRotation[8] * worldPointRotated.z
-        };
+        const worldPos = inverseRotation.mulVec3(worldPointRotated);
         
-        return worldPos;
+        return { x: worldPos.x, y: worldPos.y, z: worldPos.z };
+    },
+    
+    // Helper method to convert Mat3 to flat array for WebGL
+    getRotationMatrixArray() {
+        // Convert the Mat3 to a flat array in column-major order for WebGL
+        const m = this.activeRotationMatrix.m;
+        return [
+            m[0][0], m[1][0], m[2][0],
+            m[0][1], m[1][1], m[2][1],
+            m[0][2], m[1][2], m[2][2]
+        ];
     }
 }; 
