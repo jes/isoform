@@ -601,9 +601,6 @@ const ui = {
                 } else {
                     toggleFieldButton.classList.remove('active');
                 }
-                
-                // Trigger a redraw
-                app.document.markDirty();
             });
         }
     },
