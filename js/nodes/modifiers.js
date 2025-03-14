@@ -728,7 +728,7 @@ class LinearPatternNode extends TreeNode {
           return d;
         }
       `;
-    } else if (this.spacing < 2*boundingSphere.radius) {
+    } else if (this.spacing < 2*(boundingSphere.radius+this.blendRadius)) {
       return `
         float ${this.getFunctionName()}(vec3 p) {
           // Rotate point to align with pattern axis
