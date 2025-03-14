@@ -865,12 +865,14 @@ class PolarPatternNode extends TreeNode {
     const centerInAxisSpace = toAxisSpace.mulVec3(center);
     const centerAngle = Math.atan2(centerInAxisSpace.y, centerInAxisSpace.x);
 
-    const r = boundingSphere.radius + this.blendRadius;
-    const stepAngle = this.angle / this.copies;
-    const stepX = r * Math.cos(stepAngle * Math.PI / 180.0);
-    const stepY = r * Math.sin(stepAngle * Math.PI / 180.0);
-    const spacing = Math.sqrt((r-stepX)*(r-stepX) + stepY*stepY);
+    const v = new Vec3(boundingSphere.centre[0], boundingSphere.centre[1], boundingSphere.centre[2]);
+    const r = v.length();
+    const stepAngle = this.angle / this.copies * Math.PI / 180.0; // Convert to radians
+    // Calculate the chord length between two consecutive copies
+    const spacing = 2 * r * Math.sin(stepAngle / 2);
+    console.log("spacing", spacing, "radius", r, "angle", this.angle, "copies", this.copies);
     const radiusOverlaps = Math.ceil((boundingSphere.radius + this.blendRadius) / spacing);
+    console.log("radiusOverlaps", radiusOverlaps);
 
     let minfn = "min(d,d1)";
     if (this.blendRadius > 0) {
@@ -883,6 +885,7 @@ class PolarPatternNode extends TreeNode {
 
     if (!this.allowDomainRepetition || 2*radiusOverlaps >= this.copies) {
       // explicit union of all copies
+      console.log("explicit union of all copies");
       return `
         float ${this.getFunctionName()}(vec3 p) {
           vec3 axis = vec3(${normalizedAxis.join(", ")});
@@ -927,10 +930,74 @@ class PolarPatternNode extends TreeNode {
           return d;
         }
     `;
-    } else if (this.spacing < 2*(boundingSphere.radius+this.blendRadius)) {
+    } else if (spacing < 2*(boundingSphere.radius+this.blendRadius)) {
+      console.log("union of however many copies overlap, and domain repetition for the rest");
       // union of however many copies overlap, and domain repetition for the rest
+      return `
+        float ${this.getFunctionName()}(vec3 p) {
+          vec3 axis = vec3(${normalizedAxis.join(", ")});
+          float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
+          float segmentAngle = totalAngle / float(${this.copies});
+          float halfSegmentAngle = segmentAngle * 0.5;
+          float centerOffset = ${centerAngle.toFixed(16)}; // Angle to bounding sphere center
+          
+          // Rotate point to align with axis
+          mat3 toAxisSpace = rotateToAxis(axis);
+          mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
+          
+          // Transform to axis-aligned space (z is now along rotation axis)
+          vec3 q = toAxisSpace * p;
+          
+          // Get angle in XY plane (around Z axis)
+          float angle = atan(q.y, q.x) - centerOffset + halfSegmentAngle;
+          
+          // Normalize angle to [0, totalAngle)
+          if (angle < 0.0) angle += 2.0 * 3.14159265359;
+          if (angle > totalAngle) {
+            float n = floor(angle / totalAngle);
+            angle -= n * totalAngle;
+          }
+          
+          // Calculate the index of the current segment
+          float idx = floor(angle / segmentAngle);
+          
+          // Evaluate overlapping copies, including wrapping around
+          float d = 1e10;  // Initialize to a large value
+          
+          // Start from idx - radiusOverlaps and wrap around if needed
+          for (int i = 0; i < ${2*radiusOverlaps + 1}; i++) {
+            float copyIdx = idx - float(${radiusOverlaps}) + float(i);
+            
+            // Wrap around if needed
+            if (copyIdx < 0.0) {
+              copyIdx += float(${this.copies});
+            } else if (copyIdx >= float(${this.copies})) {
+              copyIdx -= float(${this.copies});
+            }
+            
+            // Skip if outside valid range
+            if (copyIdx < 0.0 || copyIdx >= float(${this.copies})) {
+              continue;
+            }
+            
+            float rotationAngle = -copyIdx * segmentAngle;
+            float c = cos(rotationAngle);
+            float s = sin(rotationAngle);
+            vec3 rotated = vec3(
+              c * q.x - s * q.y,
+              s * q.x + c * q.y,
+              q.z
+            );
+            p = fromAxisSpace * rotated;
+            float d1 = ${this.children[0].shaderCode()};
+            d = ${minfn};
+          }
+          
+          return d;
+        }
+      `;
     } else {
-      // pure domain repetition, no overlaps
+      console.log("pure domain repetition, no overlaps");
       return `
         float ${this.getFunctionName()}(vec3 p) {
           vec3 axis = vec3(${normalizedAxis.join(", ")});

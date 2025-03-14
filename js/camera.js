@@ -2,7 +2,7 @@
 const camera = {
     position: [0.0, 0.0, 1000.0],
     target: [0.0, 0.0, 0.0],
-    zoom: 0.05,
+    zoom: 0.015,
     // Replace Euler angles with rotation matrices
     baseRotationMatrix: [
         1, 0, 0,
