@@ -37,9 +37,12 @@ const camera = {
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Alt') {
                 // Store the current rotation as the starting point
-                this.dragStartRotation = [...this.baseRotationMatrix];
-                this.dragStartX = this.lastMouseX;
-                this.dragStartY = this.lastMouseY;
+                if (!this.isDragging) {
+                    this.dragStartRotation = [...this.baseRotationMatrix];
+                    this.dragStartX = this.lastMouseX;
+                    this.dragStartY = this.lastMouseY;
+                    this.isDragging = true;
+                }
                 e.preventDefault();
             }
         });
@@ -48,6 +51,7 @@ const camera = {
             if (e.key === 'Alt') {
                 // Store the final rotation as the new base
                 this.baseRotationMatrix = [...this.activeRotationMatrix];
+                this.isDragging = false;
                 e.preventDefault();
             }
         });
