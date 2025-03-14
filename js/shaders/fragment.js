@@ -287,26 +287,13 @@ vec4 drawAxisIndicator(vec2 uv) {
 }
 
 // Add this function to visualize the SDF field
-vec3 visualizeField(float distance) {
-    // Color scheme for the field visualization
-    // Red for negative distances (inside the shape)
-    // Blue-to-white gradient for positive distances (outside the shape)
-    
-    // Normalize the distance for visualization
-    float normDist = clamp(distance * 0.1, -1.0, 1.0);
-    
-    if (normDist < 0.0) {
-        // Inside: red to yellow gradient
-        return vec3(1.0, 1.0 + normDist, 0.0);
-    } else {
-        // Outside: blue to white gradient
-        return vec3(normDist, normDist, 1.0);
-    }
-}
-
-// Add this function to draw the zero isoline
-float drawIsoline(float d, float thickness) {
-    return 1.0 - smoothstep(0.0, thickness, abs(d));
+vec3 visualizeField(float d) {
+    d *= uCameraZoom * 3.0;
+    vec3 col = (d<0.0) ? vec3(0.6,0.8,1.0) : vec3(0.9,0.6,0.3);
+    col *= 1.0 - exp(-9.0*abs(d));
+	col *= 1.0 + 0.2*cos(128.0*abs(d));
+	col = mix( col, vec3(1.0), 1.0-smoothstep(0.0,0.05,abs(d)) );
+    return col;
 }
 
 /// Main
@@ -350,10 +337,6 @@ void main() {
         
         // Visualize the field value
         color = visualizeField(fieldValue);
-        
-        // Draw the zero isoline (the surface boundary)
-        float isoline = drawIsoline(fieldValue, 0.003);
-        color = mix(color, vec3(0.0, 0.0, 0.0), isoline);
     } else {
         // Regular 3D rendering mode - use the existing code
         // ORTHOGRAPHIC PROJECTION
