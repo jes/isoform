@@ -126,16 +126,19 @@ float detectEdge(vec3 p, vec3 normal) {
     float distanceToCamera = length(p - uCameraPosition);
     float offset = 0.000005 * distanceToCamera * (1.0 / uCameraZoom);
     
-    // Sample normals at nearby points
-    vec3 n1 = calcNormal(p + vec3(offset, 0.0, 0.0));
-    vec3 n2 = calcNormal(p + vec3(0.0, offset, 0.0));
-    vec3 n3 = calcNormal(p + vec3(0.0, 0.0, offset));
+    // Sample normals at nearby points in both directions
+    vec3 nx1 = calcNormal(p + vec3(offset, 0.0, 0.0));
+    vec3 nx2 = calcNormal(p - vec3(offset, 0.0, 0.0));
+    vec3 ny1 = calcNormal(p + vec3(0.0, offset, 0.0));
+    vec3 ny2 = calcNormal(p - vec3(0.0, offset, 0.0));
+    vec3 nz1 = calcNormal(p + vec3(0.0, 0.0, offset));
+    vec3 nz2 = calcNormal(p - vec3(0.0, 0.0, offset));
     
-    // Calculate how different these normals are from the center normal
+    // Calculate how different these normals are from each other across each axis
     float edge = 0.0;
-    edge += (1.0 - dot(normal, n1));
-    edge += (1.0 - dot(normal, n2));
-    edge += (1.0 - dot(normal, n3));
+    edge += (1.0 - dot(nx1, nx2));
+    edge += (1.0 - dot(ny1, ny2));
+    edge += (1.0 - dot(nz1, nz2));
     
     // Normalize and apply threshold for edge detection
     edge /= 3.0;
