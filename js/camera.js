@@ -16,6 +16,7 @@ const camera = {
     dragStartY: 0,
     dragStartRotation: new Mat3(), // Identity matrix
     showField: false,
+    showSteps: false,
     
     init(canvas) {
         // Only need mousemove and wheel events now

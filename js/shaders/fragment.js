@@ -12,6 +12,9 @@ uniform bool uShowSecondary;
 uniform float stepFactor;
 uniform int uMsaaSamples;
 uniform bool uShowField;
+uniform bool uShowSteps;
+
+#define MAX_STEPS 500
 
 // Apply rotation to a point using the rotation matrix
 vec3 rotatePoint(vec3 p) {
@@ -154,7 +157,8 @@ struct MarchResult {
     float distance;    // Total distance marched
     float minDistance; // Minimum distance encountered during march
     bool hit;          // Whether we hit something
-    vec3 hitPosition; // Position of the hit
+    vec3 hitPosition;  // Position of the hit
+    int steps;         // Number of steps taken
 };
 
 MarchResult rayMarch(vec3 ro, vec3 rd) {
@@ -162,10 +166,12 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
     result.distance = 0.0;
     result.minDistance = 1000000.0;
     result.hit = false;
+    result.steps = 0;
 
     vec3 p = ro;
     
-    for (int i = 0; i < 500; i++) {
+    for (int i = 0; i < MAX_STEPS; i++) {
+        result.steps++; // Increment step counter
         float d = map(p);
         
         // Track minimum distance encountered
@@ -192,10 +198,12 @@ MarchResult rayMarch_secondary(vec3 ro, vec3 rd) {
     result.distance = 0.0;
     result.minDistance = 1000000.0;
     result.hit = false;
+    result.steps = 0;
 
     vec3 p = ro;
     
-    for (int i = 0; i < 500; i++) {
+    for (int i = 0; i < MAX_STEPS; i++) {
+        result.steps++; // Increment step counter
         float d = map_secondary(p);
         
         // Track minimum distance encountered
@@ -296,6 +304,21 @@ vec3 visualizeField(float d) {
     return col;
 }
 
+// Add this function to visualize the ray marching steps
+vec3 visualizeSteps(int steps) {
+    // Map steps to a color gradient
+    float normalizedSteps = float(steps) / float(MAX_STEPS); // Normalize to 0-1 range
+    
+    // Apply exponential curve to emphasize differences in lower values
+    // Using a power function: x^0.4 gives more weight to smaller values
+    float weightedSteps = pow(normalizedSteps, 0.4);
+    
+    // Create a heat map gradient (blue to red)
+    vec3 color = mix(vec3(0.0, 0.8, 1.0), vec3(1.0, 0.0, 0.0), weightedSteps);
+    
+    return color;
+}
+
 /// Main
 
 void main() {
@@ -349,8 +372,10 @@ void main() {
         // Default background color
         color = vec3(0.1, 0.1, 0.1);
         
-        // If we hit something
-        if (marchResult.hit) {
+        if (uShowSteps) {
+            // Visualize steps instead of normal shading
+            color = visualizeSteps(marchResult.steps);
+        } else if (marchResult.hit) {
             // Calculate hit position and normal
             vec3 pos = marchResult.hitPosition;
             vec3 normal = calcNormal(pos);
@@ -383,7 +408,6 @@ void main() {
             MarchResult marchResult_secondary = rayMarch_secondary(ro, rd);
             
             if (marchResult_secondary.hit) {
-                // Calculate hit position and normal
                 vec3 pos = marchResult_secondary.hitPosition;
                 vec3 normal = calcNormal_secondary(pos);
                 

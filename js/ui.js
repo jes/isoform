@@ -603,6 +603,28 @@ const ui = {
                 }
             });
         }
+
+        // Add the steps visualization toggle button functionality
+        const toggleStepsButton = document.getElementById('toggle-steps');
+        if (toggleStepsButton) {
+            // Set initial state based on camera setting
+            if (camera.showSteps) {
+                toggleStepsButton.classList.add('active');
+            }
+            
+            // Add event listener
+            toggleStepsButton.addEventListener('click', () => {
+                // Toggle the camera setting
+                camera.showSteps = !camera.showSteps;
+                
+                // Update the button appearance
+                if (camera.showSteps) {
+                    toggleStepsButton.classList.add('active');
+                } else {
+                    toggleStepsButton.classList.remove('active');
+                }
+            });
+        }
     },
 
     initMainToolbar() {
