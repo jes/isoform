@@ -988,17 +988,8 @@ class PolarPatternNode extends TreeNode {
           for (int i = 0; i < ${2*radiusOverlaps + 1}; i++) {
             float copyIdx = idx - float(${radiusOverlaps}) + float(i);
             
-            // Wrap around if needed
-            if (copyIdx < 0.0) {
-              copyIdx += float(${this.copies});
-            } else if (copyIdx >= float(${this.copies})) {
-              copyIdx -= float(${this.copies});
-            }
-            
-            // Skip if outside valid range
-            if (copyIdx < 0.0 || copyIdx >= float(${this.copies})) {
-              continue;
-            }
+            // Wrap copyIdx to valid range without branching
+            copyIdx = mod(copyIdx + float(${this.copies}), float(${this.copies}));
             
             float rotationAngle = -copyIdx * segmentAngle;
             float c = cos(rotationAngle);
