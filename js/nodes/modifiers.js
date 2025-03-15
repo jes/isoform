@@ -89,21 +89,22 @@ class TransformNode extends TreeNode {
         // Apply translation
         p = p - ${this.translation.glsl()};
         
+        ${ Math.abs(angleRad) > 0.000001 ? `
         // Apply rotation using axis-angle
         float angle = ${angleRad};
-        if (angle != 0.0) {
-          vec3 axis = ${normalizedAxis.glsl()};
-          
-          // Rodrigues rotation formula
-          float cosA = cos(angle);
-          float sinA = sin(angle);
-          float k = 1.0 - cosA;
-          
-          vec3 a = axis * dot(axis, p) * k;
-          vec3 b = p * cosA;
-          vec3 c = cross(axis, p) * sinA;
-          
-          p = a + b + c;
+        vec3 axis = ${normalizedAxis.glsl()};
+        
+        // Rodrigues rotation formula
+        float cosA = cos(angle);
+        float sinA = sin(angle);
+        float k = 1.0 - cosA;
+        
+        vec3 a = axis * dot(axis, p) * k;
+        vec3 b = p * cosA;
+        vec3 c = cross(axis, p) * sinA;
+        
+        p = a + b + c;
+        ` : ""
         }
         
         return ${this.children[0].shaderCode()};
