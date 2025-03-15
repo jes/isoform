@@ -169,7 +169,7 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
     result.steps = 0;
 
     vec3 p = ro;
-    
+    float lastD = 0.0;
     for (int i = 0; i < MAX_STEPS; i++) {
         result.steps++; // Increment step counter
         float d = map(p);
@@ -187,7 +187,8 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
 
         p += rd * d * stepFactor;
         
-        if (result.distance > 1000000.0) break;
+        if (d > lastD && result.distance > 10000.0) break;
+        lastD = d;
         result.distance += d;
     }
     
@@ -201,7 +202,7 @@ MarchResult rayMarch_secondary(vec3 ro, vec3 rd) {
     result.steps = 0;
 
     vec3 p = ro;
-    
+    float lastD = 0.0;
     for (int i = 0; i < MAX_STEPS; i++) {
         result.steps++; // Increment step counter
         float d = map_secondary(p);
@@ -219,7 +220,8 @@ MarchResult rayMarch_secondary(vec3 ro, vec3 rd) {
 
         p += rd * d * stepFactor;
         
-        if (result.distance > 1000000.0) break;
+        if (d > lastD && result.distance > 10000.0) break;
+        lastD = d;
         result.distance += d;
     }
     
