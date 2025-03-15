@@ -4,6 +4,7 @@ const scene = {
     },
     
     generateShaderCode(document, showBoundingSphere = false) {
+        const startTime = performance.now();
         // Get the original shader source
         let originalSource = renderer.fragmentShaderSource;
         
@@ -49,6 +50,9 @@ const scene = {
                    originalSource.substring(endIndex);
         
         document.markClean();
+
+        const endTime = performance.now();
+        console.log(`Shader codegen took ${endTime - startTime} ms`);
 
         return newSource;
     }
