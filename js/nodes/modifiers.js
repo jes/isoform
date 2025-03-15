@@ -421,12 +421,11 @@ class ScaleNode extends TreeNode {
         // we multiply by k only if k <= 1.0, because we can't maintain
         // the distance property in along-axis mode, but we can still maintain the
         // lowerbound property
-        if (k > 1.0) {
-          return ${this.children[0].shaderCode()};
-        } else {
-          return ${this.children[0].shaderCode()} * k;
-        }
-        ` : `
+        ${ this.k > 1.0 ?
+          `return ${this.children[0].shaderCode()};`
+        :
+          `return ${this.children[0].shaderCode()} * k;`
+        }` : `
         // Uniform scaling
         vec3 p0 = p;
         p = p / ${this.k.toFixed(16)};
@@ -532,7 +531,7 @@ class TwistNode extends TreeNode {
         // Apply twist around the z-axis (which is now aligned with our axis)
         // The twist angle is proportional to the distance along the axis
         // A smaller height value means more twisting (2π radians per 'height' units)
-        if (height != 0.0) {
+        ${ this.height != 0.0 ? `
           // Negative angle for right-handed rotation around Z
           float angle = (-2.0 * 3.14159265359 * q.z) / height;
           float c = cos(angle);
@@ -541,7 +540,7 @@ class TwistNode extends TreeNode {
         
           // Transform back to original space
           p = fromAxisSpace * q;
-        }
+        ` : ""}
         
         return ${this.children[0].shaderCode()};
       }
