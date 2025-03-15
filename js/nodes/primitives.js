@@ -225,32 +225,30 @@ class GyroidNode extends TreeNode {
   constructor() {
     super("Gyroid");
     this.scale = 1.0;
-    this.thickness = 0.2;
   }
 
   properties() {
-    return {"scale": "float", "thickness": "float"};
+    return {"scale": "float"};
   }
 
   generateShaderImplementation() {
     return `
-      float sdGyroid(vec3 p, float scale, float thickness) {
+      float sdGyroid(vec3 p, float scale) {
         p = p / scale;
         float gyroid = sin(p.x) * cos(p.y) + sin(p.y) * cos(p.z) + sin(p.z) * cos(p.x);
-        float fill = abs(gyroid) - thickness;
-        return fill;
+        return gyroid;
       }
     `;
   }
 
   generateShaderCode() {
-    return `sdGyroid(p, ${this.scale.toFixed(16)}, ${this.thickness.toFixed(16)})`;
+    return `sdGyroid(p, ${this.scale.toFixed(16)})`;
   }
 }
 
 // Detect environment and export accordingly
 (function() {
-  const nodes = { SphereNode, CylinderNode, BoxNode, TorusNode };
+  const nodes = { SphereNode, CylinderNode, BoxNode, TorusNode, GyroidNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {
