@@ -10,7 +10,6 @@ uniform mat3 uRotationMatrix;
 uniform bool uShowEdges;
 uniform bool uShowSecondary;
 uniform float stepFactor;
-uniform int uMsaaSamples;
 uniform bool uShowField;
 uniform bool uShowSteps;
 
