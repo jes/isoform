@@ -1085,6 +1085,14 @@ class ExtrudeNode extends TreeNode {
   }
 
   generateShaderImplementation() {
+    if (!this.hasChildren()) {
+      this.warn("Extrude node has no child to transform");
+      return "";
+    }
+    if (!this.children[0].is2d()) {
+      this.warn("Extrude node requires a 2D child");
+      return "";
+    }
     let maxfn = "max(d2d, dz)";
     if (this.blendRadius > 0.0) {
       // XXX: we could allow a different radius at top vs bottom by picking a different `maxfn`based on the sign of `dz`
@@ -1114,11 +1122,9 @@ class ExtrudeNode extends TreeNode {
 
   generateShaderCode() {
     if (!this.hasChildren()) {
-      this.warn("Extrude node has no child to transform");
       return this.noopShaderCode();
     }
     if (!this.children[0].is2d()) {
-      this.warn("Extrude node requires a 2D child");
       return this.noopShaderCode();
     }
     return `${this.getFunctionName()}(p)`;
