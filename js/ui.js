@@ -340,6 +340,7 @@ const ui = {
             { name: 'Sphere', constructor: SphereNode },
             { name: 'Cylinder', constructor: CylinderNode },
             { name: 'Torus', constructor: TorusNode },
+            { name: 'Gyroid', constructor: GyroidNode },
             { name: 'Sketch', constructor: SketchNode }
         ];
         
