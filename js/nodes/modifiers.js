@@ -972,12 +972,11 @@ class PolarPatternNode extends TreeNode {
           // Get angle in XY plane (around Z axis)
           float angle = atan(q.y, q.x) - centerOffset + halfSegmentAngle;
           
-          // Normalize angle to [0, totalAngle)
-          if (angle < 0.0) angle += 2.0 * 3.14159265359;
-          if (angle > totalAngle) {
-            float n = floor(angle / totalAngle);
-            angle -= n * totalAngle;
-          }
+          // Normalize angle to [0, totalAngle) without branching
+          // First add enough multiples of 2π to make it positive
+          angle += 2.0 * 3.14159265359 * ceil(-angle / (2.0 * 3.14159265359));
+          // Then use mod to get it within [0, totalAngle)
+          angle = mod(angle, totalAngle);
           
           // Calculate the index of the current segment
           float idx = floor(angle / segmentAngle);
@@ -1038,12 +1037,11 @@ class PolarPatternNode extends TreeNode {
           // and half segment to center within segment
           float angle = atan(q.y, q.x) - centerOffset + halfSegmentAngle;
           
-          // Normalize angle to [0, totalAngle)
-          if (angle < 0.0) angle += 2.0 * 3.14159265359;
-          if (angle > totalAngle) {
-            float n = floor(angle / totalAngle);
-            angle -= n * totalAngle;
-          }
+          // Normalize angle to [0, totalAngle) without branching
+          // First add enough multiples of 2π to make it positive
+          angle += 2.0 * 3.14159265359 * ceil(-angle / (2.0 * 3.14159265359));
+          // Then use mod to get it within [0, totalAngle)
+          angle = mod(angle, totalAngle);
           
           // Map to first segment
           float segment = floor(angle / segmentAngle);
