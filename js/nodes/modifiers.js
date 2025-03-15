@@ -1188,7 +1188,7 @@ class RevolveNode extends TreeNode {
 
 // Detect environment and export accordingly
 (function() {
-  const nodes = { TransformNode, RoughnessNode, ThicknessNode, ScaleNode,
+  const nodes = { TransformNode, DomainDeformNode, DistanceDeformNode, ThicknessNode, ScaleNode,
     TwistNode, MirrorNode, LinearPatternNode, PolarPatternNode, ExtrudeNode,
     RevolveNode };
   
