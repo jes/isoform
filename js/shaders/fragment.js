@@ -12,6 +12,7 @@ uniform bool uShowSecondary;
 uniform float stepFactor;
 uniform bool uShowField;
 uniform bool uShowSteps;
+uniform float uOpacity;
 
 #define MAX_STEPS 500
 
@@ -441,7 +442,6 @@ void main() {
         vec3 rd = normalize(forward);
         ro = ro + (p.x * right + p.y * up) / zoom;
         
-        float opacity = 0.5;
         vec3 accumulatedColor = vec3(0.0);
         float transmittance = 1.0;
         
@@ -457,11 +457,11 @@ void main() {
                 if (!orthoResult.hit || transmittance < 0.01) break;
                 
                 // Add this layer's contribution
-                float layerAlpha = opacity * transmittance;
+                float layerAlpha = uOpacity * transmittance;
                 accumulatedColor += orthoResult.color * layerAlpha;
                 
                 // Reduce transmittance for next layers
-                transmittance *= (1.0 - opacity);
+                transmittance *= (1.0 - uOpacity);
                 
                 // Advance ray to next intersection
                 mapsign = -mapsign;

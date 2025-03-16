@@ -742,6 +742,18 @@ const ui = {
                 }
             });
         }
+
+        // Add the opacity slider functionality
+        const opacitySlider = document.getElementById('opacity-slider');
+        if (opacitySlider) {
+            // Set initial value
+            opacitySlider.value = camera.opacity;
+            
+            // Add event listener
+            opacitySlider.addEventListener('input', (e) => {
+                camera.opacity = parseFloat(e.target.value);
+            });
+        }
     },
 
     initMainToolbar() {
