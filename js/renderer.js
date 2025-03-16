@@ -198,7 +198,7 @@ const renderer = {
     
     // Update to allow values above 1.0
     setResolutionScale(scale) {
-        if (scale > 0.1) {
+        if (scale > 0.1 && scale <= 8.0) {
             this.resolutionScale = scale;
             this.resizeCanvas();
         }
