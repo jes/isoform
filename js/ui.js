@@ -215,6 +215,8 @@ const ui = {
         contextMenu.id = 'tree-context-menu';
         contextMenu.className = 'context-menu';
         contextMenu.style.position = 'absolute';
+        
+        // Initially position at click location
         contextMenu.style.left = `${event.clientX}px`;
         contextMenu.style.top = `${event.clientY}px`;
 
@@ -279,6 +281,9 @@ const ui = {
         // Add the menu to the document
         document.body.appendChild(contextMenu);
         
+        // Adjust position if menu would go off screen
+        this.adjustContextMenuPosition(contextMenu, event);
+        
         // Close the menu when clicking elsewhere
         const closeContextMenu = (e) => {
             if (!contextMenu.contains(e.target)) {
@@ -291,6 +296,102 @@ const ui = {
         setTimeout(() => {
             document.addEventListener('mousedown', closeContextMenu);
         }, 0);
+    },
+
+    // Add this new method to handle context menu positioning
+    adjustContextMenuPosition(menu, event) {
+        // Get viewport dimensions
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Get menu dimensions
+        const menuRect = menu.getBoundingClientRect();
+        const menuWidth = menuRect.width;
+        const menuHeight = menuRect.height;
+        
+        // Check if menu would go off the right edge
+        if (event.clientX + menuWidth > viewportWidth) {
+            menu.style.left = `${viewportWidth - menuWidth - 10}px`;
+        }
+        
+        // Check if menu would go off the bottom edge
+        if (event.clientY + menuHeight > viewportHeight) {
+            // First try: position above the click point if there's enough space
+            if (event.clientY - menuHeight > 0) {
+                menu.style.top = `${event.clientY - menuHeight}px`;
+            } else {
+                // Not enough space above either - we need to handle overflow
+                
+                // Check if menu is too tall for the viewport
+                if (menuHeight > viewportHeight - 40) { // Leave some margin
+                    // Determine if we should use scrolling or columns
+                    if (menuHeight > viewportHeight * 1.5) {
+                        // Split into columns if very tall
+                        this.convertMenuToColumns(menu);
+                    } else {
+                        // Make scrollable if moderately tall
+                        this.makeMenuScrollable(menu, viewportHeight);
+                    }
+                } else {
+                    // Just position at top with a small margin
+                    menu.style.top = '10px';
+                }
+            }
+        }
+    },
+
+    // Add method to make the menu scrollable
+    makeMenuScrollable(menu, viewportHeight) {
+        // Set a max height with some margin
+        const maxHeight = viewportHeight - 40;
+        menu.style.maxHeight = `${maxHeight}px`;
+        menu.style.overflowY = 'auto';
+        menu.style.top = '20px'; // Position near the top
+    },
+
+    // Add method to convert menu to columns
+    convertMenuToColumns(menu) {
+        // Get all menu items
+        const items = Array.from(menu.children);
+        const itemCount = items.length;
+        
+        // Determine number of columns (2 is usually good)
+        const columns = 2;
+        const itemsPerColumn = Math.ceil(itemCount / columns);
+        
+        // Create column containers
+        const columnContainer = document.createElement('div');
+        columnContainer.style.display = 'flex';
+        columnContainer.style.flexDirection = 'row';
+        columnContainer.style.gap = '10px';
+        
+        // Create columns and distribute items
+        for (let i = 0; i < columns; i++) {
+            const column = document.createElement('div');
+            column.className = 'context-menu-column';
+            
+            // Add items to this column
+            const startIdx = i * itemsPerColumn;
+            const endIdx = Math.min(startIdx + itemsPerColumn, itemCount);
+            
+            for (let j = startIdx; j < endIdx; j++) {
+                if (items[j]) {
+                    column.appendChild(items[j]);
+                }
+            }
+            
+            columnContainer.appendChild(column);
+        }
+        
+        // Clear the menu and add the column container
+        menu.innerHTML = '';
+        menu.appendChild(columnContainer);
+        
+        // Position near the top
+        menu.style.top = '20px';
+        
+        // Ensure the menu doesn't get too wide
+        menu.style.maxWidth = '80%';
     },
 
     buildCombinatorOptions(contextMenu, node) {
