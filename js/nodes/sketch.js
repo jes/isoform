@@ -36,8 +36,6 @@ class SketchNode extends TreeNode {
       float s = 1.0;
       vec2 va;
       vec2 ds;
-      bool c1;
-      bool c2;
     `;
     
     // Generate code for each line segment
@@ -51,9 +49,9 @@ class SketchNode extends TreeNode {
       ds = sdSqLine(p2d, va, vb);
       
       // Branchless in/out test
-      c1 = p2d.y >= va.y && p2d.y < vb.y && ds.y > 0.0;
-      c2 = p2d.y < va.y && p2d.y >= vb.y && ds.y <= 0.0;
-      s *= mix(1.0, -1.0, float(c1 || c2));
+      s *= 1.0 - 2.0 * float((p2d.y >= va.y && p2d.y < vb.y && ds.y > 0.0) ||
+                        (p2d.y < va.y && p2d.y >= vb.y && ds.y <= 0.0));
+
       
       d = min(d, ds.x);
       `;
@@ -67,9 +65,9 @@ class SketchNode extends TreeNode {
       ds = sdSqLine(p2d, va, vb);
       
       // Branchless in/out test
-      c1 = p2d.y >= va.y && p2d.y < vb.y && ds.y > 0.0;
-      c2 = p2d.y < va.y && p2d.y >= vb.y && ds.y <= 0.0;
-      s *= mix(1.0, -1.0, float(c1 || c2));
+      s *= 1.0 - 2.0 * float((p2d.y >= va.y && p2d.y < vb.y && ds.y > 0.0) ||
+                        (p2d.y < va.y && p2d.y >= vb.y && ds.y <= 0.0));
+
       
       d = min(d, ds.x);
       
