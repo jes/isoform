@@ -253,6 +253,15 @@ input[type="checkbox"] {
 .context-menu-item {
     padding: 5px 10px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.context-menu-icon {
+    display: inline-block;
+    width: 20px;
+    margin-right: 8px;
+    text-align: center;
 }
 
 .context-menu-item:hover {

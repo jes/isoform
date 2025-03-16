@@ -250,7 +250,7 @@ const ui = {
                     this.replaceNode(node, [...node.children]);
                     contextMenu.remove();
                     this.renderTree();
-                });
+                }, '🗑️');
             }
         }
         
@@ -261,13 +261,13 @@ const ui = {
                 childrenToDelete.forEach(child => child.delete());
                 contextMenu.remove();
                 this.renderTree();
-            });
+            }, '🗑️');
         } else if (node.parent) { // Only allow deleting non-root nodes
             this.addMenuItem(contextMenu, 'Delete this', () => {
                 node.delete();
                 contextMenu.remove();
                 this.renderTree();
-            });
+            }, '🗑️');
         }
 
         if (node.parent && node.children.length > 0) {
@@ -275,7 +275,7 @@ const ui = {
                 node.delete();
                 contextMenu.remove();
                 this.renderTree();
-            });
+            }, '🗑️');
         }
         
         // Add the menu to the document
@@ -397,52 +397,53 @@ const ui = {
     buildCombinatorOptions(contextMenu, node) {
         // Define combinators in a simple array of objects
         const combinators = [
-            { name: 'Union', constructor: UnionNode },
-            { name: 'Intersection', constructor: IntersectionNode },
-            { name: 'Subtraction', constructor: SubtractionNode }
+            { name: 'Union', constructor: UnionNode, icon: UnionNode.prototype.getIcon() },
+            { name: 'Intersection', constructor: IntersectionNode, icon: IntersectionNode.prototype.getIcon() },
+            { name: 'Subtraction', constructor: SubtractionNode, icon: SubtractionNode.prototype.getIcon() }
         ];
         
         combinators.forEach(combinator => {
             this.addMenuItem(contextMenu, combinator.name, () => {
                 this.replaceNode(node, new combinator.constructor(), true);
                 contextMenu.remove();
-            });
+            }, combinator.icon);
         });
     },
 
     buildModifierOptions(contextMenu, node) {
         // Define modifiers in a simple array of objects
         const modifiers = [
-            { name: 'Transform', constructor: TransformNode },
-            { name: 'Scale', constructor: ScaleNode },
-            { name: 'Twist', constructor: TwistNode },
-            { name: 'Domain Deform', constructor: DomainDeformNode },
-            { name: 'Distance Deform', constructor: DistanceDeformNode },
-            { name: 'Thickness', constructor: ThicknessNode },
-            { name: 'Mirror', constructor: MirrorNode },
-            { name: 'Linear Pattern', constructor: LinearPatternNode },
-            { name: 'Polar Pattern', constructor: PolarPatternNode },
-            { name: 'Extrude', constructor: ExtrudeNode },
-            { name: 'Revolve', constructor: RevolveNode }
+            { name: 'Transform', constructor: TransformNode, icon: TransformNode.prototype.getIcon() },
+            { name: 'Scale', constructor: ScaleNode, icon: ScaleNode.prototype.getIcon() },
+            { name: 'Twist', constructor: TwistNode, icon: TwistNode.prototype.getIcon() },
+            { name: 'Domain Deform', constructor: DomainDeformNode, icon: DomainDeformNode.prototype.getIcon() },
+            { name: 'Distance Deform', constructor: DistanceDeformNode, icon: DistanceDeformNode.prototype.getIcon() },
+            { name: 'Thickness', constructor: ThicknessNode, icon: ThicknessNode.prototype.getIcon() },
+            { name: 'Mirror', constructor: MirrorNode, icon: MirrorNode.prototype.getIcon() },
+            { name: 'Linear Pattern', constructor: LinearPatternNode, icon: LinearPatternNode.prototype.getIcon() },
+            { name: 'Polar Pattern', constructor: PolarPatternNode, icon: PolarPatternNode.prototype.getIcon() },
+            { name: 'Extrude', constructor: ExtrudeNode, icon: ExtrudeNode.prototype.getIcon() },
+            { name: 'Revolve', constructor: RevolveNode, icon: RevolveNode.prototype.getIcon() }
         ];
         
         modifiers.forEach(modifier => {
             this.addMenuItem(contextMenu, modifier.name, () => {
                 this.replaceNode(node, new modifier.constructor(), true);
                 contextMenu.remove();
-            });
+            }, modifier.icon);
         });
     },
 
     buildPrimitiveOptions(contextMenu, node) {
         // Add shape creation options
         const shapes = [
-            { name: 'Box', constructor: BoxNode },
-            { name: 'Sphere', constructor: SphereNode },
-            { name: 'Cylinder', constructor: CylinderNode },
-            { name: 'Torus', constructor: TorusNode },
-            { name: 'Gyroid', constructor: GyroidNode },
-            { name: 'Sketch', constructor: SketchNode }
+            { name: 'Box', constructor: BoxNode, icon: BoxNode.prototype.getIcon() },
+            { name: 'Sphere', constructor: SphereNode, icon: SphereNode.prototype.getIcon() },
+            { name: 'Cylinder', constructor: CylinderNode, icon: CylinderNode.prototype.getIcon() },
+            { name: 'Torus', constructor: TorusNode, icon: TorusNode.prototype.getIcon() },
+            { name: 'Gyroid', constructor: GyroidNode, icon: GyroidNode.prototype.getIcon() },
+            { name: 'Cubic Lattice', constructor: CubicLatticeNode, icon: CubicLatticeNode.prototype.getIcon() },
+            { name: 'Sketch', constructor: SketchNode, icon: SketchNode.prototype.getIcon() }
         ];
         
         shapes.forEach(shape => {
@@ -455,7 +456,7 @@ const ui = {
                 this.selectedNode = newNode;
                 this.treeViewComponent.setSelectedNode(newNode);
                 this.propertyEditorComponent.render(newNode);
-            });
+            }, shape.icon);
         });
     },
 
@@ -471,7 +472,7 @@ const ui = {
             }
             contextMenu.remove();
             this.renderTree();
-        });
+        }, isDisabled ? '👁️' : '👁️‍🗨️');
         
         // Only add move options for non-root nodes
         if (node.parent) {
@@ -484,7 +485,7 @@ const ui = {
                 this.addMenuItem(contextMenu, 'Move Up', () => {
                     this.moveNodeInDirection(node, -1);
                     contextMenu.remove();
-                });
+                }, '⬆️');
             }
             
             // Add "Move Down" if not the last child
@@ -492,15 +493,28 @@ const ui = {
                 this.addMenuItem(contextMenu, 'Move Down', () => {
                     this.moveNodeInDirection(node, 1);
                     contextMenu.remove();
-                });
+                }, '⬇️');
             }
         }
     },
 
-    addMenuItem(menu, text, onClick) {
+    addMenuItem(menu, text, onClick, icon = null) {
         const menuItem = document.createElement('div');
         menuItem.className = 'context-menu-item';
-        menuItem.textContent = text;
+        
+        if (icon) {
+            // Create icon span
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'context-menu-icon';
+            iconSpan.innerHTML = icon;
+            menuItem.appendChild(iconSpan);
+        }
+        
+        // Create text span
+        const textSpan = document.createElement('span');
+        textSpan.textContent = text;
+        menuItem.appendChild(textSpan);
+        
         menuItem.addEventListener('click', onClick);
         menu.appendChild(menuItem);
         return menuItem;
