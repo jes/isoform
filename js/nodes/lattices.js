@@ -25,38 +25,67 @@ class GyroidNode extends TreeNode {
 
 class CubicLatticeNode extends TreeNode {
   constructor() {
-    super("Cubic Lattice");
+    super("CubicLattice");
     this.scale = 1.0;
     this.thickness = 0.5;
+    this.blendRadius = 0.0;
+    this.chamfer = false;
   }
 
   properties() {
-    return {"scale": "float", "thickness": "float"};
+    // XXX: don't expose chamfer because it seems broken?
+    return {"scale": "float", "thickness": "float", "blendRadius": "float"};
   }
 
   generateShaderImplementation() {
+    let minfn = "min(d,d1)";
+    if (this.blendRadius > 0.0) {
+        if (this.chamfer) {
+            minfn = `chmin(d,d1,${this.blendRadius.toFixed(16)})`;
+        } else {
+            minfn = `smin(d,d1,${this.blendRadius.toFixed(16)})`;
+        }
+    }
+    let maxfn = "max(d,d1)";
+    if (this.blendRadius > 0.0) {
+        if (this.chamfer) {
+            maxfn = `chmax(d,d1,${this.blendRadius.toFixed(16)})`;
+        } else {
+            maxfn = `smax(d,d1,${this.blendRadius.toFixed(16)})`;
+        }
+    }
     return `
-      float sdCubicLattice(vec3 p, float scale, float thickness) {
+      float ${this.getFunctionName()}(vec3 p) {
+        float scale = ${this.scale.toFixed(16)};
+        float thickness = ${this.thickness.toFixed(16)};
         // Normalize to cell coordinates
-        vec3 q = mod(abs(p), scale*2.0) - scale;
-        
-        // Calculate distance to each axis
-        vec3 d = abs(q);
-        
-        // We want material where at least two coordinates are close to the edge
-        // Sort the distances
-        if (d.x > d.y) { float tmp = d.x; d.x = d.y; d.y = tmp; }
-        if (d.y > d.z) { float tmp = d.y; d.y = d.z; d.z = tmp; }
-        if (d.x > d.y) { float tmp = d.x; d.x = d.y; d.y = tmp; }
-        
-        // Distance to the strut (we want material where the second smallest distance is small)
-        return d.y - thickness;
+        vec3 q = abs(mod(abs(p), scale*2.0) - scale);
+
+        float d;
+        float d1;
+
+        d = q.y;
+        d1 = q.z;
+        float dx = ${minfn};
+        d = q.x;
+        d1 = q.z;
+        float dy = ${minfn};
+        d = q.y;
+        d1 = q.x;
+        float dz = ${minfn};
+
+        d = dx;
+        d1 = dy;
+        d = ${maxfn};
+        d1 = dz;
+        d = ${maxfn};
+        return d - thickness;
       }
     `;
   }
 
   generateShaderCode() {
-    return `sdCubicLattice(p, ${this.scale.toFixed(16)}, ${this.thickness.toFixed(16)})`;
+    return `${this.getFunctionName()}(p)`;
   }
 
   getIcon() {
