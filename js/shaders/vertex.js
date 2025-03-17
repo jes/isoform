@@ -1,6 +1,7 @@
 // Export vertex shader as a string
-const vertexShaderSource = `
-attribute vec4 aVertexPosition;
+const vertexShaderSource = `#version 300 es
+
+in vec4 aVertexPosition;
 
 void main() {
     gl_Position = aVertexPosition;

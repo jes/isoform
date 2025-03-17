@@ -1,5 +1,6 @@
 // Export fragment shader as a string
-const fragmentShaderSource = `
+const fragmentShaderSource = `#version 300 es
+
 precision highp float;
 
 uniform vec2 uResolution;
@@ -397,6 +398,8 @@ OrthoProjectionResult orthoProjection(vec3 ro, vec3 rd, vec3 right, vec3 up, flo
     return result;
 }
 
+out vec4 fragColor;
+
 void main() {
     // Normalized coordinates (0.0 to 1.0)
     vec2 uv = gl_FragCoord.xy / uResolution.xy;
@@ -517,7 +520,7 @@ void main() {
     // Blend the axis indicator with the scene using alpha blending
     color = mix(color, axisColor.rgb, axisColor.a);
     
-    gl_FragColor = vec4(color, 1.0);
+    fragColor = vec4(color, 1.0);
 }
 `;
 
