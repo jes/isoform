@@ -75,5 +75,41 @@ T.test('complex expression', () => {
     assertEquals(expr.evaluate({ x: 3, y: 5 }), 12); // (3 + 1) * (5 - 2) = 4 * 3 = 12
 });
 
+T.test('min and max operations', () => {
+    const a = P.const(5);
+    const b = P.const(3);
+    
+    const minimum = P.min(a, b);
+    assertEquals(minimum.evaluate({}), 3);
+    
+    const maximum = P.max(a, b);
+    assertEquals(maximum.evaluate({}), 5);
+});
+
+T.test('power operations', () => {
+    const base = P.const(2);
+    const exp = P.const(3);
+    
+    const power = P.pow(base, exp);
+    assertEquals(power.evaluate({}), 8); // 2^3 = 8
+    
+    const root = P.sqrt(P.const(16));
+    assertEquals(root.evaluate({}), 4); // √16 = 4
+});
+
+T.test('complex expression with all operations', () => {
+    // sqrt(max(x^2, y^2)) + min(x, y)
+    const expr = P.add(
+        P.sqrt(
+            P.max(
+                P.pow(P.var('x'), P.const(2)),
+                P.pow(P.var('y'), P.const(2))
+            )
+        ),
+        P.min(P.var('x'), P.var('y'))
+    );
+    assertEquals(expr.evaluate({ x: 3, y: 4 }), 7); // sqrt(max(9, 16)) + min(3, 4) = 4 + 3 = 7
+});
+
 // Export for browser
 window.PeptideTests = T;

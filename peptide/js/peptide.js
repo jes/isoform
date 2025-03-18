@@ -1,53 +1,70 @@
 class Peptide {
-    constructor(op, value = null, left = null, right = null) {
+    constructor(op, value = null, left = null, right = null, opFn = null) {
         this.op = op;      // 'const', 'add', 'sub', 'mul', 'div'
         this.value = value;    // for constants
         this.left = left;      // left operand
         this.right = right;    // right operand
+        this.opFn = opFn;      // operation function
     }
 
     // Static methods for expression construction
     static const(value) {
-        return new Peptide('const', value);
+        return new Peptide('const', value, null, null, 
+            (_, vars) => value);
     }
 
     static var(name) {
-        return new Peptide('var', name);
+        return new Peptide('var', name, null, null, 
+            (self, vars) => {
+                if (!(self.value in vars)) {
+                    throw new Error(`Variable '${self.value}' not found`);
+                }
+                return vars[self.value];
+            });
     }
 
     static add(a, b) {
-        return new Peptide('add', null, a, b);
+        return new Peptide('add', null, a, b, 
+            (self, vars) => self.left.evaluate(vars) + self.right.evaluate(vars));
     }
 
     static sub(a, b) {
-        return new Peptide('sub', null, a, b);
+        return new Peptide('sub', null, a, b, 
+            (self, vars) => self.left.evaluate(vars) - self.right.evaluate(vars));
     }
 
     static mul(a, b) {
-        return new Peptide('mul', null, a, b);
+        return new Peptide('mul', null, a, b, 
+            (self, vars) => self.left.evaluate(vars) * self.right.evaluate(vars));
     }
 
     static div(a, b) {
-        return new Peptide('div', null, a, b);
+        return new Peptide('div', null, a, b, 
+            (self, vars) => self.left.evaluate(vars) / self.right.evaluate(vars));
+    }
+
+    static min(a, b) {
+        return new Peptide('min', null, a, b, 
+            (self, vars) => Math.min(self.left.evaluate(vars), self.right.evaluate(vars)));
+    }
+
+    static max(a, b) {
+        return new Peptide('max', null, a, b, 
+            (self, vars) => Math.max(self.left.evaluate(vars), self.right.evaluate(vars)));
+    }
+
+    static pow(a, b) {
+        return new Peptide('pow', null, a, b, 
+            (self, vars) => Math.pow(self.left.evaluate(vars), self.right.evaluate(vars)));
+    }
+
+    static sqrt(a) {
+        return new Peptide('sqrt', null, a, null, 
+            (self, vars) => Math.sqrt(self.left.evaluate(vars)));
     }
 
     evaluate(vars) {
-        if (this.op === 'const') {
-            return this.value;
-        } else if (this.op === 'var') {
-            if (!(this.value in vars)) {
-                throw new Error(`Variable '${this.value}' not found`);
-            }
-            return vars[this.value];
-        } else if (this.op === 'add') {
-            return this.left.evaluate(vars) + this.right.evaluate(vars);
-        } else if (this.op === 'sub') {
-            return this.left.evaluate(vars) - this.right.evaluate(vars);
-        } else if (this.op === 'mul') {
-            return this.left.evaluate(vars) * this.right.evaluate(vars);
-        } else if (this.op === 'div') {
-            return this.left.evaluate(vars) / this.right.evaluate(vars);
-        }
+        return this.opFn(this, vars);
     }
 }
 
