@@ -363,6 +363,13 @@ addTest('vector component type checking', (evaluate) => {
     assertThrows(() => evaluate(P.vecZ(scalar)));
 });
 
+addTest('expression DAG', (evaluate) => {
+    const x = P.var('x');
+    const y = P.var('y');
+    const expr = P.add(P.mul(x, y), P.mul(x, y));
+    assertEquals(evaluate(expr, { x: 2, y: 3 }), 12);
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,

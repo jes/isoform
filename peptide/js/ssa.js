@@ -31,6 +31,8 @@ class PeptideSSA {
         this.operations = [];
         this.varCounter = 0;
         this.varMap = new Map();
+
+        expr.simplify();
         
         const resultVar = this.processNode(expr);
 
