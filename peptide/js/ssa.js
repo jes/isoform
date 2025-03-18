@@ -104,6 +104,26 @@ class PeptideSSA {
         
         return code;
     }
+
+    compileToGLSL(signature = 'float map(vec3 p)') {
+        let code = '';
+
+        for (const op of this.operations) {
+            code += `  ${op.node.type} ${op.result};\n`;
+        }
+
+        code += "\n";
+
+        for (const op of this.operations) {
+            if (op.node.glslOpFn) {
+                code += `  ${op.node.glslOpFn(op.node, op)}\n`;
+            }
+        }
+
+        code += `  return ${this.operations[this.operations.length - 1].result};\n`;
+
+        return `${signature} {\n${code}\n}`;
+    }
 }
 
 // Detect environment and export accordingly
