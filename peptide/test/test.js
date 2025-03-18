@@ -48,76 +48,95 @@ function assertThrows(fn) {
     }
 }
 
-// Peptide tests
-const T = new TestSuite();
+// Create a wrapper that runs tests with both evaluation methods
+function createEvaluator(useCompiled) {
+    if (useCompiled) {
+        return (expr, vars = {}) => {
+            const compiled = expr.compileToJS();
+            return compiled(vars);
+        };
+    } else {
+        return (expr, vars = {}) => expr.evaluate(vars);
+    }
+}
+// Create two test suites
+const DirectT = new TestSuite();
+const CompiledT = new TestSuite();
 
-T.test('constant creation', () => {
+// Helper to add tests to both suites
+function addTest(name, testFn) {
+    DirectT.test(`${name} (direct)`, () => testFn(createEvaluator(false)));
+    CompiledT.test(`${name} (compiled)`, () => testFn(createEvaluator(true)));
+}
+
+// Peptide tests
+addTest('constant creation', (evaluate) => {
     const p = P.const(5);
     assertEquals(p.op, 'const');
     assertEquals(p.value, 5);
-    assertEquals(p.evaluate({}), 5);
+    assertEquals(evaluate(p), 5);
 });
 
-T.test('basic arithmetic', () => {
+addTest('basic arithmetic', (evaluate) => {
     const a = P.const(5);
     const b = P.const(3);
     
     const sum = P.add(a, b);
-    assertEquals(sum.evaluate({}), 8);
+    assertEquals(evaluate(sum), 8);
     
     const diff = P.sub(a, b);
-    assertEquals(diff.evaluate({}), 2);
+    assertEquals(evaluate(diff), 2);
     
     const prod = P.mul(a, b);
-    assertEquals(prod.evaluate({}), 15);
+    assertEquals(evaluate(prod), 15);
     
     const quot = P.div(a, b);
-    assertEquals(quot.evaluate({}), 5/3);
+    assertEquals(evaluate(quot), 5/3);
 });
 
-T.test('variable lookup', () => {
+addTest('variable lookup', (evaluate) => {
     const x = P.var('x');
-    assertEquals(x.evaluate({ x: 5 }), 5);
+    assertEquals(evaluate(x, { x: 5 }), 5);
 });
 
-T.test('variable evaluation', () => {
+addTest('variable evaluation', (evaluate) => {
     const x = P.var('x');
     const expr = P.add(x, P.const(1));
-    assertEquals(expr.evaluate({ x: 5 }), 6);
+    assertEquals(evaluate(expr, { x: 5 }), 6);
 });
 
-T.test('complex expression', () => {
+addTest('complex expression', (evaluate) => {
     // (x + 1) * (y - 2)
     const expr = P.mul(
         P.add(P.var('x'), P.const(1)),
         P.sub(P.var('y'), P.const(2))
     );
-    assertEquals(expr.evaluate({ x: 3, y: 5 }), 12); // (3 + 1) * (5 - 2) = 4 * 3 = 12
+    assertEquals(evaluate(expr, { x: 3, y: 5 }), 12); // (3 + 1) * (5 - 2) = 4 * 3 = 12
 });
 
-T.test('min and max operations', () => {
+addTest('min and max operations', (evaluate) => {
     const a = P.const(5);
     const b = P.const(3);
     
     const minimum = P.min(a, b);
-    assertEquals(minimum.evaluate({}), 3);
+    assertEquals(evaluate(minimum), 3);
     
     const maximum = P.max(a, b);
-    assertEquals(maximum.evaluate({}), 5);
+    assertEquals(evaluate(maximum), 5);
 });
 
-T.test('power operations', () => {
+addTest('power operations', (evaluate) => {
     const base = P.const(2);
     const exp = P.const(3);
     
     const power = P.pow(base, exp);
-    assertEquals(power.evaluate({}), 8); // 2^3 = 8
+    assertEquals(evaluate(power), 8); // 2^3 = 8
     
     const root = P.sqrt(P.const(16));
-    assertEquals(root.evaluate({}), 4); // √16 = 4
+    assertEquals(evaluate(root), 4); // √16 = 4
 });
 
-T.test('complex expression with all operations', () => {
+addTest('complex expression with all operations', (evaluate) => {
     // sqrt(max(x^2, y^2)) + min(x, y)
     const expr = P.add(
         P.sqrt(
@@ -128,78 +147,78 @@ T.test('complex expression with all operations', () => {
         ),
         P.min(P.var('x'), P.var('y'))
     );
-    assertEquals(expr.evaluate({ x: 3, y: 4 }), 7); // sqrt(max(9, 16)) + min(3, 4) = 4 + 3 = 7
+    assertEquals(evaluate(expr, { x: 3, y: 4 }), 7); // sqrt(max(9, 16)) + min(3, 4) = 4 + 3 = 7
 });
 
-T.test('vector constant creation', () => {
+addTest('vector constant creation', (evaluate) => {
     const v = P.vconst(new Vec3(1, 2, 3));
     assertEquals(v.op, 'vconst');
-    assertEquals(v.evaluate({}).x, 1);
-    assertEquals(v.evaluate({}).y, 2);
-    assertEquals(v.evaluate({}).z, 3);
+    assertEquals(evaluate(v).x, 1);
+    assertEquals(evaluate(v).y, 2);
+    assertEquals(evaluate(v).z, 3);
 });
 
-T.test('vector variable lookup', () => {
+addTest('vector variable lookup', (evaluate) => {
     const v = P.vvar('v');
-    const result = v.evaluate({ v: new Vec3(1, 2, 3) });
+    const result = evaluate(v, { v: new Vec3(1, 2, 3) });
     assertEquals(result.x, 1);
     assertEquals(result.y, 2);
     assertEquals(result.z, 3);
 });
 
-T.test('vector arithmetic', () => {
+addTest('vector arithmetic', (evaluate) => {
     const a = P.vconst(new Vec3(1, 2, 3));
     const b = P.vconst(new Vec3(4, 5, 6));
     
     const sum = P.vadd(a, b);
-    const sumResult = sum.evaluate({});
+    const sumResult = evaluate(sum);
     assertEquals(sumResult.x, 5);
     assertEquals(sumResult.y, 7);
     assertEquals(sumResult.z, 9);
     
     const diff = P.vsub(a, b);
-    const diffResult = diff.evaluate({});
+    const diffResult = evaluate(diff);
     assertEquals(diffResult.x, -3);
     assertEquals(diffResult.y, -3);
     assertEquals(diffResult.z, -3);
     
     const c = P.const(2);
     const prod = P.vmul(a, c);
-    const prodResult = prod.evaluate({});
+    const prodResult = evaluate(prod);
     assertEquals(prodResult.x, 2);
     assertEquals(prodResult.y, 4);
     assertEquals(prodResult.z, 6);
 });
 
-T.test('vector operations', () => {
+addTest('vector operations', (evaluate) => {
     const a = P.vconst(new Vec3(1, 2, 3));
     const b = P.vconst(new Vec3(4, 5, 6));
     
     const length = P.vlength(a);
-    assertEquals(length.evaluate({}), Math.sqrt(14));  // sqrt(1^2 + 2^2 + 3^2)
+    assertEquals(evaluate(length), Math.sqrt(14));  // sqrt(1^2 + 2^2 + 3^2)
     
     const dot = P.vdot(a, b);
-    assertEquals(dot.evaluate({}), 32);  // 1*4 + 2*5 + 3*6
+    assertEquals(evaluate(dot), 32);  // 1*4 + 2*5 + 3*6
     
     const cross = P.vcross(a, b);
-    const crossResult = cross.evaluate({});
+    const crossResult = evaluate(cross);
     assertEquals(crossResult.x, -3);  // 2*6 - 3*5
     assertEquals(crossResult.y, 6);   // 3*4 - 1*6
     assertEquals(crossResult.z, -3);  // 1*5 - 2*4
 });
 
-T.test('vec3 construction', () => {
+addTest('vec3 construction', (evaluate) => {
     const x = P.const(1);
     const y = P.const(2);
     const z = P.const(3);
     const vec = P.vec3(x, y, z);
-    const result = vec.evaluate({});
+    const result = evaluate(vec);
     assertEquals(result.x, 1);
     assertEquals(result.y, 2);
     assertEquals(result.z, 3);
 });
 
-T.test('complex vector expression', () => {
+addTest('complex vector expression', (evaluate) => {
     // (v1 + v2) · (v3 × v4)
     const v1 = P.vvar('v1');
     const v2 = P.vvar('v2');
@@ -211,7 +230,7 @@ T.test('complex vector expression', () => {
         P.vcross(v3, v4)
     );
     
-    const result = expr.evaluate({
+    const result = evaluate(expr, {
         v1: new Vec3(1, 0, 0),
         v2: new Vec3(0, 1, 0),
         v3: new Vec3(0, 0, 1),
@@ -221,52 +240,52 @@ T.test('complex vector expression', () => {
     assertEquals(result, 1); // ((1,1,0) · (0,1,0)) = 1
 });
 
-T.test('type mismatch errors', () => {
+addTest('type mismatch errors', (evaluate) => {
     const vec = P.vconst(new Vec3(1, 2, 3));
     const scalar = P.const(5);
     
-    assertThrows(() => P.vadd(vec, scalar).evaluate({}));
-    assertThrows(() => P.add(vec, scalar).evaluate({}));
+    assertThrows(() => evaluate(P.vadd(vec, scalar)));
+    assertThrows(() => evaluate(P.add(vec, scalar)));
 });
 
-T.test('insufficient arguments', () => {
-    assertThrows(() => P.vec3(P.const(1), P.const(2)).evaluate({}));
-    assertThrows(() => P.add(P.const(1)).evaluate({}));
+addTest('insufficient arguments', (evaluate) => {
+    assertThrows(() => evaluate(P.vec3(P.const(1), P.const(2))));
+    assertThrows(() => evaluate(P.add(P.const(1))));
 });
 
-T.test('invalid vector operations', () => {
-    assertThrows(() => P.vcross(P.const(1), P.vconst(new Vec3(1, 2, 3))).evaluate({}));
-    assertThrows(() => P.vdot(P.const(1), P.vconst(new Vec3(1, 2, 3))).evaluate({}));
+addTest('invalid vector operations', (evaluate) => {
+    assertThrows(() => evaluate(P.vcross(P.const(1), P.vconst(new Vec3(1, 2, 3)))));
+    assertThrows(() => evaluate(P.vdot(P.const(1), P.vconst(new Vec3(1, 2, 3)))));
 });
 
-T.test('invalid scalar operations', () => {
-    assertThrows(() => P.add(P.const(1), P.vconst(new Vec3(1, 2, 3))).evaluate({}));
-    assertThrows(() => P.sqrt(P.vconst(new Vec3(1, 2, 3))).evaluate({}));
+addTest('invalid scalar operations', (evaluate) => {
+    assertThrows(() => evaluate(P.add(P.const(1), P.vconst(new Vec3(1, 2, 3)))));
+    assertThrows(() => evaluate(P.sqrt(P.vconst(new Vec3(1, 2, 3)))));
 });
 
-T.test('const type checking', () => {
-    assertThrows(() => P.const('5'));
-    assertThrows(() => P.const({}));
-    assertThrows(() => P.const([]));
-    assertThrows(() => P.const(null));
-    assertThrows(() => P.const(undefined));
+addTest('const type checking', (evaluate) => {
+    assertThrows(() => evaluate(P.const('5')));
+    assertThrows(() => evaluate(P.const({})));
+    assertThrows(() => evaluate(P.const([])));
+    assertThrows(() => evaluate(P.const(null)));
+    assertThrows(() => evaluate(P.const(undefined)));
     // These should work
-    P.const(5);
-    P.const(5.5);
-    P.const(-5);
+    evaluate(P.const(5));
+    evaluate(P.const(5.5));
+    evaluate(P.const(-5));
 });
 
-T.test('vconst type checking', () => {
-    assertThrows(() => P.vconst({x: 1, y: 2, z: 3}));
-    assertThrows(() => P.vconst([1, 2, 3]));
-    assertThrows(() => P.vconst(null));
-    assertThrows(() => P.vconst(undefined));
-    assertThrows(() => P.vconst(5));
+addTest('vconst type checking', (evaluate) => {
+    assertThrows(() => evaluate(P.vconst({x: 1, y: 2, z: 3})));
+    assertThrows(() => evaluate(P.vconst([1, 2, 3])));
+    assertThrows(() => evaluate(P.vconst(null)));
+    assertThrows(() => evaluate(P.vconst(undefined)));
+    assertThrows(() => evaluate(P.vconst(5)));
     // This should work
-    P.vconst(new Vec3(1, 2, 3));
+    evaluate(P.vconst(new Vec3(1, 2, 3)));
 });
 
-T.test('vconst deep cloning', () => {
+addTest('vconst deep cloning', (evaluate) => {
     const original = new Vec3(1, 2, 3);
     const p = P.vconst(original);
     
@@ -276,37 +295,37 @@ T.test('vconst deep cloning', () => {
     original.z = 30;
     
     // The evaluated result should have the original values
-    const result = p.evaluate({});
+    const result = evaluate(p);
     assertEquals(result.x, 1);
     assertEquals(result.y, 2);
     assertEquals(result.z, 3);
     
     // The result should be a new instance
-    const result2 = p.evaluate({});
+    const result2 = evaluate(p);
     assertEquals(result2.x, 1);
     assertEquals(result2.y, 2);
     assertEquals(result2.z, 3);
     
     // Verify we get a new instance each time
     result.x = 100;
-    const result3 = p.evaluate({});
+    const result3 = evaluate(p);
     assertEquals(result3.x, 1);
 });
 
-T.test('vector component extraction', () => {
+addTest('vector component extraction', (evaluate) => {
     const v = P.vconst(new Vec3(1, 2, 3));
     
     const x = P.vecX(v);
-    assertEquals(x.evaluate({}), 1);
+    assertEquals(evaluate(x), 1);
     
     const y = P.vecY(v);
-    assertEquals(y.evaluate({}), 2);
+    assertEquals(evaluate(y), 2);
     
     const z = P.vecZ(v);
-    assertEquals(z.evaluate({}), 3);
+    assertEquals(evaluate(z), 3);
 });
 
-T.test('vector component extraction with variables', () => {
+addTest('vector component extraction with variables', (evaluate) => {
     const v = P.vvar('v');
     
     const x = P.vecX(v);
@@ -314,18 +333,21 @@ T.test('vector component extraction with variables', () => {
     const z = P.vecZ(v);
     
     const vars = { v: new Vec3(4, 5, 6) };
-    assertEquals(x.evaluate(vars), 4);
-    assertEquals(y.evaluate(vars), 5);
-    assertEquals(z.evaluate(vars), 6);
+    assertEquals(evaluate(x, vars), 4);
+    assertEquals(evaluate(y, vars), 5);
+    assertEquals(evaluate(z, vars), 6);
 });
 
-T.test('vector component type checking', () => {
+addTest('vector component type checking', (evaluate) => {
     const scalar = P.const(5);
     
-    assertThrows(() => P.vecX(scalar).evaluate({}));
-    assertThrows(() => P.vecY(scalar).evaluate({}));
-    assertThrows(() => P.vecZ(scalar).evaluate({}));
+    assertThrows(() => evaluate(P.vecX(scalar)));
+    assertThrows(() => evaluate(P.vecY(scalar)));
+    assertThrows(() => evaluate(P.vecZ(scalar)));
 });
 
 // Export for browser
-window.PeptideTests = T;
+window.PeptideTests = {
+    direct: DirectT,
+    compiled: CompiledT
+};

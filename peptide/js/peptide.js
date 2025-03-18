@@ -197,6 +197,11 @@ class Peptide {
         }
         return result;
     }
+
+    compileToJS() {
+        // XXX: eventually this will actually compile
+        return (vars) => this.evaluate(vars);
+    }
 }
 
 // Create global P variable

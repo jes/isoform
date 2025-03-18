@@ -12,12 +12,25 @@
         }
         .test-pass { color: green; }
         .test-fail { color: red; }
+        .test-suite {
+            margin-bottom: 20px;
+        }
+        .test-suite h2 {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <h1>Peptide Unit Tests</h1>
     <div class="test-results">
-        <div id="test-output"></div>
+        <div class="test-suite">
+            <h2>Direct Evaluation Tests</h2>
+            <div id="direct-test-output"></div>
+        </div>
+        <div class="test-suite">
+            <h2>Compiled Evaluation Tests</h2>
+            <div id="compiled-test-output"></div>
+        </div>
     </div>
 
     <script src="js/vec3.js"></script>
@@ -26,17 +39,24 @@
     <script src="test/test.js"></script>
     <script>
         (async () => {
-            const output = document.getElementById('test-output');
-            output.innerHTML = '<p>Running tests...</p>';
+            const directOutput = document.getElementById('direct-test-output');
+            const compiledOutput = document.getElementById('compiled-test-output');
             
-            const results = await PeptideTests.run();
+            directOutput.innerHTML = '<p>Running direct tests...</p>';
+            compiledOutput.innerHTML = '<p>Running compiled tests...</p>';
             
-            output.innerHTML = results.map(result => `
+            const directResults = await PeptideTests.direct.run();
+            const compiledResults = await PeptideTests.compiled.run();
+            
+            const formatResults = (results) => results.map(result => `
                 <div class="${result.passed ? 'test-pass' : 'test-fail'}">
                     ${result.passed ? '✓' : '✗'} ${result.name}
                     ${result.error ? `<br><small>${result.error}</small>` : ''}
                 </div>
             `).join('');
+            
+            directOutput.innerHTML = formatResults(directResults);
+            compiledOutput.innerHTML = formatResults(compiledResults);
         })();
     </script>
 </body>
