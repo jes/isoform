@@ -108,14 +108,39 @@ float map_secondary(vec3 p) {
 // end scene
 
 // Calculate normal at a point
-vec3 calcNormal(vec3 p) {
-    const float eps = 0.0001;
-    const vec2 h = vec2(eps, 0.0);
-    return mapsign * normalize(vec3(
-        map(p + h.xyy) - map(p - h.xyy),
-        map(p + h.yxy) - map(p - h.yxy),
-        map(p + h.yyx) - map(p - h.yyx)
+vec4 calcNormalAndEdge(vec3 p, float d) {
+    float distanceToCamera = length(p - uCameraPosition);
+    float offset = 0.00001 * distanceToCamera * (1.0 / uCameraZoom);
+
+    vec2 h = vec2(offset, 0.0);
+    
+    // Get SDF values at offset points
+    float dx1 = map(p + h.xyy);
+    float dx2 = map(p - h.xyy);
+    float dy1 = map(p + h.yxy);
+    float dy2 = map(p - h.yxy);
+    float dz1 = map(p + h.yyx);
+    float dz2 = map(p - h.yyx);
+
+    // Calculate normal using central differences
+    vec3 normal = normalize(vec3(
+        dx1 - dx2,
+        dy1 - dy2,
+        dz1 - dz2
     ));
+
+    // Calculate second derivatives properly using central difference
+    float dxx = (dx1 - 2.0 * d + dx2) / (offset * offset);
+    float dyy = (dy1 - 2.0 * d + dy2) / (offset * offset);
+    float dzz = (dz1 - 2.0 * d + dz2) / (offset * offset);
+    
+    // Calculate edge factor based on second derivatives
+    float edge = abs(dxx) + abs(dyy) + abs(dzz);
+    
+    // Scale and smooth the edge factor
+    edge = smoothstep(0.0, 0.1, edge * offset * offset);
+    
+    return vec4(normal, edge);
 }
 vec3 calcNormal_secondary(vec3 p) {
     const float eps = 0.0001;
@@ -127,34 +152,6 @@ vec3 calcNormal_secondary(vec3 p) {
     ));
 }
 
-// Edge detection based on normal discontinuity
-float detectEdge(vec3 p, vec3 normal) {
-    // Calculate screen-space consistent offset based on distance from camera
-    float distanceToCamera = length(p - uCameraPosition);
-    float offset = 0.000005 * distanceToCamera * (1.0 / uCameraZoom);
-    
-    // Sample normals at nearby points in both directions
-    vec3 nx1 = calcNormal(p + vec3(offset, 0.0, 0.0));
-    vec3 nx2 = calcNormal(p - vec3(offset, 0.0, 0.0));
-    vec3 ny1 = calcNormal(p + vec3(0.0, offset, 0.0));
-    vec3 ny2 = calcNormal(p - vec3(0.0, offset, 0.0));
-    vec3 nz1 = calcNormal(p + vec3(0.0, 0.0, offset));
-    vec3 nz2 = calcNormal(p - vec3(0.0, 0.0, offset));
-    
-    // Calculate how different these normals are from each other across each axis
-    float edge = 0.0;
-    edge += (1.0 - dot(nx1, nx2));
-    edge += (1.0 - dot(ny1, ny2));
-    edge += (1.0 - dot(nz1, nz2));
-    
-    // Normalize and apply threshold for edge detection
-    edge /= 3.0;
-    // Increase edge prominence by lowering the threshold and making the transition sharper
-    edge = smoothstep(0.05, 0.15, edge);
-    
-    return edge;
-}
-
 // Ray marching
 struct MarchResult {
     float distance;    // Total distance marched
@@ -162,6 +159,7 @@ struct MarchResult {
     bool hit;          // Whether we hit something
     vec3 hitPosition;  // Position of the hit
     int steps;         // Number of steps taken
+    float sdf;         // SDF value at the hit position
 };
 
 MarchResult rayMarch(vec3 ro, vec3 rd) {
@@ -183,6 +181,7 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
         if (d < 0.0) {
             result.hit = true;
             result.hitPosition = p;
+            result.sdf = d;
             break;
         }
         
@@ -349,10 +348,9 @@ OrthoProjectionResult orthoProjection(vec3 ro, vec3 rd, vec3 right, vec3 up, flo
     } else if (marchResult.hit) {
         // Calculate hit position and normal
         vec3 pos = marchResult.hitPosition;
-        vec3 normal = calcNormal(pos);
-        
-        // Detect edges
-        float edge = detectEdge(pos, normal);
+        vec4 normalAndEdge = calcNormalAndEdge(pos, marchResult.sdf);
+        vec3 normal = normalAndEdge.xyz;
+        float edge = normalAndEdge.w;
         
         // Improved lighting setup with multiple light sources
         vec3 lightDir1 = normalize(vec3(0.5, 0.8, 0.6)); // Main light
