@@ -129,16 +129,16 @@ vec4 calcNormalAndEdge(vec3 p, float d) {
         dz1 - dz2
     ));
 
-    // Calculate second derivatives properly using central difference
+    // Calculate second derivatives (mathematically correct)
     float dxx = (dx1 - 2.0 * d + dx2) / (offset * offset);
     float dyy = (dy1 - 2.0 * d + dy2) / (offset * offset);
     float dzz = (dz1 - 2.0 * d + dz2) / (offset * offset);
     
     // Calculate edge factor based on second derivatives
-    float edge = abs(dxx) + abs(dyy) + abs(dzz);
+    float edge = sqrt(dxx * dxx + dyy * dyy + dzz * dzz);
     
-    // Scale and smooth the edge factor
-    edge = smoothstep(0.0, 0.1, edge * offset * offset);
+    // Scale edge factor - note the different scale factor to compensate for offset division
+    edge = smoothstep(0.004, 0.005, edge * offset * offset * uCameraZoom);
     
     return vec4(normal, edge);
 }
