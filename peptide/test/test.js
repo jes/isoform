@@ -23,9 +23,29 @@ class TestSuite {
     }
 }
 
-// Assertion helpers
+// Enhanced assertion helpers
 function assertEquals(a, b) {
-    if (a !== b) throw new Error(`Expected ${a} to equal ${b}`);
+    if (a !== b) {
+        const error = new Error(`Expected ${a} to equal ${b}`);
+        const stack = error.stack.split('\n');
+        const callerLine = stack[1].trim();
+        throw new Error(`Assertion failed at ${callerLine}\nExpected ${a} to equal ${b}`);
+    }
+}
+
+function assertThrows(fn) {
+    let threw = false;
+    try {
+        fn();
+    } catch (e) {
+        threw = true;
+    }
+    if (!threw) {
+        const error = new Error('Expected function to throw');
+        const stack = error.stack.split('\n');
+        const callerLine = stack[1].trim();
+        throw new Error(`Assertion failed at ${callerLine}\nExpected function to throw`);
+    }
 }
 
 // Peptide tests
@@ -199,6 +219,29 @@ T.test('complex vector expression', () => {
     });
     
     assertEquals(result, 1); // ((1,1,0) · (0,1,0)) = 1
+});
+
+T.test('type mismatch errors', () => {
+    const vec = P.vconst(new Vec3(1, 2, 3));
+    const scalar = P.const(5);
+    
+    assertThrows(() => P.vadd(vec, scalar).evaluate({}));
+    assertThrows(() => P.add(vec, scalar).evaluate({}));
+});
+
+T.test('insufficient arguments', () => {
+    assertThrows(() => P.vec3(P.const(1), P.const(2)).evaluate({}));
+    assertThrows(() => P.add(P.const(1)).evaluate({}));
+});
+
+T.test('invalid vector operations', () => {
+    assertThrows(() => P.vcross(P.const(1), P.vconst(new Vec3(1, 2, 3))).evaluate({}));
+    assertThrows(() => P.vdot(P.const(1), P.vconst(new Vec3(1, 2, 3))).evaluate({}));
+});
+
+T.test('invalid scalar operations', () => {
+    assertThrows(() => P.add(P.const(1), P.vconst(new Vec3(1, 2, 3))).evaluate({}));
+    assertThrows(() => P.sqrt(P.vconst(new Vec3(1, 2, 3))).evaluate({}));
 });
 
 // Export for browser
