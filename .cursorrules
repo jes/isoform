@@ -149,3 +149,13 @@ Convert them to GLSL shader code like so:
 
     vec3 v = ${v.glsl()};
     mat3 m = ${m.glsl()};
+
+## Peptide
+
+Peptide is an arithmetic abstraction that we will be using to define the SDFs. It will
+have capability to compile an arithmetic expression into GLSL, or evaluate it in JavaScript,
+and also have the capaibility to evaluate (or compile the expression for evaluation) over
+intervals instead of single values.
+
+The Peptide code is all under the `peptide/js/` directory, and it has unit tests under
+`peptide/test/`.

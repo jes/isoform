@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peptide Unit Tests</title>
+    <style>
+        .test-results {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+        .test-pass { color: green; }
+        .test-fail { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Peptide Unit Tests</h1>
+    <div class="test-results">
+        <div id="test-output"></div>
+    </div>
+
+    <script src="js/peptide.js"></script>
+    <script src="test/test.js"></script>
+    <script>
+        (async () => {
+            const output = document.getElementById('test-output');
+            output.innerHTML = '<p>Running tests...</p>';
+            
+            const results = await PeptideTests.run();
+            
+            output.innerHTML = results.map(result => `
+                <div class="${result.passed ? 'test-pass' : 'test-fail'}">
+                    ${result.passed ? '✓' : '✗'} ${result.name}
+                    ${result.error ? `<br><small>${result.error}</small>` : ''}
+                </div>
+            `).join('');
+        })();
+    </script>
+</body>
+</html>
