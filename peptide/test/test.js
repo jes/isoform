@@ -293,5 +293,39 @@ T.test('vconst deep cloning', () => {
     assertEquals(result3.x, 1);
 });
 
+T.test('vector component extraction', () => {
+    const v = P.vconst(new Vec3(1, 2, 3));
+    
+    const x = P.vecX(v);
+    assertEquals(x.evaluate({}), 1);
+    
+    const y = P.vecY(v);
+    assertEquals(y.evaluate({}), 2);
+    
+    const z = P.vecZ(v);
+    assertEquals(z.evaluate({}), 3);
+});
+
+T.test('vector component extraction with variables', () => {
+    const v = P.vvar('v');
+    
+    const x = P.vecX(v);
+    const y = P.vecY(v);
+    const z = P.vecZ(v);
+    
+    const vars = { v: new Vec3(4, 5, 6) };
+    assertEquals(x.evaluate(vars), 4);
+    assertEquals(y.evaluate(vars), 5);
+    assertEquals(z.evaluate(vars), 6);
+});
+
+T.test('vector component type checking', () => {
+    const scalar = P.const(5);
+    
+    assertThrows(() => P.vecX(scalar).evaluate({}));
+    assertThrows(() => P.vecY(scalar).evaluate({}));
+    assertThrows(() => P.vecZ(scalar).evaluate({}));
+});
+
 // Export for browser
 window.PeptideTests = T;

@@ -166,6 +166,24 @@ class Peptide {
             (self, vars) => Math.sqrt(self.left.evaluate(vars)));
     }
 
+    static vecX(a) {
+        a.assertType('vec3');
+        return new Peptide('vecX', 'float', null, a, null, null,
+            (self, vars) => self.left.evaluate(vars).x);
+    }
+    
+    static vecY(a) {
+        a.assertType('vec3');
+        return new Peptide('vecY', 'float', null, a, null, null,
+            (self, vars) => self.left.evaluate(vars).y);
+    }
+    
+    static vecZ(a) {
+        a.assertType('vec3');
+        return new Peptide('vecZ', 'float', null, a, null, null,
+            (self, vars) => self.left.evaluate(vars).z);
+    }
+
     evaluate(vars) {
         const result = this.opFn(this, vars);
         if (this.type === 'float') {
