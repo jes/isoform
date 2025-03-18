@@ -18,6 +18,9 @@ class Peptide {
 
     // Scalar operations
     static const(value) {
+        if (typeof value !== 'number') {
+            throw new Error(`Const expected number but got ${typeof value}`);
+        }
         return new Peptide('const', 'float', value, null, null, null,
             (_, vars) => value);
     }
@@ -34,8 +37,12 @@ class Peptide {
 
     // Vector operations
     static vconst(vec3) {
-        return new Peptide('vconst', 'vec3', vec3, null, null, null,
-            (_, vars) => vec3);
+        if (!(vec3 instanceof Vec3)) {
+            throw new Error(`Vconst expected Vec3 but got ${vec3?.constructor?.name || typeof vec3}`);
+        }
+        // Deep clone the Vec3
+        return new Peptide('vconst', 'vec3', new Vec3(vec3.x, vec3.y, vec3.z), null, null, null,
+            (self, vars) => new Vec3(self.value.x, self.value.y, self.value.z));
     }
 
     static vvar(name) {

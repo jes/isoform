@@ -244,5 +244,54 @@ T.test('invalid scalar operations', () => {
     assertThrows(() => P.sqrt(P.vconst(new Vec3(1, 2, 3))).evaluate({}));
 });
 
+T.test('const type checking', () => {
+    assertThrows(() => P.const('5'));
+    assertThrows(() => P.const({}));
+    assertThrows(() => P.const([]));
+    assertThrows(() => P.const(null));
+    assertThrows(() => P.const(undefined));
+    // These should work
+    P.const(5);
+    P.const(5.5);
+    P.const(-5);
+});
+
+T.test('vconst type checking', () => {
+    assertThrows(() => P.vconst({x: 1, y: 2, z: 3}));
+    assertThrows(() => P.vconst([1, 2, 3]));
+    assertThrows(() => P.vconst(null));
+    assertThrows(() => P.vconst(undefined));
+    assertThrows(() => P.vconst(5));
+    // This should work
+    P.vconst(new Vec3(1, 2, 3));
+});
+
+T.test('vconst deep cloning', () => {
+    const original = new Vec3(1, 2, 3);
+    const p = P.vconst(original);
+    
+    // Modify the original vector
+    original.x = 10;
+    original.y = 20;
+    original.z = 30;
+    
+    // The evaluated result should have the original values
+    const result = p.evaluate({});
+    assertEquals(result.x, 1);
+    assertEquals(result.y, 2);
+    assertEquals(result.z, 3);
+    
+    // The result should be a new instance
+    const result2 = p.evaluate({});
+    assertEquals(result2.x, 1);
+    assertEquals(result2.y, 2);
+    assertEquals(result2.z, 3);
+    
+    // Verify we get a new instance each time
+    result.x = 100;
+    const result3 = p.evaluate({});
+    assertEquals(result3.x, 1);
+});
+
 // Export for browser
 window.PeptideTests = T;
