@@ -111,5 +111,95 @@ T.test('complex expression with all operations', () => {
     assertEquals(expr.evaluate({ x: 3, y: 4 }), 7); // sqrt(max(9, 16)) + min(3, 4) = 4 + 3 = 7
 });
 
+T.test('vector constant creation', () => {
+    const v = P.vconst(new Vec3(1, 2, 3));
+    assertEquals(v.op, 'vconst');
+    assertEquals(v.evaluate({}).x, 1);
+    assertEquals(v.evaluate({}).y, 2);
+    assertEquals(v.evaluate({}).z, 3);
+});
+
+T.test('vector variable lookup', () => {
+    const v = P.vvar('v');
+    const result = v.evaluate({ v: new Vec3(1, 2, 3) });
+    assertEquals(result.x, 1);
+    assertEquals(result.y, 2);
+    assertEquals(result.z, 3);
+});
+
+T.test('vector arithmetic', () => {
+    const a = P.vconst(new Vec3(1, 2, 3));
+    const b = P.vconst(new Vec3(4, 5, 6));
+    
+    const sum = P.vadd(a, b);
+    const sumResult = sum.evaluate({});
+    assertEquals(sumResult.x, 5);
+    assertEquals(sumResult.y, 7);
+    assertEquals(sumResult.z, 9);
+    
+    const diff = P.vsub(a, b);
+    const diffResult = diff.evaluate({});
+    assertEquals(diffResult.x, -3);
+    assertEquals(diffResult.y, -3);
+    assertEquals(diffResult.z, -3);
+    
+    const c = P.const(2);
+    const prod = P.vmul(a, c);
+    const prodResult = prod.evaluate({});
+    assertEquals(prodResult.x, 2);
+    assertEquals(prodResult.y, 4);
+    assertEquals(prodResult.z, 6);
+});
+
+T.test('vector operations', () => {
+    const a = P.vconst(new Vec3(1, 2, 3));
+    const b = P.vconst(new Vec3(4, 5, 6));
+    
+    const length = P.vlength(a);
+    assertEquals(length.evaluate({}), Math.sqrt(14));  // sqrt(1^2 + 2^2 + 3^2)
+    
+    const dot = P.vdot(a, b);
+    assertEquals(dot.evaluate({}), 32);  // 1*4 + 2*5 + 3*6
+    
+    const cross = P.vcross(a, b);
+    const crossResult = cross.evaluate({});
+    assertEquals(crossResult.x, -3);  // 2*6 - 3*5
+    assertEquals(crossResult.y, 6);   // 3*4 - 1*6
+    assertEquals(crossResult.z, -3);  // 1*5 - 2*4
+});
+
+T.test('vec3 construction', () => {
+    const x = P.const(1);
+    const y = P.const(2);
+    const z = P.const(3);
+    const vec = P.vec3(x, y, z);
+    const result = vec.evaluate({});
+    assertEquals(result.x, 1);
+    assertEquals(result.y, 2);
+    assertEquals(result.z, 3);
+});
+
+T.test('complex vector expression', () => {
+    // (v1 + v2) · (v3 × v4)
+    const v1 = P.vvar('v1');
+    const v2 = P.vvar('v2');
+    const v3 = P.vvar('v3');
+    const v4 = P.vvar('v4');
+    
+    const expr = P.vdot(
+        P.vadd(v1, v2),
+        P.vcross(v3, v4)
+    );
+    
+    const result = expr.evaluate({
+        v1: new Vec3(1, 0, 0),
+        v2: new Vec3(0, 1, 0),
+        v3: new Vec3(0, 0, 1),
+        v4: new Vec3(1, 0, 0)
+    });
+    
+    assertEquals(result, 1); // ((1,1,0) · (0,1,0)) = 1
+});
+
 // Export for browser
 window.PeptideTests = T;

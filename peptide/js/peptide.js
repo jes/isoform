@@ -1,20 +1,22 @@
 class Peptide {
-    constructor(op, value = null, left = null, right = null, opFn = null) {
-        this.op = op;      // 'const', 'add', 'sub', 'mul', 'div'
+    constructor(op, type, value = null, left = null, right = null, third = null, opFn = null) {
+        this.op = op;          // Operation name (e.g., 'const', 'vconst', 'vadd', etc.)
+        this.type = type;      // 'float' or 'vec3'
         this.value = value;    // for constants
         this.left = left;      // left operand
         this.right = right;    // right operand
+        this.third = third;    // third operand
         this.opFn = opFn;      // operation function
     }
 
-    // Static methods for expression construction
+    // Scalar operations
     static const(value) {
-        return new Peptide('const', value, null, null, 
+        return new Peptide('const', 'float', value, null, null, null,
             (_, vars) => value);
     }
 
     static var(name) {
-        return new Peptide('var', name, null, null, 
+        return new Peptide('var', 'float', name, null, null, null,
             (self, vars) => {
                 if (!(self.value in vars)) {
                     throw new Error(`Variable '${self.value}' not found`);
@@ -23,48 +25,111 @@ class Peptide {
             });
     }
 
+    // Vector operations
+    static vconst(vec3) {
+        return new Peptide('vconst', 'vec3', vec3, null, null, null,
+            (_, vars) => vec3);
+    }
+
+    static vvar(name) {
+        return new Peptide('vvar', 'vec3', name, null, null, null,
+            (self, vars) => {
+                if (!(self.value in vars)) {
+                    throw new Error(`Vector variable '${self.value}' not found`);
+                }
+                return vars[self.value];
+            });
+    }
+
+    static vadd(a, b) {
+        return new Peptide('vadd', 'vec3', null, a, b, null,
+            (self, vars) => self.left.evaluate(vars).add(self.right.evaluate(vars)));
+    }
+
+    static vsub(a, b) {
+        return new Peptide('vsub', 'vec3', null, a, b, null,
+            (self, vars) => self.left.evaluate(vars).sub(self.right.evaluate(vars)));
+    }
+
+    static vmul(a, b) {
+        return new Peptide('vmul', 'vec3', null, a, b, null,
+            (self, vars) => self.left.evaluate(vars).mul(self.right.evaluate(vars)));
+    }
+
+    static vdiv(a, b) {
+        return new Peptide('vdiv', 'vec3', null, a, b, null,
+            (self, vars) => self.left.evaluate(vars).div(self.right.evaluate(vars)));
+    }
+
+    static vlength(a) {
+        return new Peptide('vlength', 'float', null, a, null, null,
+            (self, vars) => self.left.evaluate(vars).length());
+    }
+
+    static vdot(a, b) {
+        return new Peptide('vdot', 'float', null, a, b, null,
+            (self, vars) => self.left.evaluate(vars).dot(self.right.evaluate(vars)));
+    }
+
+    static vcross(a, b) {
+        return new Peptide('vcross', 'vec3', null, a, b, null,
+            (self, vars) => self.left.evaluate(vars).cross(self.right.evaluate(vars)));
+    }
+
+    static vec3(a, b, c) {
+        return new Peptide('vec3', 'vec3', null, a, b, c,
+            (self, vars) => new Vec3(self.left.evaluate(vars), self.right.evaluate(vars), self.third.evaluate(vars)));
+    }
+
     static add(a, b) {
-        return new Peptide('add', null, a, b, 
+        return new Peptide('add', 'float', null, a, b, null,
             (self, vars) => self.left.evaluate(vars) + self.right.evaluate(vars));
     }
 
     static sub(a, b) {
-        return new Peptide('sub', null, a, b, 
+        return new Peptide('sub', 'float', null, a, b, null,
             (self, vars) => self.left.evaluate(vars) - self.right.evaluate(vars));
     }
 
     static mul(a, b) {
-        return new Peptide('mul', null, a, b, 
+        return new Peptide('mul', 'float', null, a, b, null,
             (self, vars) => self.left.evaluate(vars) * self.right.evaluate(vars));
     }
 
     static div(a, b) {
-        return new Peptide('div', null, a, b, 
+        return new Peptide('div', 'float', null, a, b, null,
             (self, vars) => self.left.evaluate(vars) / self.right.evaluate(vars));
     }
 
     static min(a, b) {
-        return new Peptide('min', null, a, b, 
+        return new Peptide('min', 'float', null, a, b, null,
             (self, vars) => Math.min(self.left.evaluate(vars), self.right.evaluate(vars)));
     }
 
     static max(a, b) {
-        return new Peptide('max', null, a, b, 
+        return new Peptide('max', 'float', null, a, b, null,
             (self, vars) => Math.max(self.left.evaluate(vars), self.right.evaluate(vars)));
     }
 
     static pow(a, b) {
-        return new Peptide('pow', null, a, b, 
+        return new Peptide('pow', 'float', null, a, b, null,
             (self, vars) => Math.pow(self.left.evaluate(vars), self.right.evaluate(vars)));
     }
 
     static sqrt(a) {
-        return new Peptide('sqrt', null, a, null, 
+        return new Peptide('sqrt', 'float', null, a, null, null,
             (self, vars) => Math.sqrt(self.left.evaluate(vars)));
     }
 
     evaluate(vars) {
-        return this.opFn(this, vars);
+        const result = this.opFn(this, vars);
+        if (this.type === 'float' && result instanceof Vec3) {
+            throw new Error(`Operation '${this.op}' returned Vec3 but declared float type`);
+        }
+        if (this.type === 'vec3' && !(result instanceof Vec3)) {
+            throw new Error(`Operation '${this.op}' returned ${typeof result} but declared vec3 type`);
+        }
+        return result;
     }
 }
 
