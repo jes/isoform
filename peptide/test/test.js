@@ -52,8 +52,9 @@ function assertThrows(fn) {
 function createEvaluator(useCompiled) {
     if (useCompiled) {
         return (expr, vars = {}) => {
-            const compiled = expr.compileToJS();
-            return compiled(vars);
+            const ssa = new PeptideSSA(expr);
+            const src = ssa.compileToJS();
+            return eval(src)(vars);
         };
     } else {
         return (expr, vars = {}) => expr.evaluate(vars);
