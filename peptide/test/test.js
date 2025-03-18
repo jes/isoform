@@ -69,6 +69,8 @@ function createEvaluator(useCompiled) {
         return (expr, vars = {}) => {
             const ssa = new PeptideSSA(expr);
             const src = ssa.compileToJS();
+            const glsl = ssa.compileToGLSL();
+            console.log(glsl);
             return eval(src)(vars);
         };
     } else {
@@ -235,10 +237,10 @@ addTest('vec3 construction', (evaluate) => {
 
 addTest('complex vector expression', (evaluate) => {
     // (v1 + v2) · (v3 × v4)
-    const v1 = P.vvar('v1');
-    const v2 = P.vvar('v2');
-    const v3 = P.vvar('v3');
-    const v4 = P.vvar('v4');
+    const v1 = P.vvar('var1');
+    const v2 = P.vvar('var2');
+    const v3 = P.vvar('var3');
+    const v4 = P.vvar('var4');
     
     const expr = P.vdot(
         P.vadd(v1, v2),
@@ -246,10 +248,10 @@ addTest('complex vector expression', (evaluate) => {
     );
     
     const result = evaluate(expr, {
-        v1: new Vec3(1, 0, 0),
-        v2: new Vec3(0, 1, 0),
-        v3: new Vec3(0, 0, 1),
-        v4: new Vec3(1, 0, 0)
+        var1: new Vec3(1, 0, 0),
+        var2: new Vec3(0, 1, 0),
+        var3: new Vec3(0, 0, 1),
+        var4: new Vec3(1, 0, 0)
     });
     
     assertEquals(result, 1); // ((1,1,0) · (0,1,0)) = 1

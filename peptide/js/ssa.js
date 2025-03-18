@@ -33,11 +33,66 @@ class PeptideSSA {
         this.varMap = new Map();
         
         const resultVar = this.processNode(expr);
-        
+
+        this.greedyAllocate();
+       
         return {
             operations: this.operations,
             result: resultVar
         };
+    }
+
+    /**
+     * Perform a greedy allocation of SSA variables
+     */
+    greedyAllocate() {
+        // map of variable name to its SSA variable name;
+        // once a variable becomes dead, it is removed from the map
+        let map = new Map();
+        let usedVars = new Set();
+
+        // return the next free variable name for type t
+        const alloc = (t) => {
+            const varPrefix = t === 'float' ? 'f' : 'v';
+            for (let i = 0; ; i++) {
+                const varName = `${varPrefix}${i}`;
+                if (!usedVars.has(varName)) {
+                    usedVars.add(varName);
+                    return varName;
+                }
+            }
+        }
+
+        // work in reverse order so that we know that the variable's liveness ends
+        // as soon as it is assigned
+        for (let i = this.operations.length - 1; i >= 0; i--) {
+            const op = this.operations[i];
+            if (map.get(op.result)) {
+                const result = map.get(op.result);
+                map.delete(op.result);
+                usedVars.delete(result);
+                op.result = result;
+            }
+
+            if (op.left) {
+                if (!map.has(op.left)) {
+                    map.set(op.left, alloc(op.node.left.type));
+                }
+                op.left = map.get(op.left);
+            }
+            if (op.right) {
+                if (!map.has(op.right)) {
+                    map.set(op.right, alloc(op.node.right.type));
+                }
+                op.right = map.get(op.right);
+            }
+            if (op.third) {
+                if (!map.has(op.third)) {
+                    map.set(op.third, alloc(op.node.third.type));
+                }
+                op.third = map.get(op.third);
+            }
+        }
     }
 
     /**
@@ -85,9 +140,12 @@ class PeptideSSA {
     compileToJS() {
         let code = '(vars) => {\n';
         
-        // Declare variables
+        let seen = new Set();
         for (const op of this.operations) {
-            code += `  let ${op.result};\n`;
+            if (!seen.has(op.result)) {
+                code += `  let ${op.result};\n`;
+                seen.add(op.result);
+            }
         }
         
         code += '\n';
@@ -108,8 +166,12 @@ class PeptideSSA {
     compileToGLSL(signature = 'float map(vec3 p)') {
         let code = '';
 
+        let seen = new Set();
         for (const op of this.operations) {
-            code += `  ${op.node.type} ${op.result};\n`;
+            if (!seen.has(op.result)) {
+                code += `  ${op.node.type} ${op.result};\n`;
+                seen.add(op.result);
+            }
         }
 
         code += "\n";
