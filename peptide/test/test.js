@@ -33,8 +33,9 @@ const T = new TestSuite();
 
 T.test('constant creation', () => {
     const p = P.const(5);
-    assertEquals(p.type, 'const');
+    assertEquals(p.op, 'const');
     assertEquals(p.value, 5);
+    assertEquals(p.evaluate({}), 5);
 });
 
 T.test('basic arithmetic', () => {
