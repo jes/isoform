@@ -53,6 +53,7 @@
                 <div class="${result.passed ? 'test-pass' : 'test-fail'}">
                     ${result.passed ? '✓' : '✗'} ${result.name}
                     ${result.error ? `<br><small>${result.error}</small>` : ''}
+                    ${result.sourceLocation ? `<br><small>${result.sourceLocation}</small>` : ''}
                 </div>
             `).join('');
             

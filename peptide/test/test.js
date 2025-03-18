@@ -16,7 +16,22 @@ class TestSuite {
                 await test.fn();
                 this.results.push({ name: test.name, passed: true });
             } catch (e) {
-                this.results.push({ name: test.name, passed: false, error: e.message });
+                // Extract the most relevant line from the stack trace
+                let sourceLocation = 'Unknown location';
+                
+                if (e.stack) {
+                    const stackLines = e.stack.split('\n');
+                    const line = stackLines[0].trim();
+                    sourceLocation = line;
+                }
+                
+                this.results.push({ 
+                    name: test.name, 
+                    passed: false, 
+                    error: e.message,
+                    sourceLocation: sourceLocation,
+                    fullStack: e.stack // Keep the full stack for debugging
+                });
             }
         }
         return this.results;
@@ -74,7 +89,6 @@ function addTest(name, testFn) {
 addTest('constant creation', (evaluate) => {
     const p = P.const(5);
     assertEquals(p.op, 'const');
-    assertEquals(p.value, 5);
     assertEquals(evaluate(p), 5);
 });
 

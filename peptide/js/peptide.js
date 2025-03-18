@@ -1,8 +1,7 @@
 class Peptide {
-    constructor(op, type, value = null, left = null, right = null, third = null, opFn = null, ssaOpFn = null, glslOpFn = null) {
+    constructor(op, type, left = null, right = null, third = null, opFn = null, ssaOpFn = null, glslOpFn = null) {
         this.op = op;          // Operation name (e.g., 'const', 'vconst', 'vadd', etc.)
         this.type = type;      // 'float' or 'vec3'
-        this.value = value;    // for constants
         this.left = left;      // left operand
         this.right = right;    // right operand
         this.third = third;    // third operand
@@ -33,26 +32,26 @@ class Peptide {
         if (typeof value !== 'number') {
             throw new Error(`Const expected number but got ${typeof value}`);
         }
-        return new Peptide('const', 'float', value, null, null, null,
+        return new Peptide('const', 'float', null, null, null,
             (_, vars) => value,
-            (self, ssaOp) => `${ssaOp.result} = ${self.value};`,
-            (self, glslOp) => `${glslOp.result} = ${self.value.toFixed(16)};`,
+            (_, ssaOp) => `${ssaOp.result} = ${value};`,
+            (_, ssaOp) => `${ssaOp.result} = ${value.toFixed(16)};`,
         );
     }
 
     static var(name) {
-        return new Peptide('var', 'float', name, null, null, null,
-            (self, vars) => {
-                if (!(self.value in vars)) {
-                    throw new Error(`Variable '${self.value}' not found`);
+        return new Peptide('var', 'float', null, null, null,
+            (_, vars) => {
+                if (!(name in vars)) {
+                    throw new Error(`Variable '${name}' not found`);
                 }
-                return vars[self.value];
+                return vars[name];
             },
-            (self, ssaOp) => {
-                return `if (!('${self.value}' in vars)) throw new Error("Variable '${self.value}' not found");\n`
-                    + `  ${ssaOp.result} = vars['${self.value}'];`;
+            (_, ssaOp) => {
+                return `if (!('${name}' in vars)) throw new Error("Variable '${name}' not found");\n`
+                    + `  ${ssaOp.result} = vars['${name}'];`;
             },
-            (self, glslOp) => `${glslOp.result} = ${self.value};`,
+            (_, ssaOp) => `${ssaOp.result} = ${name};`,
         );
     }
 
@@ -61,95 +60,96 @@ class Peptide {
         if (!(vec3 instanceof Vec3)) {
             throw new Error(`Vconst expected Vec3 but got ${vec3?.constructor?.name || typeof vec3}`);
         }
+        const vec3Clone = new Vec3(vec3.x, vec3.y, vec3.z);
         // Deep clone the Vec3
-        return new Peptide('vconst', 'vec3', new Vec3(vec3.x, vec3.y, vec3.z), null, null, null,
-            (self, vars) => new Vec3(self.value.x, self.value.y, self.value.z),
-            (self, ssaOp) => `${ssaOp.result} = new Vec3(${self.value.x}, ${self.value.y}, ${self.value.z});`,
-            (self, glslOp) => `${glslOp.result} = vec3(${self.value.x.toFixed(16)}, ${self.value.y.toFixed(16)}, ${self.value.z.toFixed(16)});`,
+        return new Peptide('vconst', 'vec3', null, null, null,
+            (_, vars) => new Vec3(vec3Clone.x, vec3Clone.y, vec3Clone.z),
+            (_, ssaOp) => `${ssaOp.result} = new Vec3(${vec3Clone.x}, ${vec3Clone.y}, ${vec3Clone.z});`,
+            (_, ssaOp) => `${ssaOp.result} = vec3(${vec3Clone.x.toFixed(16)}, ${vec3Clone.y.toFixed(16)}, ${vec3Clone.z.toFixed(16)});`,
         );
     }
 
     static vvar(name) {
-        return new Peptide('vvar', 'vec3', name, null, null, null,
-            (self, vars) => {
-                if (!(self.value in vars)) {
-                    throw new Error(`Vector variable '${self.value}' not found`);
+        return new Peptide('vvar', 'vec3', null, null, null,
+            (_, vars) => {
+                if (!(name in vars)) {
+                    throw new Error(`Vector variable '${name}' not found`);
                 }
-                return vars[self.value];
+                return vars[name];
             },
-            (self, ssaOp) => {
-                return `if (!('${self.value}' in vars)) throw new Error("Vector variable '${self.value}' not found");\n`
-                    + `  ${ssaOp.result} = vars['${self.value}'];`;
+            (_, ssaOp) => {
+                return `if (!('${name}' in vars)) throw new Error("Vector variable '${name}' not found");\n`
+                    + `  ${ssaOp.result} = vars['${name}'];`;
             },
-            (self, glslOp) => `${glslOp.result} = ${self.value};`,
+            (_, ssaOp) => `${ssaOp.result} = ${name};`,
         );
     }
     static vadd(a, b) {
         a.assertType('vec3');
         b.assertType('vec3');
-        return new Peptide('vadd', 'vec3', null, a, b, null,
-            (self, vars) => self.left.evaluate(vars).add(self.right.evaluate(vars)),
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.add(${ssaOp.right});`,
-            (self, glslOp) => `${glslOp.result} = ${glslOp.left} + ${glslOp.right};`,
+        return new Peptide('vadd', 'vec3', a, b, null,
+            (_, vars) => a.evaluate(vars).add(b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.add(${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
         );
     }
 
     static vsub(a, b) {
         a.assertType('vec3');
         b.assertType('vec3');
-        return new Peptide('vsub', 'vec3', null, a, b, null,
-            (self, vars) => self.left.evaluate(vars).sub(self.right.evaluate(vars)),
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sub(${ssaOp.right});`,
-            (self, glslOp) => `${glslOp.result} = ${glslOp.left} - ${glslOp.right};`,
+        return new Peptide('vsub', 'vec3', a, b, null,
+            (_, vars) => a.evaluate(vars).sub(b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sub(${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
         );
     }
 
     static vmul(a, b) {
         a.assertType('vec3');
         b.assertType('float');
-        return new Peptide('vmul', 'vec3', null, a, b, null,
-            (self, vars) => self.left.evaluate(vars).mul(self.right.evaluate(vars)),
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
-            (self, glslOp) => `${glslOp.result} = ${glslOp.left} * ${glslOp.right};`,
+        return new Peptide('vmul', 'vec3', a, b, null,
+            (_, vars) => a.evaluate(vars).mul(b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
         );
     }
 
     static vdiv(a, b) {
         a.assertType('vec3');
         b.assertType('float');
-        return new Peptide('vdiv', 'vec3', null, a, b, null,
-            (self, vars) => self.left.evaluate(vars).div(self.right.evaluate(vars)),
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.div(${ssaOp.right});`,
-            (self, glslOp) => `${glslOp.result} = ${glslOp.left} / ${glslOp.right};`,
+        return new Peptide('vdiv', 'vec3', a, b, null,
+            (_, vars) => a.evaluate(vars).div(b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.div(${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
         );
     }
 
     static vlength(a) {
         a.assertType('vec3');
-        return new Peptide('vlength', 'float', null, a, null, null,
-            (self, vars) => self.left.evaluate(vars).length(),
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.length();`,
-            (self, glslOp) => `${glslOp.result} = length(${glslOp.left});`,
+        return new Peptide('vlength', 'float', a, null, null,
+            (_, vars) => a.evaluate(vars).length(),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.length();`,
+            (_, ssaOp) => `${ssaOp.result} = length(${ssaOp.left});`,
         );
     }
 
     static vdot(a, b) {
         a.assertType('vec3');
         b.assertType('vec3');
-        return new Peptide('vdot', 'float', null, a, b, null,
-            (self, vars) => self.left.evaluate(vars).dot(self.right.evaluate(vars)),
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.dot(${ssaOp.right});`,
-            (self, glslOp) => `${glslOp.result} = dot(${glslOp.left}, ${glslOp.right});`,
+        return new Peptide('vdot', 'float', a, b, null,
+            (_, vars) => a.evaluate(vars).dot(b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.dot(${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = dot(${ssaOp.left}, ${ssaOp.right});`,
         );
     }
 
     static vcross(a, b) {
         a.assertType('vec3');
         b.assertType('vec3');
-        return new Peptide('vcross', 'vec3', null, a, b, null,
-            (self, vars) => self.left.evaluate(vars).cross(self.right.evaluate(vars)),
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.cross(${ssaOp.right});`,
-            (self, glslOp) => `${glslOp.result} = cross(${glslOp.left}, ${glslOp.right});`,
+        return new Peptide('vcross', 'vec3', a, b, null,
+            (_, vars) => a.evaluate(vars).cross(b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.cross(${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = cross(${ssaOp.left}, ${ssaOp.right});`,
         );
     }
 
@@ -157,116 +157,116 @@ class Peptide {
         a.assertType('float');
         b.assertType('float');
         c.assertType('float');
-        return new Peptide('vec3', 'vec3', null, a, b, c,
-            (self, vars) => new Vec3(self.left.evaluate(vars), self.right.evaluate(vars), self.third.evaluate(vars)),
-            (self, ssaOp) => `${ssaOp.result} = new Vec3(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
-            (self, glslOp) => `${glslOp.result} = vec3(${glslOp.left}, ${glslOp.right}, ${glslOp.third});`,
+        return new Peptide('vec3', 'vec3', a, b, c,
+            (_, vars) => new Vec3(a.evaluate(vars), b.evaluate(vars), c.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = new Vec3(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
+            (_, ssaOp) => `${ssaOp.result} = vec3(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
         );
     }
 
     static add(a, b) {
         a.assertType('float');
         b.assertType('float');
-        return new Peptide('add', 'float', null, a, b, null,
-            (self, vars) => self.left.evaluate(vars) + self.right.evaluate(vars),
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
-            (self, glslOp) => `${glslOp.result} = ${glslOp.left} + ${glslOp.right};`,
+        return new Peptide('add', 'float', a, b, null,
+            (_, vars) => a.evaluate(vars) + b.evaluate(vars),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
         );
     }
 
     static sub(a, b) {
         a.assertType('float');
         b.assertType('float');
-        return new Peptide('sub', 'float', null, a, b, null,
-            (self, vars) => self.left.evaluate(vars) - self.right.evaluate(vars),
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
-            (self, glslOp) => `${glslOp.result} = ${glslOp.left} - ${glslOp.right};`,
+        return new Peptide('sub', 'float', a, b, null,
+            (_, vars) => a.evaluate(vars) - b.evaluate(vars),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
         );
     }
 
     static mul(a, b) {
         a.assertType('float');
         b.assertType('float');
-        return new Peptide('mul', 'float', null, a, b, null,
-            (self, vars) => self.left.evaluate(vars) * self.right.evaluate(vars),
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
-            (self, glslOp) => `${glslOp.result} = ${glslOp.left} * ${glslOp.right};`,
+        return new Peptide('mul', 'float', a, b, null,
+            (_, vars) => a.evaluate(vars) * b.evaluate(vars),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
         );
     }
 
     static div(a, b) {
         a.assertType('float');
         b.assertType('float');
-        return new Peptide('div', 'float', null, a, b, null,
-            (self, vars) => self.left.evaluate(vars) / self.right.evaluate(vars),
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
-            (self, glslOp) => `${glslOp.result} = ${glslOp.left} / ${glslOp.right};`,
+        return new Peptide('div', 'float', a, b, null,
+            (_, vars) => a.evaluate(vars) / b.evaluate(vars),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
         );
     }
 
     static min(a, b) {
         a.assertType('float');
         b.assertType('float');
-        return new Peptide('min', 'float', null, a, b, null,
-            (self, vars) => Math.min(self.left.evaluate(vars), self.right.evaluate(vars)),
-            (self, ssaOp) => `${ssaOp.result} = Math.min(${ssaOp.left}, ${ssaOp.right});`,
-            (self, glslOp) => `${glslOp.result} = min(${glslOp.left}, ${glslOp.right});`,
+        return new Peptide('min', 'float', a, b, null,
+            (_, vars) => Math.min(a.evaluate(vars), b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = Math.min(${ssaOp.left}, ${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = min(${ssaOp.left}, ${ssaOp.right});`,
         );
     }
 
     static max(a, b) {
         a.assertType('float');
         b.assertType('float');
-        return new Peptide('max', 'float', null, a, b, null,
-            (self, vars) => Math.max(self.left.evaluate(vars), self.right.evaluate(vars)),
-            (self, ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.left}, ${ssaOp.right});`,
-            (self, glslOp) => `${glslOp.result} = max(${glslOp.left}, ${glslOp.right});`,
+        return new Peptide('max', 'float', a, b, null,
+            (_, vars) => Math.max(a.evaluate(vars), b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.left}, ${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = max(${ssaOp.left}, ${ssaOp.right});`,
         );
     }
 
     static pow(a, b) {
         a.assertType('float');
         b.assertType('float');
-        return new Peptide('pow', 'float', null, a, b, null,
-            (self, vars) => Math.pow(self.left.evaluate(vars), self.right.evaluate(vars)),
-            (self, ssaOp) => `${ssaOp.result} = Math.pow(${ssaOp.left}, ${ssaOp.right});`,
-            (self, glslOp) => `${glslOp.result} = pow(${glslOp.left}, ${glslOp.right});`,
+        return new Peptide('pow', 'float', a, b, null,
+            (_, vars) => Math.pow(a.evaluate(vars), b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = Math.pow(${ssaOp.left}, ${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = pow(${ssaOp.left}, ${ssaOp.right});`,
         );
     }
 
     static sqrt(a) {
         a.assertType('float');
-        return new Peptide('sqrt', 'float', null, a, null, null,
-            (self, vars) => Math.sqrt(self.left.evaluate(vars)),
-            (self, ssaOp) => `${ssaOp.result} = Math.sqrt(${ssaOp.left});`,
-            (self, glslOp) => `${glslOp.result} = sqrt(${glslOp.left});`,
+        return new Peptide('sqrt', 'float', a, null, null,
+            (_, vars) => Math.sqrt(a.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = Math.sqrt(${ssaOp.left});`,
+            (_, ssaOp) => `${ssaOp.result} = sqrt(${ssaOp.left});`,
         );
     }
 
     static vecX(a) {
         a.assertType('vec3');
-        return new Peptide('vecX', 'float', null, a, null, null,
-            (self, vars) => self.left.evaluate(vars).x,
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.x;`,
-            (self, glslOp) => `${glslOp.result} = ${glslOp.left}.x;`,
+        return new Peptide('vecX', 'float', a, null, null,
+            (_, vars) => a.evaluate(vars).x,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.x;`,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.x;`,
         );
     }
     
     static vecY(a) {
         a.assertType('vec3');
-        return new Peptide('vecY', 'float', null, a, null, null,
-            (self, vars) => self.left.evaluate(vars).y,
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.y;`,
-            (self, glslOp) => `${glslOp.result} = ${glslOp.left}.y;`,
+        return new Peptide('vecY', 'float', a, null, null,
+            (_, vars) => a.evaluate(vars).y,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.y;`,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.y;`,
         );
     }
     
     static vecZ(a) {
         a.assertType('vec3');
-        return new Peptide('vecZ', 'float', null, a, null, null,
-            (self, vars) => self.left.evaluate(vars).z,
-            (self, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.z;`,
-            (self, glslOp) => `${glslOp.result} = ${glslOp.left}.z;`,
+        return new Peptide('vecZ', 'float', a, null, null,
+            (_, vars) => a.evaluate(vars).z,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.z;`,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.z;`,
         );
     }
 
