@@ -15,11 +15,11 @@ class PeptideSSA {
 
     /**
      * Generate a new unique variable name
-     * @param {string} prefix - Optional prefix for the variable name
+     * @param {string} type - The type of the variable (f for float, v for vector, etc.)
      * @returns {string} A unique variable name
      */
-    newVar(prefix = 'v') {
-        return `${prefix}${this.varCounter++}`;
+    newVar(type = 'f') {
+        return `${type}${this.varCounter++}`;
     }
 
     /**
@@ -56,7 +56,7 @@ class PeptideSSA {
 
         switch (node.op) {
             case 'const':
-                resultVar = this.newVar('const');
+                resultVar = this.newVar('f');
                 this.operations.push({
                     op: 'const',
                     type: type,
@@ -66,7 +66,7 @@ class PeptideSSA {
                 break;
                 
             case 'var':
-                resultVar = this.newVar('var');
+                resultVar = this.newVar('f');
                 this.operations.push({
                     op: 'var',
                     type: type,
@@ -76,7 +76,7 @@ class PeptideSSA {
                 break;
                 
             case 'vconst':
-                resultVar = this.newVar('vconst');
+                resultVar = this.newVar('v');
                 this.operations.push({
                     op: 'vconst',
                     type: type,
@@ -86,7 +86,7 @@ class PeptideSSA {
                 break;
                 
             case 'vvar':
-                resultVar = this.newVar('vvar');
+                resultVar = this.newVar('v');
                 this.operations.push({
                     op: 'vvar',
                     type: type,
@@ -103,20 +103,31 @@ class PeptideSSA {
             case 'min':
             case 'max':
             case 'pow':
-            case 'vadd':
-            case 'vsub':
             case 'vmul':
             case 'vdiv':
             case 'vdot':
             case 'vcross':
                 const leftVar = this.processNode(node.left);
                 const rightVar = this.processNode(node.right);
-                resultVar = this.newVar(node.op);
+                resultVar = this.newVar('f');
                 this.operations.push({
                     op: node.op,
                     type: type,
                     result: resultVar,
                     args: [leftVar, rightVar]
+                });
+                break;
+
+            case 'vadd':
+            case 'vsub':
+                const leftVvar = this.processNode(node.left);
+                const rightVvar = this.processNode(node.right);
+                resultVar = this.newVar('v');
+                this.operations.push({
+                    op: node.op,
+                    type: type,
+                    result: resultVar,
+                    args: [leftVvar, rightVvar]
                 });
                 break;
                 
@@ -127,7 +138,7 @@ class PeptideSSA {
             case 'vecY':
             case 'vecZ':
                 const argVar = this.processNode(node.left);
-                resultVar = this.newVar(node.op);
+                resultVar = this.newVar('f');
                 this.operations.push({
                     op: node.op,
                     type: type,
@@ -141,7 +152,7 @@ class PeptideSSA {
                 const xVar = this.processNode(node.left);
                 const yVar = this.processNode(node.right);
                 const zVar = this.processNode(node.third);
-                resultVar = this.newVar('vec3');
+                resultVar = this.newVar('v');
                 this.operations.push({
                     op: 'vec3',
                     type: type,
