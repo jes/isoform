@@ -789,5 +789,31 @@ addGLSLTest('step operations', async (harness) => {
     harness.testExpression(stepVar, 0.0, { u_x: 3, u_y: 2 }); // 3 > 2
 });
 
+addGLSLTest('trigonometric functions', async (harness) => {
+    // Test sin
+    const angle = P.const(Math.PI / 2);
+    const sinExpr = P.sin(angle);
+    harness.testExpression(sinExpr, 1.0);
+    
+    // Test cos
+    const cosExpr = P.cos(angle);
+    harness.testExpression(cosExpr, 0.0);
+    
+    // Test with variables
+    const x = P.var('u_x');
+    const sinVar = P.sin(x);
+    const cosVar = P.cos(x);
+    
+    harness.testExpression(sinVar, 0.0, { u_x: 0 }); // sin(0) = 0
+    harness.testExpression(cosVar, 1.0, { u_x: 0 }); // cos(0) = 1
+    
+    // Test composition of sin and cos
+    const composed = P.add(
+        P.pow(P.sin(x), P.const(2)),
+        P.pow(P.cos(x), P.const(2))
+    );
+    harness.testExpression(composed, 1.0, { u_x: 1.234 }); // sin²(x) + cos²(x) = 1
+});
+
 // Export for browser
 window.PeptideGLSLTests = GLSLTests;

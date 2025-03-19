@@ -40,7 +40,7 @@ class TestSuite {
 
 // Enhanced assertion helpers
 function assertEquals(a, b) {
-    if (a !== b) {
+    if (Math.abs(a - b) > 0.000001) {
         const error = new Error(`Expected ${a} to equal ${b}`);
         const stack = error.stack.split('\n');
         const callerLine = stack[1].trim();
@@ -694,6 +694,40 @@ addTest('step type checking', (evaluate) => {
     // Should throw when trying to use vector with step
     assertThrows(() => evaluate(P.step(vec, scalar)));
     assertThrows(() => evaluate(P.step(scalar, vec)));
+});
+
+addTest('trigonometric functions', (evaluate) => {
+    // Test sin
+    const angle = P.const(Math.PI / 2);
+    const sinExpr = P.sin(angle);
+    assertEquals(evaluate(sinExpr), 1.0); // sin(π/2) = 1
+    
+    // Test cos
+    const cosExpr = P.cos(angle);
+    assertEquals(evaluate(cosExpr), 0.0); // cos(π/2) = 0
+    
+    // Test with variables
+    const x = P.var('x');
+    const sinVar = P.sin(x);
+    const cosVar = P.cos(x);
+    
+    assertEquals(evaluate(sinVar, { x: 0 }), 0.0); // sin(0) = 0
+    assertEquals(evaluate(cosVar, { x: 0 }), 1.0); // cos(0) = 1
+    
+    // Test composition of sin and cos
+    const composed = P.add(
+        P.pow(P.sin(x), P.const(2)),
+        P.pow(P.cos(x), P.const(2))
+    );
+    assertEquals(evaluate(composed, { x: 1.234 }), 1.0); // sin²(x) + cos²(x) = 1
+});
+
+addTest('trigonometric type checking', (evaluate) => {
+    const vec = P.vconst(new Vec3(1, 2, 3));
+    
+    // Should throw when trying to use vector with sin/cos
+    assertThrows(() => evaluate(P.sin(vec)));
+    assertThrows(() => evaluate(P.cos(vec)));
 });
 
 // Export for browser

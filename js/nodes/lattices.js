@@ -8,18 +8,11 @@ class GyroidNode extends TreeNode {
     return {"scale": "float"};
   }
 
-  generateShaderImplementation() {
-    return `
-      float sdGyroid(vec3 p, float scale) {
-        p = p / scale;
-        float gyroid = sin(p.x) * cos(p.y) + sin(p.y) * cos(p.z) + sin(p.z) * cos(p.x);
-        return gyroid;
-      }
-    `;
-  }
-
-  generateShaderCode() {
-    return `sdGyroid(p, ${this.scale.toFixed(16)})`;
+  peptide(p) {
+    p = P.vdiv(p, P.const(this.scale));
+    return P.add(P.mul(P.sin(P.vecX(p)), P.cos(P.vecY(p))),
+           P.add(P.mul(P.sin(P.vecY(p)), P.cos(P.vecZ(p))),
+                 P.mul(P.sin(P.vecZ(p)), P.cos(P.vecX(p)))));
   }
 }
 

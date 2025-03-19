@@ -335,6 +335,24 @@ class Peptide {
         );
     }
 
+    static sin(a) {
+        a.assertType('float');
+        return new Peptide('sin', 'float', null, a, null, null,
+            (_, vars) => Math.sin(a.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = Math.sin(${ssaOp.left});`,
+            (_, ssaOp) => `${ssaOp.result} = sin(${ssaOp.left});`,
+        );
+    }
+
+    static cos(a) {
+        a.assertType('float');
+        return new Peptide('cos', 'float', null, a, null, null,
+            (_, vars) => Math.cos(a.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = Math.cos(${ssaOp.left});`,
+            (_, ssaOp) => `${ssaOp.result} = cos(${ssaOp.left});`,
+        );
+    }
+
     static vecX(a) {
         a.assertType('vec3');
         return new Peptide('vecX', 'float', null, a, null, null,
