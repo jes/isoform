@@ -24,46 +24,6 @@ vec3 rotatePoint(vec3 p) {
 
 float mapsign = 1.0;
 
-// Creates a rotation matrix that rotates the z-axis to align with the given axis
-mat3 rotateToAxis(vec3 axis) {
-    // Handle special cases where axis is parallel to coordinate axes
-    if (abs(axis.y) > 0.999999) {
-        float sign = axis.y > 0.0 ? 1.0 : -1.0;
-        return mat3(
-            1.0, 0.0, 0.0,
-            0.0, 0.0, sign,  // z -> y
-            0.0, sign, 0.0  // y -> z
-        );
-    }
-    if (abs(axis.z) > 0.999999) {
-        float sign = axis.z > 0.0 ? 1.0 : -1.0;
-        return mat3(
-            1.0, 0.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 0.0, sign
-        );
-    }
-    
-    // Compute the rotation matrix using the cross product method
-    vec3 z = normalize(axis);
-    // Use x-axis as reference if close to y-axis
-    vec3 ref = abs(dot(z, vec3(0.0, 1.0, 0.0))) > 0.9 ? 
-               vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
-    vec3 x = normalize(cross(ref, z));
-    vec3 y = cross(z, x);
-    
-    return mat3(x, y, z);
-}
-
-// Custom matrix transpose function
-mat3 transposeMatrix(mat3 m) {
-    return mat3(
-    m[0][0], m[1][0], m[2][0],
-    m[0][1], m[1][1], m[2][1],
-    m[0][2], m[1][2], m[2][2]
-    );
-}
-
 // begin scene
 float map(vec3 p) {
     p = rotatePoint(p);
