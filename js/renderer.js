@@ -22,8 +22,22 @@ const renderer = {
     quadBuffer: null,
     displayProgram: null,
     
+    coordDisplay: null,
+    
+    mouseDebounceTimeout: null,
+    mouseDebounceDelay: 50, // 50ms delay
+    lastMousePosition: null,
+    
     async init() {
         this.canvas = document.getElementById('glCanvas');
+        this.coordDisplay = document.getElementById('coord-display');
+        
+        // Add mousemove handler for coordinate display
+        this.canvas.addEventListener('mousemove', (e) => this.onCanvasMouseMove(e));
+        this.canvas.addEventListener('mouseout', () => {
+            if (this.coordDisplay) this.coordDisplay.style.display = 'none';
+        });
+
         this.canvas.addEventListener('webglcontextlost', (event) => {
             console.log('WebGL context lost');
             alert('WebGL context lost! Sorry');
@@ -399,5 +413,111 @@ const renderer = {
             this.frameCount = 0;
             this.lastFpsUpdateTime = now;
         }
-    }
+    },
+    
+    onCanvasMouseMove(e) {
+        if (!this.coordDisplay || !this.programInfo) return;
+
+        // Get canvas-relative coordinates
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Store current mouse position
+        this.lastMousePosition = { x, y, clientX: e.clientX, clientY: e.clientY };
+
+        // Clear any existing timeout
+        if (this.mouseDebounceTimeout) {
+            clearTimeout(this.mouseDebounceTimeout);
+        }
+
+        // Hide coordinates while moving
+        this.coordDisplay.style.display = 'none';
+
+        // Set new timeout
+        this.mouseDebounceTimeout = setTimeout(() => {
+            if (!this.lastMousePosition) return;
+            
+            // Use the last stored position for calculations
+            const p = {
+                x: (2.0 * this.lastMousePosition.x / this.canvas.width - 1.0) * (this.canvas.width / this.canvas.height),
+                y: 1.0 - 2.0 * this.lastMousePosition.y / this.canvas.height
+            };
+
+            const forward = camera.target.sub(camera.position).normalize();
+            const right = forward.cross(new Vec3(0, 1, 0)).normalize();
+            const up = right.cross(forward);
+
+            const ro = camera.position.add(
+                right.mul(p.x / camera.zoom).add(up.mul(p.y / camera.zoom))
+            );
+            const rd = forward;
+
+            const result = this.rayMarchFromPoint(ro, rd);
+
+            if (result.hit) {
+                const coords = result.hitPosition;
+                const text = `X: ${coords.x.toFixed(2)}<br>Y: ${coords.y.toFixed(2)}<br>Z: ${coords.z.toFixed(2)}`;
+                
+                this.coordDisplay.innerHTML = text;
+                this.coordDisplay.style.display = 'block';
+                this.coordDisplay.style.left = (this.lastMousePosition.clientX + 15) + 'px';
+                this.coordDisplay.style.top = (this.lastMousePosition.clientY + 15) + 'px';
+            }
+        }, this.mouseDebounceDelay);
+    },
+    
+    rayMarchFromPoint(ro, rd) {
+        const startTime = performance.now();
+
+        if (!app.sdf) {
+            return {
+                distance: 0.0,
+                minDistance: 1000000.0,
+                hit: false,
+                hitPosition: null,
+                steps: 0
+            };
+        }
+
+        const result = {
+            distance: 0.0,
+            minDistance: 1000000.0,
+            hit: false,
+            hitPosition: null,
+            steps: 0
+        };
+
+        let p = ro;
+        let lastD = 0.0;
+        const MAX_STEPS = 500;
+
+        for (let i = 0; i < MAX_STEPS; i++) {
+            result.steps++;
+            
+            // Apply rotation to point before evaluating SDF
+            const rotatedP = camera.activeRotationMatrix.mulVec3(p);
+            const d = app.sdf(rotatedP);
+            
+            result.minDistance = Math.min(result.minDistance, d);
+
+            if (d < 0.0) {
+                result.hit = true;
+                result.hitPosition = p;
+                break;
+            }
+
+            const stepSize = Math.max(0.001, d);
+            p = p.add(rd.mul(stepSize));
+
+            if (d > lastD && result.distance > 10000.0) break;
+            lastD = d;
+            result.distance += d;
+        }
+
+        const endTime = performance.now();
+        console.log(`Raymarching took ${(endTime - startTime).toFixed(2)}ms (${result.steps} steps)`);
+
+        return result;
+    },
 }; 

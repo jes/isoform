@@ -38,8 +38,6 @@ const scene = {
                    newSceneCode +
                    originalSource.substring(endIndex);
 
-        console.log(newSource);
-        
         const endTime = performance.now();
         console.log(`Shader codegen took ${endTime - startTime} ms`);
 

@@ -8,6 +8,7 @@ const app = {
     sketchNeedsRedraw: false,
     lastBoundingSphereState: false,
     peptideExpression: null,
+    sdf: null,
 
     async init() {
         // Initialize components
@@ -100,13 +101,16 @@ const app = {
             this.peptideExpression = this.document.peptide(P.vvar('p'));
             const ssa = new PeptideSSA(this.peptideExpression);
             const code = ssa.compileToGLSL(`float peptide(vec3 p)`);
-            
             // Compile shaders asynchronously
             await renderer.createShaderProgram(
                 renderer.vertexShaderSource, 
                 scene.generateShaderCode(code, ui.showBoundingSphere)
             );
             this.document.markClean();
+
+            // Compile the SDF function
+            const fn = eval(ssa.compileToJS());
+            this.sdf = (p) => fn({p: p});
             
             // Hide loading indicator
             this.hideLoadingIndicator();
