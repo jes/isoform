@@ -457,7 +457,7 @@ const renderer = {
 
             if (result.hit) {
                 const coords = result.hitPosition;
-                const text = `X: ${coords.x.toFixed(2)}<br>Y: ${coords.y.toFixed(2)}<br>Z: ${coords.z.toFixed(2)}`;
+                const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}`;
                 
                 this.coordDisplay.innerHTML = text;
                 this.coordDisplay.style.display = 'block';
@@ -503,12 +503,13 @@ const renderer = {
 
             if (d < 0.0) {
                 result.hit = true;
-                // Transform the hit position back to model space using the transpose (inverse) of the rotation matrix
-                result.hitPosition = camera.activeRotationMatrix.transpose().mulVec3(rotatedP);
+                // p is in world space, to get object space coordinates,
+                // apply the same rotation as the SDF uses
+                result.hitPosition = camera.activeRotationMatrix.mulVec3(p);
                 break;
             }
 
-            const stepSize = Math.max(0.001, d);
+            const stepSize = Math.max(0.0001, d);
             p = p.add(rd.mul(stepSize));
 
             if (d > lastD && result.distance > 10000.0) break;
