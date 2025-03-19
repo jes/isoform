@@ -276,6 +276,16 @@ class Peptide {
         );
     }
 
+    static step(a, b) {
+        a.assertType('float');
+        b.assertType('float');
+        return new Peptide('step', 'float', null, a, b, null,
+            (_, vars) => a.evaluate(vars) <= b.evaluate(vars) ? 1.0 : 0.0,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} <= ${ssaOp.right} ? 1.0 : 0.0;`,
+            (_, ssaOp) => `${ssaOp.result} = step(${ssaOp.left}, ${ssaOp.right});`,
+        );
+    }
+
     static smin(a, b, k) {
         a.assertType('float');
         b.assertType('float');

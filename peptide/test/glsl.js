@@ -765,5 +765,29 @@ addGLSLTest('chmin/chmax with varying k', async (harness) => {
     }
 });
 
+addGLSLTest('step operations', async (harness) => {
+    // Test when first argument is less than second
+    const a1 = P.const(2);
+    const b1 = P.const(5);
+    harness.testExpression(P.step(a1, b1), 1.0); // 2 <= 5, should return 1.0
+    
+    // Test when first argument equals second
+    const a2 = P.const(3);
+    const b2 = P.const(3);
+    harness.testExpression(P.step(a2, b2), 1.0); // 3 <= 3, should return 1.0
+    
+    // Test when first argument is greater than second
+    const a3 = P.const(7);
+    const b3 = P.const(4);
+    harness.testExpression(P.step(a3, b3), 0.0); // 7 > 4, should return 0.0
+    
+    // Test with variables
+    const va = P.var('u_x');
+    const vb = P.var('u_y');
+    const stepVar = P.step(va, vb);
+    harness.testExpression(stepVar, 1.0, { u_x: 1, u_y: 2 }); // 1 <= 2
+    harness.testExpression(stepVar, 0.0, { u_x: 3, u_y: 2 }); // 3 > 2
+});
+
 // Export for browser
 window.PeptideGLSLTests = GLSLTests;

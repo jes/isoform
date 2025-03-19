@@ -660,6 +660,42 @@ addTest('chmax operations', (evaluate) => {
     assertEquals(result, 7.071);
 });
 
+addTest('step operations', (evaluate) => {
+    // Test when first argument is less than second
+    const a1 = P.const(2);
+    const b1 = P.const(5);
+    const step1 = P.step(a1, b1);
+    assertEquals(evaluate(step1), 1.0); // 2 <= 5, should return 1.0
+    
+    // Test when first argument equals second
+    const a2 = P.const(3);
+    const b2 = P.const(3);
+    const step2 = P.step(a2, b2);
+    assertEquals(evaluate(step2), 1.0); // 3 <= 3, should return 1.0
+    
+    // Test when first argument is greater than second
+    const a3 = P.const(7);
+    const b3 = P.const(4);
+    const step3 = P.step(a3, b3);
+    assertEquals(evaluate(step3), 0.0); // 7 > 4, should return 0.0
+    
+    // Test with variables
+    const va = P.var('x');
+    const vb = P.var('y');
+    const stepVar = P.step(va, vb);
+    assertEquals(evaluate(stepVar, { x: 1, y: 2 }), 1.0); // 1 <= 2
+    assertEquals(evaluate(stepVar, { x: 3, y: 2 }), 0.0); // 3 > 2
+});
+
+addTest('step type checking', (evaluate) => {
+    const scalar = P.const(5);
+    const vec = P.vconst(new Vec3(1, 2, 3));
+    
+    // Should throw when trying to use vector with step
+    assertThrows(() => evaluate(P.step(vec, scalar)));
+    assertThrows(() => evaluate(P.step(scalar, vec)));
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,

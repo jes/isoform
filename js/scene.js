@@ -27,7 +27,7 @@ const scene = {
         let newSceneCode = `
         float map(vec3 p) {
             p = rotatePoint(p);
-            return ${document.shaderCode()};
+            return ${document.shaderCode()} + ${0.00001*Math.random()};
         }
         float map_secondary(vec3 p) {
             p = rotatePoint(p);
