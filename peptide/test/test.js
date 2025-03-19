@@ -558,6 +558,34 @@ addTest('smin operations', (evaluate) => {
     assertEquals(evaluate(sminZeroK), 3);
 });
 
+addTest('smax operations', (evaluate) => {
+    const a = P.const(5);
+    const b = P.const(3);
+    const k = P.const(1);
+    
+    // When values are far apart, smax should behave like max
+    const smaxResult = P.smax(a, b, k);
+    assertEquals(evaluate(smaxResult), 5);
+    
+    // When values are close, smax should be slightly more than max
+    const c = P.const(1.0);
+    const d = P.const(1.1);
+    const smaxClose = P.smax(c, d, k);
+    const maxClose = P.max(c, d);
+    
+    // smax should be greater than regular max
+    const smaxVal = evaluate(smaxClose);
+    const maxVal = evaluate(maxClose);
+    if (smaxVal <= maxVal) {
+        throw new Error(`Expected smax(1.0, 1.1, 1.0) = ${smaxVal} to be greater than max(1.0, 1.1) = ${maxVal}`);
+    }
+    
+    // Test with k=0 (should behave exactly like max)
+    const zeroK = P.const(0);
+    const smaxZeroK = P.smax(a, b, zeroK);
+    assertEquals(evaluate(smaxZeroK), 5);
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,

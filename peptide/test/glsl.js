@@ -657,5 +657,37 @@ addGLSLTest('smin operations', async (harness) => {
     harness.testExpression(expr2, expected2, values);
 });
 
+addGLSLTest('smax operations', async (harness) => {
+    // Test with k=0 (should be exactly like max)
+    harness.testExpression(P.smax(P.const(5), P.const(3), P.const(0)), 5);
+    
+    // Test that smax in GLSL behaves the same as in JavaScript
+    const a = P.const(10);
+    const b = P.const(11);
+    const k = P.const(5);
+    
+    const expr1 = P.smax(a, b, k);
+    const expected = expr1.evaluate({});
+    
+    harness.testExpression(expr1, expected, {});
+    
+    // Test with variables
+    const va = P.var('u_a');
+    const vb = P.var('u_b');
+    const vk = P.var('u_k');
+
+    const values = {
+        u_a: 10,
+        u_b: 11,
+        u_k: 5
+    };
+
+    const expr2 = P.smax(va, vb, vk);
+    const expected2 = expr2.evaluate(values);
+    
+    // Test that result is greater than the regular max
+    harness.testExpression(expr2, expected2, values);
+});
+
 // Export for browser
 window.PeptideGLSLTests = GLSLTests;
