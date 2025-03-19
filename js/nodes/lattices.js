@@ -93,8 +93,6 @@ class CubicLatticeNode extends TreeNode {
   }
 }
 
-
-
 // Detect environment and export accordingly
 (function() {
   const nodes = { GyroidNode, CubicLatticeNode };

@@ -87,37 +87,6 @@ class UnionNode extends TreeNode {
       return shaderCode;
     }
 
-    opUnion(d1, d2) {
-      return min(d1, d2);
-    }
-
-    opSmoothUnion(d1, d2, k) {
-      const h = clamp(0.5 + 0.5 * (d2 - d1) / k, 0.0, 1.0);
-      return mix(d2, d1, h) - k * h * (1.0 - h);
-    }
-
-    sdf(p) {
-      if (this.children.length < 1) {
-        this.warn("Union node needs at least one child");
-        return this.noopSDF();
-      }
-
-      let d = this.children[0].sdf(p);
-      for (let i = 1; i < this.children.length; i++) {
-        if (this.children[i].sdf === this.noopSDF) {
-          continue;
-        }
-        const d1 = this.children[i].sdf(p);
-        if (this.blendRadius > 0) {
-          d = this.opSmoothUnion(d, d1, this.blendRadius);
-        } else {
-          d = this.opUnion(d, d1);
-        }
-      }
-
-      return d;
-    }
-
     getIcon() {
       return "🔀";
     }
@@ -171,41 +140,6 @@ class IntersectionNode extends TreeNode {
       }
     }
     return shaderCode;
-  }
-
-  opIntersection(d1, d2) {
-    return max(d1, d2);
-  }
-
-  opSmoothIntersection(d1, d2, k) {
-    const h = clamp(0.5 - 0.5 * (d2 - d1) / k, 0.0, 1.0);
-    return mix(d2, d1, h) + k * h * (1.0 - h);
-  }
-
-  sdf(p) {
-    if (this.children.length < 1) {
-      this.warn("Intersection node needs at least one child");
-      return this.noopSDF();
-    }
-
-    if (this.children[0].sdf === this.noopSDF) {
-      return this.noopSDF();
-    }
-
-    let d = this.children[0].sdf(p);
-    for (let i = 1; i < this.children.length; i++) {
-      if (this.children[i].sdf === this.noopSDF) {
-        continue;
-      }
-      const d1 = this.children[i].sdf(p);
-      if (this.blendRadius > 0) {
-        d = this.opSmoothIntersection(d, d1, this.blendRadius);
-      } else {
-        d = this.opIntersection(d, d1);
-      }
-    }
-
-    return d;
   }
 
   getIcon() {
@@ -301,41 +235,6 @@ class SubtractionNode extends TreeNode {
       }
     }
     return shaderCode;
-  }
-
-  opSubtraction(d1, d2) {
-    return max(d1, -d2);
-  }
-
-  opSmoothSubtraction(d1, d2, k) {
-    const h = clamp(0.5 - 0.5 * (d2 + d1) / k, 0.0, 1.0);
-    return mix(d1, -d2, h) + k * h * (1.0 - h);
-  }
-
-  sdf(p) {
-    if (this.children.length < 1) {
-      this.warn("Subtraction node needs at least one child");
-      return this.noopSDF();
-    }
-
-    if (this.children[0].sdf === this.noopSDF) {
-      return this.noopSDF();
-    }
-
-    let d = this.children[0].sdf(p);
-    for (let i = 1; i < this.children.length; i++) {
-      if (this.children[i].sdf === this.noopSDF) {
-        continue;
-      }
-      const d1 = this.children[i].sdf(p);
-      if (this.blendRadius > 0) {
-        d = this.opSmoothSubtraction(d, d1, this.blendRadius);
-      } else {
-        d = this.opSubtraction(d, d1);
-      }
-    }
-
-    return d;
   }
 
   getIcon() {

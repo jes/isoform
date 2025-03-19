@@ -95,65 +95,6 @@ class SketchNode extends TreeNode {
     `;
   }
 
-  sdf(p) {
-    // JavaScript implementation of the SDF
-    if (this.polycurves.length === 0 || this.polycurves[0].length < 2) {
-      return 1000.0; // Large distance if no valid sketch
-    }
-    
-    // Project to 2D (assuming sketch is in XY plane)
-    const p2d = new Vec2(p.x, p.y);
-    
-    const polycurve = this.polycurves[0];
-    const startPoint = polycurve[0];
-    let vb = new Vec2(startPoint.x, startPoint.y);
-    
-    let d = p2d.sub(vb).lengthSq();
-    let s = 1.0;
-    
-    // Process all segments
-    for (let i = 1; i < polycurve.length; i++) {
-      const va = vb.clone();
-      const endPoint = polycurve[i];
-      vb = new Vec2(endPoint.x, endPoint.y);
-      
-      const ds = this.sdSqLine(p2d, va, vb);
-      
-      // in/out test
-      if ((p2d.y >= va.y && p2d.y < vb.y && ds.y > 0.0) ||
-          (p2d.y < va.y && p2d.y >= vb.y && ds.y <= 0.0)) {
-        s *= -1.0;
-      }
-      
-      d = Math.min(d, ds.x);
-    }
-    
-    // Process closing segment back to start
-    const va = vb.clone();
-    vb = new Vec2(startPoint.x, startPoint.y);
-    
-    const ds = this.sdSqLine(p2d, va, vb);
-    
-    // in/out test
-    if ((p2d.y >= va.y && p2d.y < vb.y && ds.y > 0.0) ||
-        (p2d.y < va.y && p2d.y >= vb.y && ds.y <= 0.0)) {
-      s *= -1.0;
-    }
-    
-    d = Math.min(d, ds.x);
-    
-    return s * Math.sqrt(d);
-  }
-  
-  // Helper function for JavaScript implementation
-  sdSqLine(p, a, b) {
-    const pa = p.sub(a);
-    const ba = b.sub(a);
-    const h = Math.max(0, Math.min(1, pa.dot(ba) / ba.lengthSq()));
-    const d = pa.sub(ba.mul(h));
-    return { x: d.lengthSq(), y: ba.x * pa.y - ba.y * pa.x };
-  }
-
   getIcon() {
     return "🎨";
   }
