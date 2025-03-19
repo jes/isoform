@@ -7,6 +7,7 @@ const app = {
     wasFocused: true, // Track if window was previously focused
     sketchNeedsRedraw: false,
     lastBoundingSphereState: false,
+    peptideExpression: null,
 
     async init() {
         // Initialize components
@@ -96,8 +97,8 @@ const app = {
             // Show loading indicator
             this.showLoadingIndicator();
 
-            const expr = this.document.peptide(P.vvar('p'));
-            const ssa = new PeptideSSA(expr);
+            this.peptideExpression = this.document.peptide(P.vvar('p'));
+            const ssa = new PeptideSSA(this.peptideExpression);
             const code = ssa.compileToGLSL(`float peptide(vec3 p)`);
             
             // Compile shaders asynchronously
