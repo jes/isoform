@@ -425,6 +425,77 @@ addTest('missing variable error messages', (evaluate) => {
     assertEquals(error, "Vector variable 'vx' not found");
 });
 
+addTest('vector absolute value', (evaluate) => {
+    // Test with constant vector
+    const v = P.vconst(new Vec3(-1, -2, -3));
+    const abs = P.vabs(v);
+    const result = evaluate(abs);
+    assertEquals(result.x, 1);
+    assertEquals(result.y, 2);
+    assertEquals(result.z, 3);
+    
+    // Test with variable vector
+    const vv = P.vvar('v');
+    const vabs = P.vabs(vv);
+    const vars = { v: new Vec3(-4, 5, -6) };
+    const result2 = evaluate(vabs, vars);
+    assertEquals(result2.x, 4);
+    assertEquals(result2.y, 5);
+    assertEquals(result2.z, 6);
+});
+
+addTest('vabs type checking', (evaluate) => {
+    const scalar = P.const(5);
+    // Should throw when trying to take absolute value of a scalar
+    assertThrows(() => evaluate(P.vabs(scalar)));
+});
+
+addTest('vector min/max operations', (evaluate) => {
+    const v1 = P.vconst(new Vec3(1, 4, 2));
+    const v2 = P.vconst(new Vec3(3, 2, 5));
+    
+    // Test vmin
+    const vminResult = evaluate(P.vmin(v1, v2));
+    assertEquals(vminResult.x, 1); // min(1, 3)
+    assertEquals(vminResult.y, 2); // min(4, 2)
+    assertEquals(vminResult.z, 2); // min(2, 5)
+    
+    // Test vmax
+    const vmaxResult = evaluate(P.vmax(v1, v2));
+    assertEquals(vmaxResult.x, 3); // max(1, 3)
+    assertEquals(vmaxResult.y, 4); // max(4, 2)
+    assertEquals(vmaxResult.z, 5); // max(2, 5)
+    
+    // Test with variables
+    const vv1 = P.vvar('v1');
+    const vv2 = P.vvar('v2');
+    const vars = {
+        v1: new Vec3(-1, 2, -3),
+        v2: new Vec3(1, -2, 3)
+    };
+    
+    const vminVarResult = evaluate(P.vmin(vv1, vv2), vars);
+    assertEquals(vminVarResult.x, -1);
+    assertEquals(vminVarResult.y, -2);
+    assertEquals(vminVarResult.z, -3);
+    
+    const vmaxVarResult = evaluate(P.vmax(vv1, vv2), vars);
+    assertEquals(vmaxVarResult.x, 1);
+    assertEquals(vmaxVarResult.y, 2);
+    assertEquals(vmaxVarResult.z, 3);
+});
+
+addTest('vector min/max type checking', (evaluate) => {
+    const vec = P.vconst(new Vec3(1, 2, 3));
+    const scalar = P.const(5);
+    
+    // Should throw when trying to use scalar with vector operations
+    assertThrows(() => evaluate(P.vmin(vec, scalar)));
+    assertThrows(() => evaluate(P.vmin(scalar, vec)));
+    assertThrows(() => evaluate(P.vmax(vec, scalar)));
+    assertThrows(() => evaluate(P.vmax(scalar, vec)));
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,

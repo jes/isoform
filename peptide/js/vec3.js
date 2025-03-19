@@ -1,4 +1,4 @@
-function Vec3(x, y, z) {
+function Vec3(x, y = x, z = x) {
     this.x = x;
     this.y = y;
     this.z = z;
@@ -28,6 +28,10 @@ Vec3.prototype.length = function() {
     return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z);
 };
 
+Vec3.prototype.abs = function() {
+    return new Vec3(Math.abs(this.x), Math.abs(this.y), Math.abs(this.z));
+};
+
 Vec3.prototype.angle = function() {
     // Returns azimuthal angle in the x-y plane from x-axis (in radians)
     return Math.atan2(this.y, this.x);
@@ -36,6 +40,14 @@ Vec3.prototype.angle = function() {
 Vec3.prototype.elevation = function() {
     // Returns elevation angle from x-y plane (in radians)
     return Math.atan2(this.z, Math.sqrt(this.x*this.x + this.y*this.y));
+};
+
+Vec3.prototype.min = function(v) {
+    return new Vec3(Math.min(this.x, v.x), Math.min(this.y, v.y), Math.min(this.z, v.z));
+};
+
+Vec3.prototype.max = function(v) {
+    return new Vec3(Math.max(this.x, v.x), Math.max(this.y, v.y), Math.max(this.z, v.z));
 };
 
 Vec3.prototype.rotate = function(theta, axis) {

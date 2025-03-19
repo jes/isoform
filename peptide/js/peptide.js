@@ -23,7 +23,7 @@ class Peptide {
 
     assertType(expectedType) {
         if (this.type !== expectedType) {
-            throw new Error(`Expected type '${expectedType}' but got '${this.type}' for operation '${this.op}'`);
+            throw new Error(`Expected type '${expectedType}' but got '${this.type}' for result of '${this.op}'`);
         }
         return this;
     }
@@ -31,7 +31,7 @@ class Peptide {
     // Scalar operations
     static const(value) {
         if (typeof value !== 'number') {
-            throw new Error(`Const expected number but got ${typeof value}`);
+            throw new Error(`const expected number but got ${typeof value}`);
         }
         return new Peptide('const', 'float', value, null, null, null,
             (_, vars) => value,
@@ -59,7 +59,7 @@ class Peptide {
     // Vector operations
     static vconst(vec3) {
         if (!(vec3 instanceof Vec3)) {
-            throw new Error(`Vconst expected Vec3 but got ${vec3?.constructor?.name || typeof vec3}`);
+            throw new Error(`vconst expected Vec3 but got ${vec3?.constructor?.name || typeof vec3}`);
         }
         const vec3Clone = new Vec3(vec3.x, vec3.y, vec3.z);
         // Deep clone the Vec3
@@ -131,6 +131,35 @@ class Peptide {
             (_, vars) => a.evaluate(vars).length(),
             (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.length();`,
             (_, ssaOp) => `${ssaOp.result} = length(${ssaOp.left});`,
+        );
+    }
+
+    static vabs(a) {
+        a.assertType('vec3');
+        return new Peptide('vabs', 'vec3', null, a, null, null,
+            (_, vars) => a.evaluate(vars).abs(),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.abs();`,
+            (_, ssaOp) => `${ssaOp.result} = abs(${ssaOp.left});`,
+        );
+    }
+
+    static vmin(a, b) {
+        a.assertType('vec3');
+        b.assertType('vec3');
+        return new Peptide('vmin', 'vec3', null, a, b, null,
+            (_, vars) => a.evaluate(vars).min(b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.min(${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = min(${ssaOp.left}, ${ssaOp.right});`,
+        );
+    }
+
+    static vmax(a, b) {
+        a.assertType('vec3');
+        b.assertType('vec3');
+        return new Peptide('vmax', 'vec3', null, a, b, null,
+            (_, vars) => a.evaluate(vars).max(b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.max(${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = max(${ssaOp.left}, ${ssaOp.right});`,
         );
     }
 
