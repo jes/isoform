@@ -530,6 +530,34 @@ addTest('mix operations', (evaluate) => {
     assertEquals(evaluate(mixed3), 10); // mix(0, 10, 1) = 10
 });
 
+addTest('smin operations', (evaluate) => {
+    const a = P.const(5);
+    const b = P.const(3);
+    const k = P.const(1);
+    
+    // When values are far apart, smin should behave like min
+    const sminResult = P.smin(a, b, k);
+    assertEquals(evaluate(sminResult), 3);
+    
+    // When values are close, smin should be slightly less than min
+    const c = P.const(1.1);
+    const d = P.const(1.0);
+    const sminClose = P.smin(c, d, k);
+    const minClose = P.min(c, d);
+    
+    // smin should be less than regular min
+    const sminVal = evaluate(sminClose);
+    const minVal = evaluate(minClose);
+    if (sminVal >= minVal) {
+        throw new Error(`Expected smin(1.1, 1.0, 1.0) = ${sminVal} to be less than min(1.1, 1.0) = ${minVal}`);
+    }
+    
+    // Test with k=0 (should behave exactly like min)
+    const zeroK = P.const(0);
+    const sminZeroK = P.smin(a, b, zeroK);
+    assertEquals(evaluate(sminZeroK), 3);
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,

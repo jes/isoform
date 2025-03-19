@@ -276,6 +276,14 @@ class Peptide {
         );
     }
 
+    static smin(a, b, k) {
+        a.assertType('float');
+        b.assertType('float');
+        k.assertType('float');
+        const h = P.clamp(P.add(P.const(0.5), P.div(P.sub(b, a), P.mul(P.const(2), k))), P.const(0), P.const(1));
+        return P.sub(P.mix(b, a, h), P.mul(k, P.mul(h, P.sub(P.const(1), h))));
+    }
+
     static pow(a, b) {
         a.assertType('float');
         b.assertType('float');
@@ -322,7 +330,7 @@ class Peptide {
         );
     }
 
-    evaluate(vars) {
+    evaluate(vars = {}) {
         const result = this.opFn(this, vars);
         if (this.type === 'float') {
             if (typeof result !== 'number') {

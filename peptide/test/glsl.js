@@ -35,18 +35,19 @@ class GLSLTestHarness {
         
         // Fragment shader template - will be filled in for each test
         this.fsTemplate = `#version 300 es
-            precision highp float;
-            out vec4 fragColor;
-            
-            // begin peptide expression code
-            {{PEPTIDE_CODE}}
-            // end peptide expression code
 
-            void main() {
-                // begin test code
-                {{TEST_CODE}}
-                // end test code
-            }
+precision highp float;
+out vec4 fragColor;
+
+// begin peptideCode
+{{PEPTIDE_CODE}}
+// end peptideCode
+
+void main() {
+    // begin testCode
+{{TEST_CODE}}
+    // end testCode
+}
         `;
         
         // Create shader program
