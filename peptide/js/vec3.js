@@ -24,6 +24,10 @@ Vec3.prototype.div = function(k) {
     return new Vec3(this.x / k, this.y / k, this.z / k);
 };
 
+Vec3.prototype.mod = function(k) {
+    return new Vec3(this.x % k, this.y % k, this.z % k);
+};
+
 Vec3.prototype.length = function() {
     return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z);
 };

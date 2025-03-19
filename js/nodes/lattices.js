@@ -30,55 +30,32 @@ class CubicLatticeNode extends TreeNode {
     return {"scale": "float", "thickness": "float", "blendRadius": "float"};
   }
 
-  generateShaderImplementation() {
-    let minfn = "min(d,d1)";
+  peptide(p) {
+    let minFn = (a, b) => P.min(a, b);
     if (this.blendRadius > 0.0) {
-        if (this.chamfer) {
-            minfn = `chmin(d,d1,${this.blendRadius.toFixed(16)})`;
-        } else {
-            minfn = `smin(d,d1,${this.blendRadius.toFixed(16)})`;
-        }
-    }
-    let maxfn = "max(d,d1)";
-    if (this.blendRadius > 0.0) {
-        if (this.chamfer) {
-            maxfn = `chmax(d,d1,${this.blendRadius.toFixed(16)})`;
-        } else {
-            maxfn = `smax(d,d1,${this.blendRadius.toFixed(16)})`;
-        }
-    }
-    return `
-      float ${this.getFunctionName()}(vec3 p) {
-        float scale = ${this.scale.toFixed(16)};
-        float thickness = ${this.thickness.toFixed(16)};
-        // Normalize to cell coordinates
-        vec3 q = abs(mod(abs(p), scale*2.0) - scale);
-
-        float d;
-        float d1;
-
-        d = q.y;
-        d1 = q.z;
-        float dx = ${minfn};
-        d = q.x;
-        d1 = q.z;
-        float dy = ${minfn};
-        d = q.y;
-        d1 = q.x;
-        float dz = ${minfn};
-
-        d = dx;
-        d1 = dy;
-        d = ${maxfn};
-        d1 = dz;
-        d = ${maxfn};
-        return d - thickness;
+      if (this.chamfer) {
+        minFn = (a, b) => P.chmin(a, b, P.const(this.blendRadius));
+      } else {
+        minFn = (a, b) => P.smin(a, b, P.const(this.blendRadius));
       }
-    `;
-  }
+    }
+    let maxFn = (a, b) => P.max(a, b);
+    if (this.blendRadius > 0.0) {
+      if (this.chamfer) {
+        maxFn = (a, b) => P.chmax(a, b, P.const(this.blendRadius));
+      } else {
+        maxFn = (a, b) => P.smax(a, b, P.const(this.blendRadius));
+      }
+    }
 
-  generateShaderCode() {
-    return `${this.getFunctionName()}(p)`;
+    const q = P.vabs(P.vsub(P.vmod(P.vabs(p), P.const(this.scale*2.0)), P.vconst(new Vec3(this.scale))));
+
+    const dx = minFn(P.vecY(q), P.vecZ(q));
+    const dy = minFn(P.vecX(q), P.vecZ(q));
+    const dz = minFn(P.vecX(q), P.vecY(q));
+    
+    const d = maxFn(maxFn(dx, dy), dz);
+    return P.sub(d, P.const(this.thickness));
   }
 
   getIcon() {

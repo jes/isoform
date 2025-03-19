@@ -815,5 +815,22 @@ addGLSLTest('trigonometric functions', async (harness) => {
     harness.testExpression(composed, 1.0, { u_x: 1.234 }); // sin²(x) + cos²(x) = 1
 });
 
+addGLSLTest('vector modulo operations', async (harness) => {
+    // Test with constant vector and scalar
+    const v = P.vconst(new Vec3(7, -8, 9));
+    const s = P.const(4);
+    const mod = P.vmod(v, s);
+    harness.testExpression(mod, new Vec3(3, 0, 1));
+    
+    // Test with variables
+    const vv = P.vvar('u_v');
+    const sv = P.var('u_s');
+    const modVar = P.vmod(vv, sv);
+    harness.testExpression(modVar, new Vec3(1, 1, 0), {
+        u_v: new Vec3(10, -11, 12),
+        u_s: 3
+    });
+});
+
 // Export for browser
 window.PeptideGLSLTests = GLSLTests;

@@ -125,6 +125,16 @@ class Peptide {
         );
     }
 
+    static vmod(a, b) {
+        a.assertType('vec3');
+        b.assertType('float');
+        return new Peptide('vmod', 'vec3', null, a, b, null,
+            (_, vars) => a.evaluate(vars).mod(b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mod(${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = mod(${ssaOp.left}, ${ssaOp.right});`,
+        );
+    }
+
     static vlength(a) {
         a.assertType('vec3');
         return new Peptide('vlength', 'float', null, a, null, null,

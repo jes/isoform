@@ -730,6 +730,39 @@ addTest('trigonometric type checking', (evaluate) => {
     assertThrows(() => evaluate(P.cos(vec)));
 });
 
+addTest('vector modulo', (evaluate) => {
+    // Test with constant vector and scalar
+    const v = P.vconst(new Vec3(7, -8, 9));
+    const s = P.const(4);
+    const mod = P.vmod(v, s);
+    const result = evaluate(mod);
+    assertEquals(result.x, 3); // 7 mod 4 = 3
+    assertEquals(result.y, 0); // -8 mod 4 = 0
+    assertEquals(result.z, 1); // 9 mod 4 = 1
+    
+    // Test with variables
+    const vv = P.vvar('v');
+    const sv = P.var('s');
+    const modVar = P.vmod(vv, sv);
+    const result2 = evaluate(modVar, {
+        v: new Vec3(10, -11, 12),
+        s: 3
+    });
+    assertEquals(result2.x, 1); // 10 mod 3 = 1
+    assertEquals(result2.y, -2); // -11 mod 3 = -2
+    assertEquals(result2.z, 0); // 12 mod 3 = 0
+});
+
+addTest('vmod type checking', (evaluate) => {
+    const vec = P.vconst(new Vec3(1, 2, 3));
+    const scalar = P.const(2);
+    
+    // Should throw when trying to use vector as second argument
+    assertThrows(() => evaluate(P.vmod(vec, vec)));
+    // Should throw when trying to use scalar as first argument
+    assertThrows(() => evaluate(P.vmod(scalar, scalar)));
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,
