@@ -245,35 +245,35 @@ void main() {
         // Create test code that evaluates the expression and outputs the result as a color
         if (peptideExpr.type === 'float') {
             testCode = `
-                float result = peptide();
-                float expected = ${expectedValue.toFixed(16)};
-                
-                // Output green if the result matches the expected value (within epsilon)
-                // Output red if it doesn't match
-                float epsilon = 0.001;
-                if (abs(result - expected) < epsilon) {
-                    fragColor = vec4(0.0, 1.0, 0.0, 1.0);  // Green for success
-                } else {
-                    fragColor = vec4(1.0, 0.0, 0.0, 1.0);  // Red for failure
-                    // Encode the actual result in the alpha channel for debugging
-                    fragColor.a = result / 255.0;
-                }
+    float result = peptide();
+    float expected = ${expectedValue.toFixed(16)};
+
+    // Output green if the result matches the expected value (within epsilon)
+    // Output red if it doesn't match
+    float epsilon = 0.001;
+    if (abs(result - expected) < epsilon) {
+        fragColor = vec4(0.0, 1.0, 0.0, 1.0);  // Green for success
+    } else {
+        fragColor = vec4(1.0, 0.0, 0.0, 1.0);  // Red for failure
+        // Encode the actual result in the alpha channel for debugging
+        fragColor.a = result / 255.0;
+    }
             `;
         } else if (peptideExpr.type === 'vec3') {
             // For vector results, we need to check each component
             const expectedVec = expectedValue;
             testCode = `
-                vec3 result = peptide();
-                vec3 expected = vec3(${expectedVec.x.toFixed(16)}, ${expectedVec.y.toFixed(16)}, ${expectedVec.z.toFixed(16)});
-                
-                float epsilon = 0.001;
-                if (length(result - expected) < epsilon) {
-                    fragColor = vec4(0.0, 1.0, 0.0, 1.0);  // Green for success
-                } else {
-                    fragColor = vec4(1.0, 0.0, 0.0, 1.0);  // Red for failure
-                    // Encode some debug info in the other channels
-                    fragColor.a = length(result - expected) / 255.0;
-                }
+    vec3 result = peptide();
+    vec3 expected = vec3(${expectedVec.x.toFixed(16)}, ${expectedVec.y.toFixed(16)}, ${expectedVec.z.toFixed(16)});
+    
+    float epsilon = 0.001;
+    if (length(result - expected) < epsilon) {
+        fragColor = vec4(0.0, 1.0, 0.0, 1.0);  // Green for success
+    } else {
+        fragColor = vec4(1.0, 0.0, 0.0, 1.0);  // Red for failure
+        // Encode some debug info in the other channels
+        fragColor.a = length(result - expected) / 255.0;
+    }
             `;
         } else {
             throw new Error(`Unsupported expression type: ${peptideExpr.type}`);
@@ -622,6 +622,39 @@ addGLSLTest('mix operations', async (harness) => {
         u_b: 100,
         u_t: 0.25
     }); // mix(0, 100, 0.25) = 25
+});
+
+addGLSLTest('smin operations', async (harness) => {
+    // Test with k=0 (should be exactly like min)
+    harness.testExpression(P.smin(P.const(5), P.const(3), P.const(0)), 3, {}, '==');
+    
+    // Test that smin in GLSL behaves the same as in JavaScript
+    const a = P.const(11);
+    const b = P.const(10);
+    const k = P.const(5);
+    
+    const expr1 = P.smin(a, b, k);
+
+    const expected = expr1.evaluate({});
+    
+    harness.testExpression(expr1, expected, {});
+    
+    // Test with variables
+    const va = P.var('u_a');
+    const vb = P.var('u_b');
+    const vk = P.var('u_k');
+
+    const values = {
+        u_a: 11,
+        u_b: 10,
+        u_k: 5
+    };
+
+    const expr2 = P.smin(va, vb, vk);
+    const expected2 = expr2.evaluate(values);
+    
+    // Test that result is less than the regular min
+    harness.testExpression(expr2, expected2, values);
 });
 
 // Export for browser
