@@ -70,10 +70,39 @@
             border: 1px solid #ccc;
             cursor: pointer;
         }
+        
+        .test-summary {
+            margin: 20px;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+        
+        #overall-status {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        #overall-status.pass {
+            color: green;
+        }
+        
+        #overall-status.fail {
+            color: red;
+        }
+        
+        #test-stats {
+            color: #666;
+        }
     </style>
 </head>
 <body>
     <h1>Peptide Unit Tests</h1>
+    <div id="test-summary" class="test-summary">
+        <div id="overall-status"></div>
+        <div id="test-stats"></div>
+    </div>
     <div class="test-results">
         <div class="test-suite">
             <h2>Direct Evaluation Tests</h2>
@@ -111,9 +140,12 @@
     <script src="test/glsl.js"></script>
     <script>
         (async () => {
+            const startTime = performance.now();
             const directOutput = document.getElementById('direct-test-output');
             const compiledOutput = document.getElementById('compiled-test-output');
             const glslOutput = document.getElementById('glsl-test-output');
+            const overallStatus = document.getElementById('overall-status');
+            const testStats = document.getElementById('test-stats');
             
             directOutput.innerHTML = '<p>Running direct tests...</p>';
             compiledOutput.innerHTML = '<p>Running compiled tests...</p>';
@@ -134,6 +166,18 @@
             directOutput.innerHTML = formatResults(directResults);
             compiledOutput.innerHTML = formatResults(compiledResults);
             glslOutput.innerHTML = formatResults(glslResults);
+            
+            // Calculate overall statistics
+            const allResults = [...directResults, ...compiledResults, ...glslResults];
+            const totalTests = allResults.length;
+            const passedTests = allResults.filter(r => r.passed).length;
+            const failedTests = totalTests - passedTests;
+            const testTime = (performance.now() - startTime).toFixed(0);
+            
+            // Update summary display
+            overallStatus.textContent = failedTests === 0 ? 'PASS' : 'FAIL';
+            overallStatus.className = failedTests === 0 ? 'pass' : 'fail';
+            testStats.textContent = `${passedTests} tests passed, ${failedTests} tests failed, Tests took ${testTime} ms`;
             
             // Show debug button if there are failed tests
             const debugButton = document.getElementById('show-glsl-debug');
