@@ -295,61 +295,26 @@ class ScaleNode extends TreeNode {
     };
   }
 
-  generateShaderImplementation() {
+  peptide(p) {
     if (!this.hasChildren()) {
       this.warn("Scale node has no child to transform");
-      return '';
+      return this.noop();
     }
-    
-    // Normalize the axis if scaling along axis
-    let normalizedAxis = new Vec3(0, 0, 1);
-    if (this.alongAxis) {
-      normalizedAxis = this.axis.normalize();
-    }
-    
-    return `
-      float ${this.getFunctionName()}(vec3 p) {
-        ${this.alongAxis ? `
-        // Scale along specific axis
-        vec3 axis = ${normalizedAxis.glsl()};
-        float k = ${this.k.toFixed(16)};
-        
-        // Project p onto the axis
-        float projLength = dot(p, axis);
-        vec3 projVec = projLength * axis;
-        
-        // Decompose p into components parallel and perpendicular to axis
-        vec3 perpVec = p - projVec;
-        
-        // Scale only the parallel component
-        p = perpVec + projVec / k;
-        
-        // Compute the distance in the scaled space
-        // we multiply by k only if k <= 1.0, because we can't maintain
-        // the distance property in along-axis mode, but we can still maintain the
-        // lowerbound property
-        ${ this.k > 1.0 ?
-          `return ${this.children[0].shaderCode()};`
-        :
-          `return ${this.children[0].shaderCode()} * k;`
-        }` : `
-        // Uniform scaling
-        vec3 p0 = p;
-        p = p / ${this.k.toFixed(16)};
-        float dist = ${this.children[0].shaderCode()};
-        p = p0;
-        return dist * ${this.k.toFixed(16)};
-        `}
-      }
-    `;
-  }
 
-  generateShaderCode() {
-    if (!this.hasChildren()) {
-      return this.noopShaderCode();
+    if (!this.alongAxis) {
+      return P.mul(this.children[0].peptide(P.vdiv(p, P.const(this.k))), P.const(this.k));
     }
     
-    return `${this.getFunctionName()}(p)`;
+    const axis = P.vconst(this.axis.normalize());
+    const projLength = P.vdot(p, axis);
+    const projVec = P.vmul(axis, projLength);
+    const perpVec = P.vsub(p, projVec);
+    const scaledP = P.vadd(perpVec, P.vdiv(projVec, P.const(this.k)));
+    if (this.k > 1.0) {
+      return this.children[0].peptide(scaledP);
+    } else {
+      return P.mul(this.children[0].peptide(scaledP), P.const(this.k));
+    }
   }
 
   getIcon() {
