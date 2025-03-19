@@ -10,7 +10,7 @@ const renderer = {
     
     frameCount: 0,
     lastFpsUpdateTime: 0,
-    fpsUpdateInterval: 500, // Update FPS display every 500ms
+    fpsUpdateInterval: 500, // ms
     fpsElement: null,
     currentFps: 0,
     
@@ -25,7 +25,7 @@ const renderer = {
     coordDisplay: null,
     
     mouseDebounceTimeout: null,
-    mouseDebounceDelay: 50, // 50ms delay
+    mouseDebounceDelay: 50, // ms
     lastMousePosition: null,
     
     async init() {
@@ -286,6 +286,7 @@ const renderer = {
                 uShowField: this.gl.getUniformLocation(program, 'uShowField'),
                 uShowSteps: this.gl.getUniformLocation(program, 'uShowSteps'),
                 opacity: this.gl.getUniformLocation(program, 'uOpacity'),
+                objectColor: this.gl.getUniformLocation(program, 'uObjectColor'),
             },
         };
 
@@ -335,6 +336,9 @@ const renderer = {
         gl.uniform3f(this.programInfo.uniformLocations.cameraTarget, 
             camera.target.x, camera.target.y, camera.target.z);
         gl.uniform1f(this.programInfo.uniformLocations.cameraZoom, camera.zoom);
+        
+        // Set object color (default to white if not specified)
+        gl.uniform3f(this.programInfo.uniformLocations.objectColor, 0.6, 0.6, 0.6);
         
         // Pass rotation matrix - now using Mat3 object converted to array
         gl.uniformMatrix3fv(

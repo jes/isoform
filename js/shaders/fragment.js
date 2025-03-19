@@ -13,6 +13,7 @@ uniform float stepFactor;
 uniform bool uShowField;
 uniform bool uShowSteps;
 uniform float uOpacity;
+uniform vec3 uObjectColor;
 
 #define MAX_STEPS 500
 
@@ -233,7 +234,7 @@ OrthoProjectionResult orthoProjection(vec3 ro, vec3 rd, vec3 right, vec3 up, flo
         vec3 lightDir2 = normalize(vec3(-0.5, 0.3, 0.2)); // Fill light
         vec3 lightDir3 = normalize(vec3(0.0, -0.5, 0.8)); // Rim light
         
-        vec3 lightColor1 = vec3(1.0, 0.98, 0.95) * 0.4; // Warm main light
+        vec3 lightColor1 = vec3(1.0, 0.98, 0.95); // Warm main light
         vec3 lightColor2 = vec3(0.8, 0.9, 1.0) * 0.3;   // Cool fill light
         vec3 lightColor3 = vec3(0.9, 0.9, 1.0) * 0.3;   // Subtle rim light
         
@@ -260,7 +261,7 @@ OrthoProjectionResult orthoProjection(vec3 ro, vec3 rd, vec3 right, vec3 up, flo
         
         // Combine lighting components
         vec3 diffuse = diff1 * lightColor1 + diff2 * lightColor2 + diff3 * lightColor3;
-        result.color = ambient + diffuse + specular + rim;
+        result.color = (ambient + diffuse + specular + rim) * uObjectColor;
         
         // Apply edge highlighting
         vec3 edgeColor = vec3(1.0, 1.0, 1.0); // White edge highlight
