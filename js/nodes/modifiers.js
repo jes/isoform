@@ -174,32 +174,28 @@ class DistanceDeformNode extends TreeNode {
     return {"amplitude": "float", "frequency": "float"};
   }
 
-  generateShaderImplementation() {
+  peptide(p) {
     if (!this.hasChildren()) {
       this.warn("DistanceDeform node has no child to transform");
-      return '';
+      return this.noop();
     }
+    
+    const d = this.children[0].peptide(p);
 
-    return `
-      float ${this.getFunctionName()}(vec3 p) {
-        // Get the base distance from the child
-        float d = ${this.children[0].shaderCode()};
-        
-        // Create roughness using sine waves in different directions
-        float noise = sin(p.x * ${this.frequency.toFixed(16)}) * 
-                      sin(p.y * ${this.frequency.toFixed(16)}) * 
-                      sin(p.z * ${this.frequency.toFixed(16)}) * 
-                      sin((p.x + p.y + p.z) * ${(this.frequency * 1.5).toFixed(16)});
-                      
-        // Add some higher frequency components for more detail
-        noise += 0.5 * sin(p.x * ${(this.frequency * 2.0).toFixed(16)}) * 
-                      sin(p.y * ${(this.frequency * 2.0).toFixed(16)}) * 
-                      sin(p.z * ${(this.frequency * 2.0).toFixed(16)});
-        
-        // Scale the noise by the amplitude and add to the distance
-        return d + noise * ${this.amplitude.toFixed(16)};
-      }
-    `;
+    const freq = P.const(this.frequency);
+    const ampl = P.const(this.amplitude);
+
+    const noise1X = P.sin(P.mul(P.vecX(p), freq));
+    const noise1Y = P.sin(P.mul(P.vecY(p), freq));
+    const noise1Z = P.sin(P.mul(P.vecZ(p), freq));
+    const noise1XYZ = P.sin(P.mul(P.add(P.add(P.vecX(p), P.vecY(p)), P.vecZ(p)), P.mul(P.const(1.5), freq)));
+    const noise1 = P.mul(noise1X, P.mul(noise1Y, P.mul(noise1Z, noise1XYZ)));
+
+    const noise2X = P.sin(P.mul(P.vecX(p), P.mul(P.const(2.0), freq)));
+    const noise2Y = P.sin(P.mul(P.vecY(p), P.mul(P.const(2.0), freq)));
+    const noise2Z = P.sin(P.mul(P.vecZ(p), P.mul(P.const(2.0), freq)));
+    const noise2 = P.mul(P.const(0.5), P.mul(noise2X, P.mul(noise2Y, noise2Z)));
+    return P.add(d, P.mul(ampl, P.add(noise1, noise2)));
   }
 
   generateShaderCode() {
