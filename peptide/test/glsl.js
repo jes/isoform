@@ -689,5 +689,81 @@ addGLSLTest('smax operations', async (harness) => {
     harness.testExpression(expr2, expected2, values);
 });
 
+addGLSLTest('chmin operations', async (harness) => {
+    const a = P.const(5);
+    const b = P.const(3);
+    const k = P.const(2);
+    
+    // Test basic chmin
+    harness.testExpression(P.chmin(a, b, k), 3);
+    
+    // Test with close values
+    const c = P.const(1.1);
+    const d = P.const(1.0);
+    const k2 = P.const(0.5);
+    const expr = P.chmin(c, d, k2);
+    const expected = expr.evaluate({}); // Use JS evaluation as reference
+    harness.testExpression(expr, expected);
+    
+    // Test with variables
+    const va = P.var('u_x');
+    const vb = P.var('u_y');
+    const vk = P.var('u_k');
+    const varExpr = P.chmin(va, vb, vk);
+    harness.testExpression(varExpr, 3, {
+        u_x: 5,
+        u_y: 3,
+        u_k: 2
+    });
+});
+
+addGLSLTest('chmax operations', async (harness) => {
+    const a = P.const(5);
+    const b = P.const(3);
+    const k = P.const(2);
+    
+    // Test basic chmax
+    const expected = 7.071067811865475; // max(max(5, 3), 0.7071*(5+3+2))
+    harness.testExpression(P.chmax(a, b, k), expected);
+    
+    // Test with close values
+    const c = P.const(1.0);
+    const d = P.const(1.1);
+    const k2 = P.const(0.5);
+    const expr = P.chmax(c, d, k2);
+    const expected2 = expr.evaluate({}); // Use JS evaluation as reference
+    harness.testExpression(expr, expected2);
+    
+    // Test with variables
+    const va = P.var('u_x');
+    const vb = P.var('u_y');
+    const vk = P.var('u_k');
+    const varExpr = P.chmax(va, vb, vk);
+    harness.testExpression(varExpr, 7.071067811865475, {
+        u_x: 5,
+        u_y: 3,
+        u_k: 2
+    });
+});
+
+addGLSLTest('chmin/chmax with varying k', async (harness) => {
+    const a = P.const(1);
+    const b = P.const(2);
+    
+    // Test with different k values
+    const kValues = [0, 0.5, 1, 2];
+    
+    for (const k of kValues) {
+        const chminExpr = P.chmin(a, b, P.const(k));
+        const chmaxExpr = P.chmax(a, b, P.const(k));
+        
+        const expectedChmin = chminExpr.evaluate({});
+        const expectedChmax = chmaxExpr.evaluate({});
+        
+        harness.testExpression(chminExpr, expectedChmin);
+        harness.testExpression(chmaxExpr, expectedChmax);
+    }
+});
+
 // Export for browser
 window.PeptideGLSLTests = GLSLTests;

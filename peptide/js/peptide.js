@@ -292,6 +292,20 @@ class Peptide {
         return P.add(P.mix(b, a, h), P.mul(k, P.mul(h, P.sub(P.const(1), h))));
     }
 
+    static chmin(a, b, k) {
+        a.assertType('float');
+        b.assertType('float');
+        k.assertType('float');
+        return P.min(P.min(a, b), P.mul(P.const(0.7071), P.sub(P.add(a, b), k)));
+    }
+
+    static chmax(a, b, k) {
+        a.assertType('float');
+        b.assertType('float');
+        k.assertType('float');
+        return P.max(P.max(a, b), P.mul(P.const(0.7071), P.add(P.add(a, b), k)));
+    }
+
     static pow(a, b) {
         a.assertType('float');
         b.assertType('float');

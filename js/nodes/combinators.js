@@ -197,13 +197,18 @@ class SubtractionNode extends TreeNode {
   }
 
   generateShaderImplementation() {
-    return `
-      float opSubtraction(float d1, float d2) { return max(d1, -d2); }
-      float opSmoothSubtraction(float d1, float d2, float k) {
-        float h = clamp(0.5 - 0.5 * (d2 + d1) / k, 0.0, 1.0);
-        return mix(d1, -d2, h) + k * h * (1.0 - h);
+    let expr = P.max(P.var('a'), P.var('b'));
+
+    if (this.blendRadius > 0) {
+      if (this.chamfer) {
+        expr = P.chmax(P.var('a'), P.var('b'), P.const(this.blendRadius));
+      } else {
+        expr = P.smax(P.var('a'), P.var('b'), P.const(this.blendRadius));
       }
-    `;
+    }
+
+    const ssa = new PeptideSSA(expr);
+    return ssa.compileToGLSL(`float ${this.getFunctionName()}(float a, float b)`);
   }
 
   generateShaderCode() {
@@ -224,15 +229,7 @@ class SubtractionNode extends TreeNode {
         continue; // Skip this child
       }
       
-      if (this.blendRadius > 0) {
-        if (this.chamfer) {
-          shaderCode = `chmax(${shaderCode}, -(${childCode}), ${this.blendRadius.toFixed(16)})`;
-        } else {
-          shaderCode = `smax(${shaderCode}, -(${childCode}), ${this.blendRadius.toFixed(16)})`;
-        }
-      } else {
-        shaderCode = `max(${shaderCode}, -(${childCode}))`;
-      }
+      shaderCode = `${this.getFunctionName()}(${shaderCode}, -(${childCode}))`;
     }
     return shaderCode;
   }

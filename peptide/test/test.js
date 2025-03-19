@@ -586,6 +586,80 @@ addTest('smax operations', (evaluate) => {
     assertEquals(evaluate(smaxZeroK), 5);
 });
 
+addTest('chmin operations', (evaluate) => {
+    const a = P.const(5);
+    const b = P.const(3);
+    const k = P.const(2);
+    
+    // Test basic chmin
+    const chminResult = P.chmin(a, b, k);
+    assertEquals(evaluate(chminResult), 3);
+    
+    // Test with close values
+    const c = P.const(1.1);
+    const d = P.const(1.0);
+    const k2 = P.const(0.5);
+    const chminClose = P.chmin(c, d, k2);
+    const minClose = P.min(c, d);
+    
+    // chmin should be less than or equal to regular min
+    const chminVal = evaluate(chminClose);
+    const minVal = evaluate(minClose);
+    if (chminVal > minVal) {
+        throw new Error(`Expected chmin(1.1, 1.0, 0.5) = ${chminVal} to be less than or equal to min(1.1, 1.0) = ${minVal}`);
+    }
+    
+    // Test with variables
+    const va = P.var('x');
+    const vb = P.var('y');
+    const vk = P.var('k');
+    
+    const expr = P.chmin(va, vb, vk);
+    const result = evaluate(expr, {
+        x: 5,
+        y: 3,
+        k: 2
+    });
+    assertEquals(result, 3);
+});
+
+addTest('chmax operations', (evaluate) => {
+    const a = P.const(5);
+    const b = P.const(3);
+    const k = P.const(2);
+    
+    // Test basic chmax
+    const chmaxResult = P.chmax(a, b, k);
+    assertEquals(evaluate(chmaxResult), 7.071); // max(max(5, 3), 0.7071*(5+3+2))
+    
+    // Test with close values
+    const c = P.const(1.0);
+    const d = P.const(1.1);
+    const k2 = P.const(0.5);
+    const chmaxClose = P.chmax(c, d, k2);
+    const maxClose = P.max(c, d);
+    
+    // chmax should be greater than or equal to regular max
+    const chmaxVal = evaluate(chmaxClose);
+    const maxVal = evaluate(maxClose);
+    if (chmaxVal < maxVal) {
+        throw new Error(`Expected chmax(1.0, 1.1, 0.5) = ${chmaxVal} to be greater than or equal to max(1.0, 1.1) = ${maxVal}`);
+    }
+    
+    // Test with variables
+    const va = P.var('x');
+    const vb = P.var('y');
+    const vk = P.var('k');
+    
+    const expr = P.chmax(va, vb, vk);
+    const result = evaluate(expr, {
+        x: 5,
+        y: 3,
+        k: 2
+    });
+    assertEquals(result, 7.071);
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,
