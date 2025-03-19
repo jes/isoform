@@ -157,6 +157,13 @@ class TreeNode {
   }
 
   peptide(p) {
+    if (this.isDisabled) {
+      return this.noop();
+    }
+    return this.makePeptide(p);
+  }
+
+  makePeptide(p) {
     return this.noop();
   }
 

@@ -244,6 +244,14 @@ class Peptide {
         );
     }
 
+    static abs(a) {
+        a.assertType('float');
+        return new Peptide('abs', 'float', null, a, null, null,
+            (_, vars) => Math.abs(a.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = Math.abs(${ssaOp.left});`,
+            (_, ssaOp) => `${ssaOp.result} = abs(${ssaOp.left});`,
+        );
+    }
     static min(a, b) {
         a.assertType('float');
         b.assertType('float');

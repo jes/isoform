@@ -832,5 +832,25 @@ addGLSLTest('vector modulo operations', async (harness) => {
     });
 });
 
+addGLSLTest('absolute value', async (harness) => {
+    // Test with positive constant
+    const pos = P.const(5);
+    harness.testExpression(P.abs(pos), 5);
+    
+    // Test with negative constant
+    const neg = P.const(-3);
+    harness.testExpression(P.abs(neg), 3);
+    
+    // Test with variable
+    const x = P.var('u_x');
+    const absVar = P.abs(x);
+    harness.testExpression(absVar, 7, { u_x: -7 });
+    harness.testExpression(absVar, 4, { u_x: 4 });
+    
+    // Test with expression
+    const expr = P.abs(P.sub(P.const(3), P.const(5)));
+    harness.testExpression(expr, 2); // abs(3 - 5) = 2
+});
+
 // Export for browser
 window.PeptideGLSLTests = GLSLTests;

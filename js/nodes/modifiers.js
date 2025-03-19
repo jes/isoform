@@ -68,7 +68,7 @@ class TransformNode extends TreeNode {
     };
   }
 
-  peptide(p) {
+  makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("Transform node has no child to transform");
       return this.noop();
@@ -126,7 +126,7 @@ class DomainDeformNode extends TreeNode {
     return {"amplitude": "float", "frequency": "float"};
   }
 
-  peptide(p) {
+  makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("DomainDeform node has no child to transform");
       return this.noop();
@@ -174,7 +174,7 @@ class DistanceDeformNode extends TreeNode {
     return {"amplitude": "float", "frequency": "float"};
   }
 
-  peptide(p) {
+  makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("DistanceDeform node has no child to transform");
       return this.noop();
@@ -240,7 +240,7 @@ class ThicknessNode extends TreeNode {
     return {"thickness": "float", "inside": "bool"};
   }
 
-  peptide(p) {
+  makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("Thickness node has no child to transform");
       return this.noop();
@@ -295,7 +295,7 @@ class ScaleNode extends TreeNode {
     };
   }
 
-  peptide(p) {
+  makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("Scale node has no child to transform");
       return this.noop();
@@ -882,52 +882,31 @@ class ExtrudeNode extends TreeNode {
     return {"height": "float", "blendRadius": "float", "chamfer": "bool", "draftAngle": "float"};
   }
 
-  generateShaderImplementation() {
+  makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("Extrude node has no child to transform");
-      return "";
+      return this.noop();
     }
     if (!this.children[0].is2d()) {
       this.warn("Extrude node requires a 2D child");
-      return "";
+      return this.noop();
     }
-    let maxfn = "max(d2d, dz)";
+    const d2d = this.children[0].peptide(p);
+    const dz = P.sub(P.abs(P.vecZ(p)), P.const(this.height/2));
+    const pz = P.clamp(P.add(P.vecZ(p), P.const(this.height/2)), P.const(0.0), P.const(this.height));
+    const d = P.add(P.mul(d2d, P.const(Math.cos(this.draftAngle * Math.PI / 180.0))), P.mul(pz, P.const(Math.tan(this.draftAngle * Math.PI / 180.0))));
     if (this.blendRadius > 0.0) {
-      // XXX: we could allow a different radius at top vs bottom by picking a different `maxfn`based on the sign of `dz`
+      // XXX: we could allow a different radius at top vs bottom by picking a different `maxfn` based on the sign of `dz`
       if (this.chamfer) {
-        maxfn = `chmax(d2d, dz, ${this.blendRadius.toFixed(16)})`;
+        return P.chmax(d, dz, P.const(this.blendRadius));
       } else {
-        maxfn = `smax(d2d, dz, ${this.blendRadius.toFixed(16)})`;
+        return P.smax(d, dz, P.const(this.blendRadius));
       }
+    } else {
+      return P.max(d, dz);
     }
-
-    const kp = Math.tan(this.draftAngle * Math.PI / 180.0);
-    const cosAngle = Math.cos(this.draftAngle * Math.PI / 180.0);
-
-    return `
-      float ${this.getFunctionName()}(vec3 p) {
-        float dz = abs(p.z) - ${(this.height/2).toFixed(16)};
-
-        // pz is the position in z where 0 is the start of the extrusion, used for applying draft angle
-        float pz = clamp(p.z + ${(this.height/2).toFixed(16)}, 0.0, ${this.height.toFixed(16)});
-        p.z = 0.0;
-        float d2d = (${this.children[0].shaderCode()})*${cosAngle.toFixed(16)} + pz*${kp.toFixed(16)};
-        
-        return ${maxfn};
-      }
-    `;
   }
-
-  generateShaderCode() {
-    if (!this.hasChildren()) {
-      return this.noopShaderCode();
-    }
-    if (!this.children[0].is2d()) {
-      return this.noopShaderCode();
-    }
-    return `${this.getFunctionName()}(p)`;
-  }
-
+  
   getIcon() {
     return "⬆️";
   }

@@ -16,7 +16,7 @@ class SphereNode extends TreeNode {
     return {"radius": "float"};
   }
 
-  peptide(p) {
+  makePeptide(p) {
     return P.sub(P.vlength(p), P.const(this.radius));
   }
 
@@ -95,28 +95,23 @@ class BoxNode extends TreeNode {
     return {"size": "vec3", "radius": "float"};
   }
 
-  generateShaderImplementation() {
+  makePeptide(p) {
     let expr;
     if (this.radius <= 0.0) {
       // vec3 d = abs(p) - b/2.0;
       // return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0);
-      let d = P.vsub(P.vabs(P.vvar('p')), P.vconst(this.size.div(2.0)));
+      let d = P.vsub(P.vabs(p), P.vconst(this.size.div(2.0)));
       expr = P.add(P.vlength(P.vmax(d, P.vconst(new Vec3(0.0)))),
                    P.min(P.max(P.vecX(d), P.max(P.vecY(d), P.vecZ(d))), P.const(0.0)));
     } else {
       // vec3 q = abs(p) - b/2.0 + r;
       // return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
-      let d = P.vadd(P.vsub(P.vabs(P.vvar('p')), P.vconst(this.size.div(2.0))), P.vconst(new Vec3(this.radius)));
+      let d = P.vadd(P.vsub(P.vabs(p), P.vconst(this.size.div(2.0))), P.vconst(new Vec3(this.radius)));
       expr = P.sub(P.add(P.vlength(P.vmax(d, P.vconst(new Vec3(0.0)))),
                          P.min(P.max(P.vecX(d), P.max(P.vecY(d), P.vecZ(d))), P.const(0.0))),
                    P.const(this.radius));
     }
-    const ssa = new PeptideSSA(expr);
-    return ssa.compileToGLSL(`float ${this.getFunctionName()}(vec3 p)`);
-  }
-
-  generateShaderCode() {
-    return `${this.getFunctionName()}(p)`;
+    return expr;
   }
 
   getIcon() {
@@ -146,7 +141,7 @@ class TorusNode extends TreeNode {
     return {"majorDiameter": "float", "minorDiameter": "float"};
   }
 
-  peptide(p) {
+  makePeptide(p) {
     const major = P.const(this.majorDiameter/2);
     const minor = P.const(this.minorDiameter/2);
     const lenxy = P.vlength(P.vec3(P.vecX(p), P.vecY(p), P.const(0)));

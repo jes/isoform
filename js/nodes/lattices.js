@@ -8,7 +8,7 @@ class GyroidNode extends TreeNode {
     return {"scale": "float"};
   }
 
-  peptide(p) {
+  makePeptide(p) {
     p = P.vdiv(p, P.const(this.scale));
     return P.add(P.mul(P.sin(P.vecX(p)), P.cos(P.vecY(p))),
            P.add(P.mul(P.sin(P.vecY(p)), P.cos(P.vecZ(p))),
@@ -30,7 +30,7 @@ class CubicLatticeNode extends TreeNode {
     return {"scale": "float", "thickness": "float", "blendRadius": "float"};
   }
 
-  peptide(p) {
+  makePeptide(p) {
     let minFn = (a, b) => P.min(a, b);
     if (this.blendRadius > 0.0) {
       if (this.chamfer) {

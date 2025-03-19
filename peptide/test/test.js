@@ -763,6 +763,34 @@ addTest('vmod type checking', (evaluate) => {
     assertThrows(() => evaluate(P.vmod(scalar, scalar)));
 });
 
+addTest('absolute value', (evaluate) => {
+    // Test with positive number
+    const pos = P.const(5);
+    const absPos = P.abs(pos);
+    assertEquals(evaluate(absPos), 5);
+    
+    // Test with negative number
+    const neg = P.const(-3);
+    const absNeg = P.abs(neg);
+    assertEquals(evaluate(absNeg), 3);
+    
+    // Test with variable
+    const x = P.var('x');
+    const absVar = P.abs(x);
+    assertEquals(evaluate(absVar, { x: -7 }), 7);
+    assertEquals(evaluate(absVar, { x: 4 }), 4);
+    
+    // Test with expression
+    const expr = P.abs(P.sub(P.const(3), P.const(5)));
+    assertEquals(evaluate(expr), 2); // abs(3 - 5) = 2
+});
+
+addTest('abs type checking', (evaluate) => {
+    const vec = P.vconst(new Vec3(1, 2, 3));
+    // Should throw when trying to use vector with abs
+    assertThrows(() => evaluate(P.abs(vec)));
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,

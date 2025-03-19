@@ -57,7 +57,7 @@ class UnionNode extends TreeNode {
       return {"blendRadius": "float", "chamfer": "bool"};
     }
 
-    peptide(p) {
+    makePeptide(p) {
       if (this.children.length === 0) {
         return this.noop();
       }
@@ -73,6 +73,8 @@ class UnionNode extends TreeNode {
 
       let min = this.children[0].peptide(p);
       for (let i = 1; i < this.children.length; i++) {
+        if (this.children[i].isDisabled)
+          continue;
         min = minFn(min, this.children[i].peptide(p));
       }
       return min;
@@ -100,7 +102,7 @@ class IntersectionNode extends TreeNode {
     return {"blendRadius": "float", "chamfer": "bool"};
   }
 
-  peptide(p) {
+  makePeptide(p) {
     if (this.children.length === 0) {
       return this.noop();
     }
@@ -116,6 +118,8 @@ class IntersectionNode extends TreeNode {
 
     let max = this.children[0].peptide(p);
     for (let i = 1; i < this.children.length; i++) {
+      if (this.children[i].isDisabled)
+        continue;
       max = maxFn(max, this.children[i].peptide(p));
     }
     return max;
@@ -175,7 +179,7 @@ class SubtractionNode extends TreeNode {
     return {"blendRadius": "float", "chamfer": "bool"};
   }
   
-  peptide(p) {
+  makePeptide(p) {
     if (this.children.length === 0) {
       return this.noop();
     }
@@ -191,6 +195,8 @@ class SubtractionNode extends TreeNode {
 
     let max = this.children[0].peptide(p);
     for (let i = 1; i < this.children.length; i++) {
+      if (this.children[i].isDisabled)
+        continue;
       max = maxFn(max, P.sub(P.const(0), this.children[i].peptide(p)));
     }
     return max;

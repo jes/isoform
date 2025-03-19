@@ -14,18 +14,14 @@ class SketchNode extends TreeNode {
     return TreeNode.EXACT;
   }
 
-  generateShaderImplementation() {
+  makePeptide(p) {
     if (this.polycurves.length === 0 || this.polycurves[0].length < 2) {
-      return `
-        float ${this.getFunctionName()}(vec3 p) {
-          return 1000.0; // Large distance if no valid sketch
-        }
-      `;
+      return this.noop();
     }
-    
+
     const polycurve = this.polycurves[0];
     const startPoint = polycurve[0];
-    
+
     const sdSqLine = (p, a, b) => {
       const pa = P.vsub(p, a);
       const ba = P.vsub(b, a);
@@ -34,10 +30,12 @@ class SketchNode extends TreeNode {
       return [P.vdot(d, d), P.sub(P.mul(P.vecX(ba), P.vecY(pa)), P.mul(P.vecY(ba), P.vecX(pa)))];
     }
 
+    p = P.vec3(P.vecX(p), P.vecY(p), P.const(0.0));
+
     // Starting point
     let va;
     let vb = P.vconst(new Vec3(startPoint.x, startPoint.y, 0.0));
-    const pvb = P.vsub(P.vvar('p'), vb);
+    const pvb = P.vsub(p, vb);
     let d = P.vdot(pvb, pvb);
     let s = P.const(1.0);
     const eps = P.const(0.00001);
@@ -48,7 +46,7 @@ class SketchNode extends TreeNode {
       va = vb;
       vb = P.vconst(new Vec3(endPoint.x, endPoint.y, 0.0));
       const ds = sdSqLine(pvb, va, vb);
-      const py = P.vecY(P.vvar('p'));
+      const py = P.vecY(p);
       const vay = P.vecY(va);
       const vby = P.vecY(vb);
       s = P.mix(s, P.sub(P.const(0.0), s), P.min(P.const(1.0),
@@ -62,7 +60,7 @@ class SketchNode extends TreeNode {
     va = vb;
     vb = P.vconst(new Vec3(startPoint.x, startPoint.y, 0.0));
     const ds = sdSqLine(pvb, va, vb);
-    const py = P.vecY(P.vvar('p'));
+    const py = P.vecY(p);
     const vay = P.vecY(va);
     const vby = P.vecY(vb);
     s = P.mix(s, P.sub(P.const(0.0), s), P.min(P.const(1.0),
@@ -72,38 +70,25 @@ class SketchNode extends TreeNode {
     d = P.min(d, ds[0]);
     d = P.mul(s, P.sqrt(d));
 
-    const ssa = new PeptideSSA(d);
-    const peptideCode = ssa.compileToGLSL(`float ${this.getFunctionName()}_peptide(vec3 p)`);
-
-    return `
-      ${peptideCode}
-      float ${this.getFunctionName()}(vec3 p) {
-        // this is an exact 2d SDF at Z=0, we just make a broken 3d SDF so that it looks
-        // like a flat shape before being extruded/revolved, and so that transforms, unions,
-        // etc. of 2d shapes still work
-        float d = ${this.getFunctionName()}_peptide(vec3(p.x, p.y, 0.0));
-        if (abs(p.z) > 0.005) return length(vec2(abs(p.z)-0.005, max(d, 0.0)));
-        return d;
-      }
-    `;
-  }
-
-  generateShaderCode() {
-    return `
-      ${this.getFunctionName()}(p)
-    `;
+    // At this point d tells us the distance to the nearest point on the sketch in the 2d plane.
+    // To make an SDF that works in 3d, we need to extend this to 3d by using the distance to the
+    // nearest point on the sketch in 3d space, but only when Z is not ~0.
+    // We want to reproduce:
+    //   if (abs(p.z) > 0.005) return length(vec2(abs(p.z)-0.005, max(d, 0.0)));
+    //   return d;
+    // But only using Peptide primitives (i.e. no conditionals).
+    // So we use step() to work out whether we are in 2d mode or 3d mode, and then
+    // use mix() to select between the 2d distance and the 3d distance.
+    
+    const zdist = P.sub(P.abs(P.vecZ(p)), P.const(0.005));
+    const dist3d = P.vlength(P.vec3(zdist, P.max(d, P.const(0.0)), P.const(0.0)));
+    return P.mix(d, dist3d, P.step(P.const(0.0), zdist));
   }
 
   getIcon() {
     return "🎨";
   }
   
-  getProperties() {
-    return [
-      // Properties for editing the sketch would go here
-    ];
-  }
-
   // Add a new vertex to the sketch
   addVertex(polycurveIndex, segmentIndex, position) {
     if (!this.polycurves[polycurveIndex]) return;
