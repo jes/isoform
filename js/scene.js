@@ -3,7 +3,7 @@ const scene = {
     init() {
     },
     
-    generateShaderCode(code, showBoundingSphere = false) {
+    generateShaderCode(code) {
         const startTime = performance.now();
         // Get the original shader source
         let originalSource = renderer.fragmentShaderSource;
@@ -15,7 +15,7 @@ const scene = {
         let startIndex = originalSource.indexOf(sceneStartMarker);
         let endIndex = originalSource.indexOf(sceneEndMarker);
         
-        if (startIndex === -1 || endIndex === -1) return null;
+        if (startIndex === -1 || endIndex === -1) throw new Error("Scene start/end markers not found");
         
         // Skip to the end of the start marker line
         startIndex = originalSource.indexOf('\n', startIndex) + 1;

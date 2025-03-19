@@ -103,7 +103,7 @@ const app = {
             // Compile shaders asynchronously
             await renderer.createShaderProgram(
                 renderer.vertexShaderSource, 
-                scene.generateShaderCode(glslSrc, ui.showBoundingSphere)
+                scene.generateShaderCode(glslSrc)
             );
             this.document.markClean();
 
