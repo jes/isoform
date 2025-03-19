@@ -64,38 +64,6 @@ mat3 transposeMatrix(mat3 m) {
     );
 }
 
-// Helper function for dot product with itself
-float dot2(vec2 v) {
-    return dot(v, v);
-}
-
-float smin(float a, float b, float k) {
-    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
-    return mix(b, a, h) - k * h * (1.0 - h);
-}
-
-float smax(float a, float b, float k) {
-    float h = clamp(0.5 - 0.5 * (b - a) / k, 0.0, 1.0);
-    return mix(b, a, h) + k * h * (1.0 - h);
-}
-
-float chmin(float a, float b, float k) {
-    return min(min(a, b), (a + b - k) * 0.7071);
-}
-
-float chmax(float a, float b, float k) {
-    return max(max(a, b), (a + b + k) * 0.7071);
-}
-
-// Squared distance and projection factor to a line segment
-vec2 sdSqLine(vec2 p, vec2 a, vec2 b) {
-    vec2 pa = p - a;
-    vec2 ba = b - a;
-    float h = clamp(dot(pa, ba) / dot2(ba), 0.0, 1.0);
-    vec2 d = pa - ba * h;
-    return vec2(dot2(d), ba.x*pa.y-ba.y*pa.x);
-}
-
 // begin scene
 float map(vec3 p) {
     p = rotatePoint(p);
