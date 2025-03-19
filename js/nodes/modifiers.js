@@ -71,7 +71,7 @@ class TransformNode extends TreeNode {
   peptide(p) {
     if (!this.hasChildren()) {
       this.warn("Transform node has no child to transform");
-      return P.const(10000042.0);
+      return this.noop();
     }
     
     let expr = P.vsub(p, P.vconst(this.translation));
@@ -126,38 +126,21 @@ class DomainDeformNode extends TreeNode {
     return {"amplitude": "float", "frequency": "float"};
   }
 
-  generateShaderImplementation() {
+  peptide(p) {
     if (!this.hasChildren()) {
       this.warn("DomainDeform node has no child to transform");
-      return '';
+      return this.noop();
     }
-    
-    return `
-      float ${this.getFunctionName()}(vec3 p) {
-        // Store original position
-        vec3 p0 = p;
-        
-        // Permute coordinates using sine waves
-        p.x += sin(p.y * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
-        p.y += sin(p.z * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
-        p.z += sin(p.x * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
 
-        p.x += 0.5 * cos((p.z+p.y+1.0) * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
-        p.y += 0.5 * cos((p.x+p.z+2.42) * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
-        p.z += 0.5 * cos((p.y+p.x+14.5) * ${this.frequency.toFixed(16)}) * ${this.amplitude.toFixed(16)};
-        
-        // Evaluate child SDF with permuted coordinates
-        return ${this.children[0].shaderCode()};
-      }
-    `;
-  }
+    const px1 = P.mul(P.sin(P.mul(P.vecY(p), P.const(this.frequency))), P.const(this.amplitude));
+    const py1 = P.mul(P.sin(P.mul(P.vecZ(p), P.const(this.frequency))), P.const(this.amplitude));
+    const pz1 = P.mul(P.sin(P.mul(P.vecX(p), P.const(this.frequency))), P.const(this.amplitude));
 
-  generateShaderCode() {
-    if (!this.hasChildren()) {
-      return this.noopShaderCode();
-    }
-    
-    return `${this.getFunctionName()}(p)`;
+    const px2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecZ(p), P.vecY(p)), P.const(1.0)), P.const(this.frequency))), P.const(this.amplitude)));
+    const py2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecX(p), P.vecZ(p)), P.const(2.42)), P.const(this.frequency))), P.const(this.amplitude)));
+    const pz2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecY(p), P.vecX(p)), P.const(14.5)), P.const(this.frequency))), P.const(this.amplitude)));
+
+    return this.children[0].peptide(P.vadd(p, P.vec3(P.add(px1, px2), P.add(py1, py2), P.add(pz1, pz2))));
   }
 
   getIcon() {

@@ -59,7 +59,7 @@ class UnionNode extends TreeNode {
 
     peptide(p) {
       if (this.children.length === 0) {
-        return P.const(10000043.0);
+        return this.noop();
       }
 
       let minFn = (a, b) => P.min(a, b);
@@ -102,7 +102,7 @@ class IntersectionNode extends TreeNode {
 
   peptide(p) {
     if (this.children.length === 0) {
-      return P.const(10000043.0);
+      return this.noop();
     }
 
     let maxFn = (a, b) => P.max(a, b);
@@ -177,7 +177,7 @@ class SubtractionNode extends TreeNode {
   
   peptide(p) {
     if (this.children.length === 0) {
-      return P.const(10000043.0);
+      return this.noop();
     }
 
     let maxFn = (a, b) => P.max(a, b);

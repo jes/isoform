@@ -157,7 +157,11 @@ class TreeNode {
   }
 
   peptide(p) {
-    return P.const(10000044.0);
+    return this.noop();
+  }
+
+  noop() {
+    return P.const(10000042.0);
   }
 
   disable() {
