@@ -292,7 +292,7 @@ class GLSLTestHarness {
                 name: this.name,
                 expected: JSON.stringify(expectedValue),
                 actual,
-                variables: JSON.stringify(variables),
+                variables: variables,
                 shaderCode: completeShaderCode
             });
         };
@@ -460,6 +460,93 @@ addGLSLTest('complex vector expression', async (harness) => {
         u_v3: new Vec3(0, 0, 1),
         u_v4: new Vec3(1, 0, 0)
     });
+});
+
+addGLSLTest('vector division', async (harness) => {
+    const v = P.vconst(new Vec3(2, 4, 6));
+    const s = P.const(2);
+    harness.testExpression(P.vdiv(v, s), new Vec3(1, 2, 3));
+});
+
+addGLSLTest('vector normalization', async (harness) => {
+    const v = P.vconst(new Vec3(3, 0, 0));
+    harness.testExpression(P.vlength(v), 3);
+});
+
+addGLSLTest('vector component extraction with variables', async (harness) => {
+    const v = P.vvar('u_v');
+    
+    harness.testExpression(P.vecX(v), 1, { u_v: new Vec3(1, 2, 3) });
+    harness.testExpression(P.vecY(v), 2, { u_v: new Vec3(1, 2, 3) });
+    harness.testExpression(P.vecZ(v), 3, { u_v: new Vec3(1, 2, 3) });
+});
+
+addGLSLTest('complex arithmetic expression', async (harness) => {
+    // Testing ((a + b) * (c - d)) / e
+    const a = P.var('u_a');
+    const b = P.var('u_b');
+    const c = P.var('u_c');
+    const d = P.var('u_d');
+    const e = P.var('u_e');
+    
+    const expr = P.div(
+        P.mul(
+            P.add(a, b),
+            P.sub(c, d)
+        ),
+        e
+    );
+    
+    // With values: ((2 + 3) * (10 - 4)) / 2 = 15
+    harness.testExpression(expr, 15, {
+        u_a: 2,
+        u_b: 3,
+        u_c: 10,
+        u_d: 4,
+        u_e: 2
+    });
+});
+
+addGLSLTest('nested vector operations', async (harness) => {
+    // Testing (v1 × v2) + (v3 × v4)
+    const v1 = P.vvar('u_v1');
+    const v2 = P.vvar('u_v2');
+    const v3 = P.vvar('u_v3');
+    const v4 = P.vvar('u_v4');
+    
+    const expr = P.vadd(
+        P.vcross(v1, v2),
+        P.vcross(v3, v4)
+    );
+    
+    harness.testExpression(expr, new Vec3(0, 0, 2), {
+        u_v1: new Vec3(1, 0, 0),
+        u_v2: new Vec3(0, 1, 0),
+        u_v3: new Vec3(0, 1, 0),
+        u_v4: new Vec3(-1, 0, 0)
+    });
+});
+
+addGLSLTest('mixed scalar and vector operations', async (harness) => {
+    // Testing (v1 · v2) * s + (v3 · v4)
+    const v1 = P.vvar('u_v1');
+    const v2 = P.vvar('u_v2');
+    const v3 = P.vvar('u_v3');
+    const v4 = P.vvar('u_v4');
+    const s = P.var('u_s');
+    
+    const expr = P.add(
+        P.mul(P.vdot(v1, v2), s),
+        P.vdot(v3, v4)
+    );
+    
+    harness.testExpression(expr, 7, {
+        u_v1: new Vec3(1, 0, 0),
+        u_v2: new Vec3(2, 0, 0),
+        u_s: 3,
+        u_v3: new Vec3(0, 1, 0),
+        u_v4: new Vec3(0, 1, 0)
+    }); // (2 * 3) + 1 = 7
 });
 
 // Export for browser

@@ -94,19 +94,11 @@
     <div id="debug-overlay" class="debug-overlay"></div>
     <div id="glsl-debug-dialog" class="debug-dialog">
         <div class="debug-dialog-close" id="debug-dialog-close">✕</div>
-        <h3>Failed GLSL Test Details</h3>
         <div id="failed-test-selector"></div>
         <div id="failed-test-details">
-            <h4>Expression:</h4>
-            <div id="failed-expression"></div>
-            
-            <h4>Expected vs Actual:</h4>
+            <div id="failed-expression" style="font-size: 1.2em; font-weight: bold;"></div>
             <div id="failed-comparison"></div>
-            
-            <h4>Variables:</h4>
-            <div id="failed-variables"></div>
-            
-            <h4>Generated GLSL Code:</h4>
+            <div id="failed-variables" style="font-family: monospace;"></div>
             <pre id="failed-glsl-code"></pre>
         </div>
     </div>
@@ -213,7 +205,20 @@
                 document.getElementById('failed-expression').textContent = test.name;
                 document.getElementById('failed-comparison').textContent = 
                     `Expected: ${test.expected}, Actual: ${test.actual}`;
-                document.getElementById('failed-variables').textContent = test.variables;
+                
+                // Format variables in a more readable way
+                const formattedVars = Object.entries(test.variables || {})
+                    .map(([key, value]) => {
+                        // Handle Vec3 objects specially
+                        if (value && typeof value === 'object' && 'x' in value && 'y' in value && 'z' in value) {
+                            return `${key}=Vec3(${value.x}, ${value.y}, ${value.z}); `;
+                        }
+                        // Format other values normally
+                        return `${key}=${value}; `;
+                    })
+                    .join('');
+                
+                document.getElementById('failed-variables').textContent = formattedVars;
                 document.getElementById('failed-glsl-code').textContent = test.shaderCode;
             }
         })();
