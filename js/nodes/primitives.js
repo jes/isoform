@@ -146,17 +146,12 @@ class TorusNode extends TreeNode {
     return {"majorDiameter": "float", "minorDiameter": "float"};
   }
 
-  generateShaderImplementation() {
-    return `
-      float sdTorus(vec3 p, vec2 t) {
-        vec2 q = vec2(length(p.xy) - t.x, p.z);
-        return length(q) - t.y;
-      }
-    `;
-  }
-
-  generateShaderCode() {
-    return `sdTorus(p, vec2(${(this.majorDiameter/2).toFixed(16)}, ${(this.minorDiameter/2).toFixed(16)}))`;
+  peptide(p) {
+    const major = P.const(this.majorDiameter/2);
+    const minor = P.const(this.minorDiameter/2);
+    const lenxy = P.vlength(P.vec3(P.vecX(p), P.vecY(p), P.const(0)));
+    const q = P.vec3(P.sub(lenxy, major), P.vecZ(p), P.const(0));
+    return P.sub(P.vlength(q), minor);
   }
 
   getIcon() {
