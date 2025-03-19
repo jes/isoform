@@ -69,8 +69,6 @@ function createEvaluator(useCompiled) {
         return (expr, vars = {}) => {
             const ssa = new PeptideSSA(expr);
             const src = ssa.compileToJS();
-            const glsl = ssa.compileToGLSL();
-            console.log(glsl);
             return eval(src)(vars);
         };
     } else {

@@ -18,6 +18,58 @@
         .test-suite h2 {
             margin-bottom: 10px;
         }
+        
+        /* Styles for the GLSL debug dialog */
+        .debug-dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 20px;
+            z-index: 1000;
+            max-width: 80%;
+            max-height: 80%;
+            overflow: auto;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+        
+        .debug-dialog pre {
+            background: #333;
+            color: #f8f8f8;
+            padding: 10px;
+            overflow: auto;
+            max-height: 400px;
+        }
+        
+        .debug-dialog-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .debug-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        
+        #show-glsl-debug {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -31,6 +83,32 @@
             <h2>Compiled Evaluation Tests</h2>
             <div id="compiled-test-output"></div>
         </div>
+        <div class="test-suite">
+            <h2>GLSL Evaluation Tests</h2>
+            <div id="glsl-test-output"></div>
+            <button id="show-glsl-debug" style="display: none;">Show Failed GLSL Tests</button>
+        </div>
+    </div>
+    
+    <!-- GLSL Debug Dialog -->
+    <div id="debug-overlay" class="debug-overlay"></div>
+    <div id="glsl-debug-dialog" class="debug-dialog">
+        <div class="debug-dialog-close" id="debug-dialog-close">✕</div>
+        <h3>Failed GLSL Test Details</h3>
+        <div id="failed-test-selector"></div>
+        <div id="failed-test-details">
+            <h4>Expression:</h4>
+            <div id="failed-expression"></div>
+            
+            <h4>Expected vs Actual:</h4>
+            <div id="failed-comparison"></div>
+            
+            <h4>Variables:</h4>
+            <div id="failed-variables"></div>
+            
+            <h4>Generated GLSL Code:</h4>
+            <pre id="failed-glsl-code"></pre>
+        </div>
     </div>
 
     <script src="js/vec3.js"></script>
@@ -38,16 +116,20 @@
     <script src="js/peptide.js"></script>
     <script src="js/ssa.js"></script>
     <script src="test/test.js"></script>
+    <script src="test/glsl.js"></script>
     <script>
         (async () => {
             const directOutput = document.getElementById('direct-test-output');
             const compiledOutput = document.getElementById('compiled-test-output');
+            const glslOutput = document.getElementById('glsl-test-output');
             
             directOutput.innerHTML = '<p>Running direct tests...</p>';
             compiledOutput.innerHTML = '<p>Running compiled tests...</p>';
+            glslOutput.innerHTML = '<p>Running GLSL tests...</p>';
             
             const directResults = await PeptideTests.direct.run();
             const compiledResults = await PeptideTests.compiled.run();
+            const glslResults = await PeptideGLSLTests.run();
             
             const formatResults = (results) => results.map(result => `
                 <div class="${result.passed ? 'test-pass' : 'test-fail'}">
@@ -59,6 +141,81 @@
             
             directOutput.innerHTML = formatResults(directResults);
             compiledOutput.innerHTML = formatResults(compiledResults);
+            glslOutput.innerHTML = formatResults(glslResults);
+            
+            // Show debug button if there are failed tests
+            const debugButton = document.getElementById('show-glsl-debug');
+            if (window.peptideFailedTests && window.peptideFailedTests.length > 0) {
+                debugButton.style.display = 'block';
+            }
+            
+            // GLSL Debug Dialog functionality
+            const debugDialog = document.getElementById('glsl-debug-dialog');
+            const debugOverlay = document.getElementById('debug-overlay');
+            const closeButton = document.getElementById('debug-dialog-close');
+            const testSelector = document.getElementById('failed-test-selector');
+            
+            // Show dialog when button is clicked
+            debugButton.addEventListener('click', function() {
+                if (!window.peptideFailedTests || window.peptideFailedTests.length === 0) {
+                    return;
+                }
+                
+                // Clear previous selector content
+                testSelector.innerHTML = '';
+                
+                // Create selector for failed tests
+                if (window.peptideFailedTests.length > 1) {
+                    const select = document.createElement('select');
+                    select.id = 'test-select';
+                    
+                    window.peptideFailedTests.forEach((test, index) => {
+                        const option = document.createElement('option');
+                        option.value = index;
+                        option.textContent = `Test ${index + 1}: ${test.expression.substring(0, 30)}...`;
+                        select.appendChild(option);
+                    });
+                    
+                    select.addEventListener('change', function() {
+                        displayTestDetails(parseInt(this.value));
+                    });
+                    
+                    testSelector.appendChild(select);
+                }
+                
+                // Display the first test by default
+                displayTestDetails(0);
+                
+                // Show the dialog
+                debugDialog.style.display = 'block';
+                debugOverlay.style.display = 'block';
+            });
+            
+            // Close dialog
+            closeButton.addEventListener('click', function() {
+                debugDialog.style.display = 'none';
+                debugOverlay.style.display = 'none';
+            });
+            
+            debugOverlay.addEventListener('click', function() {
+                debugDialog.style.display = 'none';
+                debugOverlay.style.display = 'none';
+            });
+            
+            // Function to display test details
+            function displayTestDetails(index) {
+                if (!window.peptideFailedTests || !window.peptideFailedTests[index]) {
+                    return;
+                }
+                
+                const test = window.peptideFailedTests[index];
+                
+                document.getElementById('failed-expression').textContent = test.expression;
+                document.getElementById('failed-comparison').textContent = 
+                    `Expected: ${test.expected}, Actual: ${test.actual}`;
+                document.getElementById('failed-variables').textContent = test.variables;
+                document.getElementById('failed-glsl-code').textContent = test.shaderCode;
+            }
         })();
     </script>
 </body>
