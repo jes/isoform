@@ -177,7 +177,7 @@
             // Update summary display
             overallStatus.textContent = failedTests === 0 ? 'PASS' : 'FAIL';
             overallStatus.className = failedTests === 0 ? 'pass' : 'fail';
-            testStats.textContent = `${passedTests} tests passed, ${failedTests} tests failed, Tests took ${testTime} ms`;
+            testStats.textContent = `${passedTests} tests passed, ${failedTests} tests failed, in ${testTime} ms`;
             
             // Show debug button if there are failed tests
             const debugButton = document.getElementById('show-glsl-debug');
