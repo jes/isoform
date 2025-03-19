@@ -9,7 +9,6 @@ uniform vec3 uCameraTarget;
 uniform float uCameraZoom;
 uniform mat3 uRotationMatrix;
 uniform bool uShowEdges;
-uniform bool uShowSecondary;
 uniform float stepFactor;
 uniform bool uShowField;
 uniform bool uShowSteps;
@@ -17,20 +16,11 @@ uniform float uOpacity;
 
 #define MAX_STEPS 500
 
-// Apply rotation to a point using the rotation matrix
-vec3 rotatePoint(vec3 p) {
-    return uRotationMatrix * p;
-}
-
 float mapsign = 1.0;
 
 // begin scene
 float map(vec3 p) {
-    p = rotatePoint(p);
-    return 1000.0; // this will be replaced at runtime with an SDF of the object
-}
-float map_secondary(vec3 p) {
-    p = rotatePoint(p);
+    p = uRotationMatrix * p;
     return 1000.0; // this will be replaced at runtime with an SDF of the object
 }
 // end scene
@@ -69,15 +59,6 @@ vec4 calcNormalAndEdge(vec3 p, float d) {
     edge = smoothstep(0.004, 0.005, edge * offset * offset * uCameraZoom);
     
     return vec4(normal, edge);
-}
-vec3 calcNormal_secondary(vec3 p) {
-    const float eps = 0.0001;
-    const vec2 h = vec2(eps, 0.0);
-    return normalize(vec3(
-        map_secondary(p + h.xyy) - map_secondary(p - h.xyy),
-        map_secondary(p + h.yxy) - map_secondary(p - h.yxy),
-        map_secondary(p + h.yyx) - map_secondary(p - h.yyx)
-    ));
 }
 
 // Ray marching
@@ -124,39 +105,6 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
     
     return result;
 }
-MarchResult rayMarch_secondary(vec3 ro, vec3 rd) {
-    MarchResult result;
-    result.distance = 0.0;
-    result.minDistance = 1000000.0;
-    result.hit = false;
-    result.steps = 0;
-
-    vec3 p = ro;
-    float lastD = 0.0;
-    for (int i = 0; i < MAX_STEPS; i++) {
-        result.steps++; // Increment step counter
-        float d = map_secondary(p);
-        
-        // Track minimum distance encountered
-        result.minDistance = min(result.minDistance, d);
-
-        if (d < 0.0) {
-            result.hit = true;
-            result.hitPosition = p;
-            break;
-        }
-        
-        d = max(0.001, d);
-
-        p += rd * d * stepFactor;
-        
-        if (d > lastD && result.distance > 10000.0) break;
-        lastD = d;
-        result.distance += d;
-    }
-    
-    return result;
-}
 
 /// Axis indicators
 //
@@ -166,7 +114,7 @@ MarchResult rayMarch_secondary(vec3 ro, vec3 rd) {
 // Also, does this respect the aspect ratio?
 
 float map_axis(vec3 p, vec3 axis) {
-    p = rotatePoint(p);
+    p = uRotationMatrix * p;
     float h = clamp(dot(p,axis)/dot(axis,axis), 0.0, 1.0);
     return length(p - axis * h) - 0.01;
 }
@@ -403,38 +351,6 @@ void main() {
             }
             
             color = accumulatedColor;
-        }
-        
-        if (uShowSecondary) {
-            MarchResult marchResult_secondary = rayMarch_secondary(ro, rd);
-            
-            if (marchResult_secondary.hit) {
-                vec3 pos = marchResult_secondary.hitPosition;
-                vec3 normal = calcNormal_secondary(pos);
-                
-                // Improved lighting for secondary object
-                vec3 lightDir1 = normalize(vec3(0.5, 0.8, 0.6));
-                vec3 lightDir2 = normalize(vec3(-0.5, 0.3, 0.2));
-                
-                // Ambient light
-                vec3 ambient = vec3(0.2, 0.05, 0.05);
-                
-                // Diffuse light
-                float diff1 = max(dot(normal, lightDir1), 0.0);
-                float diff2 = max(dot(normal, lightDir2), 0.0);
-                
-                // Specular highlight
-                vec3 viewDir = normalize(ro - pos);
-                vec3 halfwayDir = normalize(lightDir1 + viewDir);
-                float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
-                
-                // Combine lighting components for red secondary object
-                vec3 secondaryColor = vec3(0.95, 0.1, 0.1) * (ambient + (diff1 * 0.7 + diff2 * 0.3)) + vec3(1.0, 0.6, 0.6) * spec * 0.3;
-                
-                // Blend with transparency
-                float w = 0.75;
-                color = mix(color, secondaryColor, w);
-            }
         }
     }
     

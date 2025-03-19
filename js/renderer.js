@@ -282,7 +282,6 @@ const renderer = {
                 cameraZoom: this.gl.getUniformLocation(program, 'uCameraZoom'),
                 rotationMatrix: this.gl.getUniformLocation(program, 'uRotationMatrix'),
                 showEdges: this.gl.getUniformLocation(program, 'uShowEdges'),
-                showSecondary: this.gl.getUniformLocation(program, 'uShowSecondary'),
                 stepFactor: this.gl.getUniformLocation(program, 'stepFactor'),
                 uShowField: this.gl.getUniformLocation(program, 'uShowField'),
                 uShowSteps: this.gl.getUniformLocation(program, 'uShowSteps'),
@@ -345,9 +344,6 @@ const renderer = {
         );
         
         gl.uniform1i(this.programInfo.uniformLocations.showEdges, camera.showEdges ? 1 : 0);
-        
-        // Set showSecondary uniform based on whether a node is selected
-        gl.uniform1i(this.programInfo.uniformLocations.showSecondary, ui.getSecondaryNode() ? 1 : 0);
         
         // Set stepFactor uniform
         gl.uniform1f(this.programInfo.uniformLocations.stepFactor, camera.stepFactor);

@@ -20,17 +20,10 @@ const scene = {
         // Skip to the end of the start marker line
         startIndex = originalSource.indexOf('\n', startIndex) + 1;
         
-        // Get the selected node from UI
-        const secondaryNode = ui.getSecondaryNode();
-        
         // Build the new scene combination code
         let newSceneCode = code + `
         float map(vec3 p) {
-            p = rotatePoint(p);
-            return peptide(p);
-        }
-            float map_secondary(vec3 p) {
-            return 1000.0;
+            return peptide(uRotationMatrix * p);
         }
         `;
 
