@@ -368,6 +368,63 @@ addTest('expression DAG', (evaluate) => {
     assertEquals(evaluate(expr, { x: 2, y: 3 }), 12);
 });
 
+addTest('vector division', (evaluate) => {
+    const v = P.vconst(new Vec3(6, 9, 12));
+    const scalar = P.const(3);
+    
+    const div = P.vdiv(v, scalar);
+    const result = evaluate(div);
+    assertEquals(result.x, 2);
+    assertEquals(result.y, 3);
+    assertEquals(result.z, 4);
+});
+
+addTest('vector operations type checking', (evaluate) => {
+    const vec = P.vconst(new Vec3(1, 2, 3));
+    const scalar = P.const(5);
+    
+    // Test vmul with wrong types
+    assertThrows(() => evaluate(P.vmul(scalar, scalar)));
+    assertThrows(() => evaluate(P.vmul(vec, vec)));
+    
+    // Test vdiv with wrong types
+    assertThrows(() => evaluate(P.vdiv(scalar, scalar)));
+    assertThrows(() => evaluate(P.vdiv(vec, vec)));
+});
+
+addTest('expression simplification', (evaluate) => {
+    const x = P.var('x');
+    const commonExpr = P.mul(x, P.const(2));
+    // Create an expression that uses the same subexpression twice
+    const expr = P.add(commonExpr, commonExpr);
+    
+    // Simplify the expression
+    const simplified = expr.simplify();
+    
+    // The result should still evaluate correctly
+    assertEquals(evaluate(simplified, { x: 3 }), 12);
+});
+
+addTest('missing variable error messages', (evaluate) => {
+    const x = P.var('x');
+    const vx = P.vvar('vx');
+    
+    let error;
+    try {
+        evaluate(x, {});
+    } catch (e) {
+        error = e.message;
+    }
+    assertEquals(error, "Variable 'x' not found");
+    
+    try {
+        evaluate(vx, {});
+    } catch (e) {
+        error = e.message;
+    }
+    assertEquals(error, "Vector variable 'vx' not found");
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,
