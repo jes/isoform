@@ -17,15 +17,13 @@ class SphereNode extends TreeNode {
   }
 
   generateShaderImplementation() {
-    return `
-      float sdSphere(vec3 p, float r) {
-        return length(p) - r;
-      }
-    `;
+    const expr = P.sub(P.vlength(P.vvar('p')), P.const(this.radius));
+    const ssa = new PeptideSSA(expr);
+    return ssa.compileToGLSL(`float ${this.getFunctionName()}(vec3 p)`);
   }
 
   generateShaderCode() {
-    return `sdSphere(p, ${this.radius.toFixed(16)})`;
+    return `${this.getFunctionName()}(p)`;
   }
 
   sdSphere(p, r) {

@@ -102,9 +102,6 @@ Floating point values should always be formatted in shaders with 16 decimal plac
 
     `return ${this.fooValue.toFixed(16)}`;
 
-As well as the shader code, we have an equivalent JavaScript implementation of the SDF
-in `node.sdf(p)`, where `p` is a `Vec3`.
-
 ## Secondary node
 
 When the user is editing a node, the "secondary node" is that node. We render it in red
