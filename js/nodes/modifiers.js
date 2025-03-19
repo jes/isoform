@@ -240,29 +240,19 @@ class ThicknessNode extends TreeNode {
     return {"thickness": "float", "inside": "bool"};
   }
 
-  generateShaderImplementation() {
+  peptide(p) {
     if (!this.hasChildren()) {
       this.warn("Thickness node has no child to transform");
-      return '';
+      return this.noop();
     }
-
-    return `
-      float ${this.getFunctionName()}(vec3 p) {
-        float d = ${this.children[0].shaderCode()};
-        float thickness = ${this.thickness.toFixed(16)};
-        return ${this.inside ? 
-          `max(d, -d - thickness)` : 
-          `max(d - thickness, -d)`};
-      }
-    `;
-  }
-
-  generateShaderCode() {
-    if (!this.hasChildren()) {
-      return this.noopShaderCode();
+    
+    const d = this.children[0].peptide(p);
+    const negD = P.sub(P.const(0), d);
+    if (this.inside) {
+      return P.max(d, P.sub(negD, P.const(this.thickness)));
+    } else {
+      return P.max(P.sub(d, P.const(this.thickness)), negD);
     }
-
-    return `${this.getFunctionName()}(p)`;
   }
 
   getIcon() {
