@@ -48,7 +48,7 @@ const app = {
     createDocument() {
         const doc = new UnionNode([]);
         doc.setProperty('displayName', 'Document');
-        const sphere = new SphereNode(11);
+        /*const sphere = new SphereNode(11);
         const box = new TransformNode([0, 0, 0], [1, 0, 0], 45, 
                      new DistanceDeformNode(0.1, 2.0, new BoxNode([20, 20, 20], 1.0)));
         const torus = new TorusNode(10, 3);
@@ -59,7 +59,9 @@ const app = {
         const extr = new ExtrudeNode(new SketchNode([ {x:0, y:0}, {x:20, y:0}, {x:20, y:20} ]));
         extr.setProperty('blendRadius', 1);
         extr.setProperty('chamfer', true);
-        doc.addChild(new ThicknessNode(1, false, extr));
+        doc.addChild(new ThicknessNode(1, false, extr));*/
+        doc.addChild(new SphereNode());
+        doc.addChild(new TransformNode([4, 0, 0], [1, 0, 0], 0, new SphereNode()));
 
         this.document = doc;
         return doc;

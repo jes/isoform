@@ -57,34 +57,25 @@ class UnionNode extends TreeNode {
       return {"blendRadius": "float", "chamfer": "bool"};
     }
 
-    generateShaderCode() {
-      if (this.children.length < 1) {
-        this.warn("Union node needs at least one child");
-        return this.noopShaderCode();
+    peptide(p) {
+      if (this.children.length === 0) {
+        return P.const(10000043.0);
       }
 
-      let shaderCode = this.children[0].shaderCode();
-      for (let i = 1; i < this.children.length; i++) {
-        const childCode = this.children[i].shaderCode();
-        // Check if either operand is a noop value
-        if (childCode === this.noopShaderCode()) {
-          continue; // Skip this child
-        } else if (shaderCode === this.noopShaderCode()) {
-          shaderCode = childCode;
-          continue;
-        }
-        
-        if (this.blendRadius > 0) {
-          if (this.chamfer) {
-            shaderCode = `chmin(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
-          } else {
-            shaderCode = `smin(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
-          }
+      let minFn = (a, b) => P.min(a, b);
+      if (this.blendRadius > 0) {
+        if (this.chamfer) {
+          minFn = (a, b) => P.chmin(a, b, P.const(this.blendRadius));
         } else {
-          shaderCode = `min(${shaderCode}, ${childCode})`;
+          minFn = (a, b) => P.smin(a, b, P.const(this.blendRadius));
         }
       }
-      return shaderCode;
+
+      let min = this.children[0].peptide(p);
+      for (let i = 1; i < this.children.length; i++) {
+        min = minFn(min, this.children[i].peptide(p));
+      }
+      return min;
     }
 
     getIcon() {
@@ -109,37 +100,25 @@ class IntersectionNode extends TreeNode {
     return {"blendRadius": "float", "chamfer": "bool"};
   }
 
-  generateShaderCode() {
-    if (this.children.length < 1) {
-      this.warn("Intersection node needs at least one child");
-      return this.noopShaderCode();
+  peptide(p) {
+    if (this.children.length === 0) {
+      return P.const(10000043.0);
     }
 
-    let shaderCode = this.children[0].shaderCode();
-    if (shaderCode === this.noopShaderCode()) {
-      return this.noopShaderCode(); // If first child is noop, result is noop
-    }
- 
-    for (let i = 1; i < this.children.length; i++) {
-      const childCode = this.children[i].shaderCode();
-      // Check if either operand is a noop value
-      if (shaderCode === this.noopShaderCode()) {
-        return this.noopShaderCode(); // For intersection, if any is noop, result is noop
-      } else if (childCode === this.noopShaderCode()) {
-        continue; // Skip this child
-      }
-      
-      if (this.blendRadius > 0) {
-        if (this.chamfer) {
-          shaderCode = `chmax(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
-        } else {
-          shaderCode = `smax(${shaderCode}, ${childCode}, ${this.blendRadius.toFixed(16)})`;
-        }
+    let maxFn = (a, b) => P.max(a, b);
+    if (this.blendRadius > 0) {
+      if (this.chamfer) {
+        maxFn = (a, b) => P.chmax(a, b, P.const(this.blendRadius));
       } else {
-        shaderCode = `max(${shaderCode}, ${childCode})`;
+        maxFn = (a, b) => P.smax(a, b, P.const(this.blendRadius));
       }
     }
-    return shaderCode;
+
+    let max = this.children[0].peptide(p);
+    for (let i = 1; i < this.children.length; i++) {
+      max = maxFn(max, this.children[i].peptide(p));
+    }
+    return max;
   }
 
   getIcon() {
@@ -195,43 +174,26 @@ class SubtractionNode extends TreeNode {
   properties() {
     return {"blendRadius": "float", "chamfer": "bool"};
   }
+  
+  peptide(p) {
+    if (this.children.length === 0) {
+      return P.const(10000043.0);
+    }
 
-  generateShaderImplementation() {
-    let expr = P.max(P.var('a'), P.var('b'));
-
+    let maxFn = (a, b) => P.max(a, b);
     if (this.blendRadius > 0) {
       if (this.chamfer) {
-        expr = P.chmax(P.var('a'), P.var('b'), P.const(this.blendRadius));
+        maxFn = (a, b) => P.chmax(a, b, P.const(this.blendRadius));
       } else {
-        expr = P.smax(P.var('a'), P.var('b'), P.const(this.blendRadius));
+        maxFn = (a, b) => P.smax(a, b, P.const(this.blendRadius));
       }
     }
 
-    const ssa = new PeptideSSA(expr);
-    return ssa.compileToGLSL(`float ${this.getFunctionName()}(float a, float b)`);
-  }
-
-  generateShaderCode() {
-    if (this.children.length < 1) {
-      this.warn("Subtraction node needs at least one child");
-      return this.noopShaderCode();
-    }
-
-    let shaderCode = this.children[0].shaderCode();
-    if (shaderCode === this.noopShaderCode()) {
-      return this.noopShaderCode(); // If first child is noop, result is noop
-    }
-    
+    let max = this.children[0].peptide(p);
     for (let i = 1; i < this.children.length; i++) {
-      const childCode = this.children[i].shaderCode();
-      // Check if subtrahend is a noop value
-      if (childCode === this.noopShaderCode()) {
-        continue; // Skip this child
-      }
-      
-      shaderCode = `${this.getFunctionName()}(${shaderCode}, -(${childCode}))`;
+      max = maxFn(max, P.sub(P.const(0), this.children[i].peptide(p)));
     }
-    return shaderCode;
+    return max;
   }
 
   getIcon() {

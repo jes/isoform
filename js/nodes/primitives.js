@@ -16,15 +16,8 @@ class SphereNode extends TreeNode {
     return {"radius": "float"};
   }
 
-  generateShaderImplementation() {
-    // length(p) - radius
-    const expr = P.sub(P.vlength(P.vvar('p')), P.const(this.radius));
-    const ssa = new PeptideSSA(expr);
-    return ssa.compileToGLSL(`float ${this.getFunctionName()}(vec3 p)`);
-  }
-
-  generateShaderCode() {
-    return `${this.getFunctionName()}(p)`;
+  peptide(p) {
+    return P.sub(P.vlength(p), P.const(this.radius));
   }
 
   getIcon() {

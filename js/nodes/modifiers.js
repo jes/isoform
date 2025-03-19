@@ -68,13 +68,13 @@ class TransformNode extends TreeNode {
     };
   }
 
-  generateShaderImplementation() {
+  peptide(p) {
     if (!this.hasChildren()) {
       this.warn("Transform node has no child to transform");
-      return '';
+      return P.const(10000042.0);
     }
     
-    let expr = P.vsub(P.vvar('p'), P.vconst(this.translation));
+    let expr = P.vsub(p, P.vconst(this.translation));
 
     const angleRad = this.rotationAngle * Math.PI / 180.0;
     if (Math.abs(angleRad) > 0.000001) {
@@ -93,26 +93,7 @@ class TransformNode extends TreeNode {
       expr = P.vadd(P.vadd(a, b), c);
     }
 
-    const peptideFunc = this.getFunctionName()+"_peptide";
-
-    const ssa = new PeptideSSA(expr);
-    const peptideCode = ssa.compileToGLSL("vec3 "+peptideFunc+"(vec3 p)");
-
-    return `
-      ${peptideCode}
-      float ${this.getFunctionName()}(vec3 p) {
-        p = ${peptideFunc}(p);
-        return ${this.children[0].shaderCode()};
-      }
-    `;
-  }
-
-  generateShaderCode() {
-    if (!this.hasChildren()) {
-      return this.noopShaderCode();
-    }
-    
-    return `${this.getFunctionName()}(p)`;
+    return this.children[0].peptide(expr);
   }
 
   getIcon() {

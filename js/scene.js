@@ -24,30 +24,21 @@ const scene = {
         const secondaryNode = ui.getSecondaryNode();
         
         // Build the new scene combination code
-        let newSceneCode = `
+        let newSceneCode = document.shaderCode() + `
         float map(vec3 p) {
             p = rotatePoint(p);
-            return ${document.shaderCode()} + ${0.00001*Math.random()};
+            return peptide(p);
         }
-        float map_secondary(vec3 p) {
-            p = rotatePoint(p);
-            return ${secondaryNode ? document.secondaryShaderCode(secondaryNode, showBoundingSphere) : '1000.0'};
+            float map_secondary(vec3 p) {
+            return 1000.0;
         }
         `;
 
-        const mainImpls = document.allShaderImplementations();
-        const secondaryImpls = document.secondaryShaderImplementations(secondaryNode, showBoundingSphere);
-        
-        // Filter out duplicates from secondaryImpls that are already in mainImpls
-        const filteredSecondaryImpls = secondaryImpls.filter(impl => !mainImpls.includes(impl));
-        
-        // Combine the parts
-        const impls = [...mainImpls, ...filteredSecondaryImpls];
-        
         const newSource = originalSource.substring(0, startIndex) + 
-                   impls.join('\n') +
                    newSceneCode +
                    originalSource.substring(endIndex);
+
+        console.log(newSource);
         
         document.markClean();
 

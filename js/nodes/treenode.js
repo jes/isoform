@@ -150,61 +150,14 @@ class TreeNode {
     return this.children.length > 0;
   }
 
-  // return supporting function implementations for the node
-  // these are uniq'd before going into the shader source,
-  // make sure that functions with different content have different names,
-  // and similarly that functions with the same name are exactly identical including whitespace and comments
-  shaderImplementation() {
-    return this.generateShaderImplementation();
+  shaderCode() {
+    const expr = this.peptide(P.vvar('p'));
+    const ssa = new PeptideSSA(expr);
+    return ssa.compileToGLSL(`float peptide(vec3 p)`);
   }
 
-  generateShaderImplementation() {
-    return "";
-  }
-
-  // return a unique name for the function, based on the node's name and uniqueId;
-  // use this in shaderImplementation()
-  getFunctionName() {
-    const scope = TreeNode._secondaryNode ? "secondary" : "";
-    return `sd${scope}_${this.name}_${this.uniqueId}`;
-  }
-
-  allShaderImplementations() {
-    // Start with an array to maintain order
-    const implementations = [];
-    
-    // First recursively collect implementations from all children (deeper nodes)
-    for (const child of this.children) {
-      const childImpls = child.allShaderImplementations();
-      // Add each child implementation to our array
-      for (const impl of childImpls) {
-        // Only add if not already in the array (avoid duplicates)
-        if (!implementations.includes(impl)) {
-          implementations.push(impl);
-        }
-      }
-    }
-    
-    // Then add this node's implementation (if any) after the children's
-    const thisImpl = this.shaderImplementation();
-    if (thisImpl && !implementations.includes(thisImpl)) {
-      implementations.push(thisImpl);
-    }
-
-    // Return the array (now ordered from bottom to top)
-    return implementations;
-  }
-
-  secondaryShaderImplementations(node, showBoundingSphere = false) {
-    if (node == null) {
-      return [];
-    }
-    TreeNode._secondaryNode = node;
-    TreeNode._showBoundingSphere = showBoundingSphere;
-    const implementations = this.allShaderImplementations();
-    TreeNode._secondaryNode = null;
-    TreeNode._showBoundingSphere = false;
-    return implementations;
+  peptide(p) {
+    return P.const(10000044.0);
   }
 
   disable() {
@@ -214,65 +167,6 @@ class TreeNode {
   enable() {
     this.isDisabled = false;
     this.markDirty();
-  }
-
-  // return the shader code for the node, respecting isDisabled and _secondaryNode
-  shaderCode() {
-    if (TreeNode._secondaryNode) {
-      if (this == TreeNode._secondaryNode && TreeNode._showBoundingSphere) {
-        const boundingSphere = this.boundingSphere();
-        const centre = boundingSphere.centre;
-        let radius = boundingSphere.radius;
-        if (radius == Infinity) {
-          radius = 10000043.0;
-        }
-        return `length(p-${centre.glsl()})-${radius.toFixed(16)}`;
-      }
-      if (this == TreeNode._secondaryNode || this.applyToSecondary || this.hasParent(TreeNode._secondaryNode)) {
-        return this.generateShaderCode();
-      }
-      // otherwise only do the subtree that contains the secondary node
-      for (const child of this.children) {
-        if (child.containsNode(TreeNode._secondaryNode)) {
-          return child.shaderCode();
-        }
-      }
-      // otherwise noop
-      return this.noopShaderCode();
-    }
-
-    if (this.isDisabled) {
-      return this.noopShaderCode();
-    }
-    return this.generateShaderCode();
-  }
-
-  secondaryShaderCode(node, showBoundingSphere = false) {
-    TreeNode._secondaryNode = node;
-    TreeNode._showBoundingSphere = showBoundingSphere;
-    const code = this.shaderCode();
-    TreeNode._secondaryNode = null;
-    TreeNode._showBoundingSphere = false;
-    return code;
-  }
-
-  // return the shader code for the node, without respecting isDisabled,
-  // in a form that can be inlined in an expression
-  generateShaderCode() {
-    return this.noopShaderCode();
-  }
-
-  noopShaderCode() {
-    return "10000042.0";
-  }
-
-  // p is a Vec3
-  sdf(p) {
-    return this.noopSDF();
-  }
-
-  noopSDF(p) {
-    return 10000042.0;
   }
 
   canAddMoreChildren() {
