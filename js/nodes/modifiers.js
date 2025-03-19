@@ -74,39 +74,34 @@ class TransformNode extends TreeNode {
       return '';
     }
     
-    // Convert rotation angle from degrees to radians
-    const angleRad = (this.rotationAngle * Math.PI / 180.0).toFixed(16);
-    
-    // Normalize the rotation axis
-    const axisLength = this.rotationAxis.length();
-    
-    const normalizedAxis = axisLength > 0 ? 
-      this.rotationAxis.div(axisLength) : 
-      new Vec3(0, 1, 0);
-    
+    let expr = P.vsub(P.vvar('p'), P.vconst(this.translation));
+
+    const angleRad = this.rotationAngle * Math.PI / 180.0;
+    if (Math.abs(angleRad) > 0.000001) {
+      const normalizedAxis = this.rotationAxis.length() > 0 ? 
+        this.rotationAxis.normalize() : 
+        new Vec3(0, 1, 0);
+ 
+      // Rodrigues rotation formula
+      const axis = P.vconst(normalizedAxis);
+      const cosA = P.const(Math.cos(angleRad));
+      const sinA = P.const(Math.sin(angleRad));
+      const k = P.const(1.0 - Math.cos(angleRad));
+      const a = P.vmul(P.vmul(axis, P.vdot(axis, expr)), k);
+      const b = P.vmul(expr, cosA);
+      const c = P.vmul(P.vcross(axis, expr), sinA);
+      expr = P.vadd(P.vadd(a, b), c);
+    }
+
+    const peptideFunc = this.getFunctionName()+"_peptide";
+
+    const ssa = new PeptideSSA(expr);
+    const peptideCode = ssa.compileToGLSL("vec3 "+peptideFunc+"(vec3 p)");
+
     return `
+      ${peptideCode}
       float ${this.getFunctionName()}(vec3 p) {
-        // Apply translation
-        p = p - ${this.translation.glsl()};
-        
-        ${ Math.abs(angleRad) > 0.000001 ? `
-        // Apply rotation using axis-angle
-        float angle = ${angleRad};
-        vec3 axis = ${normalizedAxis.glsl()};
-        
-        // Rodrigues rotation formula
-        float cosA = cos(angle);
-        float sinA = sin(angle);
-        float k = 1.0 - cosA;
-        
-        vec3 a = axis * dot(axis, p) * k;
-        vec3 b = p * cosA;
-        vec3 c = cross(axis, p) * sinA;
-        
-        p = a + b + c;
-        ` : ""
-        }
-        
+        p = ${peptideFunc}(p);
         return ${this.children[0].shaderCode()};
       }
     `;

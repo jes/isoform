@@ -66,7 +66,7 @@ class Peptide {
         return new Peptide('vconst', 'vec3', vec3Clone, null, null, null,
             (_, vars) => new Vec3(vec3Clone.x, vec3Clone.y, vec3Clone.z),
             (_, ssaOp) => `${ssaOp.result} = new Vec3(${vec3Clone.x}, ${vec3Clone.y}, ${vec3Clone.z});`,
-            (_, ssaOp) => `${ssaOp.result} = vec3(${vec3Clone.x.toFixed(16)}, ${vec3Clone.y.toFixed(16)}, ${vec3Clone.z.toFixed(16)});`,
+            (_, ssaOp) => `${ssaOp.result} = ${vec3Clone.glsl()};`,
         );
     }
 

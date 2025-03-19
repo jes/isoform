@@ -549,5 +549,37 @@ addGLSLTest('mixed scalar and vector operations', async (harness) => {
     }); // (2 * 3) + 1 = 7
 });
 
+addGLSLTest('vector absolute value', async (harness) => {
+    const v = P.vconst(new Vec3(-1, -2, 3));
+    harness.testExpression(P.vabs(v), new Vec3(1, 2, 3));
+});
+
+addGLSLTest('vector minimum', async (harness) => {
+    const v1 = P.vconst(new Vec3(1, 4, 3));
+    const v2 = P.vconst(new Vec3(2, 1, 5));
+    harness.testExpression(P.vmin(v1, v2), new Vec3(1, 1, 3));
+});
+
+addGLSLTest('vector maximum', async (harness) => {
+    const v1 = P.vconst(new Vec3(1, 4, 3));
+    const v2 = P.vconst(new Vec3(2, 1, 5));
+    harness.testExpression(P.vmax(v1, v2), new Vec3(2, 4, 5));
+});
+
+addGLSLTest('vector min/max with variables', async (harness) => {
+    const v1 = P.vvar('u_v1');
+    const v2 = P.vvar('u_v2');
+    
+    harness.testExpression(P.vmin(v1, v2), new Vec3(1, 1, 3), {
+        u_v1: new Vec3(1, 4, 3),
+        u_v2: new Vec3(2, 1, 5)
+    });
+    
+    harness.testExpression(P.vmax(v1, v2), new Vec3(2, 4, 5), {
+        u_v1: new Vec3(1, 4, 3),
+        u_v2: new Vec3(2, 1, 5)
+    });
+});
+
 // Export for browser
 window.PeptideGLSLTests = GLSLTests;
