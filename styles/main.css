@@ -11,6 +11,7 @@ canvas {
     height: 100vh;
     min-width: 0; /* Prevent flex items from overflowing */
     position: relative; /* Make it a positioned container */
+    background: rgb(64, 64, 64);
 }
 #ui-panel {
     width: 250px; /* Default width */

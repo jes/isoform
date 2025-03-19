@@ -314,6 +314,7 @@ void main() {
         
         // Visualize the field value
         color = visualizeField(fieldValue);
+        fragColor = vec4(color, 1.0);
     } else {
         // Regular 3D rendering mode - use the existing code
         // ORTHOGRAPHIC PROJECTION
@@ -326,9 +327,10 @@ void main() {
         mapsign = 1.0;
         OrthoProjectionResult orthoResult = orthoProjection(ro, rd, right, up, zoom);
         
-        // Initialize with background color if no hit
+        // Initialize with transparent background if no hit
         if (!orthoResult.hit) {
-            color = vec3(0.1, 0.1, 0.1);
+            fragColor = vec4(0.0);
+            return;
         } else {
             // Front-to-back compositing for transparency
             for (int i = 0; i < 10; i++) {
@@ -346,24 +348,19 @@ void main() {
                 orthoResult = orthoProjection(orthoResult.hitPosition, rd, right, up, zoom);
             }
             
-            // Add background contribution for remaining transmittance
-            if (transmittance > 0.01) {
-                accumulatedColor += vec3(0.1, 0.1, 0.1) * transmittance;
-            }
-            
             color = accumulatedColor;
         }
+        
+        // Gamma correction
+        color = pow(color, vec3(1.0 / 2.2));
+        
+        // Draw axis indicator on top of the scene
+        vec4 axisColor = drawAxisIndicator(uv);
+        // Blend the axis indicator with the scene using alpha blending
+        color = mix(color, axisColor.rgb, axisColor.a);
+        
+        fragColor = vec4(color, 1.0);
     }
-    
-    // Gamma correction
-    color = pow(color, vec3(1.0 / 2.2));
-    
-    // Draw axis indicator on top of the scene
-    vec4 axisColor = drawAxisIndicator(uv);
-    // Blend the axis indicator with the scene using alpha blending
-    color = mix(color, axisColor.rgb, axisColor.a);
-    
-    fragColor = vec4(color, 1.0);
 }
 `;
 
