@@ -22,13 +22,40 @@ class TreeNode {
     this.applyToSecondary = false; // whether the node should be applied to the secondary display object (e.g. translate/rotate should still apply but combinators should not)
   }
 
+  // override this to return true if the node is 2d
   is2d() {
     return false;
   }
 
+  // override this to return the bounding sphere of the node
   boundingSphere() {
     return { centre: new Vec3(0, 0, 0), radius: Infinity };
   }
+
+  // override this to return the exactness of the node
+  getExactness() {
+    return TreeNode.ISOSURFACE;
+  }
+
+  // override this to return the properties of the node
+  properties() {
+    return {};
+  }
+
+  // override this to return the peptide expression for the node
+  peptide(p) {
+    if (this.isDisabled) {
+      return this.noop();
+    }
+    return this.makePeptide(p);
+  }
+
+  getIcon() {
+    // Default icon for generic nodes
+    return "📄";
+  }
+
+  /// the rest of this class should not generally be overridden
 
   // "dirty" means the shader needs to be recompiled
   dirty() {
@@ -41,14 +68,6 @@ class TreeNode {
   markClean() {
     this.isDirty = false;
     this.children.forEach(child => child.markClean());
-  }
-
-  getExactness() {
-    return TreeNode.ISOSURFACE;
-  }
-
-  properties() {
-    return {};
   }
 
   genericProperties() {
@@ -150,13 +169,6 @@ class TreeNode {
     return this.children.length > 0;
   }
 
-  peptide(p) {
-    if (this.isDisabled) {
-      return this.noop();
-    }
-    return this.makePeptide(p);
-  }
-
   makePeptide(p) {
     return this.noop();
   }
@@ -188,11 +200,6 @@ class TreeNode {
     } else {
       console.warn(message);
     }
-  }
-
-  getIcon() {
-    // Default icon for generic nodes
-    return "📄";
   }
 
   replaceChild(oldChild, newChild) {
