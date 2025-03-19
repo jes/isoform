@@ -503,7 +503,8 @@ const renderer = {
 
             if (d < 0.0) {
                 result.hit = true;
-                result.hitPosition = p;
+                // Transform the hit position back to model space using the transpose (inverse) of the rotation matrix
+                result.hitPosition = camera.activeRotationMatrix.transpose().mulVec3(rotatedP);
                 break;
             }
 
