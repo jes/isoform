@@ -83,12 +83,12 @@ vec4 calcNormalAndEdge(vec3 p, float d) {
     vec2 h = vec2(offset, 0.0);
     
     // Get SDF values at offset points
-    float dx1 = map(p + h.xyy);
-    float dx2 = map(p - h.xyy);
-    float dy1 = map(p + h.yxy);
-    float dy2 = map(p - h.yxy);
-    float dz1 = map(p + h.yyx);
-    float dz2 = map(p - h.yyx);
+    float dx1 = mapsign * map(p + h.xyy);
+    float dx2 = mapsign * map(p - h.xyy);
+    float dy1 = mapsign * map(p + h.yxy);
+    float dy2 = mapsign * map(p - h.yxy);
+    float dz1 = mapsign * map(p + h.yyx);
+    float dz2 = mapsign * map(p - h.yyx);
 
     // Calculate normal using central differences
     vec3 normal = normalize(vec3(
