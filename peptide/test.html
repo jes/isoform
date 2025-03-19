@@ -172,7 +172,7 @@
                     window.peptideFailedTests.forEach((test, index) => {
                         const option = document.createElement('option');
                         option.value = index;
-                        option.textContent = `Test ${index + 1}: ${test.expression.substring(0, 30)}...`;
+                        option.textContent = `${test.name}`;
                         select.appendChild(option);
                     });
                     
@@ -210,7 +210,7 @@
                 
                 const test = window.peptideFailedTests[index];
                 
-                document.getElementById('failed-expression').textContent = test.expression;
+                document.getElementById('failed-expression').textContent = test.name;
                 document.getElementById('failed-comparison').textContent = 
                     `Expected: ${test.expected}, Actual: ${test.actual}`;
                 document.getElementById('failed-variables').textContent = test.variables;

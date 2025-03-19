@@ -1,6 +1,7 @@
 // GLSL test harness for Peptide
 class GLSLTestHarness {
-    constructor() {
+    constructor(name) {
+        this.name = name;
         // Create a hidden canvas for WebGL rendering
         this.canvas = document.createElement('canvas');
         this.canvas.width = 4;  // Small size is sufficient for tests
@@ -35,15 +36,16 @@ class GLSLTestHarness {
         // Fragment shader template - will be filled in for each test
         this.fsTemplate = `#version 300 es
             precision highp float;
-            in vec2 vTexCoord;
             out vec4 fragColor;
             
-            // Peptide-generated code will be inserted here
+            // begin peptide expression code
             {{PEPTIDE_CODE}}
-            
+            // end peptide expression code
+
             void main() {
-                // Test code will be inserted here
+                // begin test code
                 {{TEST_CODE}}
+                // end test code
             }
         `;
         
@@ -162,7 +164,7 @@ class GLSLTestHarness {
             console.warn(`Uniform ${name} not found`);
             return;
         }
-        
+
         switch (type) {
             case 'float':
                 this.gl.uniform1f(location, value);
@@ -181,7 +183,7 @@ class GLSLTestHarness {
         }
     }
     
-    render() {
+    render(variables = {}) {
         // Bind framebuffer and set viewport
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer);
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
@@ -190,8 +192,19 @@ class GLSLTestHarness {
         this.gl.clearColor(0, 0, 0, 0);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         
-        // Use the program and draw
+        // Use the program BEFORE setting uniforms
         this.gl.useProgram(this.program);
+
+        // Set uniform values
+        for (const [name, value] of Object.entries(variables)) {
+            if (value instanceof Vec3) {
+                this.setUniform(name, 'vec3', [value.x, value.y, value.z]);
+            } else if (typeof value === 'number') {
+                this.setUniform(name, 'float', value);
+            }
+        }
+        
+        // Setup geometry and draw
         this.setupGeometry();
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
@@ -220,9 +233,9 @@ class GLSLTestHarness {
         // Set up uniform declarations based on variable types
         for (const [name, value] of Object.entries(variables)) {
             if (value instanceof Vec3) {
-                uniformDeclarations += `uniform vec3 u_${name};\n`;
+                uniformDeclarations += `uniform vec3 ${name};\n`;
             } else if (typeof value === 'number') {
-                uniformDeclarations += `uniform float u_${name};\n`;
+                uniformDeclarations += `uniform float ${name};\n`;
             } else {
                 throw new Error(`Unsupported variable type for ${name}`);
             }
@@ -258,7 +271,7 @@ class GLSLTestHarness {
                 } else {
                     fragColor = vec4(1.0, 0.0, 0.0, 1.0);  // Red for failure
                     // Encode some debug info in the other channels
-                    fragColor.a = length(result - expected) / 10.0;
+                    fragColor.a = length(result - expected) / 255.0;
                 }
             `;
         } else {
@@ -270,62 +283,40 @@ class GLSLTestHarness {
             .replace('{{PEPTIDE_CODE}}', uniformDeclarations + glslCode)
             .replace('{{TEST_CODE}}', testCode);
 
-        try {
-            // Create and link the fragment shader
-            this.createFragmentShader(uniformDeclarations + glslCode, testCode);
-            
-            // Set uniform values
-            for (const [name, value] of Object.entries(variables)) {
-                if (value instanceof Vec3) {
-                    this.setUniform(`u_${name}`, 'vec3', [value.x, value.y, value.z]);
-                } else if (typeof value === 'number') {
-                    this.setUniform(`u_${name}`, 'float', value);
-                }
-            }
-            
-            // Render and read back pixels
-            this.render();
-            const pixels = this.readPixels();
-            
-            // Check if the test passed (first pixel should be green)
-            const passed = pixels[1] > 200 && pixels[0] < 50;
-            
-            if (!passed) {
-                // Extract the actual result from the alpha channel for debugging
-                const debugValue = pixels[3] / 255.0;
-                
-                // Store the failed test information in a global object for later inspection
-                if (!window.peptideFailedTests) {
-                    window.peptideFailedTests = [];
-                }
-                
-                window.peptideFailedTests.push({
-                    expression: peptideExpr.toString ? peptideExpr.toString() : 'Expression',
-                    expected: JSON.stringify(expectedValue),
-                    actual: debugValue,
-                    variables: JSON.stringify(variables),
-                    shaderCode: completeShaderCode
-                });
-                
-                throw new Error(`GLSL test failed. Expected: ${JSON.stringify(expectedValue)}, Debug value: ${debugValue}`);
-            }
-        } catch (error) {
-            console.error('GLSL test error:', error);
-
-            // Store the failed test information in a global object for later inspection
+        const storeFailedTest = (actual) => {
             if (!window.peptideFailedTests) {
                 window.peptideFailedTests = [];
             }
             
             window.peptideFailedTests.push({
-                expression: peptideExpr.toString ? peptideExpr.toString() : 'Expression',
+                name: this.name,
                 expected: JSON.stringify(expectedValue),
-                actual: error.message,
+                actual,
                 variables: JSON.stringify(variables),
                 shaderCode: completeShaderCode
             });
+        };
 
+        try {
+            // Create and link the fragment shader
+            this.createFragmentShader(uniformDeclarations + glslCode, testCode);
+        } catch (error) {
+            console.error('GLSL test error:', error);
+            storeFailedTest(error.message);
             throw error;
+        }
+
+        // Render and read back pixels - pass variables to render
+        this.render(variables);
+        const pixels = this.readPixels();
+        
+        // Check if the test passed (first pixel should be green)
+        const passed = pixels[1] > 200 && pixels[0] < 50;
+        
+        if (!passed) {
+            const debugValue = pixels[3];
+            storeFailedTest(debugValue);
+            throw new Error(`GLSL test failed. Expected: ${JSON.stringify(expectedValue)}, Debug value: ${debugValue}`);
         }
         
         return true;
@@ -349,7 +340,7 @@ const GLSLTests = new TestSuite();
 // Helper function to add GLSL tests
 function addGLSLTest(name, testFn) {
     GLSLTests.test(name, async () => {
-        const harness = new GLSLTestHarness();
+        const harness = new GLSLTestHarness(name);
         try {
             await testFn(harness);
         } finally {
@@ -375,18 +366,18 @@ addGLSLTest('basic arithmetic', async (harness) => {
 });
 
 addGLSLTest('variable evaluation', async (harness) => {
-    const x = P.var('x');
+    const x = P.var('u_x');
     const expr = P.add(x, P.const(1));
-    harness.testExpression(expr, 6, { x: 5 });
+    harness.testExpression(expr, 6, { u_x: 5 });
 });
 
 addGLSLTest('complex expression', async (harness) => {
     // (x + 1) * (y - 2)
     const expr = P.mul(
-        P.add(P.var('x'), P.const(1)),
-        P.sub(P.var('y'), P.const(2))
+        P.add(P.var('u_x'), P.const(1)),
+        P.sub(P.var('u_y'), P.const(2))
     );
-    harness.testExpression(expr, 12, { x: 3, y: 5 }); // (3 + 1) * (5 - 2) = 4 * 3 = 12
+    harness.testExpression(expr, 12, { u_x: 3, u_y: 5 }); // (3 + 1) * (5 - 2) = 4 * 3 = 12
 });
 
 addGLSLTest('min and max operations', async (harness) => {
@@ -411,8 +402,8 @@ addGLSLTest('vector constant evaluation', async (harness) => {
 });
 
 addGLSLTest('vector variable evaluation', async (harness) => {
-    const v = P.vvar('v');
-    harness.testExpression(v, new Vec3(1, 2, 3), { v: new Vec3(1, 2, 3) });
+    const v = P.vvar('u_v');
+    harness.testExpression(v, new Vec3(1, 2, 3), { u_v: new Vec3(1, 2, 3) });
 });
 
 addGLSLTest('vector arithmetic', async (harness) => {
@@ -453,10 +444,10 @@ addGLSLTest('vector component extraction', async (harness) => {
 
 addGLSLTest('complex vector expression', async (harness) => {
     // (v1 + v2) · (v3 × v4)
-    const v1 = P.vvar('var1');
-    const v2 = P.vvar('var2');
-    const v3 = P.vvar('var3');
-    const v4 = P.vvar('var4');
+    const v1 = P.vvar('u_v1');
+    const v2 = P.vvar('u_v2');
+    const v3 = P.vvar('u_v3');
+    const v4 = P.vvar('u_v4');
     
     const expr = P.vdot(
         P.vadd(v1, v2),
@@ -464,10 +455,10 @@ addGLSLTest('complex vector expression', async (harness) => {
     );
     
     harness.testExpression(expr, 1, {
-        var1: new Vec3(1, 0, 0),
-        var2: new Vec3(0, 1, 0),
-        var3: new Vec3(0, 0, 1),
-        var4: new Vec3(1, 0, 0)
+        u_v1: new Vec3(1, 0, 0),
+        u_v2: new Vec3(0, 1, 0),
+        u_v3: new Vec3(0, 0, 1),
+        u_v4: new Vec3(1, 0, 0)
     });
 });
 
