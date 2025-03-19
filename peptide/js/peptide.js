@@ -254,6 +254,28 @@ class Peptide {
         );
     }
 
+    static clamp(a, min, max) {
+        a.assertType('float');
+        min.assertType('float');
+        max.assertType('float');
+        return new Peptide('clamp', 'float', null, a, min, max,
+            (_, vars) => Math.max(min.evaluate(vars), Math.min(a.evaluate(vars), max.evaluate(vars))),
+            (_, ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.right}, Math.min(${ssaOp.left}, ${ssaOp.third}));`,
+            (_, ssaOp) => `${ssaOp.result} = clamp(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
+        );
+    }
+
+    static mix(a, b, t) {
+        a.assertType('float');
+        b.assertType('float');
+        t.assertType('float');
+        return new Peptide('mix', 'float', null, a, b, t,
+            (_, vars) => a.evaluate(vars) * (1 - t.evaluate(vars)) + b.evaluate(vars) * t.evaluate(vars),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} * (1 - ${ssaOp.third}) + ${ssaOp.right} * ${ssaOp.third};`,
+            (_, ssaOp) => `${ssaOp.result} = mix(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
+        );
+    }
+
     static pow(a, b) {
         a.assertType('float');
         b.assertType('float');

@@ -496,6 +496,40 @@ addTest('vector min/max type checking', (evaluate) => {
     assertThrows(() => evaluate(P.vmax(scalar, vec)));
 });
 
+addTest('clamp operations', (evaluate) => {
+    const x = P.const(5);
+    const min = P.const(2);
+    const max = P.const(4);
+    
+    const clamped = P.clamp(x, min, max);
+    assertEquals(evaluate(clamped), 4); // 5 clamped between 2 and 4
+    
+    const x2 = P.const(1);
+    const clamped2 = P.clamp(x2, min, max);
+    assertEquals(evaluate(clamped2), 2); // 1 clamped between 2 and 4
+    
+    const x3 = P.const(3);
+    const clamped3 = P.clamp(x3, min, max);
+    assertEquals(evaluate(clamped3), 3); // 3 stays between 2 and 4
+});
+
+addTest('mix operations', (evaluate) => {
+    const a = P.const(0);
+    const b = P.const(10);
+    const t = P.const(0.3);
+    
+    const mixed = P.mix(a, b, t);
+    assertEquals(evaluate(mixed), 3); // mix(0, 10, 0.3) = 3
+    
+    const t2 = P.const(0);
+    const mixed2 = P.mix(a, b, t2);
+    assertEquals(evaluate(mixed2), 0); // mix(0, 10, 0) = 0
+    
+    const t3 = P.const(1);
+    const mixed3 = P.mix(a, b, t3);
+    assertEquals(evaluate(mixed3), 10); // mix(0, 10, 1) = 10
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,

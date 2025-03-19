@@ -581,5 +581,47 @@ addGLSLTest('vector min/max with variables', async (harness) => {
     });
 });
 
+addGLSLTest('clamp operations', async (harness) => {
+    const x = P.const(5);
+    const min = P.const(2);
+    const max = P.const(4);
+    
+    harness.testExpression(P.clamp(x, min, max), 4); // 5 clamped between 2 and 4
+    harness.testExpression(P.clamp(P.const(1), min, max), 2); // 1 clamped between 2 and 4
+    harness.testExpression(P.clamp(P.const(3), min, max), 3); // 3 stays between 2 and 4
+    
+    // Test with variables
+    const vx = P.var('u_x');
+    const vmin = P.var('u_min');
+    const vmax = P.var('u_max');
+    
+    harness.testExpression(P.clamp(vx, vmin, vmax), 4, {
+        u_x: 5,
+        u_min: 2,
+        u_max: 4
+    });
+});
+
+addGLSLTest('mix operations', async (harness) => {
+    const a = P.const(0);
+    const b = P.const(10);
+    const t = P.const(0.3);
+    
+    harness.testExpression(P.mix(a, b, t), 3); // mix(0, 10, 0.3) = 3
+    harness.testExpression(P.mix(a, b, P.const(0)), 0); // mix(0, 10, 0) = 0
+    harness.testExpression(P.mix(a, b, P.const(1)), 10); // mix(0, 10, 1) = 10
+    
+    // Test with variables
+    const va = P.var('u_a');
+    const vb = P.var('u_b');
+    const vt = P.var('u_t');
+    
+    harness.testExpression(P.mix(va, vb, vt), 25, {
+        u_a: 0,
+        u_b: 100,
+        u_t: 0.25
+    }); // mix(0, 100, 0.25) = 25
+});
+
 // Export for browser
 window.PeptideGLSLTests = GLSLTests;
