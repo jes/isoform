@@ -150,12 +150,6 @@ class TreeNode {
     return this.children.length > 0;
   }
 
-  shaderCode() {
-    const expr = this.peptide(P.vvar('p'));
-    const ssa = new PeptideSSA(expr);
-    return ssa.compileToGLSL(`float peptide(vec3 p)`);
-  }
-
   peptide(p) {
     if (this.isDisabled) {
       return this.noop();

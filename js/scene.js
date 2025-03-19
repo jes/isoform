@@ -3,7 +3,7 @@ const scene = {
     init() {
     },
     
-    generateShaderCode(document, showBoundingSphere = false) {
+    generateShaderCode(code, showBoundingSphere = false) {
         const startTime = performance.now();
         // Get the original shader source
         let originalSource = renderer.fragmentShaderSource;
@@ -24,7 +24,7 @@ const scene = {
         const secondaryNode = ui.getSecondaryNode();
         
         // Build the new scene combination code
-        let newSceneCode = document.shaderCode() + `
+        let newSceneCode = code + `
         float map(vec3 p) {
             p = rotatePoint(p);
             return peptide(p);
@@ -40,8 +40,6 @@ const scene = {
 
         console.log(newSource);
         
-        document.markClean();
-
         const endTime = performance.now();
         console.log(`Shader codegen took ${endTime - startTime} ms`);
 

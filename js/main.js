@@ -95,12 +95,17 @@ const app = {
 
             // Show loading indicator
             this.showLoadingIndicator();
+
+            const expr = this.document.peptide(P.vvar('p'));
+            const ssa = new PeptideSSA(expr);
+            const code = ssa.compileToGLSL(`float peptide(vec3 p)`);
             
             // Compile shaders asynchronously
             await renderer.createShaderProgram(
                 renderer.vertexShaderSource, 
-                scene.generateShaderCode(this.document, ui.showBoundingSphere)
+                scene.generateShaderCode(code, ui.showBoundingSphere)
             );
+            this.document.markClean();
             
             // Hide loading indicator
             this.hideLoadingIndicator();
