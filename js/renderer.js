@@ -64,7 +64,7 @@ const renderer = {
         try {
             this.vertexShaderSource = window.vertexShaderSource;
             this.fragmentShaderSource = window.fragmentShaderSource;
-            await this.createShaderProgram([[this.vertexShaderSource, this.fragmentShaderSource]]);
+            await this.createShaderProgram([this.fragmentShaderSource]);
             
             // Initialize our program array with the default program if we only have one
             if (this.programInfos.length === 0 && this.programInfo) {
@@ -255,7 +255,7 @@ const renderer = {
         return shader;
     },
     
-    async createShaderProgram(shaderPairs) {
+    async createShaderProgram(fragmentShaders) {
         const startTime = performance.now();
         
         // Clean up existing programs first
@@ -283,13 +283,12 @@ const renderer = {
         this.programInfos = [];
         
         // Process each shader pair (vs, fs)
-        for (let i = 0; i < shaderPairs.length; i++) {
-            const vsSource = shaderPairs[i][0];
-            const fsSource = shaderPairs[i][1];
+        for (let i = 0; i < fragmentShaders.length; i++) {
+            const fsSource = fragmentShaders[i];
             
-            if (!vsSource || !fsSource) continue;
+            if (!fsSource) continue;
             
-            const vertexShader = await this.compileShader(vsSource, this.gl.VERTEX_SHADER);
+            const vertexShader = await this.compileShader(this.vertexShaderSource, this.gl.VERTEX_SHADER);
             const fragmentShader = await this.compileShader(fsSource, this.gl.FRAGMENT_SHADER);
 
             if (!vertexShader || !fragmentShader) {

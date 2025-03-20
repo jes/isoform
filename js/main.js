@@ -101,13 +101,13 @@ const app = {
             const ssa = new PeptideSSA(expr);
             const glslSrc = ssa.compileToGLSL(`float peptide(vec3 p)`);
 
-            const shaderPrograms = [[renderer.vertexShaderSource, scene.generateShaderCode(glslSrc)]];
+            const shaderPrograms = [scene.generateShaderCode(glslSrc)];
 
             if (currentSecondaryNode !== null) {
                 const secondaryExpr = currentSecondaryNode.peptide(P.vvar('p'));
                 const secondarySSA = new PeptideSSA(secondaryExpr);
                 const secondaryGLSL = secondarySSA.compileToGLSL(`float peptide(vec3 p)`);
-                shaderPrograms.push([renderer.vertexShaderSource, scene.generateShaderCode(secondaryGLSL)]);
+                shaderPrograms.push(scene.generateShaderCode(secondaryGLSL));
             }
 
             // Compile shaders asynchronously
