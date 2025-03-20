@@ -258,7 +258,28 @@ const renderer = {
     async createShaderProgram(shaderPairs) {
         const startTime = performance.now();
         
-        // Clear existing programs if necessary
+        // Clean up existing programs first
+        if (this.programInfos.length > 0) {
+            for (const programInfo of this.programInfos) {
+                if (programInfo && programInfo.program) {
+                    // Get attached shaders before deleting the program
+                    const shaders = this.gl.getAttachedShaders(programInfo.program);
+                    
+                    // Detach and delete all shaders
+                    if (shaders) {
+                        for (const shader of shaders) {
+                            this.gl.detachShader(programInfo.program, shader);
+                            this.gl.deleteShader(shader);
+                        }
+                    }
+                    
+                    // Delete the program itself
+                    this.gl.deleteProgram(programInfo.program);
+                }
+            }
+        }
+        
+        // Clear existing programs
         this.programInfos = [];
         
         // Process each shader pair (vs, fs)
