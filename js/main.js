@@ -104,7 +104,11 @@ const app = {
             const shaderPrograms = [scene.generateShaderCode(glslSrc)];
 
             if (currentSecondaryNode !== null) {
-                const secondaryExpr = currentSecondaryNode.peptide(P.vvar('p'));
+                let secondaryExpr = currentSecondaryNode.peptide(P.vvar('p'));
+                if (ui.showBoundingSphere) {
+                    const tree = new TransformNode(currentSecondaryNode.boundingSphere().centre, [0, 0, 0], 0, new SphereNode(currentSecondaryNode.boundingSphere().radius));
+                    secondaryExpr = tree.peptide(P.vvar('p'));
+                }
                 const secondarySSA = new PeptideSSA(secondaryExpr);
                 const secondaryGLSL = secondarySSA.compileToGLSL(`float peptide(vec3 p)`);
                 shaderPrograms.push(scene.generateShaderCode(secondaryGLSL));

@@ -83,7 +83,7 @@ class BoxNode extends TreeNode {
   boundingSphere() {
     return { 
       centre: new Vec3(0, 0, 0), 
-      radius: this.size.length() 
+      radius: this.size.length()/2.0 + this.radius,
     };
   }
 
