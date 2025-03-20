@@ -5,7 +5,6 @@ class TransformNode extends TreeNode {
     this.rotationAxis = rotationAxis instanceof Vec3 ? rotationAxis : new Vec3(rotationAxis[0], rotationAxis[1], rotationAxis[2]);
     this.rotationAngle = rotationAngle; // Angle in degrees
     this.maxChildren = 1;
-    this.applyToSecondary = true;
     this.addChild(children);
   }
 
@@ -267,7 +266,6 @@ class ScaleNode extends TreeNode {
     this.alongAxis = alongAxis;
     this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
     this.maxChildren = 1;
-    this.applyToSecondary = true;
     this.addChild(children);
   }
 

@@ -2,7 +2,8 @@
 const renderer = {
     canvas: null,
     gl: null,
-    programInfo: null,
+    programInfos: [], // Array to store multiple shader programs
+    currentProgramIndex: 0,
     positionBuffer: null,
     startTime: Date.now(),
     vertexShaderSource: null,
@@ -63,7 +64,12 @@ const renderer = {
         try {
             this.vertexShaderSource = window.vertexShaderSource;
             this.fragmentShaderSource = window.fragmentShaderSource;
-            this.createShaderProgram(this.vertexShaderSource, this.fragmentShaderSource);
+            await this.createShaderProgram([[this.vertexShaderSource, this.fragmentShaderSource]]);
+            
+            // Initialize our program array with the default program if we only have one
+            if (this.programInfos.length === 0 && this.programInfo) {
+                this.programInfos.push(this.programInfo);
+            }
         } catch (error) {
             console.error('Failed to load shaders:', error);
             return false;
@@ -89,17 +95,15 @@ const renderer = {
     setupRenderTarget() {
         const gl = this.gl;
         
-        // Create framebuffer
+        // Create primary framebuffer
         this.renderTarget = gl.createFramebuffer();
-        
-        // Create a texture to render to
         this.renderTexture = gl.createTexture();
-        
-        // Create a renderbuffer for depth
         this.renderBuffer = gl.createRenderbuffer();
         
-        // We'll initialize the actual sizes in resizeCanvas
-        // This avoids the "no width/height" errors
+        // Create secondary framebuffer for ping-pong rendering
+        this.secondaryRenderTarget = gl.createFramebuffer();
+        this.secondaryRenderTexture = gl.createTexture();
+        this.secondaryRenderBuffer = gl.createRenderbuffer();
     },
     
     async createDisplayProgram() {
@@ -169,37 +173,39 @@ const renderer = {
         
         const gl = this.gl;
         
-        // Set up the framebuffer and its attachments with proper dimensions
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.renderTarget);
+        // Configure both render targets
+        const configureRenderTarget = (target, texture, renderbuffer) => {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, target);
+            
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(
+                gl.TEXTURE_2D, 0, gl.RGBA, 
+                renderWidth, renderHeight, 0, 
+                gl.RGBA, gl.UNSIGNED_BYTE, null
+            );
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            
+            gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+            gl.renderbufferStorage(
+                gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, 
+                renderWidth, renderHeight
+            );
+            
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
+            
+            const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+            if (status !== gl.FRAMEBUFFER_COMPLETE) {
+                console.error('Framebuffer not complete:', status);
+            }
+        };
         
-        // Set up the texture with proper dimensions
-        gl.bindTexture(gl.TEXTURE_2D, this.renderTexture);
-        gl.texImage2D(
-            gl.TEXTURE_2D, 0, gl.RGBA, 
-            renderWidth, renderHeight, 0, 
-            gl.RGBA, gl.UNSIGNED_BYTE, null
-        );
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        
-        // Set up the renderbuffer with proper dimensions
-        gl.bindRenderbuffer(gl.RENDERBUFFER, this.renderBuffer);
-        gl.renderbufferStorage(
-            gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, 
-            renderWidth, renderHeight
-        );
-        
-        // Attach texture and renderbuffer to framebuffer
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.renderTexture, 0);
-        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.renderBuffer);
-        
-        // Check if the framebuffer is complete
-        const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-        if (status !== gl.FRAMEBUFFER_COMPLETE) {
-            console.error('Framebuffer not complete:', status);
-        }
+        // Configure both render targets
+        configureRenderTarget(this.renderTarget, this.renderTexture, this.renderBuffer);
+        configureRenderTarget(this.secondaryRenderTarget, this.secondaryRenderTexture, this.secondaryRenderBuffer);
         
         // Reset bindings
         gl.bindTexture(gl.TEXTURE_2D, null);
@@ -249,133 +255,112 @@ const renderer = {
         return shader;
     },
     
-    async createShaderProgram(vsSource, fsSource) {
+    async createShaderProgram(shaderPairs) {
         const startTime = performance.now();
+        
+        // Clear existing programs if necessary
+        this.programInfos = [];
+        
+        // Process each shader pair (vs, fs)
+        for (let i = 0; i < shaderPairs.length; i++) {
+            const vsSource = shaderPairs[i][0];
+            const fsSource = shaderPairs[i][1];
+            
+            if (!vsSource || !fsSource) continue;
+            
+            const vertexShader = await this.compileShader(vsSource, this.gl.VERTEX_SHADER);
+            const fragmentShader = await this.compileShader(fsSource, this.gl.FRAGMENT_SHADER);
 
-        const vertexShader = await this.compileShader(vsSource, this.gl.VERTEX_SHADER);
-        const fragmentShader = await this.compileShader(fsSource, this.gl.FRAGMENT_SHADER);
+            if (!vertexShader || !fragmentShader) {
+                console.error(`Failed to compile shader pair ${i}`);
+                continue;
+            }
 
-        if (!vertexShader || !fragmentShader) {
-            return null;
+            const program = this.gl.createProgram();
+            this.gl.attachShader(program, vertexShader);
+            this.gl.attachShader(program, fragmentShader);
+            this.gl.linkProgram(program);
+
+            if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
+                console.error('Program linking error:', this.gl.getProgramInfoLog(program));
+                continue;
+            }
+
+            const programInfo = {
+                program: program,
+                attribLocations: {
+                    vertexPosition: this.gl.getAttribLocation(program, 'aVertexPosition'),
+                },
+                uniformLocations: {
+                    resolution: this.gl.getUniformLocation(program, 'uResolution'),
+                    time: this.gl.getUniformLocation(program, 'uTime'),
+                    cameraPosition: this.gl.getUniformLocation(program, 'uCameraPosition'),
+                    cameraTarget: this.gl.getUniformLocation(program, 'uCameraTarget'),
+                    cameraZoom: this.gl.getUniformLocation(program, 'uCameraZoom'),
+                    rotationMatrix: this.gl.getUniformLocation(program, 'uRotationMatrix'),
+                    showEdges: this.gl.getUniformLocation(program, 'uShowEdges'),
+                    stepFactor: this.gl.getUniformLocation(program, 'stepFactor'),
+                    uShowField: this.gl.getUniformLocation(program, 'uShowField'),
+                    uShowSteps: this.gl.getUniformLocation(program, 'uShowSteps'),
+                    opacity: this.gl.getUniformLocation(program, 'uOpacity'),
+                    objectColor: this.gl.getUniformLocation(program, 'uObjectColor'),
+                    // Add a new uniform for accessing the previous render output
+                    previousTexture: this.gl.getUniformLocation(program, 'uPreviousTexture'),
+                },
+            };
+            
+            this.programInfos.push(programInfo);
         }
-
-        const program = this.gl.createProgram();
-        this.gl.attachShader(program, vertexShader);
-        this.gl.attachShader(program, fragmentShader);
-        this.gl.linkProgram(program);
-
-        if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
-            console.error('Program linking error:', this.gl.getProgramInfoLog(program));
-            return null;
-        }
-
-        this.programInfo = {
-            program: program,
-            attribLocations: {
-                vertexPosition: this.gl.getAttribLocation(program, 'aVertexPosition'),
-            },
-            uniformLocations: {
-                resolution: this.gl.getUniformLocation(program, 'uResolution'),
-                time: this.gl.getUniformLocation(program, 'uTime'),
-                cameraPosition: this.gl.getUniformLocation(program, 'uCameraPosition'),
-                cameraTarget: this.gl.getUniformLocation(program, 'uCameraTarget'),
-                cameraZoom: this.gl.getUniformLocation(program, 'uCameraZoom'),
-                rotationMatrix: this.gl.getUniformLocation(program, 'uRotationMatrix'),
-                showEdges: this.gl.getUniformLocation(program, 'uShowEdges'),
-                stepFactor: this.gl.getUniformLocation(program, 'stepFactor'),
-                uShowField: this.gl.getUniformLocation(program, 'uShowField'),
-                uShowSteps: this.gl.getUniformLocation(program, 'uShowSteps'),
-                opacity: this.gl.getUniformLocation(program, 'uOpacity'),
-                objectColor: this.gl.getUniformLocation(program, 'uObjectColor'),
-            },
-        };
+        
+        // Set the main programInfo to the first one for backward compatibility
+        this.programInfo = this.programInfos.length > 0 ? this.programInfos[0] : null;
 
         const endTime = performance.now();
-        console.log(`Shader program creation took ${(endTime - startTime).toFixed(3)} ms`);
-        return program;
+        console.log(`Shader programs creation took ${(endTime - startTime).toFixed(3)} ms`);
+        return this.programInfos.length > 0 ? this.programInfos[0].program : null;
     },
     
     render() {
-        if (!this.programInfo || !this.displayProgram) {
+        if (this.programInfos.length === 0 || !this.displayProgram) {
             return;
         }
 
         const currentTime = (Date.now() - this.startTime) / 1000;
         const gl = this.gl;
         
-        // 1. Render to the offscreen texture at the scaled resolution
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.renderTarget);
-        
         // Set viewport to the render target size
         const renderWidth = Math.floor(this.canvas.width * this.resolutionScale);
         const renderHeight = Math.floor(this.canvas.height * this.resolutionScale);
         gl.viewport(0, 0, renderWidth, renderHeight);
         
-        // Clear the framebuffer
-        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        // Use a single framebuffer for all passes
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.renderTarget);
+        gl.clearColor(0.0, 0.0, 0.0, 0.0); // Clear with transparent black
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         
-        // Use our main shader program
-        gl.useProgram(this.programInfo.program);
+        // First pass - direct rendering
+        gl.disable(gl.BLEND);
+        this.renderShaderPass(this.programInfos[0], currentTime, renderWidth, renderHeight, null);
         
-        // Set up vertex attribute
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-        gl.vertexAttribPointer(
-            this.programInfo.attribLocations.vertexPosition,
-            2, gl.FLOAT, false, 0, 0
-        );
-        gl.enableVertexAttribArray(this.programInfo.attribLocations.vertexPosition);
+        // For subsequent passes, just blend on top of the existing content
+        if (this.programInfos.length > 1) {
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            
+            for (let i = 1; i < this.programInfos.length; i++) {
+                this.renderShaderPass(this.programInfos[i], currentTime, renderWidth, renderHeight, null);
+            }
+        }
         
-        // Set uniforms
-        gl.uniform2f(this.programInfo.uniformLocations.resolution, renderWidth, renderHeight);
-        gl.uniform1f(this.programInfo.uniformLocations.time, currentTime);
-        
-        // Add camera uniforms - now using Vec3 objects
-        gl.uniform3f(this.programInfo.uniformLocations.cameraPosition, 
-            camera.position.x, camera.position.y, camera.position.z);
-        gl.uniform3f(this.programInfo.uniformLocations.cameraTarget, 
-            camera.target.x, camera.target.y, camera.target.z);
-        gl.uniform1f(this.programInfo.uniformLocations.cameraZoom, camera.zoom);
-        
-        // Set object color (default to white if not specified)
-        gl.uniform3f(this.programInfo.uniformLocations.objectColor, 0.6, 0.6, 0.6);
-        
-        // Pass rotation matrix - now using Mat3 object converted to array
-        gl.uniformMatrix3fv(
-            this.programInfo.uniformLocations.rotationMatrix, 
-            false, 
-            new Float32Array(camera.getRotationMatrixArray())
-        );
-        
-        gl.uniform1i(this.programInfo.uniformLocations.showEdges, camera.showEdges ? 1 : 0);
-        
-        // Set stepFactor uniform
-        gl.uniform1f(this.programInfo.uniformLocations.stepFactor, camera.stepFactor);
-        
-        // Set uShowField uniform
-        gl.uniform1i(this.programInfo.uniformLocations.uShowField, camera.showField ? 1 : 0);
-        
-        // Set uShowSteps uniform
-        gl.uniform1i(this.programInfo.uniformLocations.uShowSteps, camera.showSteps ? 1 : 0);
-        
-        // Set opacity uniform
-        gl.uniform1f(this.programInfo.uniformLocations.opacity, camera.opacity);
-        
-        // Draw the quad to the offscreen texture
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        
-        // 2. Render the texture to the canvas
+        // Finally, render the result to the screen
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Clear the canvas
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.disable(gl.BLEND);
         
-        // Use the display program
+        // Use the display program to render the final texture
         gl.useProgram(this.displayProgram.program);
-        
-        // Bind the texture
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.renderTexture);
         gl.uniform1i(this.displayProgram.uniformLocations.texture, 0);
@@ -521,5 +506,51 @@ const renderer = {
         console.log(`Raymarching took ${(endTime - startTime).toFixed(2)}ms (${result.steps} steps)`);
 
         return result;
+    },
+    
+    // Helper method to render a single shader pass
+    renderShaderPass(programInfo, currentTime, width, height, inputTexture) {
+        const gl = this.gl;
+        
+        // Use the shader program
+        gl.useProgram(programInfo.program);
+        
+        // Set up vertex attribute
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.vertexPosition,
+            2, gl.FLOAT, false, 0, 0
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+        
+        // Set common uniforms
+        gl.uniform2f(programInfo.uniformLocations.resolution, width, height);
+        gl.uniform1f(programInfo.uniformLocations.time, currentTime);
+        gl.uniform3f(programInfo.uniformLocations.cameraPosition, 
+            camera.position.x, camera.position.y, camera.position.z);
+        gl.uniform3f(programInfo.uniformLocations.cameraTarget, 
+            camera.target.x, camera.target.y, camera.target.z);
+        gl.uniform1f(programInfo.uniformLocations.cameraZoom, camera.zoom);
+        gl.uniform3f(programInfo.uniformLocations.objectColor, 0.6, 0.6, 0.6);
+        gl.uniformMatrix3fv(
+            programInfo.uniformLocations.rotationMatrix, 
+            false, 
+            new Float32Array(camera.getRotationMatrixArray())
+        );
+        gl.uniform1i(programInfo.uniformLocations.showEdges, camera.showEdges ? 1 : 0);
+        gl.uniform1f(programInfo.uniformLocations.stepFactor, camera.stepFactor);
+        gl.uniform1i(programInfo.uniformLocations.uShowField, camera.showField ? 1 : 0);
+        gl.uniform1i(programInfo.uniformLocations.uShowSteps, camera.showSteps ? 1 : 0);
+        gl.uniform1f(programInfo.uniformLocations.opacity, camera.opacity);
+        
+        // If we have a previous texture, pass it to the shader
+        if (inputTexture) {
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, inputTexture);
+            gl.uniform1i(programInfo.uniformLocations.previousTexture, 1);
+        }
+        
+        // Draw the quad
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     },
 }; 

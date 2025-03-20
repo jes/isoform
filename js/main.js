@@ -91,8 +91,8 @@ const app = {
         // Check if document is dirty or if a new secondary node is selected
         // or if bounding sphere visibility has changed while having a secondary node
         if (this.document.dirty() || 
-            (currentSecondaryNode !== null && currentSecondaryNode !== this.lastSecondaryNode) ||
-            (currentSecondaryNode !== null && ui.showBoundingSphere !== this.lastBoundingSphereState)) {
+            (currentSecondaryNode !== this.lastSecondaryNode) ||
+            (ui.showBoundingSphere !== this.lastBoundingSphereState)) {
 
             // Show loading indicator
             this.showLoadingIndicator();
@@ -100,11 +100,18 @@ const app = {
             const expr = this.document.peptide(P.vvar('p'));
             const ssa = new PeptideSSA(expr);
             const glslSrc = ssa.compileToGLSL(`float peptide(vec3 p)`);
+
+            const shaderPrograms = [[renderer.vertexShaderSource, scene.generateShaderCode(glslSrc)]];
+
+            if (currentSecondaryNode !== null) {
+                const secondaryExpr = currentSecondaryNode.peptide(P.vvar('p'));
+                const secondarySSA = new PeptideSSA(secondaryExpr);
+                const secondaryGLSL = secondarySSA.compileToGLSL(`float peptide(vec3 p)`);
+                shaderPrograms.push([renderer.vertexShaderSource, scene.generateShaderCode(secondaryGLSL)]);
+            }
+
             // Compile shaders asynchronously
-            await renderer.createShaderProgram(
-                renderer.vertexShaderSource, 
-                scene.generateShaderCode(glslSrc)
-            );
+            await renderer.createShaderProgram(shaderPrograms);
             this.document.markClean();
 
             // Compile the SDF function
@@ -115,9 +122,7 @@ const app = {
             this.hideLoadingIndicator();
 
             // update the last secondary node reference when we recompile
-            if (currentSecondaryNode !== null) {
-                this.lastSecondaryNode = currentSecondaryNode;
-            }
+            this.lastSecondaryNode = currentSecondaryNode;
             
             // Update last bounding sphere state
             this.lastBoundingSphereState = ui.showBoundingSphere;
