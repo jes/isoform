@@ -2,7 +2,6 @@
 const renderer = {
     canvas: null,
     gl: null,
-    programInfos: [], // Array to store multiple shader programs
     currentProgramIndex: 0,
     positionBuffer: null,
     startTime: Date.now(),
@@ -61,17 +60,10 @@ const renderer = {
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW);
         
         // Load shader sources
-        try {
-            this.vertexShaderSource = window.vertexShaderSource;
-            this.fragmentShaderSource = window.fragmentShaderSource;
-            await this.createShaderProgram([this.fragmentShaderSource]);
-            
-            // Initialize our program array with the default program if we only have one
-            if (this.programInfos.length === 0 && this.programInfo) {
-                this.programInfos.push(this.programInfo);
-            }
-        } catch (error) {
-            console.error('Failed to load shaders:', error);
+        this.vertexShaderSource = window.vertexShaderSource;
+        this.fragmentShaderSource = window.fragmentShaderSource;
+        if (!this.vertexShaderSource || !this.fragmentShaderSource) {
+            console.error('Failed to load shaders');
             return false;
         }
         
@@ -255,122 +247,33 @@ const renderer = {
         return shader;
     },
     
-    async createShaderProgram(fragmentShaders) {
-        const startTime = performance.now();
-        
-        // Clean up existing programs first
-        if (this.programInfos.length > 0) {
-            for (const programInfo of this.programInfos) {
-                if (programInfo && programInfo.program) {
-                    // Get attached shaders before deleting the program
-                    const shaders = this.gl.getAttachedShaders(programInfo.program);
-                    
-                    // Detach and delete all shaders
-                    if (shaders) {
-                        for (const shader of shaders) {
-                            this.gl.detachShader(programInfo.program, shader);
-                            this.gl.deleteShader(shader);
-                        }
-                    }
-                    
-                    // Delete the program itself
-                    this.gl.deleteProgram(programInfo.program);
-                }
-            }
+    render(shaderLayers = null) {
+        if (!this.displayProgram) {
+            return;
         }
-        
-        // Clear existing programs
-        this.programInfos = [];
-        
-        // Process each shader pair (vs, fs)
-        for (let i = 0; i < fragmentShaders.length; i++) {
-            const fsSource = fragmentShaders[i];
-            
-            if (!fsSource) continue;
-            
-            const vertexShader = await this.compileShader(this.vertexShaderSource, this.gl.VERTEX_SHADER);
-            const fragmentShader = await this.compileShader(fsSource, this.gl.FRAGMENT_SHADER);
 
-            if (!vertexShader || !fragmentShader) {
-                console.error(`Failed to compile shader pair ${i}`);
-                continue;
-            }
-
-            const program = this.gl.createProgram();
-            this.gl.attachShader(program, vertexShader);
-            this.gl.attachShader(program, fragmentShader);
-            this.gl.linkProgram(program);
-
-            if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
-                console.error('Program linking error:', this.gl.getProgramInfoLog(program));
-                continue;
-            }
-
-            const programInfo = {
-                program: program,
-                attribLocations: {
-                    vertexPosition: this.gl.getAttribLocation(program, 'aVertexPosition'),
-                },
-                uniformLocations: {
-                    resolution: this.gl.getUniformLocation(program, 'uResolution'),
-                    time: this.gl.getUniformLocation(program, 'uTime'),
-                    cameraPosition: this.gl.getUniformLocation(program, 'uCameraPosition'),
-                    cameraTarget: this.gl.getUniformLocation(program, 'uCameraTarget'),
-                    cameraZoom: this.gl.getUniformLocation(program, 'uCameraZoom'),
-                    rotationMatrix: this.gl.getUniformLocation(program, 'uRotationMatrix'),
-                    showEdges: this.gl.getUniformLocation(program, 'uShowEdges'),
-                    stepFactor: this.gl.getUniformLocation(program, 'stepFactor'),
-                    uShowField: this.gl.getUniformLocation(program, 'uShowField'),
-                    uShowSteps: this.gl.getUniformLocation(program, 'uShowSteps'),
-                    opacity: this.gl.getUniformLocation(program, 'uOpacity'),
-                    objectColor: this.gl.getUniformLocation(program, 'uObjectColor'),
-                    // Add a new uniform for accessing the previous render output
-                    previousTexture: this.gl.getUniformLocation(program, 'uPreviousTexture'),
-                },
-            };
-            
-            this.programInfos.push(programInfo);
-        }
-        
-        // Set the main programInfo to the first one for backward compatibility
-        this.programInfo = this.programInfos.length > 0 ? this.programInfos[0] : null;
-
-        const endTime = performance.now();
-        console.log(`Shader programs creation took ${(endTime - startTime).toFixed(3)} ms`);
-        return this.programInfos.length > 0 ? this.programInfos[0].program : null;
-    },
-    
-    render() {
-        if (this.programInfos.length === 0 || !this.displayProgram) {
+        // If no custom shader layers are provided, use the default programs
+        if (!shaderLayers) {
             return;
         }
 
         const currentTime = (Date.now() - this.startTime) / 1000;
         const gl = this.gl;
         
-        // Set viewport to the render target size
+        // Calculate render size based on resolution scale
         const renderWidth = Math.floor(this.canvas.width * this.resolutionScale);
         const renderHeight = Math.floor(this.canvas.height * this.resolutionScale);
-        gl.viewport(0, 0, renderWidth, renderHeight);
         
-        // Use a single framebuffer for all passes
+        // Render to the framebuffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.renderTarget);
         gl.clearColor(0.0, 0.0, 0.0, 0.0); // Clear with transparent black
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         
-        // First pass - direct rendering
-        gl.disable(gl.BLEND);
-        this.renderShaderPass(this.programInfos[0], currentTime, renderWidth, renderHeight, null);
+        // Set viewport to the render target size
+        gl.viewport(0, 0, renderWidth, renderHeight);
         
-        // For subsequent passes, just blend on top of the existing content
-        if (this.programInfos.length > 1) {
-            gl.enable(gl.BLEND);
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-            
-            for (let i = 1; i < this.programInfos.length; i++) {
-                this.renderShaderPass(this.programInfos[i], currentTime, renderWidth, renderHeight, null);
-            }
-        }
+        // Render custom shader layers
+        this.renderShaderLayers(shaderLayers, renderWidth, renderHeight);
         
         // Finally, render the result to the screen
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -421,7 +324,7 @@ const renderer = {
     },
     
     onCanvasMouseMove(e) {
-        if (!this.coordDisplay || !this.programInfo) return;
+        if (!this.coordDisplay) return;
 
         // Get canvas-relative coordinates
         const rect = this.canvas.getBoundingClientRect();
@@ -528,49 +431,82 @@ const renderer = {
         return result;
     },
     
-    // Helper method to render a single shader pass
-    renderShaderPass(programInfo, currentTime, width, height, inputTexture) {
+   
+    // New method to render multiple shader layers
+    renderShaderLayers(shaderLayers, width, height) {
         const gl = this.gl;
         
-        // Use the shader program
-        gl.useProgram(programInfo.program);
+        // Set viewport
+        gl.viewport(0, 0, width, height);
         
-        // Set up vertex attribute
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-        gl.vertexAttribPointer(
-            programInfo.attribLocations.vertexPosition,
-            2, gl.FLOAT, false, 0, 0
-        );
-        gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
-        
-        // Set common uniforms
-        gl.uniform2f(programInfo.uniformLocations.resolution, width, height);
-        gl.uniform1f(programInfo.uniformLocations.time, currentTime);
-        gl.uniform3f(programInfo.uniformLocations.cameraPosition, 
-            camera.position.x, camera.position.y, camera.position.z);
-        gl.uniform3f(programInfo.uniformLocations.cameraTarget, 
-            camera.target.x, camera.target.y, camera.target.z);
-        gl.uniform1f(programInfo.uniformLocations.cameraZoom, camera.zoom);
-        gl.uniform3f(programInfo.uniformLocations.objectColor, 0.6, 0.6, 0.6);
-        gl.uniformMatrix3fv(
-            programInfo.uniformLocations.rotationMatrix, 
-            false, 
-            new Float32Array(camera.getRotationMatrixArray())
-        );
-        gl.uniform1i(programInfo.uniformLocations.showEdges, camera.showEdges ? 1 : 0);
-        gl.uniform1f(programInfo.uniformLocations.stepFactor, camera.stepFactor);
-        gl.uniform1i(programInfo.uniformLocations.uShowField, camera.showField ? 1 : 0);
-        gl.uniform1i(programInfo.uniformLocations.uShowSteps, camera.showSteps ? 1 : 0);
-        gl.uniform1f(programInfo.uniformLocations.opacity, camera.opacity);
-        
-        // If we have a previous texture, pass it to the shader
-        if (inputTexture) {
-            gl.activeTexture(gl.TEXTURE1);
-            gl.bindTexture(gl.TEXTURE_2D, inputTexture);
-            gl.uniform1i(programInfo.uniformLocations.previousTexture, 1);
+        // First layer is rendered directly
+        if (shaderLayers.length > 0) {
+            const firstLayer = shaderLayers[0];
+            gl.disable(gl.BLEND);
+
+            gl.useProgram(firstLayer.program);
+            
+            // Apply uniforms and render
+            firstLayer.setUniform('vec2', 'uResolution', [width, height]);
+            camera.setUniforms(firstLayer);
+            firstLayer.applyUniforms(gl);
+            
+            // Set up vertex attribute
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+            const positionAttrib = firstLayer.getAttribLocation(gl, 'aVertexPosition');
+            gl.vertexAttribPointer(positionAttrib, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(positionAttrib);
+            
+            // Draw
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         }
         
-        // Draw the quad
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        // Subsequent layers are blended
+        for (let i = 1; i < shaderLayers.length; i++) {
+            const layer = shaderLayers[i];
+            
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+            gl.useProgram(layer.program);
+            
+            // Apply uniforms and render
+            layer.setUniform('vec2', 'uResolution', [width, height]);
+            camera.setUniforms(layer);
+            layer.applyUniforms(gl);
+            
+            // Set up vertex attribute
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+            const positionAttrib = layer.getAttribLocation(gl, 'aVertexPosition');
+            gl.vertexAttribPointer(positionAttrib, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(positionAttrib);
+
+            // TODO: if we have a previous texture, pass it to the shader
+            
+            // Draw
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        }
+    },
+    
+    async compileShaderProgram(fragmentShaderSource) {
+        const vertexShader = await this.compileShader(this.vertexShaderSource, this.gl.VERTEX_SHADER);
+        const fragmentShader = await this.compileShader(fragmentShaderSource, this.gl.FRAGMENT_SHADER);
+        
+        if (!vertexShader || !fragmentShader) {
+            console.error('Failed to compile shaders');
+            return null;
+        }
+        
+        const program = this.gl.createProgram();
+        this.gl.attachShader(program, vertexShader);
+        this.gl.attachShader(program, fragmentShader);
+        this.gl.linkProgram(program);
+        
+        if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
+            console.error('Program linking error:', this.gl.getProgramInfoLog(program));
+            return null;
+        }
+        
+        return program;
     },
 }; 

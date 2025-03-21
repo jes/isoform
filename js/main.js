@@ -8,6 +8,8 @@ const app = {
     sketchNeedsRedraw: false,
     lastBoundingSphereState: false,
     sdf: null,
+    primaryShaderLayer: null,   // Store primary shader layer
+    secondaryShaderLayer: null, // Store secondary shader layer
 
     async init() {
         // Initialize components
@@ -97,28 +99,56 @@ const app = {
             // Show loading indicator
             this.showLoadingIndicator();
 
+            // Prepare primary shader
             const expr = this.document.peptide(P.vvar('p'));
             const ssa = new PeptideSSA(expr);
             const glslSrc = ssa.compileToGLSL(`float peptide(vec3 p)`);
+            const primaryShaderSource = scene.generateShaderCode(glslSrc);
 
-            const shaderPrograms = [scene.generateShaderCode(glslSrc)];
+            // Compile primary shader program
+            const primaryProgram = await renderer.compileShaderProgram(primaryShaderSource);
+            
+            // Create primary shader layer
+            this.primaryShaderLayer = new ShaderLayer(primaryProgram);
+            
+            // Setup common uniforms that will be applied at render time by the renderer
+            this.primaryShaderLayer.setAttribLocation('aVertexPosition', 
+                renderer.gl.getAttribLocation(primaryProgram, 'aVertexPosition'));
+            this.primaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.6, 0.6, 0.6]);
 
+            // Handle secondary shader if needed
+            this.secondaryShaderLayer = null;
             if (currentSecondaryNode !== null) {
                 let secondaryExpr = currentSecondaryNode.peptide(P.vvar('p'));
                 if (ui.showBoundingSphere) {
-                    const tree = new TransformNode(currentSecondaryNode.boundingSphere().centre, [0, 0, 0], 0, new SphereNode(currentSecondaryNode.boundingSphere().radius));
+                    const tree = new TransformNode(
+                        currentSecondaryNode.boundingSphere().centre, 
+                        [0, 0, 0], 
+                        0, 
+                        new SphereNode(currentSecondaryNode.boundingSphere().radius)
+                    );
                     secondaryExpr = tree.peptide(P.vvar('p'));
                 }
+                
                 const secondarySSA = new PeptideSSA(secondaryExpr);
                 const secondaryGLSL = secondarySSA.compileToGLSL(`float peptide(vec3 p)`);
-                shaderPrograms.push(scene.generateShaderCode(secondaryGLSL));
+                const secondaryShaderSource = scene.generateShaderCode(secondaryGLSL);
+                
+                // Compile secondary shader program
+                const secondaryProgram = await renderer.compileShaderProgram(secondaryShaderSource);
+                
+                // Create secondary shader layer
+                this.secondaryShaderLayer = new ShaderLayer(secondaryProgram);
+                
+                // Setup common uniforms
+                this.secondaryShaderLayer.setAttribLocation('aVertexPosition', 
+                    renderer.gl.getAttribLocation(secondaryProgram, 'aVertexPosition'));
+                this.secondaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.8, 0.2, 0.2]);
             }
 
-            // Compile shaders asynchronously
-            await renderer.createShaderProgram(shaderPrograms);
             this.document.markClean();
 
-            // Compile the SDF function
+            // Compile the SDF function for coordinate display
             const fn = eval(ssa.compileToJS());
             this.sdf = (p) => fn({p: p});
             
@@ -134,9 +164,15 @@ const app = {
             this.lastAdjustmentTime = Date.now();
         }
         
-        // Render the scene
+        // Prepare shader layers for rendering
+        const shaderLayers = [this.primaryShaderLayer];
+        if (this.secondaryShaderLayer) {
+            shaderLayers.push(this.secondaryShaderLayer);
+        }
+        
+        // Render the scene with the shader layers
         try {
-            renderer.render();
+            renderer.render(shaderLayers);
         } catch (e) {
             console.error(e);
         }

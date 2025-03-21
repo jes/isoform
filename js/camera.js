@@ -47,6 +47,18 @@ const camera = {
             }
         });
     },
+
+    setUniforms(shaderLayer) {
+        shaderLayer.setUniform('vec3', 'uCameraPosition', this.position)
+                   .setUniform('vec3', 'uCameraTarget', this.target)
+                   .setUniform('float', 'uCameraZoom', this.zoom)
+                   .setUniform('mat3', 'uRotationMatrix', new Float32Array(this.getRotationMatrixArray()))
+                   .setUniform('bool', 'uShowEdges', this.showEdges ? 1 : 0)
+                   .setUniform('float', 'stepFactor', this.stepFactor)
+                   .setUniform('bool', 'uShowField', this.showField ? 1 : 0)
+                   .setUniform('bool', 'uShowSteps', this.showSteps ? 1 : 0)
+                   .setUniform('float', 'uOpacity', this.opacity);
+    },
     
     // Helper function to create a rotation matrix around X axis
     createRotationMatrixX(angle) {
