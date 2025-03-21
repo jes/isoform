@@ -641,6 +641,40 @@ class ExtrudeNode extends TreeNode {
   }
 }
 
+class DistanceDeformInsideNode extends TreeNode {
+  constructor(amplitude = 1.0, children = []) {
+    super("DistanceDeformInside");
+    this.amplitude = amplitude;
+    this.maxChildren = 2;
+    this.addChild(children);
+  }
+
+  getExactness() {
+    return TreeNode.EXACT;
+  }
+
+  properties() {
+    return {"amplitude": "float"};
+  }
+
+  makePeptide(p) {
+    if (this.children.length < 1) {
+      this.warn("DistanceDeformInside node has no child to transform");
+      return this.noop();
+    }
+    if (this.children.length == 1) {
+      this.warn("DistanceDeformInside node needs a second child to specify the space to deform");
+      return this.children[0].peptide(p);
+    }
+    const dist = this.children[1].peptide(p);
+    return P.add(this.children[0].peptide(p), P.min(P.mul(dist, P.const(this.amplitude)), P.const(0.0)));
+  }
+  
+  getIcon() {
+    return "🔍";
+  }
+}
+  
 class RevolveNode extends TreeNode {
   constructor(children = []) {
     super("Revolve");
@@ -697,7 +731,7 @@ class RevolveNode extends TreeNode {
 (function() {
   const nodes = { TransformNode, DomainDeformNode, DistanceDeformNode, ShellNode,
     OffsetNode, ScaleNode, TwistNode, MirrorNode, LinearPatternNode,
-    PolarPatternNode, ExtrudeNode, RevolveNode };
+    PolarPatternNode, ExtrudeNode, RevolveNode, DistanceDeformInsideNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {
