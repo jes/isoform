@@ -87,107 +87,18 @@ const app = {
     },
     
     async render() {
-        // Track the current secondary node
-        const currentSecondaryNode = ui.getSecondaryNode();
-        
-        let primaryShaderRebuilt = false;
-        
-        // Only rebuild primary shader if document is dirty
-        if (this.document.dirty()) {
-            // Show loading indicator
-            this.showLoadingIndicator();
+        await this.rebuildShaders();
 
-            // Prepare primary shader
-            const expr = this.document.peptide(P.vvar('p'));
-            const ssa = new PeptideSSA(expr);
-            const glslSrc = ssa.compileToGLSL(`float peptide(vec3 p)`);
-            const primaryShaderSource = scene.generateShaderCode(glslSrc);
-
-            // Compile primary shader program
-            const primaryProgram = await renderer.compileShaderProgram(primaryShaderSource);
-            
-            // Create primary shader layer
-            this.primaryShaderLayer = new ShaderLayer(primaryProgram);
-            
-            // Setup common uniforms that will be applied at render time by the renderer
-            this.primaryShaderLayer.setAttribLocation('aVertexPosition', 
-                renderer.gl.getAttribLocation(primaryProgram, 'aVertexPosition'));
-            this.primaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.6, 0.6, 0.6]);
-
-            // Compile the SDF function for coordinate display
-            const fn = eval(ssa.compileToJS());
-            this.sdf = (p) => fn({p: p});
-            
-            this.document.markClean();
-            primaryShaderRebuilt = true;
-            this.lastAdjustmentTime = Date.now();
-        }
-
-        // Rebuild secondary shader if primary was rebuilt OR secondary node changed OR bounding sphere setting changed
-        if (primaryShaderRebuilt || 
-            (currentSecondaryNode !== this.lastSecondaryNode) ||
-            (ui.showBoundingSphere !== this.lastBoundingSphereState)) {
-            
-            if (!primaryShaderRebuilt) {
-                this.showLoadingIndicator();
-            }
-
-            // Handle secondary shader if needed
-            this.secondaryShaderLayer = null;
-            if (currentSecondaryNode !== null) {
-                let secondaryExpr = currentSecondaryNode.peptide(P.vvar('p'));
-                if (ui.showBoundingSphere) {
-                    const tree = new TransformNode(
-                        currentSecondaryNode.boundingSphere().centre, 
-                        [0, 0, 0], 
-                        0, 
-                        new SphereNode(currentSecondaryNode.boundingSphere().radius)
-                    );
-                    secondaryExpr = tree.peptide(P.vvar('p'));
-                }
-                
-                const secondarySSA = new PeptideSSA(secondaryExpr);
-                const secondaryGLSL = secondarySSA.compileToGLSL(`float peptide(vec3 p)`);
-                const secondaryShaderSource = scene.generateShaderCode(secondaryGLSL);
-                
-                // Compile secondary shader program
-                const secondaryProgram = await renderer.compileShaderProgram(secondaryShaderSource);
-                
-                // Create secondary shader layer
-                this.secondaryShaderLayer = new ShaderLayer(secondaryProgram);
-                
-                // Setup common uniforms
-                this.secondaryShaderLayer.setAttribLocation('aVertexPosition', 
-                    renderer.gl.getAttribLocation(secondaryProgram, 'aVertexPosition'));
-                this.secondaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.8, 0.2, 0.2]);
-            }
-
-            // update the last secondary node reference when we recompile
-            this.lastSecondaryNode = currentSecondaryNode;
-            
-            // Update last bounding sphere state
-            this.lastBoundingSphereState = ui.showBoundingSphere;
-
-            if (!primaryShaderRebuilt) {
-                this.lastAdjustmentTime = Date.now();
-            }
-            
-            // Hide loading indicator
-            this.hideLoadingIndicator();
-        }
-        
         // Prepare shader layers for rendering
+        this.primaryShaderLayer.setUniform('float', 'uOpacity', camera.opacity);
         const shaderLayers = [this.primaryShaderLayer];
         if (this.secondaryShaderLayer) {
+            this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.5);
             shaderLayers.push(this.secondaryShaderLayer);
         }
         
         // Render the scene with the shader layers
         try {
-            this.primaryShaderLayer.setUniform('float', 'uOpacity', camera.opacity);
-            if (this.secondaryShaderLayer) {
-                this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.5);
-            }
             renderer.render(shaderLayers);
         } catch (e) {
             console.error(e);
@@ -204,6 +115,62 @@ const app = {
        
         // Request next frame
         requestAnimationFrame(() => this.render());
+    },
+
+    async rebuildShaders() {
+        // Track the current secondary node
+        const currentSecondaryNode = ui.getSecondaryNode();
+
+        if (!this.document.dirty() && currentSecondaryNode === this.lastSecondaryNode && ui.showBoundingSphere === this.lastBoundingSphereState) {
+            return;
+        }
+
+        this.showLoadingIndicator();
+        
+        // Only rebuild primary shader if document is dirty
+        if (this.document.dirty()) {
+            const expr = this.document.peptide(P.vvar('p'));
+            const ssa = new PeptideSSA(expr);
+
+            this.primaryShaderLayer = await this.createShaderLayer(ssa);
+            this.primaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.6, 0.6, 0.6]);
+
+            // keep hold of the compiled SDF so that we can use it for coordinate display
+            const fn = eval(ssa.compileToJS());
+            this.sdf = (p) => fn({p: p});
+            
+            this.document.markClean();
+        }
+
+        this.secondaryShaderLayer = null;
+        if (currentSecondaryNode !== null) {
+            let expr = currentSecondaryNode.peptide(P.vvar('p'));
+            if (ui.showBoundingSphere) {
+                const tree = new TransformNode(
+                    currentSecondaryNode.boundingSphere().centre, 
+                    [0, 0, 0], 
+                    0, 
+                    new SphereNode(currentSecondaryNode.boundingSphere().radius)
+                );
+                expr = tree.peptide(P.vvar('p'));
+            }
+            
+            const ssa = new PeptideSSA(expr);
+            
+            this.secondaryShaderLayer = await this.createShaderLayer(ssa);
+            this.secondaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.8, 0.2, 0.2]);
+        }
+
+        this.lastSecondaryNode = currentSecondaryNode;
+        this.lastBoundingSphereState = ui.showBoundingSphere;
+        this.lastAdjustmentTime = Date.now();
+        
+        this.hideLoadingIndicator();
+    },
+
+    async createShaderLayer(ssa) {
+        const program = await renderer.compileShaderProgram(scene.generateShaderCode(ssa));
+        return new ShaderLayer(program);
     },
 
     controlQuality() {

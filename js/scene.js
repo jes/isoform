@@ -3,8 +3,11 @@ const scene = {
     init() {
     },
     
-    generateShaderCode(code) {
+    generateShaderCode(ssa) {
         const startTime = performance.now();
+
+        const glslSrc = ssa.compileToGLSL(`float peptide(vec3 p)`);
+
         // Get the original shader source
         let originalSource = renderer.fragmentShaderSource;
         
@@ -21,7 +24,7 @@ const scene = {
         startIndex = originalSource.indexOf('\n', startIndex) + 1;
         
         // Build the new scene combination code
-        let newSceneCode = code + `
+        let newSceneCode = glslSrc + `
         float map(vec3 p) {
             return peptide(uRotationMatrix * p);
         }

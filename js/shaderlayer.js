@@ -4,6 +4,8 @@ class ShaderLayer {
         this.program = program;
         this.uniforms = new Map();
         this.attribLocations = {}; // Store attribute locations
+        this.setAttribLocation('aVertexPosition', 
+            renderer.gl.getAttribLocation(this.program, 'aVertexPosition'));
     }
 
     // Set a uniform with its type and value
