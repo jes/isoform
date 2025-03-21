@@ -485,6 +485,8 @@ const renderer = {
     },
     
     async compileShaderProgram(fragmentShaderSource) {
+        const startTime = performance.now();
+        
         const vertexShader = await this.compileShader(this.vertexShaderSource, this.gl.VERTEX_SHADER);
         const fragmentShader = await this.compileShader(fragmentShaderSource, this.gl.FRAGMENT_SHADER);
         
@@ -502,6 +504,9 @@ const renderer = {
             console.error('Program linking error:', this.gl.getProgramInfoLog(program));
             return null;
         }
+        
+        const endTime = performance.now();
+        console.log(`Shader program compilation took ${(endTime - startTime).toFixed(2)}ms`);
         
         return program;
     },
