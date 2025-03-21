@@ -44,6 +44,10 @@ class PeptideSSA {
         };
     }
 
+    typePrefix(type) {
+        return type === 'float' ? 'f' : type === 'vec3' ? 'v' : type === 'mat3' ? 'm' : 'X';
+    }
+
     /**
      * Perform a greedy allocation of SSA variables
      */
@@ -55,7 +59,7 @@ class PeptideSSA {
 
         // return the next free variable name for type t
         const alloc = (t) => {
-            const varPrefix = t === 'float' ? 'f' : 'v';
+            const varPrefix = this.typePrefix(t);
             for (let i = 0; ; i++) {
                 const varName = `${varPrefix}${i}`;
                 if (!usedVars.has(varName)) {
@@ -108,7 +112,7 @@ class PeptideSSA {
         }
 
         const type = node.type;
-        const varPrefix = type === 'float' ? 'f' : 'v';
+        const varPrefix = this.typePrefix(type);
         const resultVar = this.newVar(varPrefix);
         this.varMap.set(node, resultVar);
 

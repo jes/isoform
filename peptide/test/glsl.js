@@ -179,6 +179,9 @@ void main() {
             case 'vec4':
                 this.gl.uniform4fv(location, value);
                 break;
+            case 'mat3':
+                this.gl.uniformMatrix3fv(location, false, value);
+                break;
             default:
                 throw new Error(`Unsupported uniform type: ${type}`);
         }
@@ -202,6 +205,12 @@ void main() {
                 this.setUniform(name, 'vec3', [value.x, value.y, value.z]);
             } else if (typeof value === 'number') {
                 this.setUniform(name, 'float', value);
+            } else if (value instanceof Mat3) {
+                this.setUniform(name, 'mat3', [
+                    value.m[0][0], value.m[1][0], value.m[2][0],
+                    value.m[0][1], value.m[1][1], value.m[2][1],
+                    value.m[0][2], value.m[1][2], value.m[2][2]
+                ]);
             }
         }
         
@@ -237,6 +246,8 @@ void main() {
                 uniformDeclarations += `uniform vec3 ${name};\n`;
             } else if (typeof value === 'number') {
                 uniformDeclarations += `uniform float ${name};\n`;
+            } else if (value instanceof Mat3) {
+                uniformDeclarations += `uniform mat3 ${name};\n`;
             } else {
                 throw new Error(`Unsupported variable type for ${name}`);
             }
@@ -850,6 +861,186 @@ addGLSLTest('absolute value', async (harness) => {
     // Test with expression
     const expr = P.abs(P.sub(P.const(3), P.const(5)));
     harness.testExpression(expr, 2); // abs(3 - 5) = 2
+});
+
+addGLSLTest('matrix constant evaluation', async (harness) => {
+    // Create a test matrix
+    const m = new Mat3(
+        1, 2, 3,
+        4, 5, 6,
+        7, 8, 9
+    );
+    const matExpr = P.mconst(m);
+    
+    // Test that the matrix is correctly passed to GLSL
+    // We'll test by multiplying with a known vector and checking the result
+    const vecExpr = P.vconst(new Vec3(1, 1, 1));
+    const result = P.mvmul(matExpr, vecExpr);
+    
+    // 1*1 + 2*1 + 3*1 = 6
+    // 4*1 + 5*1 + 6*1 = 15
+    // 7*1 + 8*1 + 9*1 = 24
+    harness.testExpression(result, new Vec3(6, 15, 24));
+});
+
+addGLSLTest('matrix-vector multiplication', async (harness) => {
+    // Create a rotation matrix (90 degrees around Z axis)
+    const rotZ90 = new Mat3(
+        0, -1, 0,
+        1, 0, 0,
+        0, 0, 1
+    );
+    const matExpr = P.mconst(rotZ90);
+    
+    // Test vectors
+    const vecX = P.vconst(new Vec3(1, 0, 0));
+    const vecY = P.vconst(new Vec3(0, 1, 0));
+    
+    // Rotating (1,0,0) by 90 degrees around Z should give (0,1,0)
+    harness.testExpression(P.mvmul(matExpr, vecX), new Vec3(0, 1, 0));
+    
+    // Rotating (0,1,0) by 90 degrees around Z should give (-1,0,0)
+    harness.testExpression(P.mvmul(matExpr, vecY), new Vec3(-1, 0, 0));
+    
+    // Test with variables
+    const matVar = P.mvar('u_mat');
+    const vecVar = P.vvar('u_vec');
+    const mulExpr = P.mvmul(matVar, vecVar);
+    
+    // Test rotation of (0,1,0) by 90 degrees around Z
+    harness.testExpression(mulExpr, new Vec3(-1, 0, 0), {
+        u_mat: rotZ90,
+        u_vec: new Vec3(0, 1, 0)
+    });
+});
+
+addGLSLTest('matrix-matrix multiplication', async (harness) => {
+    // Create two rotation matrices
+    const rotX90 = new Mat3(
+        1, 0, 0,
+        0, 0, -1,
+        0, 1, 0
+    );
+    const rotZ90 = new Mat3(
+        0, -1, 0,
+        1, 0, 0,
+        0, 0, 1
+    );
+    
+    const matX = P.mconst(rotX90);
+    const matZ = P.mconst(rotZ90);
+    
+    // Multiply matrices
+    const combined = P.mmul(matZ, matX);
+    
+    // Test the combined rotation on a vector
+    const vecX = P.vconst(new Vec3(1, 0, 0));
+    const result = P.mvmul(combined, vecX);
+    
+    // Rotating (1,0,0) first by 90° around X, then by 90° around Z
+    // (1,0,0) -> (1,0,0) -> (0,1,0)
+    harness.testExpression(result, new Vec3(0, 1, 0));
+    
+    // Test with variables
+    const matA = P.mvar('u_matA');
+    const matB = P.mvar('u_matB');
+    const mmulExpr = P.mmul(matA, matB);
+    const vecTest = P.vconst(new Vec3(0, 1, 0));
+    
+    // Test combined rotation on (0,1,0)
+    harness.testExpression(P.mvmul(mmulExpr, vecTest), new Vec3(0, 0, 1), {
+        u_matA: rotZ90,
+        u_matB: rotX90
+    });
+});
+
+addGLSLTest('matrix transpose', async (harness) => {
+    // Create a test matrix
+    const m = new Mat3(
+        1, 2, 3,
+        4, 5, 6,
+        7, 8, 9
+    );
+    
+    const matExpr = P.mconst(m);
+    const transposed = P.mtranspose(matExpr);
+    
+    // Test the transposed matrix by multiplying with a vector
+    const vecTest = P.vconst(new Vec3(1, 1, 1));
+    const result = P.mvmul(transposed, vecTest);
+    
+    // Transposed matrix should be:
+    // [ 1 4 7 ]
+    // [ 2 5 8 ]
+    // [ 3 6 9 ]
+    // Multiplying by (1,1,1) gives (12, 15, 18)
+    harness.testExpression(result, new Vec3(12, 15, 18));
+    
+    // Test with variables
+    const matVar = P.mvar('u_mat');
+    const transposeExpr = P.mtranspose(matVar);
+    
+    harness.testExpression(P.mvmul(transposeExpr, vecTest), new Vec3(12, 15, 18), {
+        u_mat: m
+    });
+});
+
+addGLSLTest('matrix rotation around axes', async (harness) => {
+    // Test rotation around X axis
+    const vecY = P.vconst(new Vec3(0, 1, 0));
+    const vecZ = P.vconst(new Vec3(0, 0, 1));
+    
+    // Create rotation matrices using Peptide
+    const rotX90 = P.mconst(new Mat3(
+        1, 0, 0,
+        0, 0, -1,
+        0, 1, 0
+    ));
+    
+    // Rotating (0,1,0) by 90° around X should give (0,0,1)
+    harness.testExpression(P.mvmul(rotX90, vecY), new Vec3(0, 0, 1));
+    
+    // Rotating (0,0,1) by 90° around X should give (0,-1,0)
+    harness.testExpression(P.mvmul(rotX90, vecZ), new Vec3(0, -1, 0));
+    
+    // Test rotation around Y axis
+    const vecX = P.vconst(new Vec3(1, 0, 0));
+    
+    const rotY90 = P.mconst(new Mat3(
+        0, 0, 1,
+        0, 1, 0,
+        -1, 0, 0
+    ));
+    
+    // Rotating (1,0,0) by 90° around Y should give (0,0,-1)
+    harness.testExpression(P.mvmul(rotY90, vecX), new Vec3(0, 0, -1));
+    
+    // Rotating (0,0,1) by 90° around Y should give (1,0,0)
+    harness.testExpression(P.mvmul(rotY90, vecZ), new Vec3(1, 0, 0));
+});
+
+addGLSLTest('matrix rotateToAxis', async (harness) => {
+    // Test the rotateToAxis function with a simple axis
+    const rotMatrix = P.mconst(new Mat3().rotateToAxis(new Vec3(0, 0, 1)));
+    
+    // Test by applying to unit vectors
+    const vecX = P.vconst(new Vec3(1, 0, 0));
+    const vecY = P.vconst(new Vec3(0, 1, 0));
+    
+    // For Z axis, X and Y should remain unchanged
+    harness.testExpression(P.mvmul(rotMatrix, vecX), new Vec3(1, 0, 0));
+    harness.testExpression(P.mvmul(rotMatrix, vecY), new Vec3(0, 1, 0));
+    
+    // Test with a non-axis-aligned vector
+    const customRotMatrix = P.mconst(new Mat3().rotateToAxis(new Vec3(1, 1, 1).normalize()));
+    
+    // The Z axis of the resulting matrix should be the normalized input axis
+    const vecZ = P.vconst(new Vec3(0, 0, 1));
+    const transformedZ = P.mvmul(customRotMatrix, vecZ);
+    
+    // Should be approximately (1,1,1)/√3
+    const expectedNorm = new Vec3(1, 1, 1).normalize();
+    harness.testExpression(transformedZ, expectedNorm);
 });
 
 // Export for browser

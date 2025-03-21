@@ -426,21 +426,6 @@ class Peptide {
         );
     }
 
-    static rotateToAxis(a) {
-        a.assertType('vec3');
-        return new Peptide('rotateToAxis', 'mat3', null, a, null, null,
-            (_, vars) => {
-                const axis = a.evaluate(vars);
-                const m = new Mat3();
-                return m.rotateToAxis(axis);
-            },
-            (_, ssaOp) => `${ssaOp.result} = new Mat3().rotateToAxis(${ssaOp.left});`,
-            (_, ssaOp) => {
-                return `${ssaOp.result} = rotateToAxis(${ssaOp.left});`;
-            },
-        );
-    }
-
     static mtranspose(a) {
         a.assertType('mat3');
         return new Peptide('mtranspose', 'mat3', null, a, null, null,

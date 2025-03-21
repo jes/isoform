@@ -793,8 +793,7 @@ addTest('abs type checking', (evaluate) => {
 
 addTest('matrix operations - rotateToAxis', (evaluate) => {
     // Test with a simple axis
-    const axis = P.vconst(new Vec3(0, 0, 1)); // z-axis
-    const rotMatrix = P.rotateToAxis(axis);
+    const rotMatrix = P.mconst(new Mat3().rotateToAxis(new Vec3(0, 0, 1)));
     const result = evaluate(rotMatrix);
     
     // For z-axis, the rotation matrix should be identity-like
@@ -805,7 +804,7 @@ addTest('matrix operations - rotateToAxis', (evaluate) => {
     
     // Test with a normalized vector
     const v = P.vconst(new Vec3(1, 1, 1).normalize());
-    const rotMatrix2 = P.rotateToAxis(v);
+    const rotMatrix2 = P.mconst(new Mat3().rotateToAxis(new Vec3(1, 1, 1).normalize()));
     const result2 = evaluate(rotMatrix2);
     
     // The resulting matrix should be orthogonal (transpose = inverse)
@@ -818,8 +817,7 @@ addTest('matrix operations - rotateToAxis', (evaluate) => {
 
 addTest('matrix operations - mtranspose', (evaluate) => {
     // Create a test matrix using rotateToAxis
-    const axis = P.vconst(new Vec3(1, 2, 3).normalize());
-    const matrix = P.rotateToAxis(axis);
+    const matrix = P.mconst(new Mat3().rotateToAxis(new Vec3(1, 2, 3).normalize()));
     const transposed = P.mtranspose(matrix);
     
     const m = evaluate(matrix);
@@ -873,8 +871,7 @@ addTest('matrix operations - mvmul', (evaluate) => {
     };
     
     const varResult = evaluate(mulExpr, vars);
-    // This matrix represents a +90 degree rotation around z-axis
-    // Rotating (0,1,0) by +90 degrees around z should give (1,0,0)
+    // Rotating (0,1,0) by -90 degrees around z should give (1,0,0)
     assertEquals(varResult.x, 1, 0.0001);
     assertEquals(varResult.y, 0, 0.0001);
     assertEquals(varResult.z, 0, 0.0001);
@@ -930,10 +927,7 @@ addTest('matrix operations - mmul', (evaluate) => {
 addTest('matrix operations type checking', (evaluate) => {
     const vec = P.vconst(new Vec3(1, 2, 3));
     const scalar = P.const(5);
-    const mat = P.rotateToAxis(vec);
-    
-    // Test rotateToAxis with wrong type
-    assertThrows(() => evaluate(P.rotateToAxis(scalar)));
+    const mat = P.mconst(new Mat3().rotateToAxis(new Vec3(1, 2, 3).normalize()));
     
     // Test mtranspose with wrong type
     assertThrows(() => evaluate(P.mtranspose(vec)));
@@ -957,7 +951,7 @@ addTest('matrix operations - combined', (evaluate) => {
     
     // Create a rotation matrix
     const axis = P.vconst(new Vec3(0, 1, 0)); // y-axis
-    const rotMat = P.rotateToAxis(axis);
+    const rotMat = P.mconst(new Mat3().rotateToAxis(new Vec3(0, 1, 0)));
     
     // Rotate the vector
     const rotated = P.mvmul(rotMat, v);

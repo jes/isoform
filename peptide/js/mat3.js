@@ -35,6 +35,8 @@ Mat3.prototype.glsl = function() {
 };
 
 Mat3.prototype.rotateToAxis = function(axis) {
+    axis = axis.normalize();
+
     // Handle the special case where axis is parallel to coordinate axes
     if (Math.abs(axis.y) > 0.999999) {
         const sign = axis.y > 0.0 ? 1.0 : -1.0;
@@ -54,7 +56,7 @@ Mat3.prototype.rotateToAxis = function(axis) {
     }
     
     // Compute the rotation matrix using the cross product method
-    const z = axis.normalize();
+    const z = axis;
     const ref = Math.abs(z.dot(new Vec3(0.0, 1.0, 0.0))) > 0.9 ? 
         new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 1.0, 0.0);
 

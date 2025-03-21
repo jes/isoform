@@ -257,6 +257,10 @@
                         if (value && typeof value === 'object' && 'x' in value && 'y' in value && 'z' in value) {
                             return `${key}=Vec3(${value.x}, ${value.y}, ${value.z}); `;
                         }
+                        // Handle Mat3 objects specially
+                        if (value && typeof value === 'object' && 'm' in value) {
+                            return `${key}=Mat3(${value.m[0][0]}, ${value.m[0][1]}, ${value.m[0][2]}, ${value.m[1][0]}, ${value.m[1][1]}, ${value.m[1][2]}, ${value.m[2][0]}, ${value.m[2][1]}, ${value.m[2][2]}); `;
+                        }
                         // Format other values normally
                         return `${key}=${value}; `;
                     })
