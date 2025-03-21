@@ -644,6 +644,7 @@ class ExtrudeNode extends TreeNode {
 class RevolveNode extends TreeNode {
   constructor(children = []) {
     super("Revolve");
+    this.axis = new Vec3(0, 0, 1);
     this.maxChildren = 1;
     this.addChild(children);
   }
@@ -653,7 +654,7 @@ class RevolveNode extends TreeNode {
   }
 
   properties() {
-    return {"angle": "float"};
+    return {"axis": "vec3"};
   }
 
   makePeptide(p) {
@@ -666,9 +667,24 @@ class RevolveNode extends TreeNode {
       // carry on anyway
     }
 
-    const pxz = P.vec3(P.vecX(p), P.vecZ(p), P.const(0.0));
-    const py = P.vecY(p);
-    const p2d = P.vec3(P.vlength(pxz), py, P.const(0.0));
+    const axis = this.axis.normalize();
+    
+    // Project p onto the axis to get the closest point on the axis
+    const axisP = P.vconst(axis);
+    const projDist = P.vdot(p, axisP);
+    const projPoint = P.vmul(axisP, projDist);
+    
+    // Vector from the axis to the point
+    const toPoint = P.vsub(p, projPoint);
+    
+    // Distance from the axis (radius in cylindrical coordinates)
+    const radius = P.vlength(toPoint);
+    
+    // Create a 2D point in the XY plane where:
+    // X = distance from axis (radius)
+    // Y = distance along axis (height)
+    const p2d = P.vec3(radius, projDist, P.const(0.0));
+    
     return this.children[0].peptide(p2d);
   }
 
