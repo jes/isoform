@@ -46,24 +46,20 @@ class CylinderNode extends TreeNode {
     return {"diameter": "float", "height": "float", "roundRadius": "float"};
   }
 
-  generateShaderImplementation() {
-    return `
-      float sdCylinder(vec3 p, float r, float h) {
-        vec2 d = vec2(length(p.xy) - r, abs(p.z) - h);
-        return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
-      }
-      float sdRoundCylinder(vec3 p, float r, float h, float r2) {
-        vec2 d = vec2(length(p.xy) - r + r2, abs(p.z) - h + r2);
-        return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - r2;
-      }
-    `;
-  }
-
-  generateShaderCode() {
+  makePeptide(p) {
+    const pxy = P.vec3(P.vecX(p), P.vecY(p), P.const(0));
+    const pz = P.abs(P.vecZ(p));
+    let dx = P.sub(P.vlength(pxy), P.const(this.diameter/2));
+    let dz = P.sub(pz, P.const(this.height/2));
     if (this.roundRadius > 0.0) {
-      return `sdRoundCylinder(p, ${(this.diameter/2).toFixed(16)}, ${(this.height/2).toFixed(16)}, ${this.roundRadius.toFixed(16)})`;
+      dx = P.add(dx, P.const(this.roundRadius));
+      dz = P.add(dz, P.const(this.roundRadius));
+    }
+    const dist = P.add(P.min(P.max(dx, dz), P.const(0.0)), P.vlength(P.vmax(P.vec3(dx, dz, P.const(0)), P.vconst(new Vec3(0.0)))));
+    if (this.roundRadius > 0.0) {
+      return P.sub(dist, P.const(this.roundRadius));
     } else {
-      return `sdCylinder(p, ${(this.diameter/2).toFixed(16)}, ${(this.height/2).toFixed(16)})`;
+      return dist;
     }
   }
 
@@ -71,7 +67,6 @@ class CylinderNode extends TreeNode {
     return "🔵";
   }
 }
-
 
 class BoxNode extends TreeNode {
   constructor(size = [10, 10, 10], radius = 0.0) {
