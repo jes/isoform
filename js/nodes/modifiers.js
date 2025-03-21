@@ -197,14 +197,6 @@ class DistanceDeformNode extends TreeNode {
     return P.add(d, P.mul(ampl, P.add(noise1, noise2)));
   }
 
-  generateShaderCode() {
-    if (!this.hasChildren()) {
-      return this.noopShaderCode();
-    }
-    
-    return `${this.getFunctionName()}(p)`;
-  }
-
   getIcon() {
     return "〰️";
   }
@@ -925,30 +917,20 @@ class RevolveNode extends TreeNode {
     return {"angle": "float"};
   }
 
-  generateShaderImplementation() {
+  makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("Revolve node has no child to transform");
-      return "";
+      return this.noop();
     }
     if (!this.children[0].is2d()) {
       this.warn("Revolve node requires a 2D child");
-      return this.noopShaderCode();
+      return this.noop();
     }
 
-    return `
-      float ${this.getFunctionName()}(vec3 p) {
-        p = vec3(length(p.xz), p.y, 0.0);
-        return ${this.children[0].shaderCode()};
-      }
-    `;
-  }
-
-  generateShaderCode() {
-    if (!this.hasChildren()) {
-      return this.noopShaderCode();
-    }
-
-    return `${this.getFunctionName()}(p)`;
+    const pxz = P.vec3(P.vecX(p), P.vecZ(p), P.const(0.0));
+    const py = P.vecY(p);
+    const p2d = P.vec3(P.vlength(pxz), py, P.const(0.0));
+    return this.children[0].peptide(p2d);
   }
 
   getIcon() {
