@@ -450,18 +450,8 @@ class MirrorNode extends TreeNode {
     const mirrored = this.children[0].peptide(pMirrored);
 
     if (this.keepOriginal) {
-      let minFn = (a, b) => P.min(a, b);
-      if (this.blendRadius > 0.0) {
-        if (this.chamfer) {
-          minFn = (a, b) => P.chmin(a, b, P.const(this.blendRadius));
-        } else {
-          minFn = (a, b) => P.smin(a, b, P.const(this.blendRadius));
-        }
-      }
-
       const original = this.children[0].peptide(p);
-
-      return minFn(original, mirrored);
+      return this.min(original, mirrored);
     } else {
       return mirrored;
     }
@@ -502,20 +492,11 @@ class LinearPatternNode extends TreeNode {
       return this.noop();
     }
 
-    let minFn = (a, b) => P.min(a, b);
-    if (this.blendRadius > 0.0) {
-      if (this.chamfer) {
-        minFn = (a, b) => P.chmin(a, b, P.const(this.blendRadius));
-      } else {
-        minFn = (a, b) => P.smin(a, b, P.const(this.blendRadius));
-      }
-    }
-
     const step = this.axis.normalize().mul(this.spacing);
     let d = this.children[0].peptide(p);
     for (let i = 1; i < this.copies; i++) {
       const pi = P.vsub(p, P.vconst(step.mul(i)));
-      d = minFn(d, this.children[0].peptide(pi));
+      d = this.min(d, this.children[0].peptide(pi));
     }
     return d;
   }
@@ -555,15 +536,6 @@ class PolarPatternNode extends TreeNode {
       return this.noop();
     }
 
-    let minFn = (a, b) => P.min(a, b);
-    if (this.blendRadius > 0.0) {
-      if (this.chamfer) {
-        minFn = (a, b) => P.chmin(a, b, P.const(this.blendRadius));
-      } else {
-        minFn = (a, b) => P.smin(a, b, P.const(this.blendRadius));
-      }
-    }
-
     const totalAngle = this.angle * Math.PI / 180.0; // Convert to radians
     const toAxisSpace = P.mconst(new Mat3().rotateToAxis(this.axis.normalize()));
     const fromAxisSpace = P.mtranspose(toAxisSpace);
@@ -581,7 +553,7 @@ class PolarPatternNode extends TreeNode {
         P.vecZ(q)
       );
       const p1 = P.mvmul(fromAxisSpace, rotated);
-      d = minFn(d, this.children[0].peptide(p1));
+      d = this.min(d, this.children[0].peptide(p1));
     }
     return d;
   }
@@ -624,16 +596,7 @@ class ExtrudeNode extends TreeNode {
     const dz = P.sub(P.abs(P.vecZ(p)), P.const(this.height/2));
     const pz = P.clamp(P.add(P.vecZ(p), P.const(this.height/2)), P.const(0.0), P.const(this.height));
     const d = P.add(P.mul(d2d, P.const(Math.cos(this.draftAngle * Math.PI / 180.0))), P.mul(pz, P.const(Math.tan(this.draftAngle * Math.PI / 180.0))));
-    if (this.blendRadius > 0.0) {
-      // XXX: we could allow a different radius at top vs bottom by picking a different `maxfn` based on the sign of `dz`
-      if (this.chamfer) {
-        return P.chmax(d, dz, P.const(this.blendRadius));
-      } else {
-        return P.smax(d, dz, P.const(this.blendRadius));
-      }
-    } else {
-      return P.max(d, dz);
-    }
+    return this.max(d, dz);
   }
   
   getIcon() {

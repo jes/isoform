@@ -31,30 +31,13 @@ class CubicLatticeNode extends TreeNode {
   }
 
   makePeptide(p) {
-    let minFn = (a, b) => P.min(a, b);
-    if (this.blendRadius > 0.0) {
-      if (this.chamfer) {
-        minFn = (a, b) => P.chmin(a, b, P.const(this.blendRadius));
-      } else {
-        minFn = (a, b) => P.smin(a, b, P.const(this.blendRadius));
-      }
-    }
-    let maxFn = (a, b) => P.max(a, b);
-    if (this.blendRadius > 0.0) {
-      if (this.chamfer) {
-        maxFn = (a, b) => P.chmax(a, b, P.const(this.blendRadius));
-      } else {
-        maxFn = (a, b) => P.smax(a, b, P.const(this.blendRadius));
-      }
-    }
-
     const q = P.vabs(P.vsub(P.vmod(P.vabs(p), P.const(this.scale*2.0)), P.vconst(new Vec3(this.scale))));
 
-    const dx = minFn(P.vecY(q), P.vecZ(q));
-    const dy = minFn(P.vecX(q), P.vecZ(q));
-    const dz = minFn(P.vecX(q), P.vecY(q));
+    const dx = this.min(P.vecY(q), P.vecZ(q));
+    const dy = this.min(P.vecX(q), P.vecZ(q));
+    const dz = this.min(P.vecX(q), P.vecY(q));
     
-    const d = maxFn(maxFn(dx, dy), dz);
+    const d = this.max(this.max(dx, dy), dz);
     return P.sub(d, P.const(this.thickness));
   }
 

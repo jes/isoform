@@ -19,6 +19,9 @@ class TreeNode {
     this.warnFunction = null; // function to call when a warning is issued
     this.isDirty = true; // whether the shader needs to be recompiled
     this.isDisabled = false; // whether the node is disabled (i.e. hidden)
+
+    this.blendRadius = 0.0;
+    this.chamfer = false;
   }
 
   // override this to return true if the node is 2d
@@ -55,6 +58,28 @@ class TreeNode {
   }
 
   /// the rest of this class should not generally be overridden
+
+  min(a, b){
+    if (this.blendRadius > 0.0) {
+      if (this.chamfer) {
+        return P.chmin(a, b, P.const(this.blendRadius));
+      } else {
+        return P.smin(a, b, P.const(this.blendRadius));
+      }
+    }
+    return P.min(a, b);
+  }
+
+  max(a, b){
+    if (this.blendRadius > 0.0) {
+      if (this.chamfer) {
+        return P.chmax(a, b, P.const(this.blendRadius));
+      } else {
+        return P.smax(a, b, P.const(this.blendRadius));
+      }
+    }
+    return P.max(a, b);
+  }
 
   // "dirty" means the shader needs to be recompiled
   dirty() {

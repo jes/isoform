@@ -62,20 +62,11 @@ class UnionNode extends TreeNode {
         return this.noop();
       }
 
-      let minFn = (a, b) => P.min(a, b);
-      if (this.blendRadius > 0) {
-        if (this.chamfer) {
-          minFn = (a, b) => P.chmin(a, b, P.const(this.blendRadius));
-        } else {
-          minFn = (a, b) => P.smin(a, b, P.const(this.blendRadius));
-        }
-      }
-
       let min = this.children[0].peptide(p);
       for (let i = 1; i < this.children.length; i++) {
         if (this.children[i].isDisabled)
           continue;
-        min = minFn(min, this.children[i].peptide(p));
+        min = this.min(min, this.children[i].peptide(p));
       }
       return min;
     }
@@ -107,20 +98,11 @@ class IntersectionNode extends TreeNode {
       return this.noop();
     }
 
-    let maxFn = (a, b) => P.max(a, b);
-    if (this.blendRadius > 0) {
-      if (this.chamfer) {
-        maxFn = (a, b) => P.chmax(a, b, P.const(this.blendRadius));
-      } else {
-        maxFn = (a, b) => P.smax(a, b, P.const(this.blendRadius));
-      }
-    }
-
     let max = this.children[0].peptide(p);
     for (let i = 1; i < this.children.length; i++) {
       if (this.children[i].isDisabled)
         continue;
-      max = maxFn(max, this.children[i].peptide(p));
+      max = this.max(max, this.children[i].peptide(p));
     }
     return max;
   }
@@ -184,20 +166,11 @@ class SubtractionNode extends TreeNode {
       return this.noop();
     }
 
-    let maxFn = (a, b) => P.max(a, b);
-    if (this.blendRadius > 0) {
-      if (this.chamfer) {
-        maxFn = (a, b) => P.chmax(a, b, P.const(this.blendRadius));
-      } else {
-        maxFn = (a, b) => P.smax(a, b, P.const(this.blendRadius));
-      }
-    }
-
     let max = this.children[0].peptide(p);
     for (let i = 1; i < this.children.length; i++) {
       if (this.children[i].isDisabled)
         continue;
-      max = maxFn(max, P.sub(P.const(0), this.children[i].peptide(p)));
+      max = this.max(max, P.sub(P.const(0), this.children[i].peptide(p)));
     }
     return max;
   }
