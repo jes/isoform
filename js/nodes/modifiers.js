@@ -202,9 +202,9 @@ class DistanceDeformNode extends TreeNode {
   }
 }
 
-class ThicknessNode extends TreeNode {
+class ShellNode extends TreeNode {
   constructor(thickness = 1.0, inside = false, children = []) {
-    super("Thickness");
+    super("Shell");
     this.thickness = thickness;
     this.inside = inside;
     this.maxChildren = 1;
@@ -233,7 +233,7 @@ class ThicknessNode extends TreeNode {
 
   makePeptide(p) {
     if (!this.hasChildren()) {
-      this.warn("Thickness node has no child to transform");
+      this.warn("Shell node has no child to transform");
       return this.noop();
     }
     
@@ -649,7 +649,7 @@ class RevolveNode extends TreeNode {
 
 // Detect environment and export accordingly
 (function() {
-  const nodes = { TransformNode, DomainDeformNode, DistanceDeformNode, ThicknessNode, ScaleNode,
+  const nodes = { TransformNode, DomainDeformNode, DistanceDeformNode, ShellNode, ScaleNode,
     TwistNode, MirrorNode, LinearPatternNode, PolarPatternNode, ExtrudeNode,
     RevolveNode };
   

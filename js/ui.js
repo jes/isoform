@@ -418,7 +418,7 @@ const ui = {
             { name: 'Twist', constructor: TwistNode, icon: TwistNode.prototype.getIcon() },
             { name: 'Domain Deform', constructor: DomainDeformNode, icon: DomainDeformNode.prototype.getIcon() },
             { name: 'Distance Deform', constructor: DistanceDeformNode, icon: DistanceDeformNode.prototype.getIcon() },
-            { name: 'Thickness', constructor: ThicknessNode, icon: ThicknessNode.prototype.getIcon() },
+            { name: 'Shell', constructor: ShellNode, icon: ShellNode.prototype.getIcon() },
             { name: 'Mirror', constructor: MirrorNode, icon: MirrorNode.prototype.getIcon() },
             { name: 'Linear Pattern', constructor: LinearPatternNode, icon: LinearPatternNode.prototype.getIcon() },
             { name: 'Polar Pattern', constructor: PolarPatternNode, icon: PolarPatternNode.prototype.getIcon() },
