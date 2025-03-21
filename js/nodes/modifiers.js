@@ -633,7 +633,7 @@ class RevolveNode extends TreeNode {
     }
     if (!this.children[0].is2d()) {
       this.warn("Revolve node requires a 2D child");
-      return this.noop();
+      // carry on anyway
     }
 
     const pxz = P.vec3(P.vecX(p), P.vecZ(p), P.const(0.0));
