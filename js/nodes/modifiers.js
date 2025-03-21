@@ -251,6 +251,36 @@ class ShellNode extends TreeNode {
   }
 }
 
+class OffsetNode extends TreeNode {
+  constructor(distance = 1.0, children = []) {
+    super("Offset");
+    this.distance = distance;
+    this.maxChildren = 1;
+    this.addChild(children);
+  }
+
+  getExactness() {
+    return TreeNode.EXACT;
+  }
+
+  properties() {
+    return {"distance": "float"};
+  }
+
+  makePeptide(p) {
+    if (!this.hasChildren()) {
+      this.warn("Offset node has no child to transform");
+      return this.noop();
+    }
+
+    return P.add(this.children[0].peptide(p), P.const(this.distance));
+  }
+
+  getIcon() {
+    return "🔍";
+  }
+}
+
 class ScaleNode extends TreeNode {
   constructor(k = 2.0, alongAxis = false, axis = new Vec3(0, 0, 1), children = []) {
     super("Scale");
@@ -649,9 +679,9 @@ class RevolveNode extends TreeNode {
 
 // Detect environment and export accordingly
 (function() {
-  const nodes = { TransformNode, DomainDeformNode, DistanceDeformNode, ShellNode, ScaleNode,
-    TwistNode, MirrorNode, LinearPatternNode, PolarPatternNode, ExtrudeNode,
-    RevolveNode };
+  const nodes = { TransformNode, DomainDeformNode, DistanceDeformNode, ShellNode,
+    OffsetNode, ScaleNode, TwistNode, MirrorNode, LinearPatternNode,
+    PolarPatternNode, ExtrudeNode, RevolveNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {

@@ -419,6 +419,7 @@ const ui = {
             { name: 'Domain Deform', constructor: DomainDeformNode, icon: DomainDeformNode.prototype.getIcon() },
             { name: 'Distance Deform', constructor: DistanceDeformNode, icon: DistanceDeformNode.prototype.getIcon() },
             { name: 'Shell', constructor: ShellNode, icon: ShellNode.prototype.getIcon() },
+            { name: 'Offset', constructor: OffsetNode, icon: OffsetNode.prototype.getIcon() },
             { name: 'Mirror', constructor: MirrorNode, icon: MirrorNode.prototype.getIcon() },
             { name: 'Linear Pattern', constructor: LinearPatternNode, icon: LinearPatternNode.prototype.getIcon() },
             { name: 'Polar Pattern', constructor: PolarPatternNode, icon: PolarPatternNode.prototype.getIcon() },
