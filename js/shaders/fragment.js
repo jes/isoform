@@ -279,9 +279,6 @@ void main() {
     // Normalized coordinates (0.0 to 1.0)
     vec2 uv = gl_FragCoord.xy / uResolution.xy;
     
-    // Final color will be the average of all samples
-    vec3 finalColor = vec3(0.0);
-    
     // Convert to centered coordinates (-1.0 to 1.0)
     vec2 p = (2.0 * uv - 1.0);
     // Correct aspect ratio
@@ -321,45 +318,44 @@ void main() {
         vec3 rd = normalize(forward);
         ro = ro + (p.x * right + p.y * up) / zoom;
         
-        vec3 accumulatedColor = vec3(0.0);
-        float transmittance = 1.0;
+        // Use vec4 for proper alpha accumulation
+        vec4 accumulatedColor = vec4(0.0, 0.0, 0.0, 0.0);
         
         mapsign = 1.0;
         OrthoProjectionResult orthoResult = orthoProjection(ro, rd, right, up, zoom);
         
-        // Initialize with transparent background if no hit
-        if (!orthoResult.hit) {
-            fragColor = vec4(0.0);
-            return;
-        } else {
-            // Front-to-back compositing for transparency
-            for (int i = 0; i < 10; i++) {
-                if (!orthoResult.hit || transmittance < 0.01) break;
-                
-                // Add this layer's contribution
-                float layerAlpha = uOpacity * transmittance;
-                accumulatedColor += orthoResult.color * layerAlpha;
-                
-                // Reduce transmittance for next layers
-                transmittance *= (1.0 - uOpacity);
-                
-                // Advance ray to next intersection
-                mapsign = -mapsign;
-                orthoResult = orthoProjection(orthoResult.hitPosition, rd, right, up, zoom);
-            }
+        // Front-to-back compositing for transparency
+        for (int i = 0; i < 10; i++) {
+            if (!orthoResult.hit || accumulatedColor.a >= 0.99) break;
             
-            color = accumulatedColor;
+            // Calculate this layer's contribution with alpha
+            vec4 layerColor = vec4(orthoResult.color, uOpacity);
+            
+            // Front-to-back alpha compositing
+            float a = layerColor.a * (1.0 - accumulatedColor.a);
+            
+            // Add weighted contribution to accumulated color
+            accumulatedColor.rgb += layerColor.rgb * a;
+            
+            // Update accumulated alpha
+            accumulatedColor.a += a;
+            
+            // Advance ray to next intersection
+            mapsign = -mapsign;
+            orthoResult = orthoProjection(orthoResult.hitPosition, rd, right, up, zoom);
         }
         
         // Gamma correction
-        color = pow(color, vec3(1.0 / 2.2));
+        color = pow(accumulatedColor.rgb, vec3(1.0 / 2.2));
         
         // Draw axis indicator on top of the scene
         vec4 axisColor = drawAxisIndicator(uv);
+        
         // Blend the axis indicator with the scene using alpha blending
         color = mix(color, axisColor.rgb, axisColor.a);
         
-        fragColor = vec4(color, 1.0);
+        // Use the accumulated alpha for the final color
+        fragColor = vec4(color, accumulatedColor.a);
     }
 }
 `;
