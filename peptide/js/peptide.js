@@ -477,6 +477,7 @@ class Peptide {
     simplify() {
         // Use a cache to track unique expressions
         const cache = new Map();
+        let nextId = 0;
         
         // Helper function to recursively simplify the tree
         const simplifyNode = (node) => {
@@ -488,14 +489,26 @@ class Peptide {
             if (node.third) node.third = simplifyNode(node.third);
             
             // Create a key that uniquely identifies this node
-            const key = JSON.stringify({
-                op: node.op,
-                type: node.type,
-                value: node.value,
-                left: node.left ? node.left.id : null,
-                right: node.right ? node.right.id : null,
-                third: node.third ? node.third.id : null
-            });
+            // Format: op|type|value|leftId|rightId|thirdId
+            let valueStr;
+            if (node.value instanceof Vec3) {
+                valueStr = `v${node.value.x},${node.value.y},${node.value.z}`;
+            } else if (node.value instanceof Mat3) {
+                valueStr = 'm' + Array.from(node.value.m).flat().join(',');
+            } else if (node.value === null) {
+                valueStr = 'null';
+            } else {
+                valueStr = String(node.value);
+            }
+            
+            const key = [
+                node.op,
+                node.type,
+                valueStr,
+                node.left ? node.left.id : 'n',
+                node.right ? node.right.id : 'n',
+                node.third ? node.third.id : 'n'
+            ].join('|');
             
             // Check if we've seen this expression before
             if (cache.has(key)) {
@@ -503,7 +516,7 @@ class Peptide {
             }
             
             // If not, add it to the cache
-            node.id = cache.size; // Assign a unique ID to this node
+            node.id = nextId++; // Assign a unique ID to this node
             cache.set(key, node);
             return node;
         };

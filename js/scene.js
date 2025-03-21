@@ -4,8 +4,6 @@ const scene = {
     },
     
     generateShaderCode(ssa) {
-        const startTime = performance.now();
-
         const glslSrc = ssa.compileToGLSL(`float peptide(vec3 p)`);
 
         // Get the original shader source
@@ -33,9 +31,6 @@ const scene = {
         const newSource = originalSource.substring(0, startIndex) + 
                    newSceneCode +
                    originalSource.substring(endIndex);
-
-        const endTime = performance.now();
-        console.log(`Shader codegen took ${endTime - startTime} ms`);
 
         return newSource;
     }

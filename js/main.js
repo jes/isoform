@@ -130,8 +130,12 @@ const app = {
         
         // Only rebuild primary shader if document is dirty
         if (this.document.dirty()) {
+            let startTime = performance.now();
             const expr = this.document.peptide(P.vvar('p'));
+            console.log(`Peptide expression took ${performance.now() - startTime} ms`);
+            startTime = performance.now();
             const ssa = new PeptideSSA(expr);
+            console.log(`SSA took ${performance.now() - startTime} ms`);
 
             this.primaryShaderLayer = await this.createShaderLayer(ssa);
             this.primaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.6, 0.6, 0.6]);
@@ -145,7 +149,7 @@ const app = {
 
         this.secondaryShaderLayer = null;
         if (currentSecondaryNode !== null) {
-            let expr = currentSecondaryNode.peptide(P.vvar('p'));
+            let expr;
             if (ui.showBoundingSphere) {
                 const tree = new TransformNode(
                     currentSecondaryNode.boundingSphere().centre, 
@@ -153,10 +157,17 @@ const app = {
                     0, 
                     new SphereNode(currentSecondaryNode.boundingSphere().radius)
                 );
+                startTime = performance.now();
                 expr = tree.peptide(P.vvar('p'));
+                console.log(`Peptide expression for bounding sphere took ${performance.now() - startTime} ms`);
+            } else {
+                startTime = performance.now();
+                expr = currentSecondaryNode.peptide(P.vvar('p'));
+                console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
             }
-            
+            startTime = performance.now();
             const ssa = new PeptideSSA(expr);
+            console.log(`SSA took ${performance.now() - startTime} ms`);
             
             this.secondaryShaderLayer = await this.createShaderLayer(ssa);
             this.secondaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.8, 0.2, 0.2]);
