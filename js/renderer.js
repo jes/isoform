@@ -396,16 +396,6 @@ const renderer = {
     rayMarchFromPoint(ro, rd) {
         const startTime = performance.now();
 
-        if (!app.sdf) {
-            return {
-                distance: 0.0,
-                minDistance: 1000000.0,
-                hit: false,
-                hitPosition: null,
-                steps: 0
-            };
-        }
-
         const result = {
             distance: 0.0,
             minDistance: 1000000.0,
@@ -413,6 +403,10 @@ const renderer = {
             hitPosition: null,
             steps: 0
         };
+
+        if (!app.sdf) {
+            return result;
+        }
 
         let p = ro;
         let lastD = 0.0;
