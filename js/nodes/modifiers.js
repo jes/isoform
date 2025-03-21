@@ -344,53 +344,29 @@ class TwistNode extends TreeNode {
     return {"height": "float", "axis": "vec3"};
   }
   
-  generateShaderImplementation() {
+  makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("Twist node has no child to transform");
-      return '';
+      return this.noop();
     }
 
-    // Normalize the axis
-    const normalizedAxis = this.axis.normalize();
-    
-    return `
-      float ${this.getFunctionName()}(vec3 p) {
-        float height = ${this.height.toFixed(16)};
-        vec3 axis = ${normalizedAxis.glsl()};
-        
-        // Rotate point to align with axis
-        mat3 toAxisSpace = rotateToAxis(axis);
-        mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
-        
-        // Transform to axis-aligned space
-        vec3 q = toAxisSpace * p;
-        
-        // Apply twist around the z-axis (which is now aligned with our axis)
-        // The twist angle is proportional to the distance along the axis
-        // A smaller height value means more twisting (2π radians per 'height' units)
-        ${ this.height != 0.0 ? `
-          // Negative angle for right-handed rotation around Z
-          float angle = (-2.0 * 3.14159265359 * q.z) / height;
-          float c = cos(angle);
-          float s = sin(angle);
-          q = vec3(c * q.x - s * q.y, s * q.x + c * q.y, q.z);
-        
-          // Transform back to original space
-          p = fromAxisSpace * q;
-        ` : ""}
-        
-        return ${this.children[0].shaderCode()};
-      }
-    `;
-  }
-
-  generateShaderCode() {
-    if (!this.hasChildren()) {
-      this.warn("Twist node has no child to transform");
-      return this.noopShaderCode();
+    if (this.height == 0.0) {
+      return this.children[0].peptide(p);
     }
-    
-    return `${this.getFunctionName()}(p)`;
+
+    const axis = this.axis.normalize();
+    const toAxisSpace = P.mconst(new Mat3().rotateToAxis(axis));
+    const fromAxisSpace = P.mtranspose(toAxisSpace);
+
+    const q = P.mvmul(toAxisSpace, p);
+    const angle = P.mul(P.const(-2.0 * Math.PI), P.div(P.vecZ(q), P.const(this.height)));
+    const c = P.cos(angle);
+    const s = P.sin(angle);
+    const q2 = P.vec3(P.sub(P.mul(c, P.vecX(q)), P.mul(s, P.vecY(q))),
+                      P.add(P.mul(s, P.vecX(q)), P.mul(c, P.vecY(q))),
+                      P.vecZ(q));
+    const p2 = P.mvmul(fromAxisSpace, q2);
+    return this.children[0].peptide(p2);
   }
 
   getIcon() {
