@@ -438,34 +438,17 @@ const renderer = {
         // Set viewport
         gl.viewport(0, 0, width, height);
         
-        // First layer is rendered directly
-        if (shaderLayers.length > 0) {
-            const firstLayer = shaderLayers[0];
-            gl.disable(gl.BLEND);
-
-            gl.useProgram(firstLayer.program);
-            
-            // Apply uniforms and render
-            firstLayer.setUniform('vec2', 'uResolution', [width, height]);
-            camera.setUniforms(firstLayer);
-            firstLayer.applyUniforms(gl);
-            
-            // Set up vertex attribute
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-            const positionAttrib = firstLayer.getAttribLocation(gl, 'aVertexPosition');
-            gl.vertexAttribPointer(positionAttrib, 2, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(positionAttrib);
-            
-            // Draw
-            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        }
-        
-        // Subsequent layers are blended
-        for (let i = 1; i < shaderLayers.length; i++) {
+        // Process each layer with appropriate blending
+        for (let i = 0; i < shaderLayers.length; i++) {
             const layer = shaderLayers[i];
             
-            gl.enable(gl.BLEND);
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            // First layer has blending disabled, subsequent layers have it enabled
+            if (i === 0) {
+                gl.disable(gl.BLEND);
+            } else {
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            }
 
             gl.useProgram(layer.program);
             
