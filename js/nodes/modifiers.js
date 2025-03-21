@@ -484,7 +484,7 @@ class LinearPatternNode extends TreeNode {
     const step = this.axis.normalize().mul(this.spacing);
     let d = this.children[0].peptide(p);
     for (let i = 1; i < this.copies; i++) {
-      const pi = P.vadd(p, P.vconst(step.mul(i)));
+      const pi = P.vsub(p, P.vconst(step.mul(i)));
       d = minFn(d, this.children[0].peptide(pi));
     }
     return d;
