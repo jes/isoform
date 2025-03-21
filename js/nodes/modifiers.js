@@ -420,7 +420,7 @@ class MirrorNode extends TreeNode {
     const mirrored = this.children[0].peptide(pMirrored);
 
     if (this.keepOriginal) {
-      const minFn = (a, b) => P.min(a, b);
+      let minFn = (a, b) => P.min(a, b);
       if (this.blendRadius > 0.0) {
         if (this.chamfer) {
           minFn = (a, b) => P.chmin(a, b, P.const(this.blendRadius));
@@ -449,8 +449,6 @@ class LinearPatternNode extends TreeNode {
     this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
     this.spacing = spacing;
     this.copies = copies;
-    this.allowDomainRepetition = true;
-    this.naiveDomainRepetition = false;
     this.blendRadius = 0.0;
     this.chamfer = false;
     this.addChild(children);
@@ -461,117 +459,35 @@ class LinearPatternNode extends TreeNode {
   }
 
   properties() {
-    return {"axis": "vec3", "spacing": "float", "copies": "int", "allowDomainRepetition": "bool", "naiveDomainRepetition": "bool", "blendRadius": "float", "chamfer": "bool"};
+    return {"axis": "vec3", "spacing": "float", "copies": "int", "blendRadius": "float", "chamfer": "bool"};
   }
 
-  generateShaderImplementation() {
+  makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("LinearPattern node has no child");
-      return '';
+      return this.noop();
+    }
+    
+    if (this.copies < 1) {
+      return this.noop();
     }
 
-    // Normalize the axis
-    const normalizedAxis = this.axis.normalize();
-
-    const boundingSphere = this.children[0].boundingSphere();
-    const radiusOverlaps = Math.ceil((boundingSphere.radius + this.blendRadius) / this.spacing);
-
-    let minfn = "min(d, d1)";
+    let minFn = (a, b) => P.min(a, b);
     if (this.blendRadius > 0.0) {
       if (this.chamfer) {
-        minfn = `chmin(d, d1, ${this.blendRadius.toFixed(16)})`;
+        minFn = (a, b) => P.chmin(a, b, P.const(this.blendRadius));
       } else {
-        minfn = `smin(d, d1, ${this.blendRadius.toFixed(16)})`;
+        minFn = (a, b) => P.smin(a, b, P.const(this.blendRadius));
       }
     }
 
-    if (!this.allowDomainRepetition || (2*radiusOverlaps >= this.copies && !this.naiveDomainRepetition)) {
-      // Explicit union of exactly the requested number of copies
-      return `
-        float ${this.getFunctionName()}(vec3 p) {
-          float spacing = ${this.spacing.toFixed(16)};
-          vec3 step = spacing * ${normalizedAxis.glsl()};
-          float d = ${this.children[0].shaderCode()};
-          for (int i = 1; i < ${this.copies}; i++) {
-            p -= step;
-            float d1 = ${this.children[0].shaderCode()};
-            d = ${minfn};
-          }
-          return d;
-        }
-      `;
-    } else if (this.spacing < 2*(boundingSphere.radius+this.blendRadius) && !this.naiveDomainRepetition) {
-      // union of however many copies overlap, and domain repetition for the rest
-      return `
-        float ${this.getFunctionName()}(vec3 p) {
-          // Rotate point to align with pattern axis
-          vec3 axis = ${normalizedAxis.glsl()};
-          mat3 toAxisSpace = rotateToAxis(axis);
-          mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
-          
-          // Transform to axis-aligned space
-          vec3 q = fromAxisSpace * p;
-
-          vec3 boundingCentre = fromAxisSpace * ${boundingSphere.centre.glsl()};
-          float zOff = boundingCentre.z;
-
-          // Apply modulo along the z-axis (which is now aligned with our pattern axis)
-          float spacing = ${this.spacing.toFixed(16)};
-          float halfSpacing = ${(this.spacing / 2.0).toFixed(16)};
-
-          // Calculate the index of the current copy
-          float idx = clamp(floor((q.z - zOff + halfSpacing) / spacing), ${radiusOverlaps.toFixed(16)}, ${(this.copies - radiusOverlaps - 1).toFixed(16)});
-          
-          // do a union of the number of overlapping copies
-          q.z += spacing * (${radiusOverlaps.toFixed(16)} - idx);
-          p = toAxisSpace * q;
-          float d = ${this.children[0].shaderCode()};
-          for (int i = 0; i < ${2*radiusOverlaps}; i++) {
-            q.z -= spacing;
-            p = toAxisSpace * q;
-            float d1 = ${this.children[0].shaderCode()};
-            d = ${minfn};
-          }
-          return d;
-
-        }
-      `;
-    } else {
-      // The bounding volumes do not overlap, so we can use pure domain repetition
-      return `
-        float ${this.getFunctionName()}(vec3 p) {
-          // Rotate point to align with pattern axis
-          vec3 axis = ${normalizedAxis.glsl()};
-          mat3 toAxisSpace = rotateToAxis(axis);
-          mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
-          
-          // Transform to axis-aligned space
-          vec3 q = fromAxisSpace * p;
-
-          vec3 boundingCentre = fromAxisSpace * ${boundingSphere.centre.glsl()};
-          float zOff = boundingCentre.z;
-          
-          // Apply modulo along the z-axis (which is now aligned with our pattern axis)
-          float spacing = ${this.spacing.toFixed(16)};
-          float halfSpacing = ${(this.spacing / 2.0).toFixed(16)};
-
-          // Calculate the index of the current copy
-          float idx = clamp(floor((q.z - zOff + halfSpacing) / spacing), 0.0, ${(this.copies - 1).toFixed(16)});
-          
-          // Apply modulo operation
-          q.z -= idx * spacing;
-          
-          // Transform back to original space
-          p = toAxisSpace * q;
-          
-          return ${this.children[0].shaderCode()};
-        }
-      `;
+    const step = this.axis.normalize().mul(this.spacing);
+    let d = this.children[0].peptide(p);
+    for (let i = 1; i < this.copies; i++) {
+      const pi = P.vadd(p, P.vconst(step.mul(i)));
+      d = minFn(d, this.children[0].peptide(pi));
     }
-  }
-
-  generateShaderCode() {
-    return `${this.getFunctionName()}(p)`;
+    return d;
   }
 
   getIcon() {
