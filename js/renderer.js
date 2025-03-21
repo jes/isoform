@@ -257,7 +257,6 @@ const renderer = {
             return;
         }
 
-        const currentTime = (Date.now() - this.startTime) / 1000;
         const gl = this.gl;
         
         // Calculate render size based on resolution scale
@@ -480,8 +479,6 @@ const renderer = {
             const positionAttrib = layer.getAttribLocation(gl, 'aVertexPosition');
             gl.vertexAttribPointer(positionAttrib, 2, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(positionAttrib);
-
-            // TODO: if we have a previous texture, pass it to the shader
             
             // Draw
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
