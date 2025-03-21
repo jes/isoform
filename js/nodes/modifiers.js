@@ -881,7 +881,8 @@ class ExtrudeNode extends TreeNode {
       this.warn("Extrude node requires a 2D child");
       return this.noop();
     }
-    const d2d = this.children[0].peptide(p);
+    const p2d = P.vec3(P.vecX(p), P.vecY(p), P.const(0.0));
+    const d2d = this.children[0].peptide(p2d);
     const dz = P.sub(P.abs(P.vecZ(p)), P.const(this.height/2));
     const pz = P.clamp(P.add(P.vecZ(p), P.const(this.height/2)), P.const(0.0), P.const(this.height));
     const d = P.add(P.mul(d2d, P.const(Math.cos(this.draftAngle * Math.PI / 180.0))), P.mul(pz, P.const(Math.tan(this.draftAngle * Math.PI / 180.0))));
