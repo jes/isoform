@@ -9,7 +9,7 @@ uniform vec3 uCameraTarget;
 uniform float uCameraZoom;
 uniform mat3 uRotationMatrix;
 uniform bool uShowEdges;
-uniform float stepFactor;
+uniform float uStepFactor;
 uniform bool uShowField;
 uniform bool uShowSteps;
 uniform float uOpacity;
@@ -97,7 +97,7 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
         
         d = max(0.001, d);
 
-        p += rd * d * stepFactor;
+        p += rd * d * uStepFactor;
         
         if (d > lastD && result.distance > 10000.0) break;
         lastD = d;

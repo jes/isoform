@@ -54,7 +54,7 @@ const camera = {
                    .setUniform('float', 'uCameraZoom', this.zoom)
                    .setUniform('mat3', 'uRotationMatrix', new Float32Array(this.getRotationMatrixArray()))
                    .setUniform('bool', 'uShowEdges', this.showEdges ? 1 : 0)
-                   .setUniform('float', 'stepFactor', this.stepFactor)
+                   .setUniform('float', 'uStepFactor', this.stepFactor)
                    .setUniform('bool', 'uShowField', this.showField ? 1 : 0)
                    .setUniform('bool', 'uShowSteps', this.showSteps ? 1 : 0)
     },
