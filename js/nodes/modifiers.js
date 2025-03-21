@@ -251,6 +251,40 @@ class ShellNode extends TreeNode {
   }
 }
 
+class InfillNode extends TreeNode {
+  constructor(thickness = 1.0, children = []) {
+    super("Infill");
+    this.thickness = thickness;
+    this.maxChildren = 2;
+    this.addChild(children);
+  }
+
+  properties() {
+    return {"thickness": "float"};
+  }
+
+  makePeptide(p) {
+    if (!this.hasChildren()) {
+      this.warn("Infill node has no child to transform");
+      return this.noop();
+    }
+
+    const d = this.children[0].peptide(p);
+    const negD = P.sub(P.const(0), d);
+    const dShell = P.max(d, P.sub(negD, P.const(this.thickness)));
+    if (this.children.length == 1) {
+      return d;
+    }
+
+    const d2 = this.children[1].peptide(p);
+    return P.min(dShell, P.max(d, d2));
+  }
+
+  getIcon() {
+    return "🔍";
+  }
+}
+
 class OffsetNode extends TreeNode {
   constructor(distance = 1.0, children = []) {
     super("Offset");
@@ -693,7 +727,7 @@ class RevolveNode extends TreeNode {
 // Detect environment and export accordingly
 (function() {
   const nodes = { TransformNode, DomainDeformNode, DistanceDeformNode, ShellNode,
-    OffsetNode, ScaleNode, TwistNode, MirrorNode, LinearPatternNode,
+    InfillNode, OffsetNode, ScaleNode, TwistNode, MirrorNode, LinearPatternNode,
     PolarPatternNode, ExtrudeNode, RevolveNode, DistanceDeformInsideNode };
   
   // Check if we're in a module environment
