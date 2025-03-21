@@ -438,7 +438,10 @@ const renderer = {
         }
 
         const endTime = performance.now();
-        console.log(`Raymarching took ${(endTime - startTime).toFixed(2)}ms (${result.steps} steps)`);
+        const duration = (endTime - startTime).toFixed(2);
+        if (duration > 10.0) {
+            console.log(`Raymarching took ${duration}ms (${result.steps} steps)`);
+        }
 
         return result;
     },
