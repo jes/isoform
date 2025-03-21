@@ -502,8 +502,6 @@ class PolarPatternNode extends TreeNode {
     this.copies = copies;
     this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
     this.angle = angle;
-    this.allowDomainRepetition = true;
-    this.naiveDomainRepetition = false;
     this.blendRadius = 0.0;
     this.chamfer = false;
     this.addChild(children);
@@ -514,192 +512,48 @@ class PolarPatternNode extends TreeNode {
   }
 
   properties() {
-    return {"copies": "int", "axis": "vec3", "angle": "float", "allowDomainRepetition": "bool", "naiveDomainRepetition": "bool", "blendRadius": "float", "chamfer": "bool"};
+    return {"copies": "int", "axis": "vec3", "angle": "float", "blendRadius": "float", "chamfer": "bool"};
   }
 
-  generateShaderImplementation() {
+  makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("PolarPattern node has no child to transform");
-      return '';
+      return this.noop();
+    }
+    
+    if (this.copies < 1) {
+      return this.noop();
     }
 
-    // Normalize the axis
-    const normalizedAxis = this.axis.normalize();
-
-    // Calculate the angle to the bounding sphere center
-    const boundingSphere = this.children[0].boundingSphere();
-    const center = boundingSphere.centre;
-    const toAxisSpace = new Mat3().rotateToAxis(normalizedAxis);
-    const centerInAxisSpace = toAxisSpace.mulVec3(center);
-    const centerAngle = Math.atan2(centerInAxisSpace.y, centerInAxisSpace.x);
-
-    const r = center.length();
-    const stepAngle = this.angle / this.copies * Math.PI / 180.0; // Convert to radians
-    // Calculate the chord length between two consecutive copies
-    const spacing = 2 * r * Math.sin(stepAngle / 2);
-    const radiusOverlaps = Math.ceil((boundingSphere.radius + this.blendRadius) / spacing);
-
-    let minfn = "min(d,d1)";
-    if (this.blendRadius > 0) {
+    let minFn = (a, b) => P.min(a, b);
+    if (this.blendRadius > 0.0) {
       if (this.chamfer) {
-        minfn = `chmin(d,d1,${this.blendRadius.toFixed(16)})`;
+        minFn = (a, b) => P.chmin(a, b, P.const(this.blendRadius));
       } else {
-        minfn = `smin(d,d1,${this.blendRadius.toFixed(16)})`;
+        minFn = (a, b) => P.smin(a, b, P.const(this.blendRadius));
       }
     }
 
-    if (!this.allowDomainRepetition || (2*radiusOverlaps >= this.copies && !this.naiveDomainRepetition)) {
-      // explicit union of all copies
-      return `
-        float ${this.getFunctionName()}(vec3 p) {
-          vec3 axis = ${normalizedAxis.glsl()};
-          float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
-          int copies = ${this.copies};
-          
-          // Rotate point to align with axis
-          mat3 toAxisSpace = rotateToAxis(axis);
-          mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
-          
-          // Transform to axis-aligned space
-          vec3 q = toAxisSpace * p;
-          
-          // Calculate the angle increment between copies
-          float angleIncrement = totalAngle / float(copies);
-          
-          // Evaluate the first copy at the original position
-          float d = ${this.children[0].shaderCode()};
-          
-          // Create the remaining copies by rotating around the axis
-          for (int i = 1; i < ${this.copies}; i++) {
-            // Calculate rotation angle for this copy
-            float angle = float(i) * angleIncrement;
-            
-            // Apply rotation around the z-axis (which is aligned with our axis in this space)
-            float c = cos(angle);
-            float s = sin(angle);
-            vec3 rotated = vec3(
-              c * q.x - s * q.y,
-              s * q.x + c * q.y,
-              q.z
-            );
-            
-            // Transform back to original space
-            p = fromAxisSpace * rotated;
-            
-            // Union with the current copy
-            float d1 = ${this.children[0].shaderCode()};
-            d = ${minfn};
-          }
-          
-          return d;
-        }
-    `;
-    } else if (spacing < 2*(boundingSphere.radius+this.blendRadius) && !this.naiveDomainRepetition) {
-      // union of however many copies overlap, and domain repetition for the rest
-      return `
-        float ${this.getFunctionName()}(vec3 p) {
-          vec3 axis = ${normalizedAxis.glsl()};
-          float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
-          float segmentAngle = totalAngle / float(${this.copies});
-          float halfSegmentAngle = segmentAngle * 0.5;
-          float centerOffset = ${centerAngle.toFixed(16)}; // Angle to bounding sphere center
-          
-          // Rotate point to align with axis
-          mat3 toAxisSpace = rotateToAxis(axis);
-          mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
-          
-          // Transform to axis-aligned space (z is now along rotation axis)
-          vec3 q = toAxisSpace * p;
-          
-          // Get angle in XY plane (around Z axis)
-          float angle = atan(q.y, q.x) - centerOffset + halfSegmentAngle;
-          
-          // Normalize angle to [0, totalAngle) without branching
-          // First add enough multiples of 2π to make it positive
-          angle += 2.0 * 3.14159265359 * ceil(-angle / (2.0 * 3.14159265359));
-          // Then use mod to get it within [0, totalAngle)
-          angle = mod(angle, totalAngle);
-          
-          // Calculate the index of the current segment
-          float idx = floor(angle / segmentAngle);
-          
-          // Evaluate overlapping copies, including wrapping around
-          float d = 1e10;  // Initialize to a large value
-          
-          // Start from idx - radiusOverlaps and wrap around if needed
-          for (int i = 0; i < ${2*radiusOverlaps + 1}; i++) {
-            float copyIdx = idx - float(${radiusOverlaps}) + float(i);
-            
-            // Wrap copyIdx to valid range without branching
-            copyIdx = mod(copyIdx + float(${this.copies}), float(${this.copies}));
-            
-            float rotationAngle = -copyIdx * segmentAngle;
-            float c = cos(rotationAngle);
-            float s = sin(rotationAngle);
-            vec3 rotated = vec3(
-              c * q.x - s * q.y,
-              s * q.x + c * q.y,
-              q.z
-            );
-            p = fromAxisSpace * rotated;
-            float d1 = ${this.children[0].shaderCode()};
-            d = ${minfn};
-          }
-          
-          return d;
-        }
-      `;
-    } else {
-      // pure domain repetition, no overlaps
-      return `
-        float ${this.getFunctionName()}(vec3 p) {
-          vec3 axis = ${normalizedAxis.glsl()};
-          float totalAngle = ${(this.angle * Math.PI / 180.0).toFixed(16)}; // Convert to radians
-          float segmentAngle = totalAngle / float(${this.copies});
-          float halfSegmentAngle = segmentAngle * 0.5;
-          float centerOffset = ${centerAngle.toFixed(16)}; // Angle to bounding sphere center
-          
-          // Rotate point to align with axis
-          mat3 toAxisSpace = rotateToAxis(axis);
-          mat3 fromAxisSpace = transposeMatrix(toAxisSpace);
-          
-          // Transform to axis-aligned space (z is now along rotation axis)
-          vec3 q = toAxisSpace * p;
-          
-          // Get angle in XY plane (around Z axis), offset by the center angle
-          // and half segment to center within segment
-          float angle = atan(q.y, q.x) - centerOffset + halfSegmentAngle;
-          
-          // Normalize angle to [0, totalAngle) without branching
-          // First add enough multiples of 2π to make it positive
-          angle += 2.0 * 3.14159265359 * ceil(-angle / (2.0 * 3.14159265359));
-          // Then use mod to get it within [0, totalAngle)
-          angle = mod(angle, totalAngle);
-          
-          // Map to first segment
-          float segment = floor(angle / segmentAngle);
-          float rotationAngle = -segment * segmentAngle;
-          
-          // Rotate point back to first segment
-          float c = cos(rotationAngle);
-          float s = sin(rotationAngle);
-          q = vec3(
-            c * q.x - s * q.y,
-            s * q.x + c * q.y,
-            q.z
-          );
-          
-          // Transform back to original space
-          p = fromAxisSpace * q;
-          
-          return ${this.children[0].shaderCode()};
-        }
-      `;
-    }
-  }
+    const totalAngle = this.angle * Math.PI / 180.0; // Convert to radians
+    const toAxisSpace = P.mconst(new Mat3().rotateToAxis(this.axis.normalize()));
+    const fromAxisSpace = P.mtranspose(toAxisSpace);
 
-  generateShaderCode() {
-    return `${this.getFunctionName()}(p)`;
+    const q = P.mvmul(toAxisSpace, p);
+    const angleIncrement = totalAngle / this.copies;
+    let d = this.children[0].peptide(p);
+    for (let i = 1; i < this.copies; i++) {
+      const angle = angleIncrement * i;
+      const c = P.cos(P.const(angle));
+      const s = P.sin(P.const(angle));
+      const rotated = P.vec3(
+        P.sub(P.mul(c, P.vecX(q)), P.mul(s, P.vecY(q))),
+        P.add(P.mul(s, P.vecX(q)), P.mul(c, P.vecY(q))),
+        P.vecZ(q)
+      );
+      const p1 = P.mvmul(fromAxisSpace, rotated);
+      d = minFn(d, this.children[0].peptide(p1));
+    }
+    return d;
   }
 
   getIcon() {
@@ -733,7 +587,7 @@ class ExtrudeNode extends TreeNode {
     }
     if (!this.children[0].is2d()) {
       this.warn("Extrude node requires a 2D child");
-      return this.noop();
+      // carry on anyway
     }
     const p2d = P.vec3(P.vecX(p), P.vecY(p), P.const(0.0));
     const d2d = this.children[0].peptide(p2d);
