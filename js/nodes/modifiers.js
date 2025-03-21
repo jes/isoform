@@ -379,8 +379,6 @@ class MirrorNode extends TreeNode {
     super("Mirror");
     this.maxChildren = 1;
     this.plane = "XY";
-    this.allowDomainRepetition = true;
-    this.naiveDomainRepetition = false;
     this.keepOriginal = true;
     this.blendRadius = 0.0;
     this.chamfer = false;
@@ -400,79 +398,43 @@ class MirrorNode extends TreeNode {
   }
 
   properties() {
-    return {"plane": ["XY", "XZ", "YZ"], "allowDomainRepetition": "bool", "naiveDomainRepetition": "bool", "keepOriginal": "bool", "blendRadius": "float", "chamfer": "bool"};
+    return {"plane": ["XY", "XZ", "YZ"], "keepOriginal": "bool", "blendRadius": "float", "chamfer": "bool"};
   }
 
-  generateShaderImplementation() {
+  makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("Mirror node has no child to transform");
-      return '';
+      return this.noop();
     }
 
-    let minfn = "min(d, d1)";
-    if (this.blendRadius > 0.0) {
-      if (this.chamfer) {
-        minfn = `chmin(d, d1, ${this.blendRadius.toFixed(16)})`;
-      } else {
-        minfn = `smin(d, d1, ${this.blendRadius.toFixed(16)})`;
-      }
-    }
-    const axis = this.plane === "XY" ? "z" : this.plane === "XZ" ? "y" : "x";
-    let domainRepetitionOk = this.allowDomainRepetition;
-    const boundingSphere = this.children[0].boundingSphere();
-    const r = boundingSphere.radius + this.blendRadius;
-    const c = boundingSphere.centre;
-    let neg = "";
-    if (this.plane == "XY") {
-      if (r > Math.abs(c.z)) {
-        domainRepetitionOk = false;
-        if (c.z < 0.0) {
-          neg = "-";
-        }
-      }
-    } else if (this.plane == "XZ") {
-      if (r > Math.abs(c.y)) {
-        domainRepetitionOk = false;
-        if (c.y < 0.0) {
-          neg = "-";
-        }
-      }
-    } else {
-      if (r > Math.abs(c.x)) {
-        domainRepetitionOk = false;
-        if (c.x < 0.0) {
-          neg = "-";
-        }
-      }
-    }
-    if (!this.keepOriginal) {
-      return `
-        float ${this.getFunctionName()}(vec3 p) {
-          p.${axis} = -p.${axis};
-          return ${this.children[0].shaderCode()};
-        }
-      `;
-    } else if (domainRepetitionOk || this.naiveDomainRepetition) {
-      return `
-        float ${this.getFunctionName()}(vec3 p) {
-          p.${axis} = ${neg}abs(p.${axis});
-          return ${this.children[0].shaderCode()};
-        }
-      `;
-    } else {
-      return `
-        float ${this.getFunctionName()}(vec3 p) {
-          float d = ${this.children[0].shaderCode()};
-          p.${axis} = -p.${axis};
-          float d1 = ${this.children[0].shaderCode()};
-          return ${minfn};
-        }
-      `;
-    }
-  }
+    let pMirrored = p;
 
-  generateShaderCode() {
-    return `${this.getFunctionName()}(p)`;
+    if (this.plane === "XY") {
+      pMirrored = P.vec3(P.vecX(p), P.vecY(p), P.sub(P.const(0), P.vecZ(p)));
+    } else if (this.plane === "XZ") {
+      pMirrored = P.vec3(P.vecX(p), P.sub(P.const(0), P.vecY(p)), P.vecZ(p));
+    } else {
+      pMirrored = P.vec3(P.sub(P.const(0), P.vecX(p)), P.vecY(p), P.vecZ(p));
+    }
+    
+    const mirrored = this.children[0].peptide(pMirrored);
+
+    if (this.keepOriginal) {
+      const minFn = (a, b) => P.min(a, b);
+      if (this.blendRadius > 0.0) {
+        if (this.chamfer) {
+          minFn = (a, b) => P.chmin(a, b, P.const(this.blendRadius));
+        } else {
+          minFn = (a, b) => P.smin(a, b, P.const(this.blendRadius));
+        }
+      }
+
+      const original = this.children[0].peptide(p);
+
+      return minFn(original, mirrored);
+    } else {
+      return mirrored;
+    }
   }
 
   getIcon() {
