@@ -57,7 +57,6 @@ const camera = {
                    .setUniform('float', 'stepFactor', this.stepFactor)
                    .setUniform('bool', 'uShowField', this.showField ? 1 : 0)
                    .setUniform('bool', 'uShowSteps', this.showSteps ? 1 : 0)
-                   .setUniform('float', 'uOpacity', this.opacity);
     },
     
     // Helper function to create a rotation matrix around X axis

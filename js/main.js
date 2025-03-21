@@ -172,6 +172,10 @@ const app = {
         
         // Render the scene with the shader layers
         try {
+            this.primaryShaderLayer.setUniform('float', 'uOpacity', camera.opacity);
+            if (this.secondaryShaderLayer) {
+                this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.5);
+            }
             renderer.render(shaderLayers);
         } catch (e) {
             console.error(e);
