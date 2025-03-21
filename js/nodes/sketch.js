@@ -35,7 +35,7 @@ class SketchNode extends TreeNode {
     // Starting point
     let va;
     let vb = P.vconst(new Vec3(startPoint.x, startPoint.y, 0.0));
-    const pvb = P.vsub(p, vb);
+    let pvb = P.vsub(p, vb);
     let d = P.vdot(pvb, pvb);
     let s = P.const(1.0);
     const eps = P.const(0.00001);
@@ -45,7 +45,7 @@ class SketchNode extends TreeNode {
       const endPoint = polycurve[i];
       va = vb;
       vb = P.vconst(new Vec3(endPoint.x, endPoint.y, 0.0));
-      const ds = sdSqLine(pvb, va, vb);
+      const ds = sdSqLine(p, va, vb);
       const py = P.vecY(p);
       const vay = P.vecY(va);
       const vby = P.vecY(vb);
@@ -59,7 +59,8 @@ class SketchNode extends TreeNode {
     // Closing segment
     va = vb;
     vb = P.vconst(new Vec3(startPoint.x, startPoint.y, 0.0));
-    const ds = sdSqLine(pvb, va, vb);
+    pvb = P.vsub(p, vb);
+    const ds = sdSqLine(p, va, vb);
     const py = P.vecY(p);
     const vay = P.vecY(va);
     const vby = P.vecY(vb);
