@@ -90,12 +90,10 @@ const app = {
         // Track the current secondary node
         const currentSecondaryNode = ui.getSecondaryNode();
         
-        // Check if document is dirty or if a new secondary node is selected
-        // or if bounding sphere visibility has changed while having a secondary node
-        if (this.document.dirty() || 
-            (currentSecondaryNode !== this.lastSecondaryNode) ||
-            (ui.showBoundingSphere !== this.lastBoundingSphereState)) {
-
+        let primaryShaderRebuilt = false;
+        
+        // Only rebuild primary shader if document is dirty
+        if (this.document.dirty()) {
             // Show loading indicator
             this.showLoadingIndicator();
 
@@ -115,6 +113,24 @@ const app = {
             this.primaryShaderLayer.setAttribLocation('aVertexPosition', 
                 renderer.gl.getAttribLocation(primaryProgram, 'aVertexPosition'));
             this.primaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.6, 0.6, 0.6]);
+
+            // Compile the SDF function for coordinate display
+            const fn = eval(ssa.compileToJS());
+            this.sdf = (p) => fn({p: p});
+            
+            this.document.markClean();
+            primaryShaderRebuilt = true;
+            this.lastAdjustmentTime = Date.now();
+        }
+
+        // Rebuild secondary shader if primary was rebuilt OR secondary node changed OR bounding sphere setting changed
+        if (primaryShaderRebuilt || 
+            (currentSecondaryNode !== this.lastSecondaryNode) ||
+            (ui.showBoundingSphere !== this.lastBoundingSphereState)) {
+            
+            if (!primaryShaderRebuilt) {
+                this.showLoadingIndicator();
+            }
 
             // Handle secondary shader if needed
             this.secondaryShaderLayer = null;
@@ -146,22 +162,18 @@ const app = {
                 this.secondaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.8, 0.2, 0.2]);
             }
 
-            this.document.markClean();
-
-            // Compile the SDF function for coordinate display
-            const fn = eval(ssa.compileToJS());
-            this.sdf = (p) => fn({p: p});
-            
-            // Hide loading indicator
-            this.hideLoadingIndicator();
-
             // update the last secondary node reference when we recompile
             this.lastSecondaryNode = currentSecondaryNode;
             
             // Update last bounding sphere state
             this.lastBoundingSphereState = ui.showBoundingSphere;
 
-            this.lastAdjustmentTime = Date.now();
+            if (!primaryShaderRebuilt) {
+                this.lastAdjustmentTime = Date.now();
+            }
+            
+            // Hide loading indicator
+            this.hideLoadingIndicator();
         }
         
         // Prepare shader layers for rendering
