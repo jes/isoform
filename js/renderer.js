@@ -343,35 +343,54 @@ const renderer = {
 
         // Set new timeout
         this.mouseDebounceTimeout = setTimeout(() => {
-            if (!this.lastMousePosition) return;
-            
-            // Use the last stored position for calculations
-            const p = {
-                x: (2.0 * this.lastMousePosition.x / this.canvas.width - 1.0) * (this.canvas.width / this.canvas.height),
-                y: 1.0 - 2.0 * this.lastMousePosition.y / this.canvas.height
-            };
-
-            const forward = camera.target.sub(camera.position).normalize();
-            const right = forward.cross(new Vec3(0, 1, 0)).normalize();
-            const up = right.cross(forward);
-
-            const ro = camera.position.add(
-                right.mul(p.x / camera.zoom).add(up.mul(p.y / camera.zoom))
-            );
-            const rd = forward;
-
-            const result = this.rayMarchFromPoint(ro, rd);
-
-            if (result.hit) {
-                const coords = result.hitPosition;
-                const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}`;
-                
-                this.coordDisplay.innerHTML = text;
-                this.coordDisplay.style.display = 'block';
-                this.coordDisplay.style.left = (this.lastMousePosition.clientX + 15) + 'px';
-                this.coordDisplay.style.top = (this.lastMousePosition.clientY + 15) + 'px';
-            }
+            this.updateCoordinateDisplay();
         }, this.mouseDebounceDelay);
+    },
+    
+    updateCoordinateDisplay() {
+        if (!this.lastMousePosition) return;
+        
+        // Calculate ray from mouse position
+        const p = this.calculateRayFromMousePosition(this.lastMousePosition);
+        const { ro, rd } = this.calculateRayOriginAndDirection(p);
+        
+        // Raymarch from this point
+        const result = this.rayMarchFromPoint(ro, rd);
+
+        // Display coordinates if we hit something
+        this.displayCoordinatesIfHit(result);
+    },
+    
+    calculateRayFromMousePosition(mousePos) {
+        return {
+            x: (2.0 * mousePos.x / this.canvas.width - 1.0) * (this.canvas.width / this.canvas.height),
+            y: 1.0 - 2.0 * mousePos.y / this.canvas.height
+        };
+    },
+    
+    calculateRayOriginAndDirection(p) {
+        const forward = camera.target.sub(camera.position).normalize();
+        const right = forward.cross(new Vec3(0, 1, 0)).normalize();
+        const up = right.cross(forward);
+
+        const ro = camera.position.add(
+            right.mul(p.x / camera.zoom).add(up.mul(p.y / camera.zoom))
+        );
+        const rd = forward;
+
+        return { ro, rd };
+    },
+    
+    displayCoordinatesIfHit(result) {
+        if (result.hit) {
+            const coords = result.hitPosition;
+            const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}`;
+            
+            this.coordDisplay.innerHTML = text;
+            this.coordDisplay.style.display = 'block';
+            this.coordDisplay.style.left = (this.lastMousePosition.clientX + 15) + 'px';
+            this.coordDisplay.style.top = (this.lastMousePosition.clientY + 15) + 'px';
+        }
     },
     
     rayMarchFromPoint(ro, rd) {
