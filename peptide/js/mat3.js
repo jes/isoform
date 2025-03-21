@@ -34,9 +34,16 @@ Mat3.prototype.glsl = function() {
     )`;
 };
 
-// Creates a rotation matrix that rotates the z-axis to align with the given axis
 Mat3.prototype.rotateToAxis = function(axis) {
-    // Handle the special case where axis is parallel to z-axis
+    // Handle the special case where axis is parallel to coordinate axes
+    if (Math.abs(axis.y) > 0.999999) {
+        const sign = axis.y > 0.0 ? 1.0 : -1.0;
+        return new Mat3(
+            1.0, 0.0, 0.0,
+            0.0, 0.0, sign,
+            0.0, sign, 0.0
+        );
+    }
     if (Math.abs(axis.z) > 0.999999) {
         const sign = axis.z > 0.0 ? 1.0 : -1.0;
         return new Mat3(
@@ -48,9 +55,12 @@ Mat3.prototype.rotateToAxis = function(axis) {
     
     // Compute the rotation matrix using the cross product method
     const z = axis.normalize();
-    const x = new Vec3(0.0, 1.0, 0.0).cross(z).normalize();
+    const ref = Math.abs(z.dot(new Vec3(0.0, 1.0, 0.0))) > 0.9 ? 
+        new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 1.0, 0.0);
+
+    const x = ref.cross(z).normalize();
     const y = z.cross(x);
-    
+
     return new Mat3(x, y, z);
 };
 

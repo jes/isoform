@@ -85,6 +85,34 @@ class Peptide {
             (_, ssaOp) => `${ssaOp.result} = ${name};`,
         );
     }
+
+    static mconst(mat3) {
+        if (!(mat3 instanceof Mat3)) {
+            throw new Error(`mconst expected Mat3 but got ${mat3?.constructor?.name || typeof mat3}`);
+        }
+        return new Peptide('mconst', 'mat3', mat3, null, null, null,
+            (_, vars) => mat3,
+            (_, ssaOp) => `${ssaOp.result} = new Mat3(${mat3.m[0][0]}, ${mat3.m[0][1]}, ${mat3.m[0][2]}, ${mat3.m[1][0]}, ${mat3.m[1][1]}, ${mat3.m[1][2]}, ${mat3.m[2][0]}, ${mat3.m[2][1]}, ${mat3.m[2][2]});`,
+            (_, ssaOp) => `${ssaOp.result} = ${mat3.glsl()};`,
+        );
+    }
+
+    static mvar(name) {
+        return new Peptide('mvar', 'mat3', name, null, null, null,
+            (_, vars) => {
+                if (!(name in vars)) {
+                    throw new Error(`Matrix variable '${name}' not found`);
+                }
+                return vars[name];
+            },
+            (_, ssaOp) => {
+                return `if (!('${name}' in vars)) throw new Error("Matrix variable '${name}' not found");\n`
+                    + `  ${ssaOp.result} = vars['${name}'];`;
+            },
+            (_, ssaOp) => `${ssaOp.result} = ${name};`,
+        );
+    }
+
     static vadd(a, b) {
         a.assertType('vec3');
         b.assertType('vec3');
@@ -398,6 +426,50 @@ class Peptide {
         );
     }
 
+    static rotateToAxis(a) {
+        a.assertType('vec3');
+        return new Peptide('rotateToAxis', 'mat3', null, a, null, null,
+            (_, vars) => {
+                const axis = a.evaluate(vars);
+                const m = new Mat3();
+                return m.rotateToAxis(axis);
+            },
+            (_, ssaOp) => `${ssaOp.result} = new Mat3().rotateToAxis(${ssaOp.left});`,
+            (_, ssaOp) => {
+                return `${ssaOp.result} = rotateToAxis(${ssaOp.left});`;
+            },
+        );
+    }
+
+    static mtranspose(a) {
+        a.assertType('mat3');
+        return new Peptide('mtranspose', 'mat3', null, a, null, null,
+            (_, vars) => a.evaluate(vars).transpose(),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.transpose();`,
+            (_, ssaOp) => `${ssaOp.result} = transpose(${ssaOp.left});`,
+        );
+    }
+
+    static mvmul(a, b) {
+        a.assertType('mat3');
+        b.assertType('vec3');
+        return new Peptide('mvmul', 'vec3', null, a, b, null,
+            (_, vars) => a.evaluate(vars).mulVec3(b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mulVec3(${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
+        );
+    }
+
+    static mmul(a, b) {
+        a.assertType('mat3');
+        b.assertType('mat3');
+        return new Peptide('mmul', 'mat3', null, a, b, null,
+            (_, vars) => a.evaluate(vars).mul(b.evaluate(vars)),
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
+            (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
+        );
+    }
+
     evaluate(vars = {}) {
         const result = this.opFn(this, vars);
         if (this.type === 'float') {
@@ -407,6 +479,10 @@ class Peptide {
         } else if (this.type === 'vec3') {
             if (!(result instanceof Vec3)) {
                 throw new Error(`Operation '${this.op}' returned ${typeof result} but declared vec3 type`);
+            }
+        } else if (this.type === 'mat3') {
+            if (!(result instanceof Mat3)) {
+                throw new Error(`Operation '${this.op}' returned ${typeof result} but declared mat3 type`);
             }
         }
         return result;

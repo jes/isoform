@@ -791,6 +791,192 @@ addTest('abs type checking', (evaluate) => {
     assertThrows(() => evaluate(P.abs(vec)));
 });
 
+addTest('matrix operations - rotateToAxis', (evaluate) => {
+    // Test with a simple axis
+    const axis = P.vconst(new Vec3(0, 0, 1)); // z-axis
+    const rotMatrix = P.rotateToAxis(axis);
+    const result = evaluate(rotMatrix);
+    
+    // For z-axis, the rotation matrix should be identity-like
+    // (might have small floating point differences)
+    assertEquals(Math.abs(result.m[0]), 1);
+    assertEquals(Math.abs(result.m[4]), 1);
+    assertEquals(Math.abs(result.m[8]), 1);
+    
+    // Test with a normalized vector
+    const v = P.vconst(new Vec3(1, 1, 1).normalize());
+    const rotMatrix2 = P.rotateToAxis(v);
+    const result2 = evaluate(rotMatrix2);
+    
+    // The resulting matrix should be orthogonal (transpose = inverse)
+    // Test by multiplying a vector and checking it aligns with the axis
+    const testVec = new Vec3(0, 0, 1);
+    const rotated = result2.mulVec3(testVec);
+    const dot = rotated.normalize().dot(evaluate(v).normalize());
+    assertEquals(Math.abs(dot), 1, 0.0001); // Vectors should be parallel
+});
+
+addTest('matrix operations - mtranspose', (evaluate) => {
+    // Create a test matrix using rotateToAxis
+    const axis = P.vconst(new Vec3(1, 2, 3).normalize());
+    const matrix = P.rotateToAxis(axis);
+    const transposed = P.mtranspose(matrix);
+    
+    const m = evaluate(matrix);
+    const mt = evaluate(transposed);
+    
+    // Check that the transpose operation works correctly
+    assertEquals(m.m[0], mt.m[0]); // [0,0] element stays the same
+    assertEquals(m.m[1], mt.m[3]); // [0,1] becomes [1,0]
+    assertEquals(m.m[2], mt.m[6]); // [0,2] becomes [2,0]
+    assertEquals(m.m[3], mt.m[1]); // [1,0] becomes [0,1]
+    assertEquals(m.m[4], mt.m[4]); // [1,1] element stays the same
+    assertEquals(m.m[5], mt.m[7]); // [1,2] becomes [2,1]
+    assertEquals(m.m[6], mt.m[2]); // [2,0] becomes [0,2]
+    assertEquals(m.m[7], mt.m[5]); // [2,1] becomes [1,2]
+    assertEquals(m.m[8], mt.m[8]); // [2,2] element stays the same
+});
+
+addTest('matrix operations - mvmul', (evaluate) => {
+    // Create a test matrix (rotation around z-axis by 90 degrees)
+    const rotZ90 = new Mat3(
+        0, -1, 0,
+        1, 0, 0,
+        0, 0, 1
+    );
+    const matExpr = P.mconst(rotZ90);
+    
+    // Test vector
+    const vecX = P.vconst(new Vec3(1, 0, 0));
+    
+    // Multiply matrix by vector
+    const result = P.mvmul(matExpr, vecX);
+    const resultVec = evaluate(result);
+    
+    // Rotating (1,0,0) by 90 degrees around z should give (0,1,0)
+    assertEquals(resultVec.x, 0, 0.0001);
+    assertEquals(resultVec.y, 1, 0.0001);
+    assertEquals(resultVec.z, 0, 0.0001);
+    
+    // Test with variables
+    const matVar = P.mvar('mat');
+    const vecVar = P.vvar('vec');
+    const mulExpr = P.mvmul(matVar, vecVar);
+    
+    const vars = {
+        mat: new Mat3(
+            0, 1, 0,
+            -1, 0, 0,
+            0, 0, 1
+        ),
+        vec: new Vec3(0, 1, 0)
+    };
+    
+    const varResult = evaluate(mulExpr, vars);
+    // This matrix represents a +90 degree rotation around z-axis
+    // Rotating (0,1,0) by +90 degrees around z should give (1,0,0)
+    assertEquals(varResult.x, 1, 0.0001);
+    assertEquals(varResult.y, 0, 0.0001);
+    assertEquals(varResult.z, 0, 0.0001);
+});
+
+addTest('matrix operations - mmul', (evaluate) => {
+    // Create two test matrices
+    const rotX90 = new Mat3(
+        1, 0, 0,
+        0, 0, -1,
+        0, 1, 0
+    );
+    const rotZ90 = new Mat3(
+        0, -1, 0,
+        1, 0, 0,
+        0, 0, 1
+    );
+    
+    const matX = P.mconst(rotX90);
+    const matZ = P.mconst(rotZ90);
+    
+    // Multiply matrices
+    const result = P.mmul(matX, matZ);
+    const resultMat = evaluate(result);
+    
+    // Test the result by applying to a vector
+    const testVec = new Vec3(1, 0, 0);
+    const expected = rotX90.mulVec3(rotZ90.mulVec3(testVec));
+    const actual = resultMat.mulVec3(testVec);
+    
+    assertEquals(actual.x, expected.x, 0.0001);
+    assertEquals(actual.y, expected.y, 0.0001);
+    assertEquals(actual.z, expected.z, 0.0001);
+    
+    // Test with variables
+    const matA = P.mvar('matA');
+    const matB = P.mvar('matB');
+    const mulExpr = P.mmul(matA, matB);
+    
+    const vars = {
+        matA: rotX90,
+        matB: rotZ90
+    };
+    
+    const varResult = evaluate(mulExpr, vars);
+    const varActual = varResult.mulVec3(testVec);
+    
+    assertEquals(varActual.x, expected.x, 0.0001);
+    assertEquals(varActual.y, expected.y, 0.0001);
+    assertEquals(varActual.z, expected.z, 0.0001);
+});
+
+addTest('matrix operations type checking', (evaluate) => {
+    const vec = P.vconst(new Vec3(1, 2, 3));
+    const scalar = P.const(5);
+    const mat = P.rotateToAxis(vec);
+    
+    // Test rotateToAxis with wrong type
+    assertThrows(() => evaluate(P.rotateToAxis(scalar)));
+    
+    // Test mtranspose with wrong type
+    assertThrows(() => evaluate(P.mtranspose(vec)));
+    assertThrows(() => evaluate(P.mtranspose(scalar)));
+    
+    // Test mvmul with wrong types
+    assertThrows(() => evaluate(P.mvmul(vec, vec)));
+    assertThrows(() => evaluate(P.mvmul(scalar, vec)));
+    assertThrows(() => evaluate(P.mvmul(mat, scalar)));
+    
+    // Test mmul with wrong types
+    assertThrows(() => evaluate(P.mmul(vec, mat)));
+    assertThrows(() => evaluate(P.mmul(scalar, mat)));
+    assertThrows(() => evaluate(P.mmul(mat, vec)));
+    assertThrows(() => evaluate(P.mmul(mat, scalar)));
+});
+
+addTest('matrix operations - combined', (evaluate) => {
+    // Create a test vector
+    const v = P.vconst(new Vec3(1, 2, 3));
+    
+    // Create a rotation matrix
+    const axis = P.vconst(new Vec3(0, 1, 0)); // y-axis
+    const rotMat = P.rotateToAxis(axis);
+    
+    // Rotate the vector
+    const rotated = P.mvmul(rotMat, v);
+    
+    // Transpose the matrix
+    const transposed = P.mtranspose(rotMat);
+    
+    // Rotate back using the transposed matrix (inverse for rotation matrices)
+    const rotatedBack = P.mvmul(transposed, rotated);
+    
+    // The result should be close to the original vector
+    const result = evaluate(rotatedBack);
+    const original = evaluate(v);
+    
+    assertEquals(result.x, original.x, 0.0001);
+    assertEquals(result.y, original.y, 0.0001);
+    assertEquals(result.z, original.z, 0.0001);
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,
