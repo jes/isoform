@@ -477,11 +477,16 @@ class Peptide {
     simplify() {
         // Use a cache to track unique expressions
         const cache = new Map();
+        const seen = new Set();
         let nextId = 0;
         
         // Helper function to recursively simplify the tree
         const simplifyNode = (node) => {
             if (!node) return null;
+
+            if (cache.has(node)) {
+                return cache.get(node);
+            }
             
             // First simplify children
             if (node.left) node.left = simplifyNode(node.left);
@@ -512,12 +517,15 @@ class Peptide {
             
             // Check if we've seen this expression before
             if (cache.has(key)) {
-                return cache.get(key);
+                const canonical = cache.get(key);
+                cache.set(node, canonical);
+                return canonical;
             }
             
             // If not, add it to the cache
             node.id = nextId++; // Assign a unique ID to this node
             cache.set(key, node);
+            cache.set(node, node);
             return node;
         };
         
