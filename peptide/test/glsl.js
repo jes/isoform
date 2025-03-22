@@ -188,9 +188,9 @@ void main() {
                 if (this.intervalMode) {
                     // For interval mode, pass vec3 as mat3 where each column is (value, value, 0)
                     this.gl.uniformMatrix3fv(location, false, [
-                        value.x, value.x, 0,
-                        value.y, value.y, 0,
-                        value.z, value.z, 0
+                        value[0], value[0], 0,
+                        value[1], value[1], 0,
+                        value[2], value[2], 0
                     ]);
                 } else {
                     this.gl.uniform3fv(location, value);
