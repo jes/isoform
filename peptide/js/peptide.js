@@ -315,6 +315,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = new Vec3(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = new Ivec3(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
             glslCode: (ssaOp) => `${ssaOp.result} = vec3(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = ivec3(${ssaOp.left}.x, ${ssaOp.left}.y, 0.0, ${ssaOp.right}.x, ${ssaOp.right}.y, 0.0, ${ssaOp.third}.x, ${ssaOp.third}.y, 0.0);`,
         });
     }
 
