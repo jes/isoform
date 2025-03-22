@@ -135,6 +135,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = new Mat3(${mat3.m[0][0]}, ${mat3.m[0][1]}, ${mat3.m[0][2]}, ${mat3.m[1][0]}, ${mat3.m[1][1]}, ${mat3.m[1][2]}, ${mat3.m[2][0]}, ${mat3.m[2][1]}, ${mat3.m[2][2]});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = new Mat3(${mat3.m[0][0]}, ${mat3.m[0][1]}, ${mat3.m[0][2]}, ${mat3.m[1][0]}, ${mat3.m[1][1]}, ${mat3.m[1][2]}, ${mat3.m[2][0]}, ${mat3.m[2][1]}, ${mat3.m[2][2]});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${mat3.glsl()};`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = ${mat3.glsl()};`,
         });
     }
 
@@ -225,6 +226,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mod(${ssaOp.right});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mod(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = mod(${ssaOp.left}, ${ssaOp.right});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = imod3(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -371,6 +373,19 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.div(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = idiv(${ssaOp.left}, ${ssaOp.right});`,
+        });
+    }
+
+    static mod(a, b) {
+        a.assertType('float');
+        b.assertType('float');
+        return new Peptide('mod', 'float', null, a, b, null, {
+            evaluate: (vars) => a.evaluate(vars) % b.evaluate(vars),
+            evaluateInterval: (vars) => a.evaluateInterval(vars).mod(b.evaluateInterval(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} % ${ssaOp.right};`,
+            jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mod(${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = mod(${ssaOp.left}, ${ssaOp.right});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = imod(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 

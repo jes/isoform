@@ -57,7 +57,12 @@ class Ifloat {
         if (other.containsZero()) {
             throw new Error('Modulo by interval that contains zero: ' + other.min + ',' + other.max);
         }
-        return new Ifloat(this.min % other.max, this.max % other.min, this.min % other.min, this.max % other.max);
+
+        const d1 = this.min - other.min * Math.floor(this.min / other.min);
+        const d2 = this.max - other.min * Math.floor(this.max / other.min);
+        const d3 = this.min - other.max * Math.floor(this.min / other.max);
+        const d4 = this.max - other.max * Math.floor(this.max / other.max);
+        return new Ifloat(d1, d2, d3, d4);
     }
 
     sqrt() {

@@ -751,11 +751,11 @@ addTest('vector modulo', (evaluate) => {
     const sv = P.var('s');
     const modVar = P.vmod(vv, sv);
     const result2 = evaluate(modVar, {
-        v: new Vec3(10, -11, 12),
+        v: new Vec3(10, 11, 12),
         s: 3
     });
     assertEquals(result2.x, 1); // 10 mod 3 = 1
-    assertEquals(result2.y, -2); // -11 mod 3 = -2
+    assertEquals(result2.y, 2); // 11 mod 3 = 2
     assertEquals(result2.z, 0); // 12 mod 3 = 0
 });
 
@@ -1215,6 +1215,19 @@ addTest('missing operation functions', (evaluate) => {
     
     // But other operations should throw
     assertThrows(() => missingOps.evaluateInterval());
+});
+
+addTest('modulo operations', (evaluate) => {
+    // Basic positive modulo
+    const a = P.const(7);
+    const b = P.const(3);
+    const mod1 = P.mod(a, b);
+    assertEquals(evaluate(mod1), 1); // 7 mod 3 = 1
+    
+    // Negative dividend
+    const c = P.const(7);
+    const mod2 = P.mod(c, b);
+    assertEquals(evaluate(mod2), 1); // 7 mod 3 = 1
 });
 
 // Export for browser

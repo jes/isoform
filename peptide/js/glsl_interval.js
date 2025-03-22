@@ -30,6 +30,22 @@ ifloat idiv(ifloat a, ifloat b) {
     return imul(a, ifloat(1.0/b.y, 1.0/b.x));
 }
 
+ifloat ifloor(ifloat a) {
+    return ifloat(floor(a.x), floor(a.y));
+}
+
+ifloat iceil(ifloat a) {
+    return ifloat(ceil(a.x), ceil(a.y));
+}
+
+ifloat imod(ifloat a, ifloat b) {
+    float d1 = a.x - b.x * floor(a.x / b.x);
+    float d2 = a.y - b.x * floor(a.y / b.x);
+    float d3 = a.x - b.y * floor(a.x / b.y);
+    float d4 = a.y - b.y * floor(a.y / b.y);
+    return ifloat(min(min(d1, d2), min(d3, d4)), max(max(d1, d2), max(d3, d4)));
+}
+
 ifloat ineg(ifloat a) {
     return ifloat(-a.y, -a.x);
 }
@@ -100,6 +116,14 @@ ivec3 idiv3(ivec3 a, ifloat s) {
         idiv(a[0].xy, s), 0.0,
         idiv(a[1].xy, s), 0.0,
         idiv(a[2].xy, s), 0.0
+    );
+}
+
+ivec3 imod3(ivec3 a, ifloat s) {
+    return ivec3(
+        imod(a[0].xy, s), 0.0,
+        imod(a[1].xy, s), 0.0,
+        imod(a[2].xy, s), 0.0
     );
 }
 
