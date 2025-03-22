@@ -971,6 +971,199 @@ addTest('matrix operations - combined', (evaluate) => {
     assertEquals(result.z, original.z, 0.0001);
 });
 
+// Direct Ifloat tests
+addTest('interval creation', (evaluate) => {
+    const i1 = new Ifloat(3, 5);
+    assertEquals(i1.min, 3);
+    assertEquals(i1.max, 5);
+    
+    // Test auto-swap when min > max
+    const i2 = new Ifloat(7, 2);
+    assertEquals(i2.min, 2);
+    assertEquals(i2.max, 7);
+    
+    // Test single value constructor
+    const i3 = new Ifloat(4);
+    assertEquals(i3.min, 4);
+    assertEquals(i3.max, 4);
+});
+
+addTest('interval basic arithmetic', (evaluate) => {
+    const i1 = new Ifloat(2, 5);
+    const i2 = new Ifloat(3, 7);
+    
+    // Addition
+    const sum = i1.add(i2);
+    assertEquals(sum.min, 5);  // 2 + 3
+    assertEquals(sum.max, 12); // 5 + 7
+    
+    // Subtraction
+    const diff = i1.sub(i2);
+    assertEquals(diff.min, -5); // 2 - 7
+    assertEquals(diff.max, 2);  // 5 - 3
+    
+    // Multiplication
+    const prod = i1.mul(i2);
+    assertEquals(prod.min, 6);  // 2 * 3
+    assertEquals(prod.max, 35); // 5 * 7
+    
+    // Division
+    const quot = i1.div(i2);
+    assertEquals(quot.min, 2/7);  // 2 / 7
+    assertEquals(quot.max, 5/3);  // 5 / 3
+});
+
+addTest('interval operations with negative values', (evaluate) => {
+    const i1 = new Ifloat(-3, 2);
+    const i2 = new Ifloat(-1, 4);
+    
+    // Addition
+    const sum = i1.add(i2);
+    assertEquals(sum.min, -4);  // -3 + (-1)
+    assertEquals(sum.max, 6);   // 2 + 4
+    
+    // Subtraction
+    const diff = i1.sub(i2);
+    assertEquals(diff.min, -7); // -3 - 4
+    assertEquals(diff.max, 3);  // 2 - (-1)
+    
+    // Multiplication
+    const prod = i1.mul(i2);
+    assertEquals(prod.min, -12); // -3 * 4
+    assertEquals(prod.max, 8);   // 2 * 4
+});
+
+addTest('interval modulo and power', (evaluate) => {
+    const i1 = new Ifloat(3, 8);
+    const i2 = new Ifloat(2, 3);
+    
+    // Modulo
+    const mod = i1.mod(i2);
+    assertEquals(mod.min, 0);  // 3 % 3
+    assertEquals(mod.max, 2);  // 8 % 2
+    
+    // Power
+    const pow = i1.pow(i2);
+    assertEquals(pow.min, 9);   // 3^2
+    assertEquals(pow.max, 512); // 8^3
+    
+    // Square root
+    const sqrt = i1.sqrt();
+    assertEquals(sqrt.min, Math.sqrt(3));
+    assertEquals(sqrt.max, Math.sqrt(8));
+});
+
+// Peptide interval evaluation tests
+addTest('evaluateInterval for constants', (evaluate) => {
+    const p = P.const(5);
+    const interval = p.evaluateInterval({});
+    assertEquals(interval.min, 5);
+    assertEquals(interval.max, 5);
+});
+
+addTest('evaluateInterval for variables', (evaluate) => {
+    const x = P.var('x');
+    
+    // Test with scalar value
+    const interval1 = x.evaluateInterval({ x: 3 });
+    assertEquals(interval1.min, 3);
+    assertEquals(interval1.max, 3);
+    
+    // Test with interval value
+    const interval2 = x.evaluateInterval({ x: new Ifloat(2, 7) });
+    assertEquals(interval2.min, 2);
+    assertEquals(interval2.max, 7);
+});
+
+addTest('evaluateInterval for addition', (evaluate) => {
+    const a = P.const(3);
+    const b = P.const(5);
+    const sum = P.add(a, b);
+    
+    const interval = sum.evaluateInterval({});
+    assertEquals(interval.min, 8);
+    assertEquals(interval.max, 8);
+    
+    // Test with variable intervals
+    const x = P.var('x');
+    const y = P.var('y');
+    const varSum = P.add(x, y);
+    
+    const intervalVars = varSum.evaluateInterval({
+        x: new Ifloat(1, 3),
+        y: new Ifloat(2, 4)
+    });
+    assertEquals(intervalVars.min, 3);
+    assertEquals(intervalVars.max, 7);
+});
+
+addTest('evaluateInterval for subtraction', (evaluate) => {
+    const x = P.var('x');
+    const y = P.var('y');
+    const diff = P.sub(x, y);
+    
+    const interval = diff.evaluateInterval({
+        x: new Ifloat(5, 10),
+        y: new Ifloat(2, 4)
+    });
+    assertEquals(interval.min, 1);  // 5 - 4
+    assertEquals(interval.max, 8);  // 10 - 2
+});
+
+addTest('evaluateInterval for multiplication', (evaluate) => {
+    const x = P.var('x');
+    const y = P.var('y');
+    const prod = P.mul(x, y);
+    
+    const interval = prod.evaluateInterval({
+        x: new Ifloat(2, 3),
+        y: new Ifloat(-1, 4)
+    });
+    assertEquals(interval.min, -3);  // 3 * (-1)
+    assertEquals(interval.max, 12);  // 3 * 4
+});
+
+addTest('evaluateInterval for complex expressions', (evaluate) => {
+    // (x + 1) * (y - 2)
+    const expr = P.mul(
+        P.add(P.var('x'), P.const(1)),
+        P.sub(P.var('y'), P.const(2))
+    );
+
+    const x = new Ifloat(3, 5);
+    const y = new Ifloat(1, 6);
+
+    const xPlus1 = x.add(new Ifloat(1));
+    assertEquals(xPlus1.min, 4);
+    assertEquals(xPlus1.max, 6);
+
+    const yMinus2 = y.sub(new Ifloat(2));
+    assertEquals(yMinus2.min, -1);
+    assertEquals(yMinus2.max, 4);
+
+    const product = xPlus1.mul(yMinus2);
+    assertEquals(product.min, -6);
+    assertEquals(product.max, 24);
+
+    const interval = expr.evaluateInterval({
+        x: x,
+        y: y
+    });
+    
+    // (3+1)*(1-2) to (5+1)*(6-2)
+    // 6*(-1) to 6*4
+    assertEquals(interval.min, -6);
+    assertEquals(interval.max, 24);
+});
+
+addTest('evaluateInterval error handling', (evaluate) => {
+    const x = P.var('x');
+    
+    // Missing variable
+    assertThrows(() => x.evaluateInterval({}));
+    assertThrows(() => x.evaluateInterval({ x: "not a number or interval" }));
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,

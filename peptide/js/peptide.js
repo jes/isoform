@@ -8,14 +8,10 @@ class Peptide {
         this.third = third;    // third operand
         this.ops = ops;        // operation functions
 
-        if (!this.ops.evaluate) {
-            console.warn(`No operation function provided for ${op}`, this);
-        }
-        if (!this.ops.jsCode) {
-            console.warn(`No SSA operation function provided for ${op}`, this);
-        }
-        if (!this.ops.glslCode) {
-            console.warn(`No GLSL operation function provided for ${op}`, this);
+        for (const fn of ['evaluate', 'evaluateInterval', 'jsCode', 'glslCode']) {
+            if (!this.ops[fn]) {
+                console.warn(`No ${fn} operation function provided for ${op}`, this);
+            }
         }
     }
 
@@ -32,25 +28,35 @@ class Peptide {
             throw new Error(`const expected number but got ${typeof value}`);
         }
         return new Peptide('const', 'float', value, null, null, null, {
-            evaluate: (_, vars) => value,
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${value};`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${value.toFixed(16)};`,
+            evaluate: (vars) => value,
+            evaluateInterval: (vars) => new Ifloat(value, value),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${value};`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${value.toFixed(16)};`,
         });
     }
 
     static var(name) {
         return new Peptide('var', 'float', name, null, null, null, {
-            evaluate: (_, vars) => {
+            evaluate: (vars) => {
                 if (!(name in vars)) {
                     throw new Error(`Variable '${name}' not found`);
                 }
                 return vars[name];
             },
-            jsCode: (_, ssaOp) => {
+            evaluateInterval: (vars) => {
+                if (vars[name] instanceof Ifloat) {
+                    return new Ifloat(vars[name].min, vars[name].max);
+                } else if (typeof vars[name] === 'number') {
+                    return new Ifloat(vars[name], vars[name]);
+                } else {
+                    throw new Error(`Variable '${name}' is not an Ifloat or a number`);
+                }
+            },
+            jsCode: (ssaOp) => {
                 return `if (!('${name}' in vars)) throw new Error("Variable '${name}' not found");\n`
                     + `  ${ssaOp.result} = vars['${name}'];`;
             },
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${name};`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${name};`,
         });
     }
 
@@ -62,25 +68,25 @@ class Peptide {
         const vec3Clone = new Vec3(vec3.x, vec3.y, vec3.z);
         // Deep clone the Vec3
         return new Peptide('vconst', 'vec3', vec3Clone, null, null, null, {
-            evaluate: (_, vars) => new Vec3(vec3Clone.x, vec3Clone.y, vec3Clone.z),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = new Vec3(${vec3Clone.x}, ${vec3Clone.y}, ${vec3Clone.z});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${vec3Clone.glsl()};`,
+            evaluate: (vars) => new Vec3(vec3Clone.x, vec3Clone.y, vec3Clone.z),
+            jsCode: (ssaOp) => `${ssaOp.result} = new Vec3(${vec3Clone.x}, ${vec3Clone.y}, ${vec3Clone.z});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${vec3Clone.glsl()};`,
         });
     }
 
     static vvar(name) {
         return new Peptide('vvar', 'vec3', name, null, null, null, {
-            evaluate: (_, vars) => {
+            evaluate: (vars) => {
                 if (!(name in vars)) {
                     throw new Error(`Vector variable '${name}' not found`);
                 }
                 return vars[name];
             },
-            jsCode: (_, ssaOp) => {
+            jsCode: (ssaOp) => {
                 return `if (!('${name}' in vars)) throw new Error("Vector variable '${name}' not found");\n`
                     + `  ${ssaOp.result} = vars['${name}'];`;
             },
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${name};`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${name};`,
         });
     }
 
@@ -89,25 +95,25 @@ class Peptide {
             throw new Error(`mconst expected Mat3 but got ${mat3?.constructor?.name || typeof mat3}`);
         }
         return new Peptide('mconst', 'mat3', mat3, null, null, null, {
-            evaluate: (_, vars) => mat3,
-            jsCode: (_, ssaOp) => `${ssaOp.result} = new Mat3(${mat3.m[0][0]}, ${mat3.m[0][1]}, ${mat3.m[0][2]}, ${mat3.m[1][0]}, ${mat3.m[1][1]}, ${mat3.m[1][2]}, ${mat3.m[2][0]}, ${mat3.m[2][1]}, ${mat3.m[2][2]});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${mat3.glsl()};`,
+            evaluate: (vars) => mat3,
+            jsCode: (ssaOp) => `${ssaOp.result} = new Mat3(${mat3.m[0][0]}, ${mat3.m[0][1]}, ${mat3.m[0][2]}, ${mat3.m[1][0]}, ${mat3.m[1][1]}, ${mat3.m[1][2]}, ${mat3.m[2][0]}, ${mat3.m[2][1]}, ${mat3.m[2][2]});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${mat3.glsl()};`,
         });
     }
 
     static mvar(name) {
         return new Peptide('mvar', 'mat3', name, null, null, null, {
-            evaluate: (_, vars) => {
+            evaluate: (vars) => {
                 if (!(name in vars)) {
                     throw new Error(`Matrix variable '${name}' not found`);
                 }
                 return vars[name];
             },
-            jsCode: (_, ssaOp) => {
+            jsCode: (ssaOp) => {
                 return `if (!('${name}' in vars)) throw new Error("Matrix variable '${name}' not found");\n`
                     + `  ${ssaOp.result} = vars['${name}'];`;
             },
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${name};`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${name};`,
         });
     }
 
@@ -115,9 +121,9 @@ class Peptide {
         a.assertType('vec3');
         b.assertType('vec3');
         return new Peptide('vadd', 'vec3', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars).add(b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.add(${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
+            evaluate: (vars) => a.evaluate(vars).add(b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.add(${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
         });
     }
 
@@ -125,9 +131,9 @@ class Peptide {
         a.assertType('vec3');
         b.assertType('vec3');
         return new Peptide('vsub', 'vec3', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars).sub(b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sub(${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
+            evaluate: (vars) => a.evaluate(vars).sub(b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sub(${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
         });
     }
 
@@ -135,9 +141,9 @@ class Peptide {
         a.assertType('vec3');
         b.assertType('float');
         return new Peptide('vmul', 'vec3', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars).mul(b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
+            evaluate: (vars) => a.evaluate(vars).mul(b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
         });
     }
 
@@ -145,9 +151,9 @@ class Peptide {
         a.assertType('vec3');
         b.assertType('float');
         return new Peptide('vdiv', 'vec3', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars).div(b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.div(${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
+            evaluate: (vars) => a.evaluate(vars).div(b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.div(${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
         });
     }
 
@@ -155,27 +161,27 @@ class Peptide {
         a.assertType('vec3');
         b.assertType('float');
         return new Peptide('vmod', 'vec3', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars).mod(b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mod(${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = mod(${ssaOp.left}, ${ssaOp.right});`,
+            evaluate: (vars) => a.evaluate(vars).mod(b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mod(${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = mod(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
     static vlength(a) {
         a.assertType('vec3');
         return new Peptide('vlength', 'float', null, a, null, null, {
-            evaluate: (_, vars) => a.evaluate(vars).length(),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.length();`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = length(${ssaOp.left});`,
+            evaluate: (vars) => a.evaluate(vars).length(),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.length();`,
+            glslCode: (ssaOp) => `${ssaOp.result} = length(${ssaOp.left});`,
         });
     }
 
     static vabs(a) {
         a.assertType('vec3');
         return new Peptide('vabs', 'vec3', null, a, null, null, {
-            evaluate: (_, vars) => a.evaluate(vars).abs(),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.abs();`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = abs(${ssaOp.left});`,
+            evaluate: (vars) => a.evaluate(vars).abs(),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.abs();`,
+            glslCode: (ssaOp) => `${ssaOp.result} = abs(${ssaOp.left});`,
         });
     }
 
@@ -183,9 +189,9 @@ class Peptide {
         a.assertType('vec3');
         b.assertType('vec3');
         return new Peptide('vmin', 'vec3', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars).min(b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.min(${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = min(${ssaOp.left}, ${ssaOp.right});`,
+            evaluate: (vars) => a.evaluate(vars).min(b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.min(${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = min(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -193,9 +199,9 @@ class Peptide {
         a.assertType('vec3');
         b.assertType('vec3');
         return new Peptide('vmax', 'vec3', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars).max(b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.max(${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = max(${ssaOp.left}, ${ssaOp.right});`,
+            evaluate: (vars) => a.evaluate(vars).max(b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.max(${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = max(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -203,9 +209,9 @@ class Peptide {
         a.assertType('vec3');
         b.assertType('vec3');
         return new Peptide('vdot', 'float', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars).dot(b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.dot(${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = dot(${ssaOp.left}, ${ssaOp.right});`,
+            evaluate: (vars) => a.evaluate(vars).dot(b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.dot(${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = dot(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -213,9 +219,9 @@ class Peptide {
         a.assertType('vec3');
         b.assertType('vec3');
         return new Peptide('vcross', 'vec3', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars).cross(b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.cross(${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = cross(${ssaOp.left}, ${ssaOp.right});`,
+            evaluate: (vars) => a.evaluate(vars).cross(b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.cross(${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = cross(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -224,9 +230,9 @@ class Peptide {
         b.assertType('float');
         c.assertType('float');
         return new Peptide('vec3', 'vec3', null, a, b, c, {
-            evaluate: (_, vars) => new Vec3(a.evaluate(vars), b.evaluate(vars), c.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = new Vec3(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = vec3(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
+            evaluate: (vars) => new Vec3(a.evaluate(vars), b.evaluate(vars), c.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = new Vec3(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = vec3(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
         });
     }
 
@@ -234,9 +240,10 @@ class Peptide {
         a.assertType('float');
         b.assertType('float');
         return new Peptide('add', 'float', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars) + b.evaluate(vars),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
+            evaluate: (vars) => a.evaluate(vars) + b.evaluate(vars),
+            evaluateInterval: (vars) => a.evaluateInterval(vars).add(b.evaluateInterval(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
         });
     }
 
@@ -244,9 +251,10 @@ class Peptide {
         a.assertType('float');
         b.assertType('float');
         return new Peptide('sub', 'float', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars) - b.evaluate(vars),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
+            evaluate: (vars) => a.evaluate(vars) - b.evaluate(vars),
+            evaluateInterval: (vars) => a.evaluateInterval(vars).sub(b.evaluateInterval(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
         });
     }
 
@@ -254,9 +262,10 @@ class Peptide {
         a.assertType('float');
         b.assertType('float');
         return new Peptide('mul', 'float', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars) * b.evaluate(vars),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
+            evaluate: (vars) => a.evaluate(vars) * b.evaluate(vars),
+            evaluateInterval: (vars) => a.evaluateInterval(vars).mul(b.evaluateInterval(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
         });
     }
 
@@ -264,18 +273,20 @@ class Peptide {
         a.assertType('float');
         b.assertType('float');
         return new Peptide('div', 'float', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars) / b.evaluate(vars),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
+            evaluate: (vars) => a.evaluate(vars) / b.evaluate(vars),
+            evaluateInterval: (vars) => a.evaluateInterval(vars).div(b.evaluateInterval(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
         });
     }
 
     static abs(a) {
         a.assertType('float');
         return new Peptide('abs', 'float', null, a, null, null, {
-            evaluate: (_, vars) => Math.abs(a.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = Math.abs(${ssaOp.left});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = abs(${ssaOp.left});`,
+            evaluate: (vars) => Math.abs(a.evaluate(vars)),
+            evaluateInterval: (vars) => a.evaluateInterval(vars).abs(),
+            jsCode: (ssaOp) => `${ssaOp.result} = Math.abs(${ssaOp.left});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = abs(${ssaOp.left});`,
         });
     }
 
@@ -283,9 +294,9 @@ class Peptide {
         a.assertType('float');
         b.assertType('float');
         return new Peptide('min', 'float', null, a, b, null, {
-            evaluate: (_, vars) => Math.min(a.evaluate(vars), b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = Math.min(${ssaOp.left}, ${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = min(${ssaOp.left}, ${ssaOp.right});`,
+            evaluate: (vars) => Math.min(a.evaluate(vars), b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = Math.min(${ssaOp.left}, ${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = min(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -293,9 +304,9 @@ class Peptide {
         a.assertType('float');
         b.assertType('float');
         return new Peptide('max', 'float', null, a, b, null, {
-            evaluate: (_, vars) => Math.max(a.evaluate(vars), b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.left}, ${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = max(${ssaOp.left}, ${ssaOp.right});`,
+            evaluate: (vars) => Math.max(a.evaluate(vars), b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.left}, ${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = max(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -304,9 +315,9 @@ class Peptide {
         min.assertType('float');
         max.assertType('float');
         return new Peptide('clamp', 'float', null, a, min, max, {
-            evaluate: (_, vars) => Math.max(min.evaluate(vars), Math.min(a.evaluate(vars), max.evaluate(vars))),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.right}, Math.min(${ssaOp.left}, ${ssaOp.third}));`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = clamp(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
+            evaluate: (vars) => Math.max(min.evaluate(vars), Math.min(a.evaluate(vars), max.evaluate(vars))),
+            jsCode: (ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.right}, Math.min(${ssaOp.left}, ${ssaOp.third}));`,
+            glslCode: (ssaOp) => `${ssaOp.result} = clamp(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
         });
     }
 
@@ -315,9 +326,9 @@ class Peptide {
         b.assertType('float');
         t.assertType('float');
         return new Peptide('mix', 'float', null, a, b, t, {
-            evaluate: (_, vars) => a.evaluate(vars) * (1 - t.evaluate(vars)) + b.evaluate(vars) * t.evaluate(vars),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} * (1 - ${ssaOp.third}) + ${ssaOp.right} * ${ssaOp.third};`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = mix(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
+            evaluate: (vars) => a.evaluate(vars) * (1 - t.evaluate(vars)) + b.evaluate(vars) * t.evaluate(vars),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * (1 - ${ssaOp.third}) + ${ssaOp.right} * ${ssaOp.third};`,
+            glslCode: (ssaOp) => `${ssaOp.result} = mix(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
         });
     }
 
@@ -325,9 +336,9 @@ class Peptide {
         a.assertType('float');
         b.assertType('float');
         return new Peptide('step', 'float', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars) <= b.evaluate(vars) ? 1.0 : 0.0,
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} <= ${ssaOp.right} ? 1.0 : 0.0;`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = step(${ssaOp.left}, ${ssaOp.right});`,
+            evaluate: (vars) => a.evaluate(vars) <= b.evaluate(vars) ? 1.0 : 0.0,
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} <= ${ssaOp.right} ? 1.0 : 0.0;`,
+            glslCode: (ssaOp) => `${ssaOp.result} = step(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -365,72 +376,72 @@ class Peptide {
         a.assertType('float');
         b.assertType('float');
         return new Peptide('pow', 'float', null, a, b, null, {
-            evaluate: (_, vars) => Math.pow(a.evaluate(vars), b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = Math.pow(${ssaOp.left}, ${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = pow(${ssaOp.left}, ${ssaOp.right});`,
+            evaluate: (vars) => Math.pow(a.evaluate(vars), b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = Math.pow(${ssaOp.left}, ${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = pow(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
     static sqrt(a) {
         a.assertType('float');
         return new Peptide('sqrt', 'float', null, a, null, null, {
-            evaluate: (_, vars) => Math.sqrt(a.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = Math.sqrt(${ssaOp.left});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = sqrt(${ssaOp.left});`,
+            evaluate: (vars) => Math.sqrt(a.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = Math.sqrt(${ssaOp.left});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = sqrt(${ssaOp.left});`,
         });
     }
 
     static sin(a) {
         a.assertType('float');
         return new Peptide('sin', 'float', null, a, null, null, {
-            evaluate: (_, vars) => Math.sin(a.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = Math.sin(${ssaOp.left});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = sin(${ssaOp.left});`,
+            evaluate: (vars) => Math.sin(a.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = Math.sin(${ssaOp.left});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = sin(${ssaOp.left});`,
         });
     }
 
     static cos(a) {
         a.assertType('float');
         return new Peptide('cos', 'float', null, a, null, null, {
-            evaluate: (_, vars) => Math.cos(a.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = Math.cos(${ssaOp.left});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = cos(${ssaOp.left});`,
+            evaluate: (vars) => Math.cos(a.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = Math.cos(${ssaOp.left});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = cos(${ssaOp.left});`,
         });
     }
 
     static vecX(a) {
         a.assertType('vec3');
         return new Peptide('vecX', 'float', null, a, null, null, {
-            evaluate: (_, vars) => a.evaluate(vars).x,
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.x;`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.x;`,
+            evaluate: (vars) => a.evaluate(vars).x,
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.x;`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.x;`,
         });
     }
     
     static vecY(a) {
         a.assertType('vec3');
         return new Peptide('vecY', 'float', null, a, null, null, {
-            evaluate: (_, vars) => a.evaluate(vars).y,
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.y;`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.y;`,
+            evaluate: (vars) => a.evaluate(vars).y,
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.y;`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.y;`,
         });
     }
     
     static vecZ(a) {
         a.assertType('vec3');
         return new Peptide('vecZ', 'float', null, a, null, null, {
-            evaluate: (_, vars) => a.evaluate(vars).z,
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.z;`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.z;`,
+            evaluate: (vars) => a.evaluate(vars).z,
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.z;`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.z;`,
         });
     }
 
     static mtranspose(a) {
         a.assertType('mat3');
         return new Peptide('mtranspose', 'mat3', null, a, null, null, {
-            evaluate: (_, vars) => a.evaluate(vars).transpose(),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.transpose();`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = transpose(${ssaOp.left});`,
+            evaluate: (vars) => a.evaluate(vars).transpose(),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.transpose();`,
+            glslCode: (ssaOp) => `${ssaOp.result} = transpose(${ssaOp.left});`,
         });
     }
 
@@ -438,9 +449,9 @@ class Peptide {
         a.assertType('mat3');
         b.assertType('vec3');
         return new Peptide('mvmul', 'vec3', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars).mulVec3(b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mulVec3(${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
+            evaluate: (vars) => a.evaluate(vars).mulVec3(b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mulVec3(${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
         });
     }
 
@@ -448,9 +459,9 @@ class Peptide {
         a.assertType('mat3');
         b.assertType('mat3');
         return new Peptide('mmul', 'mat3', null, a, b, null, {
-            evaluate: (_, vars) => a.evaluate(vars).mul(b.evaluate(vars)),
-            jsCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
-            glslCode: (_, ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
+            evaluate: (vars) => a.evaluate(vars).mul(b.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
         });
     }
 
@@ -459,20 +470,30 @@ class Peptide {
         if (!evalFn) {
             throw new Error(`Operation '${this.op}' has no evaluation function`);
         }
-        const result = evalFn(this, vars);
-        if (this.type === 'float') {
-            if (typeof result !== 'number') {
-                throw new Error(`Operation '${this.op}' returned ${typeof result} but declared float type`);
-            }
-        } else if (this.type === 'vec3') {
-            if (!(result instanceof Vec3)) {
-                throw new Error(`Operation '${this.op}' returned ${typeof result} but declared vec3 type`);
-            }
-        } else if (this.type === 'mat3') {
-            if (!(result instanceof Mat3)) {
-                throw new Error(`Operation '${this.op}' returned ${typeof result} but declared mat3 type`);
-            }
+        const result = evalFn(vars);
+        if (this.type === 'float' && typeof result !== 'number') {
+            throw new Error(`Operation '${this.op}' returned ${typeof result} but declared float type`);
+        } else if (this.type === 'vec3' && !(result instanceof Vec3)) {
+            throw new Error(`Operation '${this.op}' returned ${typeof result} but declared vec3 type`);
+        } else if (this.type === 'mat3' && !(result instanceof Mat3)) {
+            throw new Error(`Operation '${this.op}' returned ${typeof result} but declared mat3 type`);
         }
+        return result;
+    }
+
+    evaluateInterval(vars = {}) {
+        const evalFn = this.ops.evaluateInterval;
+        if (!evalFn) {
+            throw new Error(`Operation '${this.op}' has no interval evaluation function`);
+        }
+        const result = evalFn(vars);
+        if (this.type === 'float' && !(result instanceof Ifloat)) {
+            throw new Error(`Operation '${this.op}' returned ${typeof result} but declared float type`);
+        }/* else if (this.type === 'vec3' && !(result instanceof Ivec3)) {
+            throw new Error(`Operation '${this.op}' returned ${typeof result} but declared vec3 type`);
+        } else if (this.type === 'mat3' && !(result instanceof Mat3)) {
+            throw new Error(`Operation '${this.op}' returned ${typeof result} but declared mat3 type`);
+        }*/
         return result;
     }
 
