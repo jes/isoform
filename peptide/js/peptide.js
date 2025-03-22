@@ -489,7 +489,9 @@ class Peptide {
         a.assertType('float');
         return new Peptide('sin', 'float', null, a, null, null, {
             evaluate: (vars) => Math.sin(a.evaluate(vars)),
+            evaluateInterval: (vars) => a.evaluateInterval(vars).sin(),
             jsCode: (ssaOp) => `${ssaOp.result} = Math.sin(${ssaOp.left});`,
+            jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sin();`,
             glslCode: (ssaOp) => `${ssaOp.result} = sin(${ssaOp.left});`,
         });
     }
@@ -498,7 +500,9 @@ class Peptide {
         a.assertType('float');
         return new Peptide('cos', 'float', null, a, null, null, {
             evaluate: (vars) => Math.cos(a.evaluate(vars)),
+            evaluateInterval: (vars) => a.evaluateInterval(vars).cos(),
             jsCode: (ssaOp) => `${ssaOp.result} = Math.cos(${ssaOp.left});`,
+            jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.cos();`,
             glslCode: (ssaOp) => `${ssaOp.result} = cos(${ssaOp.left});`,
         });
     }

@@ -74,6 +74,56 @@ class Ifloat {
     abs() {
         return new Ifloat(Math.abs(this.min), Math.abs(this.max));
     }
+
+    sin() {
+        // Handle full period cases
+        if (this.max - this.min >= 2 * Math.PI) {
+            return new Ifloat(-1, 1);
+        }
+        
+        // Normalize to [0, 2π) range
+        const normalize = (x) => {
+            const twoPI = 2 * Math.PI;
+            return x - Math.floor(x / twoPI) * twoPI;
+        };
+        
+        const normMin = normalize(this.min);
+        let normMax = normalize(this.min + (this.max - this.min));
+        
+        // If normMax becomes 0 after normalization, it should be 2π
+        if (normMax === 0 && this.max > this.min) {
+            normMax = 2 * Math.PI;
+        }
+        
+        // Check if interval crosses critical points
+        const crossesPIHalf = (normMin <= Math.PI/2 && normMax >= Math.PI/2) || 
+                             (normMin <= 5*Math.PI/2 && normMax >= 5*Math.PI/2);
+        const crosses3PIHalf = (normMin <= 3*Math.PI/2 && normMax >= 3*Math.PI/2) || 
+                              (normMin <= 7*Math.PI/2 && normMax >= 7*Math.PI/2);
+        const crossesPI = (normMin <= Math.PI && normMax >= Math.PI) || 
+                         (normMin <= 3*Math.PI && normMax >= 3*Math.PI);
+        const crosses2PI = normMin > normMax; // Wraps around
+        
+        // Calculate min and max values
+        let minVal = Math.min(Math.sin(normMin), Math.sin(normMax));
+        let maxVal = Math.max(Math.sin(normMin), Math.sin(normMax));
+        
+        if (crossesPIHalf) maxVal = 1;
+        if (crosses3PIHalf) minVal = -1;
+        if (crosses2PI) {
+            // If we wrap around 2π, we need to check both extremes
+            minVal = -1;
+            maxVal = 1;
+        }
+        
+        return new Ifloat(minVal, maxVal);
+    }
+
+    cos() {
+        // For cosine, we can shift the interval by -π/2 and compute sine
+        // cos(x) = sin(x + π/2)
+        return this.add(new Ifloat(Math.PI/2)).sin();
+    }
 }
 
 // Detect environment and export accordingly
