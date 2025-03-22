@@ -173,6 +173,23 @@ ivec3 imax3(ivec3 a, ivec3 b) {
         imax(a[2].xy, b[2].xy), 0.0
     );
 }
+
+ivec3 imvmul(mat3 m, ivec3 v) {
+    return ivec3(
+        iadd(iadd(
+            imul(ifloat(m[0][0], m[0][0]), v[0].xy),
+            imul(ifloat(m[1][0], m[1][0]), v[1].xy)),
+            imul(ifloat(m[2][0], m[2][0]), v[2].xy)), 0.0,
+        iadd(iadd(
+            imul(ifloat(m[0][1], m[0][1]), v[0].xy),
+            imul(ifloat(m[1][1], m[1][1]), v[1].xy)),
+            imul(ifloat(m[2][1], m[2][1]), v[2].xy)), 0.0,
+        iadd(iadd(
+            imul(ifloat(m[0][2], m[0][2]), v[0].xy),
+            imul(ifloat(m[1][2], m[1][2]), v[1].xy)),
+            imul(ifloat(m[2][2], m[2][2]), v[2].xy)), 0.0
+    );
+}
 `;
 
 (function() {
