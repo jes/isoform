@@ -157,8 +157,8 @@ class PeptideSSA {
         code += '\n';
 
         for (const op of this.operations) {
-            if (op.node.ssaOpFn) {
-                code += `  ${op.node.ssaOpFn(op.node, op)}\n`;
+            if (op.node.ops.jsCode) {
+                code += `  ${op.node.ops.jsCode(op.node, op)}\n`;
             }
         }
         
@@ -183,8 +183,8 @@ class PeptideSSA {
         code += "\n";
 
         for (const op of this.operations) {
-            if (op.node.glslOpFn) {
-                code += `  ${op.node.glslOpFn(op.node, op)}\n`;
+            if (op.node.ops.glslCode) {
+                code += `  ${op.node.ops.glslCode(op.node, op)}\n`;
             }
         }
 
