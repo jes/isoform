@@ -510,25 +510,24 @@ class Peptide {
         return new Peptide('mvmul', 'vec3', null, a, b, null, {
             evaluate: (vars) => a.evaluate(vars).mulVec3(b.evaluate(vars)),
             evaluateInterval: (vars) => {
-                // This is a simplified implementation - a proper implementation would
-                // need to handle interval arithmetic for matrix-vector multiplication
-                const aVal = a.evaluate(vars);
+                const aVal = a.evaluate(vars); // We'll still use the concrete matrix for simplicity
                 const bInterval = b.evaluateInterval(vars);
                 
-                // Create intervals for each component of the result
-                const xResult = new Ifloat(0, 0);
-                const yResult = new Ifloat(0, 0);
-                const zResult = new Ifloat(0, 0);
-                
-                // For each component of the matrix, compute its contribution to the result
-                for (let i = 0; i < 3; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        const component = new Ifloat(aVal.m[i][j]).mul(i === 0 ? bInterval.x : i === 1 ? bInterval.y : bInterval.z);
-                        if (i === 0) xResult.add(component);
-                        else if (i === 1) yResult.add(component);
-                        else zResult.add(component);
-                    }
-                }
+                // Calculate each component of the result vector using the matrix-vector multiplication formula
+                const xResult = new Ifloat(0, 0)
+                    .add(new Ifloat(aVal.m[0][0]).mul(bInterval.x))
+                    .add(new Ifloat(aVal.m[0][1]).mul(bInterval.y))
+                    .add(new Ifloat(aVal.m[0][2]).mul(bInterval.z));
+                    
+                const yResult = new Ifloat(0, 0)
+                    .add(new Ifloat(aVal.m[1][0]).mul(bInterval.x))
+                    .add(new Ifloat(aVal.m[1][1]).mul(bInterval.y))
+                    .add(new Ifloat(aVal.m[1][2]).mul(bInterval.z));
+                    
+                const zResult = new Ifloat(0, 0)
+                    .add(new Ifloat(aVal.m[2][0]).mul(bInterval.x))
+                    .add(new Ifloat(aVal.m[2][1]).mul(bInterval.y))
+                    .add(new Ifloat(aVal.m[2][2]).mul(bInterval.z));
                 
                 return new Ivec3(xResult, yResult, zResult);
             },
