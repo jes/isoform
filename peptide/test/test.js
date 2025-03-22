@@ -16,21 +16,12 @@ class TestSuite {
                 await test.fn();
                 this.results.push({ name: test.name, passed: true });
             } catch (e) {
-                // Extract the most relevant line from the stack trace
-                let sourceLocation = 'Unknown location';
-                
-                if (e.stack) {
-                    const stackLines = e.stack.split('\n');
-                    const line = stackLines[0].trim();
-                    sourceLocation = line;
-                }
-                
+                // Use the full stack trace instead of just extracting one line
                 this.results.push({ 
                     name: test.name, 
                     passed: false, 
                     error: e.message,
-                    sourceLocation: sourceLocation,
-                    fullStack: e.stack // Keep the full stack for debugging
+                    sourceLocation: e.stack || 'No stack trace available'
                 });
             }
         }
@@ -42,9 +33,7 @@ class TestSuite {
 function assertEquals(a, b) {
     if (Math.abs(a - b) > 0.000001) {
         const error = new Error(`Expected ${a} to equal ${b}`);
-        const stack = error.stack.split('\n');
-        const callerLine = stack[1].trim();
-        throw new Error(`Assertion failed at ${callerLine}\nExpected ${a} to equal ${b}`);
+        throw new Error(`Assertion failed\nExpected ${a} to equal ${b}\n${error.stack}`);
     }
 }
 
@@ -57,9 +46,7 @@ function assertThrows(fn) {
     }
     if (!threw) {
         const error = new Error('Expected function to throw');
-        const stack = error.stack.split('\n');
-        const callerLine = stack[1].trim();
-        throw new Error(`Assertion failed at ${callerLine}\nExpected function to throw`);
+        throw new Error(`Assertion failed\nExpected function to throw\n${error.stack}`);
     }
 }
 

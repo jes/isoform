@@ -95,6 +95,19 @@
         #test-stats {
             color: #666;
         }
+        
+        .stack-trace {
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 0.9em;
+            background-color: #f8f8f8;
+            padding: 8px;
+            border-left: 3px solid #ddd;
+            margin: 5px 0 5px 10px;
+            overflow-x: auto;
+            max-height: 200px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -168,7 +181,7 @@
                 <div class="${result.passed ? 'test-pass' : 'test-fail'}">
                     ${result.passed ? '✓' : '✗'} ${result.name}
                     ${result.error ? `<br><small>${result.error}</small>` : ''}
-                    ${result.sourceLocation ? `<br><small>${result.sourceLocation}</small>` : ''}
+                    ${result.sourceLocation ? `<br><pre class="stack-trace">${result.sourceLocation}</pre>` : ''}
                 </div>
             `).join('');
             
