@@ -355,10 +355,11 @@ const renderer = {
         const { ro, rd } = this.calculateRayOriginAndDirection(p);
         
         // Raymarch from this point
-        const result = this.rayMarchFromPoint(ro, rd);
+        const result1 = this.rayMarchFromPoint(ro, rd);
+        const result2 = this.rayMarchIntervalFromPoint(ro, rd);
 
         // Display coordinates if we hit something
-        this.displayCoordinatesIfHit(result);
+        this.displayCoordinatesIfHit(result1, result2);
     },
     
     calculateRayFromMousePosition(mousePos) {
@@ -381,16 +382,68 @@ const renderer = {
         return { ro, rd };
     },
     
-    displayCoordinatesIfHit(result) {
-        if (result.hit) {
-            const coords = result.hitPosition;
-            const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}`;
+    displayCoordinatesIfHit(result1, result2) {
+        if (result1.hit || result2.hit) {
+            const coords1 = result1.hitPosition;
+            const coords2 = result2.hitPosition;
+            const text = `X: ${coords1.x.toFixed(3)}/${coords2.x.toFixed(3)}<br>Y: ${coords1.y.toFixed(3)}/${coords2.y.toFixed(3)}<br>Z: ${coords1.z.toFixed(3)}/${coords2.z.toFixed(3)}`;
             
             this.coordDisplay.innerHTML = text;
             this.coordDisplay.style.display = 'block';
             this.coordDisplay.style.left = (this.lastMousePosition.clientX + 15) + 'px';
             this.coordDisplay.style.top = (this.lastMousePosition.clientY + 15) + 'px';
         }
+    },
+
+    rayMarchIntervalFromPoint(ro, rd) {
+        const startTime = performance.now();
+
+        const result = {
+            distance: 0.0,
+            minDistance: 1000000.0,
+            hit: false,
+            hitPosition: null,
+            steps: 0
+        };
+
+        if (!app.intervalSdf) {
+            return result;
+        }
+
+        let p = ro;
+        let lastD = 0.0;
+        const MAX_STEPS = 500;
+
+        for (let i = 0; i < MAX_STEPS; i++) {
+            result.steps++;
+            
+            // Apply rotation to point before evaluating SDF
+            const rotatedP = camera.activeRotationMatrix.mulVec3(p);
+            const d = app.intervalSdf(new Ivec3(rotatedP.x, rotatedP.y, rotatedP.z)).min;
+            
+            result.minDistance = Math.min(result.minDistance, d);
+
+            if (d < 0.0) {
+                result.hit = true;
+                result.hitPosition = rotatedP;
+                break;
+            }
+
+            const stepSize = Math.max(0.0001, d);
+            p = p.add(rd.mul(stepSize));
+
+            if (d > lastD && result.distance > 10000.0) break;
+            lastD = d;
+            result.distance += d;
+        }
+
+        const endTime = performance.now();
+        const duration = (endTime - startTime).toFixed(2);
+        if (duration > 10.0) {
+            console.log(`Interval raymarching took ${duration}ms (${result.steps} steps)`);
+        }
+
+        return result;
     },
     
     rayMarchFromPoint(ro, rd) {
@@ -423,9 +476,7 @@ const renderer = {
 
             if (d < 0.0) {
                 result.hit = true;
-                // p is in world space, to get object space coordinates,
-                // apply the same rotation as the SDF uses
-                result.hitPosition = camera.activeRotationMatrix.mulVec3(p);
+                result.hitPosition = rotatedP;
                 break;
             }
 

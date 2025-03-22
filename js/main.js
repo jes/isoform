@@ -8,6 +8,7 @@ const app = {
     sketchNeedsRedraw: false,
     lastBoundingSphereState: false,
     sdf: null,
+    intervalSdf: null,
     primaryShaderLayer: null,   // Store primary shader layer
     secondaryShaderLayer: null, // Store secondary shader layer
 
@@ -142,7 +143,10 @@ const app = {
             // keep hold of the compiled SDF so that we can use it for coordinate display
             const fn = eval(ssa.compileToJS());
             this.sdf = (p) => fn({p: p});
-            
+
+            const intervalFn = eval(ssa.compileToJSInterval());
+            this.intervalSdf = (p) => intervalFn({p: p});
+
             this.document.markClean();
         }
 

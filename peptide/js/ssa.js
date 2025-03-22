@@ -194,8 +194,6 @@ class PeptideSSA {
         code += `  return ${this.operations[this.operations.length - 1].result};\n`;
         code += '}';
 
-        console.log(code);
-        
         return code;
     }
 
