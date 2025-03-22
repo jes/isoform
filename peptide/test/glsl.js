@@ -179,14 +179,19 @@ void main() {
         switch (type) {
             case 'float':
                 if (this.intervalMode) {
-                    this.gl.uniform2fv(location, value, value);
+                    this.gl.uniform2fv(location, [value, value]);
                 } else {
                     this.gl.uniform1f(location, value);
                 }
                 break;
             case 'vec3':
                 if (this.intervalMode) {
-                    this.gl.uniformMatrix3fv(location, false, value);
+                    // For interval mode, pass vec3 as mat3 where each column is (value, value, 0)
+                    this.gl.uniformMatrix3fv(location, false, [
+                        value.x, value.x, 0,
+                        value.y, value.y, 0,
+                        value.z, value.z, 0
+                    ]);
                 } else {
                     this.gl.uniform3fv(location, value);
                 }
@@ -200,27 +205,6 @@ void main() {
     }
     
     render(variables = {}) {
-        // Convert variables to interval form if needed
-        if (this.intervalMode) {
-            const intervalVars = {};
-            for (const [name, value] of Object.entries(variables)) {
-                if (typeof value === 'number') {
-                    // Convert number to interval
-                    intervalVars[name] = [value, value];
-                } else if (value instanceof Vec3) {
-                    // Convert Vec3 to interval vector
-                    intervalVars[name] = [
-                        [value.x, value.x],
-                        [value.y, value.y],
-                        [value.z, value.z]
-                    ];
-                } else {
-                    intervalVars[name] = value;
-                }
-            }
-            variables = intervalVars;
-        }
-
         // Bind framebuffer and set viewport
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer);
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
@@ -401,9 +385,7 @@ void main() {
                     fragColor = vec4(0.0, 1.0, 0.0, 1.0);
                 } else {
                     fragColor = vec4(1.0, 0.0, 0.0, 1.0);
-                    // Encode interval bounds in g,b channels for debugging
-                    fragColor.g = result.x / 255.0;
-                    fragColor.b = result.y / 255.0;
+                    fragColor.a = result.x / 255.0;
                 }
             `;
         } else if (type === 'vec3') {
@@ -422,6 +404,7 @@ void main() {
                     fragColor = vec4(0.0, 1.0, 0.0, 1.0);
                 } else {
                     fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                    fragColor.a = result[0].x / 255.0;
                 }
             `;
         }
