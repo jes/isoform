@@ -77,46 +77,33 @@ class Ifloat {
     }
 
     sin() {
-        // Handle full period cases
+        // If interval spans a full period or more, return [-1, 1]
         if (this.max - this.min >= 2 * Math.PI) {
             return new Ifloat(-1, 1);
         }
+
+        // Normalize start point to [0, 2π)
+        const twoPI = 2 * Math.PI;
+        let start = this.min % twoPI;
+        if (start < 0) start += twoPI;
         
-        // Normalize to [0, 2π) range
-        const normalize = (x) => {
-            const twoPI = 2 * Math.PI;
-            return x - Math.floor(x / twoPI) * twoPI;
-        };
-        
-        const normMin = normalize(this.min);
-        let normMax = normalize(this.min + (this.max - this.min));
-        
-        // If normMax becomes 0 after normalization, it should be 2π
-        if (normMax === 0 && this.max > this.min) {
-            normMax = 2 * Math.PI;
-        }
-        
-        // Check if interval crosses critical points
-        const crossesPIHalf = (normMin <= Math.PI/2 && normMax >= Math.PI/2) || 
-                             (normMin <= 5*Math.PI/2 && normMax >= 5*Math.PI/2);
-        const crosses3PIHalf = (normMin <= 3*Math.PI/2 && normMax >= 3*Math.PI/2) || 
-                              (normMin <= 7*Math.PI/2 && normMax >= 7*Math.PI/2);
-        const crossesPI = (normMin <= Math.PI && normMax >= Math.PI) || 
-                         (normMin <= 3*Math.PI && normMax >= 3*Math.PI);
-        const crosses2PI = normMin > normMax; // Wraps around
-        
-        // Calculate min and max values
-        let minVal = Math.min(Math.sin(normMin), Math.sin(normMax));
-        let maxVal = Math.max(Math.sin(normMin), Math.sin(normMax));
-        
-        if (crossesPIHalf) maxVal = 1;
-        if (crosses3PIHalf) minVal = -1;
-        if (crosses2PI) {
-            // If we wrap around 2π, we need to check both extremes
-            minVal = -1;
-            maxVal = 1;
-        }
-        
+        // Calculate end point maintaining the same interval width
+        let end = start + (this.max - this.min);
+
+        // Calculate sine at endpoints
+        const sinStart = Math.sin(start);
+        const sinEnd = Math.sin(end);
+
+        let minVal = Math.min(sinStart, sinEnd);
+        let maxVal = Math.max(sinStart, sinEnd);
+
+        // Check if we cross π/2 (maximum) or 3π/2 (minimum)
+        const crossesMax = start <= Math.PI/2 && end >= Math.PI/2;
+        const crossesMin = start <= 3*Math.PI/2 && end >= 3*Math.PI/2;
+
+        if (crossesMax) maxVal = 1;
+        if (crossesMin) minVal = -1;
+
         return new Ifloat(minVal, maxVal);
     }
 
