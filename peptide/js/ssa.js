@@ -223,6 +223,38 @@ class PeptideSSA {
 
         return `${signature} {\n${code}\n}`;
     }
+
+    compileToGLSLInterval(signature = 'float map(ivec3 p)') {
+        let code = '';
+
+        let seen = new Set();
+        for (const op of this.operations) {
+            if (!seen.has(op.result)) {
+                let type = op.node.type;
+                if (type === 'float') {
+                    type = 'ifloat';
+                } else if (type === 'vec3') {
+                    type = 'ivec3';
+                }
+                code += `  ${type} ${op.result};\n`;
+                seen.add(op.result);
+            }
+        }
+
+        code += "\n";
+
+        for (const op of this.operations) {
+            if (!op.node.ops.glslIntervalCode) {
+                throw new Error('No GLSL interval code for ' + op.node.op);
+            }
+            code += `  ${op.node.ops.glslIntervalCode(op)}\n`;
+        }
+
+        code += `  return ${this.operations[this.operations.length - 1].result};\n`;
+
+        return `${signature} {\n${code}\n}`;
+    }
+
 }
 
 // Detect environment and export accordingly

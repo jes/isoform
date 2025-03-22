@@ -1,7 +1,8 @@
 // GLSL test harness for Peptide
 class GLSLTestHarness {
-    constructor(name) {
+    constructor(name, intervalMode = false) {
         this.name = name;
+        this.intervalMode = intervalMode;
         // Create a hidden canvas for WebGL rendering
         this.canvas = document.createElement('canvas');
         this.canvas.width = 4;  // Small size is sufficient for tests
@@ -38,6 +39,10 @@ class GLSLTestHarness {
 
 precision highp float;
 out vec4 fragColor;
+
+// begin glslIntervalLibrary
+{{GLSL_INTERVAL_LIBRARY}}
+// end glslIntervalLibrary
 
 // begin peptideCode
 {{PEPTIDE_CODE}}
@@ -151,7 +156,8 @@ void main() {
         // Create new fragment shader with the provided code
         const fsSource = this.fsTemplate
             .replace('{{PEPTIDE_CODE}}', peptideCode)
-            .replace('{{TEST_CODE}}', testCode);
+            .replace('{{TEST_CODE}}', testCode)
+            .replace('{{GLSL_INTERVAL_LIBRARY}}', this.intervalMode ? glslIntervalLibrary : '');
         
         this.fragmentShader = this.compileShader(fsSource, this.gl.FRAGMENT_SHADER);
         this.gl.attachShader(this.program, this.fragmentShader);
@@ -172,16 +178,18 @@ void main() {
 
         switch (type) {
             case 'float':
-                this.gl.uniform1f(location, value);
-                break;
-            case 'vec2':
-                this.gl.uniform2fv(location, value);
+                if (this.intervalMode) {
+                    this.gl.uniform2fv(location, value, value);
+                } else {
+                    this.gl.uniform1f(location, value);
+                }
                 break;
             case 'vec3':
-                this.gl.uniform3fv(location, value);
-                break;
-            case 'vec4':
-                this.gl.uniform4fv(location, value);
+                if (this.intervalMode) {
+                    this.gl.uniformMatrix3fv(location, false, value);
+                } else {
+                    this.gl.uniform3fv(location, value);
+                }
                 break;
             case 'mat3':
                 this.gl.uniformMatrix3fv(location, false, value);
@@ -192,6 +200,27 @@ void main() {
     }
     
     render(variables = {}) {
+        // Convert variables to interval form if needed
+        if (this.intervalMode) {
+            const intervalVars = {};
+            for (const [name, value] of Object.entries(variables)) {
+                if (typeof value === 'number') {
+                    // Convert number to interval
+                    intervalVars[name] = [value, value];
+                } else if (value instanceof Vec3) {
+                    // Convert Vec3 to interval vector
+                    intervalVars[name] = [
+                        [value.x, value.x],
+                        [value.y, value.y],
+                        [value.z, value.z]
+                    ];
+                } else {
+                    intervalVars[name] = value;
+                }
+            }
+            variables = intervalVars;
+        }
+
         // Bind framebuffer and set viewport
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer);
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
@@ -238,66 +267,45 @@ void main() {
         // Compile the Peptide expression to GLSL
         const ssa = new PeptideSSA(peptideExpr);
         const returnType = peptideExpr.type;
-        const glslCode = ssa.compileToGLSL(`${returnType} peptide()`);
+        
+        // Use interval or direct code based on mode
+        const glslCode = this.intervalMode ? 
+            ssa.compileToGLSLInterval(`${this.getIntervalReturnType(returnType)} peptide()`) :
+            ssa.compileToGLSL(`${returnType} peptide()`);
         
         // Create uniform declarations for variables
         let uniformDeclarations = '';
         let testCode = '';
         
-        // Set up uniform declarations based on variable types
+        // Set up uniform declarations based on variable types and mode
         for (const [name, value] of Object.entries(variables)) {
             if (value instanceof Vec3) {
-                uniformDeclarations += `uniform vec3 ${name};\n`;
+                uniformDeclarations += this.intervalMode ?
+                    `uniform ivec3 ${name};\n` :
+                    `uniform vec3 ${name};\n`;
             } else if (typeof value === 'number') {
-                uniformDeclarations += `uniform float ${name};\n`;
+                uniformDeclarations += this.intervalMode ?
+                    `uniform ifloat ${name};\n` :
+                    `uniform float ${name};\n`;
             } else if (value instanceof Mat3) {
-                uniformDeclarations += `uniform mat3 ${name};\n`;
-            } else {
-                throw new Error(`Unsupported variable type for ${name}`);
+                uniformDeclarations += this.intervalMode ?
+                    `uniform mat3 ${name};\n` : // For now, matrices stay as mat3
+                    `uniform mat3 ${name};\n`;
             }
         }
         
-        // Create test code that evaluates the expression and outputs the result as a color
-        if (peptideExpr.type === 'float') {
-            testCode = `
-    float result = peptide();
-    float expected = ${expectedValue.toFixed(16)};
-
-    // Output green if the result matches the expected value (within epsilon)
-    // Output red if it doesn't match
-    float epsilon = 0.001;
-    if (abs(result - expected) < epsilon) {
-        fragColor = vec4(0.0, 1.0, 0.0, 1.0);  // Green for success
-    } else {
-        fragColor = vec4(1.0, 0.0, 0.0, 1.0);  // Red for failure
-        // Encode the actual result in the alpha channel for debugging
-        fragColor.a = result / 255.0;
-    }
-            `;
-        } else if (peptideExpr.type === 'vec3') {
-            // For vector results, we need to check each component
-            const expectedVec = expectedValue;
-            testCode = `
-    vec3 result = peptide();
-    vec3 expected = vec3(${expectedVec.x.toFixed(16)}, ${expectedVec.y.toFixed(16)}, ${expectedVec.z.toFixed(16)});
-    
-    float epsilon = 0.001;
-    if (length(result - expected) < epsilon) {
-        fragColor = vec4(0.0, 1.0, 0.0, 1.0);  // Green for success
-    } else {
-        fragColor = vec4(1.0, 0.0, 0.0, 1.0);  // Red for failure
-        // Encode some debug info in the other channels
-        fragColor.a = length(result - expected) / 255.0;
-    }
-            `;
+        // Create test code based on mode and type
+        if (this.intervalMode) {
+            testCode = this.createIntervalTestCode(peptideExpr.type, expectedValue);
         } else {
-            throw new Error(`Unsupported expression type: ${peptideExpr.type}`);
+            testCode = this.createDirectTestCode(peptideExpr.type, expectedValue);
         }
-        
+
         // Store the complete shader code for debugging
         const completeShaderCode = this.fsTemplate
             .replace('{{PEPTIDE_CODE}}', uniformDeclarations + glslCode)
-            .replace('{{TEST_CODE}}', testCode);
+            .replace('{{TEST_CODE}}', testCode)
+            .replace('{{GLSL_INTERVAL_LIBRARY}}', this.intervalMode ? glslIntervalLibrary : '');
 
         const storeFailedTest = (actual) => {
             if (!window.peptideFailedTests) {
@@ -348,6 +356,76 @@ void main() {
         this.gl.deleteFramebuffer(this.framebuffer);
         this.gl.deleteTexture(this.texture);
     }
+
+    getIntervalReturnType(type) {
+        return type === 'float' ? 'ifloat' : 'ivec3';
+    }
+
+    createDirectTestCode(type, expectedValue) {
+        if (type === 'float') {
+            return `
+                float result = peptide();
+                float expected = ${expectedValue.toFixed(16)};
+                float epsilon = 0.001;
+                if (abs(result - expected) < epsilon) {
+                    fragColor = vec4(0.0, 1.0, 0.0, 1.0);
+                } else {
+                    fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                    fragColor.a = result / 255.0;
+                }
+            `;
+        } else if (type === 'vec3') {
+            const expectedVec = expectedValue;
+            return `
+                vec3 result = peptide();
+                vec3 expected = vec3(${expectedVec.x.toFixed(16)}, ${expectedVec.y.toFixed(16)}, ${expectedVec.z.toFixed(16)});
+                float epsilon = 0.001;
+                if (length(result - expected) < epsilon) {
+                    fragColor = vec4(0.0, 1.0, 0.0, 1.0);
+                } else {
+                    fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                    fragColor.a = length(result - expected) / 255.0;
+                }
+            `;
+        }
+    }
+
+    createIntervalTestCode(type, expectedValue) {
+        if (type === 'float') {
+            return `
+                ifloat result = peptide();
+                float expected = ${expectedValue.toFixed(16)};
+                float epsilon = 0.001;
+                // Test if expected value is within the interval
+                if (abs(result.x - expected) < epsilon && abs(result.y - expected) < epsilon) {
+                    fragColor = vec4(0.0, 1.0, 0.0, 1.0);
+                } else {
+                    fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                    // Encode interval bounds in g,b channels for debugging
+                    fragColor.g = result.x / 255.0;
+                    fragColor.b = result.y / 255.0;
+                }
+            `;
+        } else if (type === 'vec3') {
+            const expectedVec = expectedValue;
+            return `
+                ivec3 result = peptide();
+                vec3 expected = vec3(${expectedVec.x.toFixed(16)}, ${expectedVec.y.toFixed(16)}, ${expectedVec.z.toFixed(16)});
+                float epsilon = 0.001;
+                // Test if expected vector components are within their intervals
+                bool withinBounds = 
+                    abs(result[0].x - expected.x) < epsilon && abs(result[0].y - expected.x) < epsilon &&
+                    abs(result[1].x - expected.y) < epsilon && abs(result[1].y - expected.y) < epsilon &&
+                    abs(result[2].x - expected.z) < epsilon && abs(result[2].y - expected.z) < epsilon;
+                
+                if (withinBounds) {
+                    fragColor = vec4(0.0, 1.0, 0.0, 1.0);
+                } else {
+                    fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                }
+            `;
+        }
+    }
 }
 
 // Create a test suite for GLSL tests
@@ -355,8 +433,17 @@ const GLSLTests = new TestSuite();
 
 // Helper function to add GLSL tests
 function addGLSLTest(name, testFn) {
-    GLSLTests.test(name, async () => {
-        const harness = new GLSLTestHarness(name);
+    GLSLTests.test(`${name} (direct)`, async () => {
+        const harness = new GLSLTestHarness(name, false); // false = direct mode
+        try {
+            await testFn(harness);
+        } finally {
+            harness.cleanup();
+        }
+    });
+
+    GLSLTests.test(`${name} (interval)`, async () => {
+        const harness = new GLSLTestHarness(name, true); // true = interval mode
         try {
             await testFn(harness);
         } finally {

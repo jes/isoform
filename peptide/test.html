@@ -115,6 +115,14 @@
     <div id="test-summary" class="test-summary">
         <div id="overall-status"></div>
         <div id="test-stats"></div>
+        <button id="show-glsl-debug" style="display: none;">Show Failed GLSL Tests</button>
+    </div>
+    <!-- Add new failed tests section -->
+    <div id="failed-tests-section" class="test-results" style="display: none;">
+        <div class="test-suite">
+            <h2 style="color: red;">Failed Tests</h2>
+            <div id="failed-tests-output"></div>
+        </div>
     </div>
     <div class="test-results">
         <div class="test-suite">
@@ -136,7 +144,6 @@
         <div class="test-suite">
             <h2>GLSL Evaluation Tests</h2>
             <div id="glsl-test-output"></div>
-            <button id="show-glsl-debug" style="display: none;">Show Failed GLSL Tests</button>
         </div>
     </div>
     
@@ -157,6 +164,7 @@
     <script src="js/mat3.js"></script>
     <script src="js/ifloat.js"></script>
     <script src="js/ivec3.js"></script>
+    <script src="js/glsl_interval.js"></script>
     <script src="js/peptide.js"></script>
     <script src="js/ssa.js"></script>
     <script src="test/test.js"></script>
@@ -198,17 +206,27 @@
             compiledIntervalOutput.innerHTML = formatResults(compiledIntervalResults);
             glslOutput.innerHTML = formatResults(glslResults);
             
-            // Calculate overall statistics
+            // After running all tests, collect and display failures
             const allResults = [...directResults, ...compiledResults, ...intervalResults, ...compiledIntervalResults, ...glslResults];
+            const failedTests = allResults.filter(r => !r.passed);
+            
+            if (failedTests.length > 0) {
+                const failedTestsSection = document.getElementById('failed-tests-section');
+                const failedTestsOutput = document.getElementById('failed-tests-output');
+                failedTestsSection.style.display = 'block';
+                failedTestsOutput.innerHTML = formatResults(failedTests);
+            }
+
+            // Calculate overall statistics
             const totalTests = allResults.length;
             const passedTests = allResults.filter(r => r.passed).length;
-            const failedTests = totalTests - passedTests;
+            const failedTestCount = totalTests - passedTests;
             const testTime = (performance.now() - startTime).toFixed(0);
             
             // Update summary display
-            overallStatus.textContent = failedTests === 0 ? 'PASS' : 'FAIL';
-            overallStatus.className = failedTests === 0 ? 'pass' : 'fail';
-            testStats.textContent = `${passedTests} passed, ${failedTests} failed, in ${testTime} ms`;
+            overallStatus.textContent = failedTestCount === 0 ? 'PASS' : 'FAIL';
+            overallStatus.className = failedTestCount === 0 ? 'pass' : 'fail';
+            testStats.textContent = `${passedTests} passed, ${failedTestCount} failed, in ${testTime} ms`;
             
             // Show debug button if there are failed tests
             const debugButton = document.getElementById('show-glsl-debug');

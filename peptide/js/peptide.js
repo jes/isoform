@@ -8,7 +8,7 @@ class Peptide {
         this.third = third;    // third operand
         this.ops = ops;        // operation functions
 
-        for (const fn of ['evaluate', 'evaluateInterval', 'jsCode', 'jsIntervalCode', 'glslCode']) {
+        for (const fn of ['evaluate', 'evaluateInterval', 'jsCode', 'jsIntervalCode', 'glslCode', 'glslIntervalCode']) {
             if (!this.ops[fn]) {
                 console.warn(`No ${fn} operation function provided for ${op}`, this);
             }
@@ -33,6 +33,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${value};`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = new Ifloat(${value});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${value.toFixed(16)};`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = ifloat(${value.toFixed(16)});`,
         });
     }
 
@@ -62,6 +63,7 @@ class Peptide {
                     + `  ${ssaOp.result} = vars['${name}'] instanceof Ifloat ? vars['${name}'] : new Ifloat(vars['${name}']);`;
             },
             glslCode: (ssaOp) => `${ssaOp.result} = ${name};`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = ifloat(${name});`,
         });
     }
 
@@ -82,6 +84,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = new Vec3(${vec3Clone.x}, ${vec3Clone.y}, ${vec3Clone.z});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = new Ivec3(${vec3Clone.x}, ${vec3Clone.y}, ${vec3Clone.z});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${vec3Clone.glsl()};`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = itov3(${vec3Clone.glsl()});`,
         });
     }
 
@@ -118,6 +121,7 @@ class Peptide {
                     + `  ${ssaOp.result} = vars['${name}'] instanceof Ivec3 ? vars['${name}'] : vars['${name}'] instanceof Vec3 ? new Ivec3(vars['${name}'].x, vars['${name}'].y, vars['${name}'].z) : new Ivec3(vars['${name}']);`;
             },
             glslCode: (ssaOp) => `${ssaOp.result} = ${name};`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = ${name};`,
         });
     }
 
@@ -169,6 +173,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.add(${ssaOp.right});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.add(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = iadd3(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -181,6 +186,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sub(${ssaOp.right});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sub(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = isub3(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -193,6 +199,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = imul3(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -228,6 +235,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.length();`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.length();`,
             glslCode: (ssaOp) => `${ssaOp.result} = length(${ssaOp.left});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = ilength3(${ssaOp.left});`,
         });
     }
 
@@ -239,6 +247,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.abs();`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.abs();`,
             glslCode: (ssaOp) => `${ssaOp.result} = abs(${ssaOp.left});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = mat3(iabs(${ssaOp.left}[0].xy), 0.0, iabs(${ssaOp.left}[1].xy), 0.0, iabs(${ssaOp.left}[2].xy), 0.0);`,
         });
     }
 
@@ -316,6 +325,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.add(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = iadd(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -328,6 +338,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sub(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = isub(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -340,6 +351,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = imul(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -352,6 +364,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.div(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = idiv(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -363,6 +376,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = Math.abs(${ssaOp.left});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.abs();`,
             glslCode: (ssaOp) => `${ssaOp.result} = abs(${ssaOp.left});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = iabs(${ssaOp.left});`,
         });
     }
 
@@ -375,6 +389,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = Math.min(${ssaOp.left}, ${ssaOp.right});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = Ifloat.min(${ssaOp.left}, ${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = min(${ssaOp.left}, ${ssaOp.right});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = imin(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -387,6 +402,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.left}, ${ssaOp.right});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = Ifloat.max(${ssaOp.left}, ${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = max(${ssaOp.left}, ${ssaOp.right});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = imax(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
@@ -482,6 +498,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = Math.sqrt(${ssaOp.left});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sqrt();`,
             glslCode: (ssaOp) => `${ssaOp.result} = sqrt(${ssaOp.left});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = isqrt(${ssaOp.left});`,
         });
     }
 
