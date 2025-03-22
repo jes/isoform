@@ -48,14 +48,14 @@ class Ifloat {
 
     div(other) {
         if (other.containsZero()) {
-            throw new Error('Division by interval that contains zero');
+            throw new Error('Division by interval that contains zero: ' + other.min + ',' + other.max);
         }
         return new Ifloat(this.min / other.max, this.max / other.min, this.min / other.min, this.max / other.max);
     }
 
     mod(other) {
         if (other.containsZero()) {
-            throw new Error('Modulo by interval that contains zero');
+            throw new Error('Modulo by interval that contains zero: ' + other.min + ',' + other.max);
         }
         return new Ifloat(this.min % other.max, this.max % other.min, this.min % other.min, this.max % other.max);
     }
@@ -66,7 +66,7 @@ class Ifloat {
 
     sqrt() {
         if (this.min < 0) {
-            throw new Error('Square root of interval that contains negative numbers');
+            throw new Error('Square root of interval that contains negative numbers: ' + this.min + ',' + this.max);
         }
         return new Ifloat(Math.sqrt(this.min), Math.sqrt(this.max));
     }
