@@ -397,16 +397,20 @@ class Peptide {
         a.assertType('float');
         b.assertType('float');
         k.assertType('float');
-        const h = P.clamp(P.add(P.const(0.5), P.div(P.sub(b, a), P.mul(P.const(2), k))), P.const(0), P.const(1));
-        return P.sub(P.mix(b, a, h), P.mul(k, P.mul(h, P.sub(P.const(1), h))));
+        // Add a small epsilon to k to avoid division by zero
+        const safeK = P.max(k, P.const(1e-10));
+        const h = P.clamp(P.add(P.const(0.5), P.div(P.sub(b, a), P.mul(P.const(2), safeK))), P.const(0), P.const(1));
+        return P.sub(P.mix(b, a, h), P.mul(safeK, P.mul(h, P.sub(P.const(1), h))));
     }
 
     static smax(a, b, k) {
         a.assertType('float');
         b.assertType('float');
         k.assertType('float');
-        const h = P.clamp(P.sub(P.const(0.5), P.div(P.sub(b, a), P.mul(P.const(2), k))), P.const(0), P.const(1));
-        return P.add(P.mix(b, a, h), P.mul(k, P.mul(h, P.sub(P.const(1), h))));
+        // Add a small epsilon to k to avoid division by zero
+        const safeK = P.max(k, P.const(1e-10));
+        const h = P.clamp(P.sub(P.const(0.5), P.div(P.sub(b, a), P.mul(P.const(2), safeK))), P.const(0), P.const(1));
+        return P.add(P.mix(b, a, h), P.mul(safeK, P.mul(h, P.sub(P.const(1), h))));
     }
 
     static chmin(a, b, k) {
