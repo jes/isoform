@@ -580,6 +580,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.transpose();`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.transpose();`,
             glslCode: (ssaOp) => `${ssaOp.result} = transpose(${ssaOp.left});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = transpose(${ssaOp.left});`,
         });
     }
 
@@ -629,6 +630,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
         });
     }
 
