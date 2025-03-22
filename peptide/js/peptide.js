@@ -296,6 +296,7 @@ class Peptide {
         b.assertType('float');
         return new Peptide('min', 'float', null, a, b, null, {
             evaluate: (vars) => Math.min(a.evaluate(vars), b.evaluate(vars)),
+            evaluateInterval: (vars) => new Ifloat(Math.min(a.evaluateInterval(vars).min, b.evaluateInterval(vars).min), Math.min(a.evaluateInterval(vars).max, b.evaluateInterval(vars).max)),
             jsCode: (ssaOp) => `${ssaOp.result} = Math.min(${ssaOp.left}, ${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = min(${ssaOp.left}, ${ssaOp.right});`,
         });
@@ -306,6 +307,7 @@ class Peptide {
         b.assertType('float');
         return new Peptide('max', 'float', null, a, b, null, {
             evaluate: (vars) => Math.max(a.evaluate(vars), b.evaluate(vars)),
+            evaluateInterval: (vars) => new Ifloat(Math.max(a.evaluateInterval(vars).min, b.evaluateInterval(vars).min), Math.max(a.evaluateInterval(vars).max, b.evaluateInterval(vars).max)),
             jsCode: (ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.left}, ${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = max(${ssaOp.left}, ${ssaOp.right});`,
         });
@@ -317,6 +319,15 @@ class Peptide {
         max.assertType('float');
         return new Peptide('clamp', 'float', null, a, min, max, {
             evaluate: (vars) => Math.max(min.evaluate(vars), Math.min(a.evaluate(vars), max.evaluate(vars))),
+            evaluateInterval: (vars) => {
+                const aVal = a.evaluateInterval(vars);
+                const minVal = min.evaluateInterval(vars);
+                const maxVal = max.evaluateInterval(vars);
+                return new Ifloat(
+                    Math.max(minVal.min, Math.min(aVal.min, maxVal.min)),
+                    Math.min(minVal.max, Math.max(aVal.max, maxVal.max))
+                );
+            },
             jsCode: (ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.right}, Math.min(${ssaOp.left}, ${ssaOp.third}));`,
             glslCode: (ssaOp) => `${ssaOp.result} = clamp(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
         });

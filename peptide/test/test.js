@@ -78,11 +78,28 @@ function createEvaluator(useCompiled) {
 // Create two test suites
 const DirectT = new TestSuite();
 const CompiledT = new TestSuite();
+const IntervalT = new TestSuite();
 
 // Helper to add tests to both suites
 function addTest(name, testFn) {
-    DirectT.test(`${name} (direct)`, () => testFn(createEvaluator(false)));
-    CompiledT.test(`${name} (compiled)`, () => testFn(createEvaluator(true)));
+    const directEvaluator = (expr, vars = {}) => expr.evaluate(vars);
+    const compiledEvaluator = (expr, vars = {}) => {
+        const ssa = new PeptideSSA(expr);
+        const src = ssa.compileToJS();
+        return eval(src)(vars);
+    };
+    const intervalEvaluator = (expr, vars = {}) => {
+        for (const key in vars) {
+            if (typeof vars[key] === 'number') {
+                vars[key] = new Ifloat(vars[key]);
+            }
+        }
+        const result = expr.evaluateInterval(vars);
+        return result.min;
+    }
+    DirectT.test(`${name} (direct)`, () => testFn(directEvaluator));
+    CompiledT.test(`${name} (compiled)`, () => testFn(compiledEvaluator));
+    IntervalT.test(`${name} (interval)`, () => testFn(intervalEvaluator));
 }
 
 // Peptide tests
@@ -1219,5 +1236,6 @@ addTest('missing operation functions', (evaluate) => {
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,
-    compiled: CompiledT
+    compiled: CompiledT,
+    interval: IntervalT
 };
