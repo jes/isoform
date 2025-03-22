@@ -63,24 +63,12 @@ function assertThrows(fn) {
     }
 }
 
-// Create a wrapper that runs tests with both evaluation methods
-function createEvaluator(useCompiled) {
-    if (useCompiled) {
-        return (expr, vars = {}) => {
-            const ssa = new PeptideSSA(expr);
-            const src = ssa.compileToJS();
-            return eval(src)(vars);
-        };
-    } else {
-        return (expr, vars = {}) => expr.evaluate(vars);
-    }
-}
-// Create two test suites
+// Create test suites
 const DirectT = new TestSuite();
 const CompiledT = new TestSuite();
 const IntervalT = new TestSuite();
 
-// Helper to add tests to both suites
+// Helper to add tests to all suites
 function addTest(name, testFn) {
     const directEvaluator = (expr, vars = {}) => expr.evaluate(vars);
     const compiledEvaluator = (expr, vars = {}) => {
@@ -95,7 +83,11 @@ function addTest(name, testFn) {
             }
         }
         const result = expr.evaluateInterval(vars);
-        return result.min;
+        if (result instanceof Ivec3) {
+            return new Vec3(result.x.min, result.y.min, result.z.min);
+        } else {
+            return result;
+        }
     }
     DirectT.test(`${name} (direct)`, () => testFn(directEvaluator));
     CompiledT.test(`${name} (compiled)`, () => testFn(compiledEvaluator));
