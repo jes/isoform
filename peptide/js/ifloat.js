@@ -60,10 +60,6 @@ class Ifloat {
         return new Ifloat(this.min % other.max, this.max % other.min, this.min % other.min, this.max % other.max);
     }
 
-    pow(other) {
-        return new Ifloat(Math.pow(this.min, other.min), Math.pow(this.max, other.max), Math.pow(this.min, other.max), Math.pow(this.max, other.min));
-    }
-
     sqrt() {
         if (this.min < 0) {
             throw new Error('Square root of interval that contains negative numbers: ' + this.min + ',' + this.max);

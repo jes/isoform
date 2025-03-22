@@ -474,14 +474,6 @@ addGLSLTest('min and max operations', async (harness) => {
     harness.testExpression(P.max(a, b), 5);
 });
 
-addGLSLTest('power operations', async (harness) => {
-    const base = P.const(2);
-    const exp = P.const(3);
-    
-    harness.testExpression(P.pow(base, exp), 8); // 2^3 = 8
-    harness.testExpression(P.sqrt(P.const(16)), 4); // √16 = 4
-});
-
 addGLSLTest('vector constant evaluation', async (harness) => {
     const v = P.vconst(new Vec3(1, 2, 3));
     harness.testExpression(v, new Vec3(1, 2, 3));
@@ -894,8 +886,8 @@ addGLSLTest('trigonometric functions', async (harness) => {
     
     // Test composition of sin and cos
     const composed = P.add(
-        P.pow(P.sin(x), P.const(2)),
-        P.pow(P.cos(x), P.const(2))
+        P.mul(P.sin(x), P.sin(x)),
+        P.mul(P.cos(x), P.cos(x))
     );
     harness.testExpression(composed, 1.0, { u_x: 1.234 }); // sin²(x) + cos²(x) = 1
 });

@@ -157,24 +157,13 @@ addTest('min and max operations', (evaluate) => {
     assertEquals(evaluate(maximum), 5);
 });
 
-addTest('power operations', (evaluate) => {
-    const base = P.const(2);
-    const exp = P.const(3);
-    
-    const power = P.pow(base, exp);
-    assertEquals(evaluate(power), 8); // 2^3 = 8
-    
-    const root = P.sqrt(P.const(16));
-    assertEquals(evaluate(root), 4); // √16 = 4
-});
-
 addTest('complex expression with all operations', (evaluate) => {
     // sqrt(max(x^2, y^2)) + min(x, y)
     const expr = P.add(
         P.sqrt(
             P.max(
-                P.pow(P.var('x'), P.const(2)),
-                P.pow(P.var('y'), P.const(2))
+                P.mul(P.var('x'), P.var('x')),
+                P.mul(P.var('y'), P.var('y'))
             )
         ),
         P.min(P.var('x'), P.var('y'))
@@ -733,8 +722,8 @@ addTest('trigonometric functions', (evaluate) => {
     
     // Test composition of sin and cos
     const composed = P.add(
-        P.pow(P.sin(x), P.const(2)),
-        P.pow(P.cos(x), P.const(2))
+        P.mul(P.sin(x), P.sin(x)),
+        P.mul(P.cos(x), P.cos(x))
     );
     assertEquals(evaluate(composed, { x: 1.234 }), 1.0); // sin²(x) + cos²(x) = 1
 });
@@ -1050,7 +1039,7 @@ addTest('interval operations with negative values', (evaluate) => {
     assertEquals(prod.max, 8);   // 2 * 4
 });
 
-addTest('interval modulo and power', (evaluate) => {
+addTest('interval modulo', (evaluate) => {
     const i1 = new Ifloat(3, 8);
     const i2 = new Ifloat(2, 3);
     
@@ -1058,11 +1047,6 @@ addTest('interval modulo and power', (evaluate) => {
     const mod = i1.mod(i2);
     assertEquals(mod.min, 0);  // 3 % 3
     assertEquals(mod.max, 2);  // 8 % 2
-    
-    // Power
-    const pow = i1.pow(i2);
-    assertEquals(pow.min, 9);   // 3^2
-    assertEquals(pow.max, 512); // 8^3
     
     // Square root
     const sqrt = i1.sqrt();

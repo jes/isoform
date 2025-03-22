@@ -478,18 +478,6 @@ class Peptide {
         return P.max(P.max(a, b), P.mul(P.const(0.7071), P.add(P.add(a, b), k)));
     }
 
-    static pow(a, b) {
-        a.assertType('float');
-        b.assertType('float');
-        return new Peptide('pow', 'float', null, a, b, null, {
-            evaluate: (vars) => Math.pow(a.evaluate(vars), b.evaluate(vars)),
-            evaluateInterval: (vars) => a.evaluateInterval(vars).pow(b.evaluateInterval(vars)),
-            jsCode: (ssaOp) => `${ssaOp.result} = Math.pow(${ssaOp.left}, ${ssaOp.right});`,
-            jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.pow(${ssaOp.right});`,
-            glslCode: (ssaOp) => `${ssaOp.result} = pow(${ssaOp.left}, ${ssaOp.right});`,
-        });
-    }
-
     static sqrt(a) {
         a.assertType('float');
         return new Peptide('sqrt', 'float', null, a, null, null, {
