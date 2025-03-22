@@ -54,6 +54,7 @@ function assertThrows(fn) {
 const DirectT = new TestSuite();
 const CompiledT = new TestSuite();
 const IntervalT = new TestSuite();
+const CompiledIntervalT = new TestSuite();
 
 // Helper to add tests to all suites
 function addTest(name, testFn) {
@@ -78,9 +79,27 @@ function addTest(name, testFn) {
             return result;
         }
     }
+    const compiledIntervalEvaluator = (expr, vars = {}) => {
+        for (const key in vars) {
+            if (typeof vars[key] === 'number') {
+                vars[key] = new Ifloat(vars[key]);
+            }
+        }
+        const ssa = new PeptideSSA(expr);
+        const src = ssa.compileToJSInterval();
+        const result = eval(src)(vars);
+        if (result instanceof Ivec3) {
+            return new Vec3(result.x.min, result.y.min, result.z.min);
+        } else if (result instanceof Ifloat) {
+            return result.min;
+        } else {
+            return result;
+        }
+    };
     DirectT.test(`${name} (direct)`, () => testFn(directEvaluator));
     CompiledT.test(`${name} (compiled)`, () => testFn(compiledEvaluator));
     IntervalT.test(`${name} (interval)`, () => testFn(intervalEvaluator));
+    CompiledIntervalT.test(`${name} (compiled interval)`, () => testFn(compiledIntervalEvaluator));
 }
 
 // Peptide tests
@@ -1218,5 +1237,6 @@ addTest('missing operation functions', (evaluate) => {
 window.PeptideTests = {
     direct: DirectT,
     compiled: CompiledT,
-    interval: IntervalT
+    interval: IntervalT,
+    compiledInterval: CompiledIntervalT
 };

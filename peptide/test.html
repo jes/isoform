@@ -130,6 +130,10 @@
             <div id="interval-test-output"></div>
         </div>
         <div class="test-suite">
+            <h2>Compiled Interval Evaluation Tests</h2>
+            <div id="compiled-interval-test-output"></div>
+        </div>
+        <div class="test-suite">
             <h2>GLSL Evaluation Tests</h2>
             <div id="glsl-test-output"></div>
             <button id="show-glsl-debug" style="display: none;">Show Failed GLSL Tests</button>
@@ -163,6 +167,7 @@
             const directOutput = document.getElementById('direct-test-output');
             const compiledOutput = document.getElementById('compiled-test-output');
             const intervalOutput = document.getElementById('interval-test-output');
+            const compiledIntervalOutput = document.getElementById('compiled-interval-test-output');
             const glslOutput = document.getElementById('glsl-test-output');
             const overallStatus = document.getElementById('overall-status');
             const testStats = document.getElementById('test-stats');
@@ -170,11 +175,13 @@
             directOutput.innerHTML = '<p>Running direct tests...</p>';
             compiledOutput.innerHTML = '<p>Running compiled tests...</p>';
             intervalOutput.innerHTML = '<p>Running interval tests...</p>';
+            compiledIntervalOutput.innerHTML = '<p>Running compiled interval tests...</p>';
             glslOutput.innerHTML = '<p>Running GLSL tests...</p>';
             
             const directResults = await PeptideTests.direct.run();
             const compiledResults = await PeptideTests.compiled.run();
             const intervalResults = await PeptideTests.interval.run();
+            const compiledIntervalResults = await PeptideTests.compiledInterval.run();
             const glslResults = await PeptideGLSLTests.run();
             
             const formatResults = (results) => results.map(result => `
@@ -188,10 +195,11 @@
             directOutput.innerHTML = formatResults(directResults);
             compiledOutput.innerHTML = formatResults(compiledResults);
             intervalOutput.innerHTML = formatResults(intervalResults);
+            compiledIntervalOutput.innerHTML = formatResults(compiledIntervalResults);
             glslOutput.innerHTML = formatResults(glslResults);
             
             // Calculate overall statistics
-            const allResults = [...directResults, ...compiledResults, ...intervalResults, ...glslResults];
+            const allResults = [...directResults, ...compiledResults, ...intervalResults, ...compiledIntervalResults, ...glslResults];
             const totalTests = allResults.length;
             const passedTests = allResults.filter(r => r.passed).length;
             const failedTests = totalTests - passedTests;

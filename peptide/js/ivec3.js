@@ -3,17 +3,17 @@ class Ivec3 {
         if (typeof x === 'number') {
            x = new Ifloat(x);
         } else if (!(x instanceof Ifloat)) {
-            throw new Error('Invalid x value');
+            throw new Error('Invalid x value: ' + typeof x + ' ' + x);
         }
         if (typeof y === 'number') {
             y = new Ifloat(y);
         } else if (!(y instanceof Ifloat)) {
-            throw new Error('Invalid y value');
+            throw new Error('Invalid y value: ' + typeof y + ' ' + y);
         }
         if (typeof z === 'number') {
             z = new Ifloat(z);
         } else if (!(z instanceof Ifloat)) {
-            throw new Error('Invalid z value');
+            throw new Error('Invalid z value: ' + typeof z + ' ' + z);
         }
         this.x = x;
         this.y = y;

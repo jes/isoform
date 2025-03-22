@@ -157,14 +157,44 @@ class PeptideSSA {
         code += '\n';
 
         for (const op of this.operations) {
-            if (op.node.ops.jsCode) {
-                code += `  ${op.node.ops.jsCode(op)}\n`;
+            if (!op.node.ops.jsCode) {
+                throw new Error('No JS code for ' + op.node.op);
             }
+            code += `  ${op.node.ops.jsCode(op)}\n`;
         }
         
         // Return the result
         code += `  return ${this.operations[this.operations.length - 1].result};\n`;
         code += '}';
+        
+        return code;
+    }
+
+    compileToJSInterval() {
+        let code = '(vars) => {\n';
+        
+        let seen = new Set();
+        for (const op of this.operations) {
+            if (!seen.has(op.result)) {
+                code += `  let ${op.result};\n`;
+                seen.add(op.result);
+            }
+        }
+        
+        code += '\n';
+
+        for (const op of this.operations) {
+            if (!op.node.ops.jsIntervalCode) {
+                throw new Error('No JS interval code for ' + op.node.op);
+            }
+            code += `  ${op.node.ops.jsIntervalCode(op)}\n`;
+        }
+        
+        // Return the result
+        code += `  return ${this.operations[this.operations.length - 1].result};\n`;
+        code += '}';
+
+        console.log(code);
         
         return code;
     }
@@ -183,9 +213,10 @@ class PeptideSSA {
         code += "\n";
 
         for (const op of this.operations) {
-            if (op.node.ops.glslCode) {
-                code += `  ${op.node.ops.glslCode(op)}\n`;
+            if (!op.node.ops.glslCode) {
+                throw new Error('No GLSL code for ' + op.node.op);
             }
+            code += `  ${op.node.ops.glslCode(op)}\n`;
         }
 
         code += `  return ${this.operations[this.operations.length - 1].result};\n`;
