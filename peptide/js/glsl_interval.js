@@ -86,6 +86,42 @@ ifloat istep(ifloat a, ifloat b) {
     return ifloat(canBeZero ? 0.0 : 1.0, canBeOne ? 1.0 : 0.0);
 }
 
+ifloat isin(ifloat x) {
+    // If interval spans a full period or more, return [-1, 1]
+    if (x.y - x.x >= 6.2831853071795862) {
+        return ifloat(-1.0, 1.0);
+    }
+
+    // Normalize start point to [0, 2π)
+    float twoPI = 6.2831853071795862;
+    float start = mod(x.x, twoPI);
+    if (start < 0.0) start += twoPI;
+    
+    // Calculate end point maintaining the same interval width
+    float end = start + (x.y - x.x);
+
+    // Calculate sine at endpoints
+    float sinStart = sin(start);
+    float sinEnd = sin(end);
+
+    float minVal = min(sinStart, sinEnd);
+    float maxVal = max(sinStart, sinEnd);
+
+    // Check if we cross π/2 (maximum) or 3π/2 (minimum)
+    bool crossesMax = start <= 1.5707963267948966 && end >= 1.5707963267948966;
+    bool crossesMin = start <= 4.7123889803846897 && end >= 4.7123889803846897;
+
+    if (crossesMax) maxVal = 1.0;
+    if (crossesMin) minVal = -1.0;
+
+    return ifloat(minVal, maxVal);
+}
+
+ifloat icos(ifloat x) {
+    // cos(x) = sin(x + π/2)
+    return isin(iadd(x, ifloat(1.5707963267948966)));
+}
+
 // Operations on interval vectors (ivec3)
 ivec3 iadd3(ivec3 a, ivec3 b) {
     return mat3(

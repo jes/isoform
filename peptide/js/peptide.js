@@ -523,6 +523,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = Math.sin(${ssaOp.left});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sin();`,
             glslCode: (ssaOp) => `${ssaOp.result} = sin(${ssaOp.left});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = isin(${ssaOp.left});`,
         });
     }
 
@@ -534,6 +535,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = Math.cos(${ssaOp.left});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.cos();`,
             glslCode: (ssaOp) => `${ssaOp.result} = cos(${ssaOp.left});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = icos(${ssaOp.left});`,
         });
     }
 
