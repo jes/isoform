@@ -80,6 +80,14 @@ ivec3 imul3(ivec3 a, ifloat s) {
     );
 }
 
+ivec3 idiv3(ivec3 a, ifloat s) {
+    return ivec3(
+        idiv(a[0].xy, s), 0.0,
+        idiv(a[1].xy, s), 0.0,
+        idiv(a[2].xy, s), 0.0
+    );
+}
+
 // Dot product for interval vectors
 ifloat idot3(ivec3 a, ivec3 b) {
     return iadd(iadd(
