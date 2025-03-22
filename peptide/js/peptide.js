@@ -377,6 +377,7 @@ class Peptide {
         b.assertType('float');
         return new Peptide('pow', 'float', null, a, b, null, {
             evaluate: (vars) => Math.pow(a.evaluate(vars), b.evaluate(vars)),
+            evaluateInterval: (vars) => a.evaluateInterval(vars).pow(b.evaluateInterval(vars)),
             jsCode: (ssaOp) => `${ssaOp.result} = Math.pow(${ssaOp.left}, ${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = pow(${ssaOp.left}, ${ssaOp.right});`,
         });
@@ -386,6 +387,7 @@ class Peptide {
         a.assertType('float');
         return new Peptide('sqrt', 'float', null, a, null, null, {
             evaluate: (vars) => Math.sqrt(a.evaluate(vars)),
+            evaluateInterval: (vars) => a.evaluateInterval(vars).sqrt(),
             jsCode: (ssaOp) => `${ssaOp.result} = Math.sqrt(${ssaOp.left});`,
             glslCode: (ssaOp) => `${ssaOp.result} = sqrt(${ssaOp.left});`,
         });
@@ -501,7 +503,6 @@ class Peptide {
     simplify() {
         // Use a cache to track unique expressions
         const cache = new Map();
-        const seen = new Set();
         let nextId = 0;
         
         // Helper function to recursively simplify the tree
@@ -524,6 +525,8 @@ class Peptide {
                 valueStr = `v${node.value.x},${node.value.y},${node.value.z}`;
             } else if (node.value instanceof Mat3) {
                 valueStr = 'm' + Array.from(node.value.m).flat().join(',');
+            } else if (node.value instanceof Ifloat) {
+                valueStr = `i${node.value.min},${node.value.max}`;
             } else if (node.value === null) {
                 valueStr = 'null';
             } else {
