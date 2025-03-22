@@ -284,6 +284,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.dot(${ssaOp.right});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.dot(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = dot(${ssaOp.left}, ${ssaOp.right});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = idot3(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 
