@@ -118,6 +118,22 @@ ivec3 icross3(ivec3 a, ivec3 b) {
         isub(imul(a[0].xy, b[1].xy), imul(a[1].xy, b[0].xy)), 0.0
     );
 }
+
+ivec3 imin3(ivec3 a, ivec3 b) {
+    return ivec3(
+        imin(a[0].xy, b[0].xy), 0.0,
+        imin(a[1].xy, b[1].xy), 0.0,
+        imin(a[2].xy, b[2].xy), 0.0
+    );
+}
+
+ivec3 imax3(ivec3 a, ivec3 b) {
+    return ivec3(
+        imax(a[0].xy, b[0].xy), 0.0,
+        imax(a[1].xy, b[1].xy), 0.0,
+        imax(a[2].xy, b[2].xy), 0.0
+    );
+}
 `;
 
 (function() {
