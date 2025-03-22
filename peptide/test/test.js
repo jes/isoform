@@ -1164,6 +1164,58 @@ addTest('evaluateInterval error handling', (evaluate) => {
     assertThrows(() => x.evaluateInterval({ x: "not a number or interval" }));
 });
 
+addTest('complex DAG simplification', (evaluate) => {
+    // Create expressions with common subexpressions
+    const x = P.var('x');
+    const y = P.var('y');
+    
+    // Use it multiple times
+    const expr1 = P.mul(P.add(x, y), P.add(x, y));
+    const expr2 = P.add(P.add(x, y), P.const(5));
+    
+    // Combine them
+    const combined = P.add(expr1, expr2);
+
+    const result = combined.evaluate({ x: 2, y: 3 });
+    assertEquals(result, 35);
+
+    // But should have fewer nodes (due to sharing the common subexpression)
+    // Count nodes in the original vs simplified
+    const countNodes = (expr, visited = new Set()) => {
+        if (!expr || visited.has(expr)) return 0;
+        visited.add(expr);
+        return 1 + 
+            (expr.left ? countNodes(expr.left, visited) : 0) + 
+            (expr.right ? countNodes(expr.right, visited) : 0) + 
+            (expr.third ? countNodes(expr.third, visited) : 0);
+    };
+    
+    const originalCount = countNodes(combined);
+    combined.simplify();
+    const simplifiedCount = countNodes(combined);
+
+    if (simplifiedCount >= originalCount) {
+        throw new Error(`Expected simplified expression to have fewer nodes (${simplifiedCount} vs ${originalCount})`);
+    }
+    
+    // The simplified expression should evaluate to the same result
+    assertEquals(evaluate(combined, { x: 2, y: 3 }), result);
+});
+
+addTest('missing operation functions', (evaluate) => {
+    // Create a Peptide instance with missing operation functions
+    const missingOps = new Peptide('test', 'float', 5, null, null, null, {
+        // Only provide evaluate, missing other functions
+        evaluate: (vars) => 5
+    });
+    
+    // Should still be able to evaluate
+    assertEquals(missingOps.evaluate(), 5);
+    
+    // But other operations should throw
+    assertThrows(() => missingOps.evaluateInterval());
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,

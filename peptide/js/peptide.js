@@ -180,6 +180,7 @@ class Peptide {
         a.assertType('vec3');
         return new Peptide('vabs', 'vec3', null, a, null, null, {
             evaluate: (vars) => a.evaluate(vars).abs(),
+            evaluateInterval: (vars) => a.evaluateInterval(vars).abs(),
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.abs();`,
             glslCode: (ssaOp) => `${ssaOp.result} = abs(${ssaOp.left});`,
         });
