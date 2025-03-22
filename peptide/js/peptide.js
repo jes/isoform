@@ -422,6 +422,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.right}, Math.min(${ssaOp.left}, ${ssaOp.third}));`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = Ifloat.clamp(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
             glslCode: (ssaOp) => `${ssaOp.result} = clamp(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = iclamp(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
         });
     }
 
@@ -435,6 +436,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * (1 - ${ssaOp.third}) + ${ssaOp.right} * ${ssaOp.third};`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = Ifloat.mix(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
             glslCode: (ssaOp) => `${ssaOp.result} = mix(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = imix(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
         });
     }
 
@@ -447,6 +449,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} <= ${ssaOp.right} ? 1.0 : 0.0;`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = Ifloat.step(${ssaOp.left}, ${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = step(${ssaOp.left}, ${ssaOp.right});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = istep(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 

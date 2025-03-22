@@ -55,6 +55,21 @@ ifloat isqrt(ifloat a) {
     return ifloat(sqrt(max(0.0, a.x)), sqrt(max(0.0, a.y)));
 }
 
+// Clamp for intervals
+ifloat iclamp(ifloat a, ifloat b, ifloat c) {
+    return imin(imax(a, b), c);
+}
+
+ifloat imix(ifloat a, ifloat b, ifloat c) {
+    return iadd(imul(a, isub(ifloat(1.0), c)), imul(b, c));
+}
+
+ifloat istep(ifloat a, ifloat b) {
+    bool canBeZero = b.x < a.y;
+    bool canBeOne = b.y >= a.x;
+    return ifloat(canBeZero ? 0.0 : 1.0, canBeOne ? 1.0 : 0.0);
+}
+
 // Operations on interval vectors (ivec3)
 ivec3 iadd3(ivec3 a, ivec3 b) {
     return mat3(
