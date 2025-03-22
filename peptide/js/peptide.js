@@ -375,6 +375,12 @@ class Peptide {
         t.assertType('float');
         return new Peptide('mix', 'float', null, a, b, t, {
             evaluate: (vars) => a.evaluate(vars) * (1 - t.evaluate(vars)) + b.evaluate(vars) * t.evaluate(vars),
+            evaluateInterval: (vars) => {
+                const aVal = a.evaluateInterval(vars);
+                const bVal = b.evaluateInterval(vars);
+                const tVal = t.evaluateInterval(vars);
+                return aVal.mul(new Ifloat(1).sub(tVal)).add(bVal.mul(tVal));
+            },
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * (1 - ${ssaOp.third}) + ${ssaOp.right} * ${ssaOp.third};`,
             glslCode: (ssaOp) => `${ssaOp.result} = mix(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
         });
