@@ -124,8 +124,10 @@ void main() {
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW);
         
         const positionAttribLocation = this.gl.getAttribLocation(this.program, 'aPosition');
-        this.gl.enableVertexAttribArray(positionAttribLocation);
-        this.gl.vertexAttribPointer(positionAttribLocation, 2, this.gl.FLOAT, false, 0, 0);
+        if (positionAttribLocation !== -1) {
+            this.gl.enableVertexAttribArray(positionAttribLocation);
+            this.gl.vertexAttribPointer(positionAttribLocation, 2, this.gl.FLOAT, false, 0, 0);
+        }
         
         // Create and bind texcoord buffer
         const texCoordBuffer = this.gl.createBuffer();
@@ -133,8 +135,10 @@ void main() {
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(texCoords), this.gl.STATIC_DRAW);
         
         const texCoordAttribLocation = this.gl.getAttribLocation(this.program, 'aTexCoord');
-        this.gl.enableVertexAttribArray(texCoordAttribLocation);
-        this.gl.vertexAttribPointer(texCoordAttribLocation, 2, this.gl.FLOAT, false, 0, 0);
+        if (texCoordAttribLocation !== -1) {
+            this.gl.enableVertexAttribArray(texCoordAttribLocation);
+            this.gl.vertexAttribPointer(texCoordAttribLocation, 2, this.gl.FLOAT, false, 0, 0);
+        }
     }
     
     createFragmentShader(peptideCode, testCode) {
