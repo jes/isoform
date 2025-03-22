@@ -7,6 +7,29 @@ class Ifloat {
         this.max = Math.max(...vals);
     }
 
+    static min(a, b) {
+        return new Ifloat(Math.min(a.min, b.min), Math.min(a.max, b.max));
+    }
+
+    static max(a, b) {
+        return new Ifloat(Math.max(a.min, b.min), Math.max(a.max, b.max));
+    }
+
+    static clamp(a, min, max) {
+        return Ifloat.max(min, Ifloat.min(a, max));
+    }
+
+    static mix(a, b, t) {
+        return a.mul(new Ifloat(1).sub(t)).add(b.mul(t));
+    }
+
+    static step(edge, x) {
+        // step(edge, x) = 0 if x < edge, 1 if x >= edge
+        const canBeZero = x.min < edge.max;
+        const canBeOne = x.max >= edge.min;
+        return new Ifloat(canBeZero ? 0 : 1, canBeOne ? 1 : 0);
+    }
+
     containsZero() {
         return this.min <= 0 && this.max >= 0;
     }

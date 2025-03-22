@@ -117,6 +117,7 @@ class Peptide {
         }
         return new Peptide('mconst', 'mat3', mat3, null, null, null, {
             evaluate: (vars) => mat3,
+            evaluateInterval: (vars) => mat3,
             jsCode: (ssaOp) => `${ssaOp.result} = new Mat3(${mat3.m[0][0]}, ${mat3.m[0][1]}, ${mat3.m[0][2]}, ${mat3.m[1][0]}, ${mat3.m[1][1]}, ${mat3.m[1][2]}, ${mat3.m[2][0]}, ${mat3.m[2][1]}, ${mat3.m[2][2]});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${mat3.glsl()};`,
         });
@@ -125,6 +126,12 @@ class Peptide {
     static mvar(name) {
         return new Peptide('mvar', 'mat3', name, null, null, null, {
             evaluate: (vars) => {
+                if (!(name in vars)) {
+                    throw new Error(`Matrix variable '${name}' not found`);
+                }
+                return vars[name];
+            },
+            evaluateInterval: (vars) => {
                 if (!(name in vars)) {
                     throw new Error(`Matrix variable '${name}' not found`);
                 }
@@ -332,7 +339,7 @@ class Peptide {
         b.assertType('float');
         return new Peptide('min', 'float', null, a, b, null, {
             evaluate: (vars) => Math.min(a.evaluate(vars), b.evaluate(vars)),
-            evaluateInterval: (vars) => new Ifloat(Math.min(a.evaluateInterval(vars).min, b.evaluateInterval(vars).min), Math.min(a.evaluateInterval(vars).max, b.evaluateInterval(vars).max)),
+            evaluateInterval: (vars) => Ifloat.min(a.evaluateInterval(vars), b.evaluateInterval(vars)),
             jsCode: (ssaOp) => `${ssaOp.result} = Math.min(${ssaOp.left}, ${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = min(${ssaOp.left}, ${ssaOp.right});`,
         });
@@ -343,7 +350,7 @@ class Peptide {
         b.assertType('float');
         return new Peptide('max', 'float', null, a, b, null, {
             evaluate: (vars) => Math.max(a.evaluate(vars), b.evaluate(vars)),
-            evaluateInterval: (vars) => new Ifloat(Math.max(a.evaluateInterval(vars).min, b.evaluateInterval(vars).min), Math.max(a.evaluateInterval(vars).max, b.evaluateInterval(vars).max)),
+            evaluateInterval: (vars) => Ifloat.max(a.evaluateInterval(vars), b.evaluateInterval(vars)),
             jsCode: (ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.left}, ${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = max(${ssaOp.left}, ${ssaOp.right});`,
         });
@@ -355,15 +362,8 @@ class Peptide {
         max.assertType('float');
         return new Peptide('clamp', 'float', null, a, min, max, {
             evaluate: (vars) => Math.max(min.evaluate(vars), Math.min(a.evaluate(vars), max.evaluate(vars))),
-            evaluateInterval: (vars) => {
-                const aVal = a.evaluateInterval(vars);
-                const minVal = min.evaluateInterval(vars);
-                const maxVal = max.evaluateInterval(vars);
-                return new Ifloat(
-                    Math.max(minVal.min, Math.min(aVal.min, maxVal.min)),
-                    Math.min(minVal.max, Math.max(aVal.max, maxVal.max))
-                );
-            },
+            evaluateInterval: (vars) => Ifloat.clamp(a.evaluateInterval(vars), min.evaluateInterval(vars), max.evaluateInterval(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.right}, Math.min(${ssaOp.left}, ${ssaOp.third}));`,
             jsCode: (ssaOp) => `${ssaOp.result} = Math.max(${ssaOp.right}, Math.min(${ssaOp.left}, ${ssaOp.third}));`,
             glslCode: (ssaOp) => `${ssaOp.result} = clamp(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
         });
@@ -375,12 +375,8 @@ class Peptide {
         t.assertType('float');
         return new Peptide('mix', 'float', null, a, b, t, {
             evaluate: (vars) => a.evaluate(vars) * (1 - t.evaluate(vars)) + b.evaluate(vars) * t.evaluate(vars),
-            evaluateInterval: (vars) => {
-                const aVal = a.evaluateInterval(vars);
-                const bVal = b.evaluateInterval(vars);
-                const tVal = t.evaluateInterval(vars);
-                return aVal.mul(new Ifloat(1).sub(tVal)).add(bVal.mul(tVal));
-            },
+            evaluateInterval: (vars) => Ifloat.mix(a.evaluateInterval(vars), b.evaluateInterval(vars), t.evaluateInterval(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * (1 - ${ssaOp.third}) + ${ssaOp.right} * ${ssaOp.third};`,
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * (1 - ${ssaOp.third}) + ${ssaOp.right} * ${ssaOp.third};`,
             glslCode: (ssaOp) => `${ssaOp.result} = mix(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
         });
@@ -391,6 +387,7 @@ class Peptide {
         b.assertType('float');
         return new Peptide('step', 'float', null, a, b, null, {
             evaluate: (vars) => a.evaluate(vars) <= b.evaluate(vars) ? 1.0 : 0.0,
+            evaluateInterval: (vars) => Ifloat.step(a.evaluateInterval(vars), b.evaluateInterval(vars)),
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} <= ${ssaOp.right} ? 1.0 : 0.0;`,
             glslCode: (ssaOp) => `${ssaOp.result} = step(${ssaOp.left}, ${ssaOp.right});`,
         });
@@ -451,6 +448,7 @@ class Peptide {
         a.assertType('float');
         return new Peptide('sin', 'float', null, a, null, null, {
             evaluate: (vars) => Math.sin(a.evaluate(vars)),
+            evaluateInterval: (vars) => new Ifloat(Math.sin(a.evaluateInterval(vars).min), Math.sin(a.evaluateInterval(vars).max)),
             jsCode: (ssaOp) => `${ssaOp.result} = Math.sin(${ssaOp.left});`,
             glslCode: (ssaOp) => `${ssaOp.result} = sin(${ssaOp.left});`,
         });
@@ -460,6 +458,7 @@ class Peptide {
         a.assertType('float');
         return new Peptide('cos', 'float', null, a, null, null, {
             evaluate: (vars) => Math.cos(a.evaluate(vars)),
+            evaluateInterval: (vars) => new Ifloat(Math.cos(a.evaluateInterval(vars).min), Math.cos(a.evaluateInterval(vars).max)),
             jsCode: (ssaOp) => `${ssaOp.result} = Math.cos(${ssaOp.left});`,
             glslCode: (ssaOp) => `${ssaOp.result} = cos(${ssaOp.left});`,
         });
@@ -499,6 +498,7 @@ class Peptide {
         a.assertType('mat3');
         return new Peptide('mtranspose', 'mat3', null, a, null, null, {
             evaluate: (vars) => a.evaluate(vars).transpose(),
+            evaluateInterval: (vars) => a.evaluateInterval(vars).transpose(),
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.transpose();`,
             glslCode: (ssaOp) => `${ssaOp.result} = transpose(${ssaOp.left});`,
         });
@@ -542,6 +542,7 @@ class Peptide {
         b.assertType('mat3');
         return new Peptide('mmul', 'mat3', null, a, b, null, {
             evaluate: (vars) => a.evaluate(vars).mul(b.evaluate(vars)),
+            evaluateInterval: (vars) => a.evaluateInterval(vars).mul(b.evaluateInterval(vars)),
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
         });

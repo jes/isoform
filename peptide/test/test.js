@@ -85,6 +85,8 @@ function addTest(name, testFn) {
         const result = expr.evaluateInterval(vars);
         if (result instanceof Ivec3) {
             return new Vec3(result.x.min, result.y.min, result.z.min);
+        } else if (result instanceof Ifloat) {
+            return result.min;
         } else {
             return result;
         }
