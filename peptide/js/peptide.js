@@ -297,6 +297,7 @@ class Peptide {
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.cross(${ssaOp.right});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.cross(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = cross(${ssaOp.left}, ${ssaOp.right});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = icross3(${ssaOp.left}, ${ssaOp.right});`,
         });
     }
 

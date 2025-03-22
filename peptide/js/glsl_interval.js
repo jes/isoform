@@ -101,6 +101,15 @@ ivec3 itov3(vec3 v) {
         vec3(v.z, v.z, 0.0)
     );
 }
+
+// Cross product for interval vectors
+ivec3 icross3(ivec3 a, ivec3 b) {
+    return ivec3(
+        isub(imul(a[1].xy, b[2].xy), imul(a[2].xy, b[1].xy)), 0.0,
+        isub(imul(a[2].xy, b[0].xy), imul(a[0].xy, b[2].xy)), 0.0,
+        isub(imul(a[0].xy, b[1].xy), imul(a[1].xy, b[0].xy)), 0.0
+    );
+}
 `;
 
 (function() {
