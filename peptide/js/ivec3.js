@@ -15,9 +15,9 @@ class Ivec3 {
         } else if (!(z instanceof Ifloat)) {
             throw new Error('Invalid z value: ' + typeof z + ' ' + z);
         }
-        this.x = x;
-        this.y = y;
-        this.z = z;
+        this.x = new Ifloat(x.min, x.max);
+        this.y = new Ifloat(y.min, y.max);
+        this.z = new Ifloat(z.min, z.max);
     }
 
     add(v) {
