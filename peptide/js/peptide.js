@@ -370,7 +370,12 @@ class Peptide {
                 return `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`;
             },
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
-            glslIntervalCode: (ssaOp) => `${ssaOp.result} = imul(${ssaOp.left}, ${ssaOp.right});`,
+            glslIntervalCode: (ssaOp) => {
+                if (ssaOp.left == ssaOp.right) {
+                    return `${ssaOp.result} = isqr(${ssaOp.left});`;
+                }
+                return `${ssaOp.result} = imul(${ssaOp.left}, ${ssaOp.right});`;
+            },
         });
     }
 

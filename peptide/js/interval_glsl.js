@@ -16,6 +16,13 @@ ifloat imul(ifloat a, ifloat b) {
     return ((a < 0.0) ? b.yx : b) * a;
 }
 
+ifloat isqr(ifloat a) {
+    if (a.x < 0.0) {
+        return ifloat(0.0, max(a.x*a.x, a.y*a.y));
+    }
+    return ifloat(a.x*a.x, a.y*a.y);
+}
+
 ifloat idiv(ifloat a, ifloat b) {
     vec4 f = vec4(a.x/b, a.y/b);
     return ifloat(
