@@ -356,7 +356,20 @@ const renderer = {
         
         // Raymarch from this point
         const result1 = this.rayMarchFromPoint(ro, rd);
-        const result2 = this.rayMarchIntervalFromPoint(ro, rd);
+        let result2;
+        try {
+            result2 = this.rayMarchIntervalFromPoint(ro, rd);
+        } catch (e) {
+            console.error(e);
+        }
+        
+        if (!result2) {
+            result2 = {
+                hit: false,
+                hitPosition: new Vec3(0, 0, 0),
+                steps: 0
+            };
+        }
 
         // Display coordinates if we hit something
         this.displayCoordinatesIfHit(result1, result2);
@@ -384,8 +397,8 @@ const renderer = {
     
     displayCoordinatesIfHit(result1, result2) {
         if (result1.hit || result2.hit) {
-            const coords1 = result1.hitPosition;
-            const coords2 = result2.hitPosition;
+            const coords1 = result1.hitPosition || new Vec3(0, 0, 0);
+            const coords2 = result2.hitPosition || new Vec3(0, 0, 0);
             const text = `X: ${coords1.x.toFixed(3)}/${coords2.x.toFixed(3)}<br>Y: ${coords1.y.toFixed(3)}/${coords2.y.toFixed(3)}<br>Z: ${coords1.z.toFixed(3)}/${coords2.z.toFixed(3)}`;
             
             this.coordDisplay.innerHTML = text;
@@ -400,9 +413,8 @@ const renderer = {
 
         const result = {
             distance: 0.0,
-            minDistance: 1000000.0,
             hit: false,
-            hitPosition: null,
+            hitPosition: new Vec3(0, 0, 0),
             steps: 0
         };
 
@@ -410,32 +422,41 @@ const renderer = {
             return result;
         }
 
-        let p = ro;
-        let lastD = 0.0;
-        const MAX_STEPS = 500;
-
-        for (let i = 0; i < MAX_STEPS; i++) {
-            result.steps++;
-            
-            // Apply rotation to point before evaluating SDF
-            const rotatedP = camera.activeRotationMatrix.mulVec3(p);
-            const d = app.intervalSdf(new Ivec3(rotatedP.x, rotatedP.y, rotatedP.z)).min;
-            
-            result.minDistance = Math.min(result.minDistance, d);
-
-            if (d < 0.0) {
-                result.hit = true;
-                result.hitPosition = rotatedP;
-                break;
-            }
-
-            const stepSize = Math.max(0.0001, d);
-            p = p.add(rd.mul(stepSize));
-
-            if (d > lastD && result.distance > 10000.0) break;
-            lastD = d;
-            result.distance += d;
+        let p = new Ivec3(ro.x, ro.y, ro.z);
+        p.z = new Ifloat(p.z.min, -p.z.min);
+        let rotatedP = p.mvmul(camera.activeRotationMatrix);
+        const d = app.intervalSdf(rotatedP);
+        if (isNaN(d.min) || isNaN(d.max)) {
+            console.error('Interval SDF returned NaN');
+            return result;
         }
+        if (d.max <= 0.0) {
+            // entire interval is inside object
+            result.hit = true;
+            result.hitPosition = new Vec3((rotatedP.x.min+rotatedP.x.max)/2, (rotatedP.y.min+rotatedP.y.max)/2, (rotatedP.z.min+rotatedP.z.max)/2);
+            return result;
+        }
+        if (d.min > 0.0) {
+            // entire interval is outside object
+            return result;
+        }
+
+        const steps = 50;
+        for (let i = 0; i < steps; i++) {
+            let p2 = new Ivec3(p.x, p.y, p.z);
+            p2.z.min = (p2.z.min+p2.z.max)/2;
+            rotatedP = camera.activeRotationMatrix.mulVec3(p2);
+            const d = app.intervalSdf(rotatedP);
+            result.steps++;
+            if (d.min >= 0.0) {
+                p.z.max = p2.z.min;
+            } else {
+                p.z.min = p2.z.min;
+            }
+        }
+
+        result.hit = true;
+        result.hitPosition = new Vec3((rotatedP.x.min+rotatedP.x.max)/2, (rotatedP.y.min+rotatedP.y.max)/2, (rotatedP.z.min+rotatedP.z.max)/2);
 
         const endTime = performance.now();
         const duration = (endTime - startTime).toFixed(2);
@@ -451,7 +472,6 @@ const renderer = {
 
         const result = {
             distance: 0.0,
-            minDistance: 1000000.0,
             hit: false,
             hitPosition: null,
             steps: 0
@@ -472,8 +492,6 @@ const renderer = {
             const rotatedP = camera.activeRotationMatrix.mulVec3(p);
             const d = app.sdf(rotatedP);
             
-            result.minDistance = Math.min(result.minDistance, d);
-
             if (d < 0.0) {
                 result.hit = true;
                 result.hitPosition = rotatedP;
