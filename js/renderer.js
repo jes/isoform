@@ -424,8 +424,10 @@ const renderer = {
 
         let p = new Ivec3(ro.x, ro.y, ro.z);
         p.z = new Ifloat(p.z.min, -p.z.min);
+        console.log("raymarch p", p.x.min, p.x.max, p.y.min, p.y.max, p.z.min, p.z.max);
         let rotatedP = p.mvmul(camera.activeRotationMatrix);
         const d = app.intervalSdf(rotatedP);
+        console.log("raymarch d", d.min, d.max);
         if (isNaN(d.min) || isNaN(d.max)) {
             console.error('Interval SDF returned NaN');
             return result;
@@ -441,12 +443,15 @@ const renderer = {
             return result;
         }
 
-        const steps = 50;
+        const steps = 100;
         for (let i = 0; i < steps; i++) {
+            console.log("p.z ", p.z.min, p.z.max);
             let p2 = new Ivec3(p.x, p.y, p.z);
             p2.z.min = (p2.z.min+p2.z.max)/2;
-            rotatedP = camera.activeRotationMatrix.mulVec3(p2);
+            console.log("raymarch z", p2.z.min, p2.z.max);
+            rotatedP = p2.mvmul(camera.activeRotationMatrix);
             const d = app.intervalSdf(rotatedP);
+            console.log("raymarch d", d.min, d.max);
             result.steps++;
             if (d.min >= 0.0) {
                 p.z.max = p2.z.min;
