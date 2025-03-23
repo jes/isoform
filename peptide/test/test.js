@@ -1230,6 +1230,24 @@ addTest('modulo operations', (evaluate) => {
     assertEquals(evaluate(mod2), 1); // 7 mod 3 = 1
 });
 
+addTest('interval square', (evaluate) => {
+    const x = P.var('x');
+    const square = P.mul(x, x);
+    const interval = square.evaluateInterval({ x: new Ifloat(-2, 3) });
+    assertEquals(interval.min, 0);
+    assertEquals(interval.max, 9);
+});
+
+addTest('interval vlength', (evaluate) => {
+    const x = P.var('x');
+    const y = P.var('y');
+    const z = P.var('z');
+    const vlength = P.vlength(P.vec3(x, y, z));
+    const interval = vlength.evaluateInterval({ x: new Ifloat(-2, 3), y: new Ifloat(-2, 3), z: new Ifloat(-2, 3) });
+    assertEquals(interval.min, 0);
+    assertEquals(interval.max, Math.sqrt(3 * 3*3));
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,

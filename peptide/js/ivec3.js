@@ -60,7 +60,7 @@ class Ivec3 {
 
     length() {
         // sqrt(x^2 + y^2 + z^2)
-        return this.x.mul(this.x).add(this.y.mul(this.y)).add(this.z.mul(this.z)).sqrt();
+        return this.x.sqr().add(this.y.sqr()).add(this.z.sqr()).sqrt();
     }
 
     abs() {
@@ -91,6 +91,25 @@ class Ivec3 {
             this.z.mul(v.x).sub(this.x.mul(v.z)),
             this.x.mul(v.y).sub(this.y.mul(v.x))
         );
+    }
+
+    mvmul(m) {
+        const xResult = new Ifloat(0)
+            .add(new Ifloat(m.m[0][0]).mul(this.x))
+            .add(new Ifloat(m.m[0][1]).mul(this.y))
+            .add(new Ifloat(m.m[0][2]).mul(this.z));
+
+        const yResult = new Ifloat(0)
+            .add(new Ifloat(m.m[1][0]).mul(this.x))
+            .add(new Ifloat(m.m[1][1]).mul(this.y))
+            .add(new Ifloat(m.m[1][2]).mul(this.z));
+
+        const zResult = new Ifloat(0)
+            .add(new Ifloat(m.m[2][0]).mul(this.x))
+            .add(new Ifloat(m.m[2][1]).mul(this.y))
+            .add(new Ifloat(m.m[2][2]).mul(this.z));
+
+        return new Ivec3(xResult, yResult, zResult);
     }
 
     normalize() {

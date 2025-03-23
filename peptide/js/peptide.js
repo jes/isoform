@@ -356,9 +356,19 @@ class Peptide {
         b.assertType('float');
         return new Peptide('mul', 'float', null, a, b, null, {
             evaluate: (vars) => a.evaluate(vars) * b.evaluate(vars),
-            evaluateInterval: (vars) => a.evaluateInterval(vars).mul(b.evaluateInterval(vars)),
+            evaluateInterval: (vars) => {
+                if (a == b) {
+                    return a.evaluateInterval(vars).sqr();
+                }
+                return a.evaluateInterval(vars).mul(b.evaluateInterval(vars));
+            },
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
-            jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
+            jsIntervalCode: (ssaOp) => {
+                if (ssaOp.left == ssaOp.right) {
+                    return `${ssaOp.result} = ${ssaOp.left}.sqr();`;
+                }
+                return `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`;
+            },
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = imul(${ssaOp.left}, ${ssaOp.right});`,
         });
@@ -591,32 +601,13 @@ class Peptide {
         a.assertType('mat3');
         b.assertType('vec3');
 
-        const matmulInterval = (a, b) => {
-            const xResult = new Ifloat(0)
-                .add(new Ifloat(a.m[0][0]).mul(b.x))
-                .add(new Ifloat(a.m[0][1]).mul(b.y))
-                .add(new Ifloat(a.m[0][2]).mul(b.z));
-
-            const yResult = new Ifloat(0)
-                .add(new Ifloat(a.m[1][0]).mul(b.x))
-                .add(new Ifloat(a.m[1][1]).mul(b.y))
-                .add(new Ifloat(a.m[1][2]).mul(b.z));
-
-            const zResult = new Ifloat(0)
-                .add(new Ifloat(a.m[2][0]).mul(b.x))
-                .add(new Ifloat(a.m[2][1]).mul(b.y))
-                .add(new Ifloat(a.m[2][2]).mul(b.z));
-
-            return new Ivec3(xResult, yResult, zResult);
-        }
-
         return new Peptide('mvmul', 'vec3', null, a, b, null, {
             evaluate: (vars) => a.evaluate(vars).mulVec3(b.evaluate(vars)),
             evaluateInterval: (vars) => {
                 const aVal = a.evaluate(vars); // We'll still use the concrete matrix for simplicity
                 const bInterval = b.evaluateInterval(vars);
 
-                return matmulInterval(aVal, bInterval);
+                return bInterval.mvmul(aVal);
             },
             jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mulVec3(${ssaOp.right});`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = new Ivec3(new Ifloat(0).add(new Ifloat(${ssaOp.left}.m[0][0]).mul(${ssaOp.right}.x)).add(new Ifloat(${ssaOp.left}.m[0][1]).mul(${ssaOp.right}.y)).add(new Ifloat(${ssaOp.left}.m[0][2]).mul(${ssaOp.right}.z)), new Ifloat(0).add(new Ifloat(${ssaOp.left}.m[1][0]).mul(${ssaOp.right}.x)).add(new Ifloat(${ssaOp.left}.m[1][1]).mul(${ssaOp.right}.y)).add(new Ifloat(${ssaOp.left}.m[1][2]).mul(${ssaOp.right}.z)), new Ifloat(0).add(new Ifloat(${ssaOp.left}.m[2][0]).mul(${ssaOp.right}.x)).add(new Ifloat(${ssaOp.left}.m[2][1]).mul(${ssaOp.right}.y)).add(new Ifloat(${ssaOp.left}.m[2][2]).mul(${ssaOp.right}.z)));`,

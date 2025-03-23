@@ -46,6 +46,13 @@ class Ifloat {
         return new Ifloat(this.min * other.min, this.max * other.max, this.min * other.max, this.max * other.min);
     }
 
+    sqr() {
+        if (this.min < 0) {
+            return new Ifloat(0, Math.max(this.min * this.min, this.max * this.max));
+        }
+        return new Ifloat(this.min * this.min, this.max * this.max);
+    }
+
     div(other) {
         if (other.containsZero()) {
             throw new Error('Division by interval that contains zero: ' + other.min + ',' + other.max);
