@@ -69,7 +69,7 @@ class SketchNode extends TreeNode {
               P.mul(P.step(vby, py), P.mul(P.step(py, P.sub(vay, eps)), P.step(ds[1], P.const(0.0)))))
     ));
     d = P.min(d, ds[0]);
-    d = P.mul(s, P.sqrt(d));
+    d = P.mul(s, P.sqrt(P.abs(d))); // take abs(d) so that the interval can't contain negative numbers
 
     // At this point d tells us the distance to the nearest point on the sketch in the 2d plane.
     // To make an SDF that works in 3d, we need to extend this to 3d by using the distance to the
