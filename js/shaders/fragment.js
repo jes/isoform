@@ -206,7 +206,7 @@ vec3 visualizeSteps(int steps) {
 vec3 applyFog(vec3 color, int steps, vec3 fogColor) {
     float fogFactor = float(steps) / float(MAX_STEPS);
     fogFactor = clamp(fogFactor, 0.0, 1.0);
-    return mix(color, fogColor, fogFactor);
+    return mix(color, fogColor, fogFactor*0.5);
 }
 
 /// Main
