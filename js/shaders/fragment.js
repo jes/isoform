@@ -280,7 +280,7 @@ OrthoProjectionResult orthoProjection(vec3 ro, vec3 rd, vec3 right, vec3 up, flo
         result.color = mix(result.color, edgeColor, clamp(edgeMixFactor, 0.0, 1.0));
         
         // Apply fog based on step count
-        vec3 fogColor = vec3(0.9, 0.9, 0.9); // Light blue-gray fog
+        vec3 fogColor = vec3(0.9, 0.9, 0.9);
         result.color = applyFog(result.color, marchResult.steps, fogColor);
     }
 
