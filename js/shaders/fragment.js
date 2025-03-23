@@ -263,7 +263,7 @@ OrthoProjectionResult orthoProjection(vec3 ro, vec3 rd, vec3 right, vec3 up, flo
         float spec1 = pow(max(dot(normal, halfwayDir1), 0.0), 32.0);
         float spec2 = pow(max(dot(normal, halfwayDir2), 0.0), 16.0);
         
-        vec3 specular = (spec1 * lightColor1 * 0.3 + spec2 * lightColor2 * 0.1);
+        vec3 specular = (spec1 * lightColor1 * 0.8 + spec2 * lightColor2 * 0.3);
         
         // Fresnel effect for rim lighting
         float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
