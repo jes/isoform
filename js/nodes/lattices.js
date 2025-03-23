@@ -10,9 +10,10 @@ class GyroidNode extends TreeNode {
 
   makePeptide(p) {
     p = P.vdiv(p, P.const(this.scale));
-    return P.add(P.mul(P.sin(P.vecX(p)), P.cos(P.vecY(p))),
-           P.add(P.mul(P.sin(P.vecY(p)), P.cos(P.vecZ(p))),
-                 P.mul(P.sin(P.vecZ(p)), P.cos(P.vecX(p)))));
+    const gyroid = P.add(P.mul(P.sin(P.vecX(p)), P.cos(P.vecY(p))),
+                   P.add(P.mul(P.sin(P.vecY(p)), P.cos(P.vecZ(p))),
+                         P.mul(P.sin(P.vecZ(p)), P.cos(P.vecX(p)))));
+    return P.div(gyroid, P.const(this.scale * 2.0));
   }
 }
 
