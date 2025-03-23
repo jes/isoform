@@ -76,7 +76,7 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
     MarchResult result;
     result.distance = 0.0;
     result.minDistance = 1000000.0;
-    result.hit = false;
+    result.hit = true;
     result.steps = 0;
 
     vec3 p = ro;
@@ -99,7 +99,10 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
 
         p += rd * d * uStepFactor;
         
-        if (d > lastD && result.distance > 10000.0) break;
+        if (d > lastD && result.distance > 10000.0) {
+            result.hit = false;
+            break;
+        }
         lastD = d;
         result.distance += d;
     }
@@ -200,6 +203,13 @@ vec3 visualizeSteps(int steps) {
     return color;
 }
 
+// Add fog calculation function
+vec3 applyFog(vec3 color, int steps, vec3 fogColor) {
+    float fogFactor = float(steps) / float(MAX_STEPS);
+    fogFactor = clamp(fogFactor, 0.0, 1.0);
+    return mix(color, fogColor, fogFactor);
+}
+
 /// Main
 
 struct OrthoProjectionResult {
@@ -268,6 +278,10 @@ OrthoProjectionResult orthoProjection(vec3 ro, vec3 rd, vec3 right, vec3 up, flo
         // Only apply edge highlighting if enabled
         float edgeMixFactor = uShowEdges ? edge * 1.5 : 0.0; // Amplify the edge effect when enabled
         result.color = mix(result.color, edgeColor, clamp(edgeMixFactor, 0.0, 1.0));
+        
+        // Apply fog based on step count
+        vec3 fogColor = vec3(0.9, 0.9, 0.9); // Light blue-gray fog
+        result.color = applyFog(result.color, marchResult.steps, fogColor);
     }
 
     return result;
