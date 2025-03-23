@@ -13,7 +13,7 @@ class GyroidNode extends TreeNode {
     const gyroid = P.add(P.mul(P.sin(P.vecX(p)), P.cos(P.vecY(p))),
                    P.add(P.mul(P.sin(P.vecY(p)), P.cos(P.vecZ(p))),
                          P.mul(P.sin(P.vecZ(p)), P.cos(P.vecX(p)))));
-    return P.div(gyroid, P.const(this.scale * 2.0));
+    return P.mul(gyroid, P.const(0.5 * this.scale));
   }
 }
 
