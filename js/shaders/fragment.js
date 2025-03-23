@@ -242,7 +242,7 @@ OrthoProjectionResult orthoProjection(vec3 ro, vec3 rd, vec3 right, vec3 up, flo
         // Improved lighting setup with multiple light sources
         vec3 lightDir1 = normalize(vec3(0.5, 0.8, 0.6)); // Main light
         vec3 lightDir2 = normalize(vec3(-0.5, 0.3, 0.2)); // Fill light
-        vec3 lightDir3 = normalize(vec3(0.0, -0.5, 0.8)); // Rim light
+        vec3 lightDir3 = normalize(vec3(0.0, -0.5, -0.8)); // Rim light
         
         vec3 lightColor1 = vec3(1.0, 0.98, 0.95); // Warm main light
         vec3 lightColor2 = vec3(0.8, 0.9, 1.0) * 0.3;   // Cool fill light
