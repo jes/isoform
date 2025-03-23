@@ -76,7 +76,7 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
     MarchResult result;
     result.distance = 0.0;
     result.minDistance = 1000000.0;
-    result.hit = true;
+    result.hit = false;
     result.steps = 0;
 
     vec3 p = ro;
@@ -84,14 +84,14 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
     for (int i = 0; i < MAX_STEPS; i++) {
         result.steps++; // Increment step counter
         float d = mapsign * map(p);
+        result.sdf = d;
+        result.hitPosition = p;
         
         // Track minimum distance encountered
         result.minDistance = min(result.minDistance, d);
 
         if (d < 0.0) {
             result.hit = true;
-            result.hitPosition = p;
-            result.sdf = d;
             break;
         }
         
@@ -99,13 +99,12 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
 
         p += rd * d * uStepFactor;
         
-        if (d > lastD && result.distance > 10000.0) {
-            result.hit = false;
-            break;
-        }
+        if (d > lastD && result.distance > 10000.0) break;
         lastD = d;
         result.distance += d;
     }
+
+    if (lastD < 1.0) result.hit = true;
     
     return result;
 }
