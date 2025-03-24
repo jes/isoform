@@ -30,12 +30,8 @@ class Mesher {
         console.log("Generating mesh...");
         const { resolution, bounds } = this;
         
-        // Calculate cell size
-        const cellSize = new Vec3(
-            (bounds.max.x - bounds.min.x) / resolution,
-            (bounds.max.y - bounds.min.y) / resolution,
-            (bounds.max.z - bounds.min.z) / resolution
-        );
+        // Calculate cell size using Vec3 operations
+        const cellSize = bounds.max.sub(bounds.min).div(resolution);
 
         // Create a 3D grid of SDF values
         const grid = new Array(resolution + 1).fill().map(() => 
@@ -47,12 +43,10 @@ class Mesher {
         // Fill the grid with SDF values
         console.log("Sampling SDF values...");
         for (let i = 0; i <= resolution; i++) {
-            const x = bounds.min.x + i * cellSize.x;
             for (let j = 0; j <= resolution; j++) {
-                const y = bounds.min.y + j * cellSize.y;
                 for (let k = 0; k <= resolution; k++) {
-                    const z = bounds.min.z + k * cellSize.z;
-                    grid[i][j][k] = this.evaluateSDF(new Vec3(x, y, z));
+                    const position = bounds.min.add(new Vec3(i, j, k).mul(cellSize));
+                    grid[i][j][k] = this.evaluateSDF(position);
                 }
             }
             
@@ -143,12 +137,13 @@ class Mesher {
                     const idx0 = cornerIndices[v0];
                     const idx1 = cornerIndices[v1];
                     
-                    // Calculate world position
-                    const x = this.bounds.min.x + (idx0[0] * (1-t) + idx1[0] * t) * cellSize.x;
-                    const y = this.bounds.min.y + (idx0[1] * (1-t) + idx1[1] * t) * cellSize.y;
-                    const z = this.bounds.min.z + (idx0[2] * (1-t) + idx1[2] * t) * cellSize.z;
+                    // Calculate world position using Vec3 operations
+                    const pos0 = new Vec3(idx0[0], idx0[1], idx0[2]);
+                    const pos1 = new Vec3(idx1[0], idx1[1], idx1[2]);
+                    const interpolated = pos0.mul(1-t).add(pos1.mul(t));
+                    const worldPos = this.bounds.min.add(interpolated.mul(cellSize));
                     
-                    intersections[e] = new Vec3(x, y, z);
+                    intersections[e] = worldPos;
                 } else {
                     // Calculate interpolation factor
                     let t = (this.isoLevel - val0) / (val1 - val0);
@@ -158,12 +153,13 @@ class Mesher {
                     const idx0 = cornerIndices[v0];
                     const idx1 = cornerIndices[v1];
                     
-                    // Calculate world position
-                    const x = this.bounds.min.x + (idx0[0] * (1-t) + idx1[0] * t) * cellSize.x;
-                    const y = this.bounds.min.y + (idx0[1] * (1-t) + idx1[1] * t) * cellSize.y;
-                    const z = this.bounds.min.z + (idx0[2] * (1-t) + idx1[2] * t) * cellSize.z;
+                    // Calculate world position using Vec3 operations
+                    const pos0 = new Vec3(idx0[0], idx0[1], idx0[2]);
+                    const pos1 = new Vec3(idx1[0], idx1[1], idx1[2]);
+                    const interpolated = pos0.mul(1-t).add(pos1.mul(t));
+                    const worldPos = this.bounds.min.add(interpolated.mul(cellSize));
                     
-                    intersections[e] = new Vec3(x, y, z);
+                    intersections[e] = worldPos;
                 }
             }
         }
