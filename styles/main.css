@@ -11,6 +11,9 @@ canvas {
     height: 100vh;
     min-width: 0; /* Prevent flex items from overflowing */
     position: relative; /* Make it a positioned container */
+}
+
+#glCanvas {
     background: rgb(64, 64, 64);
 }
 #ui-panel {
