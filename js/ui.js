@@ -853,11 +853,7 @@ const ui = {
                 const filename = `${nodeName.replace(/\s+/g, '_')}.stl`;
                 
                 // Create mesher from the node with default options
-                const mesher = Mesher.fromTreeNode(node, {
-                    resolution: 64,  // Default resolution
-                    bounds: { min: new Vec3(-50, -50, -50), max: new Vec3(50, 50, 50) },
-                    isoLevel: 0.0
-                });
+                const mesher = Mesher.fromTreeNode(node);
                 
                 // Generate the mesh
                 mesher.generateMesh();

@@ -1,8 +1,8 @@
 class Mesher {
     constructor(peptideExpr, options = {}) {
         this.peptideExpr = peptideExpr;
-        this.resolution = options.resolution || 48;
-        this.bounds = options.bounds || { min: new Vec3(-30, -30, -30), max: new Vec3(30, 30, 30) };
+        this.resolution = options.resolution || 128;
+        this.bounds = options.bounds || { min: new Vec3(-20, -20, -20), max: new Vec3(20, 20, 20) };
         this.isoLevel = options.isoLevel || 0.0;
         this.vertices = [];
         this.triangles = [];
