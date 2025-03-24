@@ -443,21 +443,27 @@ const renderer = {
             return result;
         }
 
-        const steps = 100;
+        const steps = 15;
         for (let i = 0; i < steps; i++) {
-            console.log("p.z ", p.z.min, p.z.max);
+            // binary search for the interval
             let p2 = new Ivec3(p.x, p.y, p.z);
             p2.z.min = (p2.z.min+p2.z.max)/2;
-            console.log("raymarch z", p2.z.min, p2.z.max);
             rotatedP = p2.mvmul(camera.activeRotationMatrix);
             const d = app.intervalSdf(rotatedP);
-            console.log("raymarch d", d.min, d.max);
+            console.log("raymarch z", p2.z.min, p2.z.max, " = ", d.min, d.max);
             result.steps++;
             if (d.min >= 0.0) {
                 p.z.max = p2.z.min;
             } else {
                 p.z.min = p2.z.min;
             }
+
+            // sphere tracing to advance
+            const p1 = new Vec3(p.x.min, p.y.min, p.z.max);
+            const rotatedP1 = camera.activeRotationMatrix.mulVec3(p1);
+            const d1 = app.sdf(rotatedP1);
+            const stepSize = Math.max(0.0001, d1);
+            p.z.max -= stepSize;
         }
 
         result.hit = true;
@@ -465,7 +471,7 @@ const renderer = {
 
         const endTime = performance.now();
         const duration = (endTime - startTime).toFixed(2);
-        if (duration > 10.0) {
+        if (duration > 1.0) {
             console.log(`Interval raymarching took ${duration}ms (${result.steps} steps)`);
         }
 
@@ -513,7 +519,7 @@ const renderer = {
 
         const endTime = performance.now();
         const duration = (endTime - startTime).toFixed(2);
-        if (duration > 10.0) {
+        if (duration > 0.0) {
             console.log(`Raymarching took ${duration}ms (${result.steps} steps)`);
         }
 
