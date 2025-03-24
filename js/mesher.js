@@ -162,10 +162,13 @@ class Mesher {
         
         // Create triangles using the triangle table
         const triangleTable = MarchingCubesTables.TRIANGLE_TABLE[cubeIndex];
-        for (let t = 0; triangleTable[t] !== -1; t += 3) {
-            const v1 = intersections[triangleTable[t]];
-            const v2 = intersections[triangleTable[t+1]];
-            const v3 = intersections[triangleTable[t+2]];
+        
+        // For each triplet in the triangle table, create a triangle
+        for (let i = 0; triangleTable[i] != -1; i += 3) {
+            // Get vertices for this triangle
+            const v1 = intersections[triangleTable[i]];
+            const v2 = intersections[triangleTable[i+1]];
+            const v3 = intersections[triangleTable[i+2]];
             
             // Skip invalid or degenerate triangles
             if (!v1 || !v2 || !v3 || 
@@ -176,10 +179,43 @@ class Mesher {
                 continue;
             }
             
-            // Add vertices and triangle
+            // Calculate normal to determine orientation
+            const edge1 = v2.sub(v1);
+            const edge2 = v3.sub(v1);
+            const normal = edge1.cross(edge2);
+            
+            // Calculate center of triangle
+            const center = v1.add(v2).add(v3).div(3);
+            
+            // Get gradient direction at center (approximate SDF normal)
+            const h = cellSize.x * 0.1; // Small offset for gradient calculation
+            const gx1 = this.evaluateSDF(center.add(new Vec3(h, 0, 0)));
+            const gx2 = this.evaluateSDF(center.add(new Vec3(-h, 0, 0)));
+            const gy1 = this.evaluateSDF(center.add(new Vec3(0, h, 0)));
+            const gy2 = this.evaluateSDF(center.add(new Vec3(0, -h, 0)));
+            const gz1 = this.evaluateSDF(center.add(new Vec3(0, 0, h)));
+            const gz2 = this.evaluateSDF(center.add(new Vec3(0, 0, -h)));
+            
+            const gradient = new Vec3(
+                gx1 - gx2,
+                gy1 - gy2,
+                gz1 - gz2
+            ).normalize();
+            
+            // If normal and gradient point in opposite directions, flip the triangle
+            // (dot product < 0 means vectors point in opposite directions)
+            const shouldFlip = normal.dot(gradient) < 0;
+            
+            // Add vertices to the list
             const baseIndex = this.vertices.length;
             this.vertices.push(v1, v2, v3);
-            this.triangles.push([baseIndex, baseIndex+1, baseIndex+2]);
+            
+            // Add the triangle with correct orientation
+            if (shouldFlip) {
+                this.triangles.push([baseIndex, baseIndex+2, baseIndex+1]); // Reversed winding
+            } else {
+                this.triangles.push([baseIndex, baseIndex+1, baseIndex+2]); // Normal winding
+            }
         }
     }
 
