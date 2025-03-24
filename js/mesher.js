@@ -125,38 +125,27 @@ class Mesher {
                 
                 const val0 = cornerValues[v0];
                 const val1 = cornerValues[v1];
+
+                let t = 0.5;
                 
-                // Skip if both values are the same (avoid division by zero)
-                if (Math.abs(val1 - val0) < 1e-6) {
-                    // Use midpoint if values are nearly identical
-                    const t = 0.5;
-                    const idx0 = cornerIndices[v0];
-                    const idx1 = cornerIndices[v1];
-                    
-                    // Calculate world position using Vec3 operations
-                    const pos0 = new Vec3(idx0[0], idx0[1], idx0[2]);
-                    const pos1 = new Vec3(idx1[0], idx1[1], idx1[2]);
-                    const interpolated = pos0.mul(1-t).add(pos1.mul(t));
-                    const worldPos = this.bounds.min.add(interpolated.mul(cellSize));
-                    
-                    intersections[e] = worldPos;
-                } else {
+                // If values are different, interpolate between the two points
+                if (Math.abs(val1 - val0) > 1e-6) {
                     // Calculate interpolation factor
-                    let t = (this.isoLevel - val0) / (val1 - val0);
+                    t = (this.isoLevel - val0) / (val1 - val0);
                     // Ensure t is in [0,1]
                     t = Math.max(0, Math.min(1, t));
-                    
-                    const idx0 = cornerIndices[v0];
-                    const idx1 = cornerIndices[v1];
-                    
-                    // Calculate world position using Vec3 operations
-                    const pos0 = new Vec3(idx0[0], idx0[1], idx0[2]);
-                    const pos1 = new Vec3(idx1[0], idx1[1], idx1[2]);
-                    const interpolated = pos0.mul(1-t).add(pos1.mul(t));
-                    const worldPos = this.bounds.min.add(interpolated.mul(cellSize));
-                    
-                    intersections[e] = worldPos;
                 }
+                
+                const idx0 = cornerIndices[v0];
+                const idx1 = cornerIndices[v1];
+                
+                // Calculate world position using Vec3 operations
+                const pos0 = new Vec3(idx0[0], idx0[1], idx0[2]);
+                const pos1 = new Vec3(idx1[0], idx1[1], idx1[2]);
+                const interpolated = pos0.mul(1-t).add(pos1.mul(t));
+                const worldPos = this.bounds.min.add(interpolated.mul(cellSize));
+                
+                intersections[e] = worldPos;
             }
         }
         
