@@ -90,56 +90,98 @@ class Mesher {
 
     // Process a single cube in the grid
     processCube(i, j, k, grid, cellSize) {
-        // Get the 8 corners of the cube
-        const corners = [
-            { pos: new Vec3(i, j, k), val: grid[i][j][k] },
-            { pos: new Vec3(i+1, j, k), val: grid[i+1][j][k] },
-            { pos: new Vec3(i+1, j, k+1), val: grid[i+1][j][k+1] },
-            { pos: new Vec3(i, j, k+1), val: grid[i][j][k+1] },
-            { pos: new Vec3(i, j+1, k), val: grid[i][j+1][k] },
-            { pos: new Vec3(i+1, j+1, k), val: grid[i+1][j+1][k] },
-            { pos: new Vec3(i+1, j+1, k+1), val: grid[i+1][j+1][k+1] },
-            { pos: new Vec3(i, j+1, k+1), val: grid[i][j+1][k+1] }
+        // Define the 8 corners of the cube in a consistent order
+        const cornerIndices = [
+            [i, j, k],         // 0: bottom-left-back
+            [i+1, j, k],       // 1: bottom-right-back
+            [i+1, j, k+1],     // 2: bottom-right-front
+            [i, j, k+1],       // 3: bottom-left-front
+            [i, j+1, k],       // 4: top-left-back
+            [i+1, j+1, k],     // 5: top-right-back
+            [i+1, j+1, k+1],   // 6: top-right-front
+            [i, j+1, k+1]      // 7: top-left-front
         ];
-
-        // Determine the cube index based on which corners are inside the surface
+        
+        // Get the SDF values at each corner
+        const cornerValues = cornerIndices.map(idx => grid[idx[0]][idx[1]][idx[2]]);
+        
+        // Determine which corners are inside the surface (value <= isoLevel)
         let cubeIndex = 0;
         for (let n = 0; n < 8; n++) {
-            if (corners[n].val < this.isoLevel) {
+            if (cornerValues[n] <= this.isoLevel) {
                 cubeIndex |= (1 << n);
             }
         }
-
+        
         // If the cube is entirely inside or outside the surface, there's no intersection
         if (cubeIndex === 0 || cubeIndex === 255) return;
-
-        // Get the edges that are intersected by the surface
-        const edges = MarchingCubesTables.EDGE_TABLE[cubeIndex];
         
-        // Calculate the intersection points on each edge
-        const intersections = [];
-        for (let n = 0; n < 12; n++) {
-            if (edges & (1 << n)) {
-                const edge = MarchingCubesTables.EDGES[n];
-                const v1 = corners[edge[0]];
-                const v2 = corners[edge[1]];
+        // Get the edges that are intersected by the surface
+        const edgeTable = MarchingCubesTables.EDGE_TABLE[cubeIndex];
+        
+        // Define the 12 edges of the cube
+        const edgeVertices = [
+            [0, 1], [1, 2], [2, 3], [3, 0],  // bottom face edges
+            [4, 5], [5, 6], [6, 7], [7, 4],  // top face edges
+            [0, 4], [1, 5], [2, 6], [3, 7]   // vertical edges
+        ];
+        
+        // Calculate intersection points for each edge
+        const intersections = new Array(12);
+        for (let e = 0; e < 12; e++) {
+            if (edgeTable & (1 << e)) {
+                const v0 = edgeVertices[e][0];
+                const v1 = edgeVertices[e][1];
                 
-                // Interpolate between the two corners to find where the surface intersects the edge
-                const t = (this.isoLevel - v1.val) / (v2.val - v1.val);
+                const val0 = cornerValues[v0];
+                const val1 = cornerValues[v1];
                 
-                // Calculate the actual position in space using Vec3 operations
-                const pos = v1.pos.mul(1-t).add(v2.pos.mul(t));
-                const worldPos = this.bounds.min.add(pos.mul(cellSize));
-                intersections.push(worldPos);
+                // Skip if both values are the same (avoid division by zero)
+                if (Math.abs(val1 - val0) < 1e-6) {
+                    // Use midpoint if values are nearly identical
+                    const t = 0.5;
+                    const idx0 = cornerIndices[v0];
+                    const idx1 = cornerIndices[v1];
+                    
+                    // Calculate world position
+                    const x = this.bounds.min.x + (idx0[0] * (1-t) + idx1[0] * t) * cellSize.x;
+                    const y = this.bounds.min.y + (idx0[1] * (1-t) + idx1[1] * t) * cellSize.y;
+                    const z = this.bounds.min.z + (idx0[2] * (1-t) + idx1[2] * t) * cellSize.z;
+                    
+                    intersections[e] = new Vec3(x, y, z);
+                } else {
+                    // Calculate interpolation factor
+                    let t = (this.isoLevel - val0) / (val1 - val0);
+                    // Ensure t is in [0,1]
+                    t = Math.max(0, Math.min(1, t));
+                    
+                    const idx0 = cornerIndices[v0];
+                    const idx1 = cornerIndices[v1];
+                    
+                    // Calculate world position
+                    const x = this.bounds.min.x + (idx0[0] * (1-t) + idx1[0] * t) * cellSize.x;
+                    const y = this.bounds.min.y + (idx0[1] * (1-t) + idx1[1] * t) * cellSize.y;
+                    const z = this.bounds.min.z + (idx0[2] * (1-t) + idx1[2] * t) * cellSize.z;
+                    
+                    intersections[e] = new Vec3(x, y, z);
+                }
             }
         }
-
-        // Create triangles based on the triangle table
-        const triangleIndices = MarchingCubesTables.TRIANGLE_TABLE[cubeIndex];
-        for (let n = 0; triangleIndices[n] !== -1; n += 3) {
-            const v1 = intersections[triangleIndices[n]];
-            const v2 = intersections[triangleIndices[n+1]];
-            const v3 = intersections[triangleIndices[n+2]];
+        
+        // Create triangles using the triangle table
+        const triangleTable = MarchingCubesTables.TRIANGLE_TABLE[cubeIndex];
+        for (let t = 0; triangleTable[t] !== -1; t += 3) {
+            const v1 = intersections[triangleTable[t]];
+            const v2 = intersections[triangleTable[t+1]];
+            const v3 = intersections[triangleTable[t+2]];
+            
+            // Skip invalid or degenerate triangles
+            if (!v1 || !v2 || !v3 || 
+                (v1.sub(v2).length() < 1e-6) || 
+                (v2.sub(v3).length() < 1e-6) || 
+                (v3.sub(v1).length() < 1e-6)) {
+                continue;
+            }
             
             // Add vertices and triangle
             const baseIndex = this.vertices.length;
@@ -610,3 +652,27 @@ class MarchingCubesTables {
         [ -1 ],
     ];
 }
+
+// Export the Mesher class
+(function() {
+  const nodes = { Mesher, MarchingCubesTables };
+  
+  // Check if we're in a module environment
+  if (typeof exports !== 'undefined') {
+    // Node.js or ES modules environment
+    if (typeof module !== 'undefined' && module.exports) {
+      // CommonJS (Node.js)
+      Object.assign(module.exports, nodes);
+    } else {
+      // ES modules
+      Object.keys(nodes).forEach(key => {
+        exports[key] = nodes[key];
+      });
+    }
+  } else if (typeof window !== 'undefined') {
+    // Browser environment with script tags
+    Object.keys(nodes).forEach(key => {
+      window[key] = nodes[key];
+    });
+  }
+})();

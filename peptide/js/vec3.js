@@ -4,6 +4,10 @@ function Vec3(x, y = x, z = x) {
     this.z = z;
 }
 
+Vec3.prototype.equals = function(v) {
+    return this.x === v.x && this.y === v.y && this.z === v.z;
+};
+
 Vec3.prototype.glsl = function() {
     return `vec3(${this.x.toFixed(16)}, ${this.y.toFixed(16)}, ${this.z.toFixed(16)})`;
 };
