@@ -130,7 +130,7 @@ The application has a tree view for node hierarchy and a property editor for nod
 
 ## Vectors, matrices
 
-We have a `Vec3` and a `Mat3` class in `js/vec3.js` and `js/mat3.js`. Please use these for vector and matrix operations.
+We have a `Vec3` and a `Mat3` class in `peptide/js/vec3.js` and `peptide/js/mat3.js`. Please use these for vector and matrix operations.
 If you don't know what functions exist, just guess, and we'll implement them later if they're missing.
 
 The general form is that you combine them like:

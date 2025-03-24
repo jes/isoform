@@ -92,14 +92,14 @@ class Mesher {
     processCube(i, j, k, grid, cellSize) {
         // Get the 8 corners of the cube
         const corners = [
-            { pos: [i, j, k], val: grid[i][j][k] },
-            { pos: [i+1, j, k], val: grid[i+1][j][k] },
-            { pos: [i+1, j, k+1], val: grid[i+1][j][k+1] },
-            { pos: [i, j, k+1], val: grid[i][j][k+1] },
-            { pos: [i, j+1, k], val: grid[i][j+1][k] },
-            { pos: [i+1, j+1, k], val: grid[i+1][j+1][k] },
-            { pos: [i+1, j+1, k+1], val: grid[i+1][j+1][k+1] },
-            { pos: [i, j+1, k+1], val: grid[i][j+1][k+1] }
+            { pos: new Vec3(i, j, k), val: grid[i][j][k] },
+            { pos: new Vec3(i+1, j, k), val: grid[i+1][j][k] },
+            { pos: new Vec3(i+1, j, k+1), val: grid[i+1][j][k+1] },
+            { pos: new Vec3(i, j, k+1), val: grid[i][j][k+1] },
+            { pos: new Vec3(i, j+1, k), val: grid[i][j+1][k] },
+            { pos: new Vec3(i+1, j+1, k), val: grid[i+1][j+1][k] },
+            { pos: new Vec3(i+1, j+1, k+1), val: grid[i+1][j+1][k+1] },
+            { pos: new Vec3(i, j+1, k+1), val: grid[i][j+1][k+1] }
         ];
 
         // Determine the cube index based on which corners are inside the surface
@@ -127,12 +127,10 @@ class Mesher {
                 // Interpolate between the two corners to find where the surface intersects the edge
                 const t = (this.isoLevel - v1.val) / (v2.val - v1.val);
                 
-                // Calculate the actual position in space
-                const x = this.bounds.min.x + (v1.pos[0] + t * (v2.pos[0] - v1.pos[0])) * cellSize.x;
-                const y = this.bounds.min.y + (v1.pos[1] + t * (v2.pos[1] - v1.pos[1])) * cellSize.y;
-                const z = this.bounds.min.z + (v1.pos[2] + t * (v2.pos[2] - v1.pos[2])) * cellSize.z;
-                
-                intersections.push(new Vec3(x, y, z));
+                // Calculate the actual position in space using Vec3 operations
+                const pos = v1.pos.mul(1-t).add(v2.pos.mul(t));
+                const worldPos = this.bounds.min.add(pos.mul(cellSize));
+                intersections.push(worldPos);
             }
         }
 
@@ -178,7 +176,7 @@ class Mesher {
             const v2 = this.vertices[triangle[1]];
             const v3 = this.vertices[triangle[2]];
             
-            // Calculate normal (using cross product)
+            // Calculate normal using Vec3 cross product and normalize
             const edge1 = v2.sub(v1);
             const edge2 = v3.sub(v1);
             const normal = edge1.cross(edge2).normalize();

@@ -17,7 +17,11 @@ Vec3.prototype.sub = function(v) {
 };
 
 Vec3.prototype.mul = function(k) {
-    return new Vec3(this.x * k, this.y * k, this.z * k);
+    if (k instanceof Vec3) {
+        return new Vec3(this.x * k.x, this.y * k.y, this.z * k.z);
+    } else {
+        return new Vec3(this.x * k, this.y * k, this.z * k);
+    }
 };
 
 Vec3.prototype.div = function(k) {
