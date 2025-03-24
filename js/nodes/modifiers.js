@@ -203,19 +203,25 @@ class DistanceDeformNode extends TreeNode {
 }
 
 class ShellNode extends TreeNode {
-  constructor(thickness = 1.0, inside = false, children = []) {
+  constructor(thickness = 1.0, shellType = "outside", children = []) {
     super("Shell");
     this.thickness = thickness;
-    this.inside = inside;
+    this.shellType = shellType; // "inside", "outside", or "centered"
     this.maxChildren = 1;
     this.addChild(children);
   }
 
   boundingSphere() {
     const childSphere = this.children[0].boundingSphere();
-    if (this.inside) {
+    
+    if (this.shellType === "inside") {
       return childSphere;
-    } else {
+    } else if (this.shellType === "centered") {
+      return {
+        centre: childSphere.centre,
+        radius: childSphere.radius + this.thickness / 2
+      };
+    } else { // "outside" (default)
       return {
         centre: childSphere.centre,
         radius: childSphere.radius + this.thickness
@@ -228,7 +234,10 @@ class ShellNode extends TreeNode {
   }
 
   properties() {
-    return {"thickness": "float", "inside": "bool"};
+    return {
+      "thickness": "float", 
+      "shellType": ["outside", "inside", "centered"]
+    };
   }
 
   makePeptide(p) {
@@ -239,15 +248,28 @@ class ShellNode extends TreeNode {
     
     const d = this.children[0].peptide(p);
     const negD = P.sub(P.const(0), d);
-    if (this.inside) {
+    
+    if (this.shellType === "inside") {
       return P.max(d, P.sub(negD, P.const(this.thickness)));
-    } else {
+    } else if (this.shellType === "centered") {
+      const halfThickness = P.const(this.thickness / 2);
+      return P.max(
+        P.sub(d, halfThickness), 
+        P.sub(negD, halfThickness)
+      );
+    } else { // "outside" (default)
       return P.max(P.sub(d, P.const(this.thickness)), negD);
     }
   }
 
   getIcon() {
-    return this.inside ? "🔍" : "🔍";
+    if (this.shellType === "inside") {
+      return "🔍";
+    } else if (this.shellType === "centered") {
+      return "↔️";
+    } else {
+      return "🔍";
+    }
   }
 }
 
