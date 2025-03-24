@@ -399,7 +399,8 @@ const ui = {
         const combinators = [
             { name: 'Union', constructor: UnionNode, icon: UnionNode.prototype.getIcon() },
             { name: 'Intersection', constructor: IntersectionNode, icon: IntersectionNode.prototype.getIcon() },
-            { name: 'Subtraction', constructor: SubtractionNode, icon: SubtractionNode.prototype.getIcon() }
+            { name: 'Subtraction', constructor: SubtractionNode, icon: SubtractionNode.prototype.getIcon() },
+            { name: 'Interpolate', constructor: InterpolateNode, icon: InterpolateNode.prototype.getIcon() }
         ];
         
         combinators.forEach(combinator => {

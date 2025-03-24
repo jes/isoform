@@ -190,10 +190,35 @@ class SubtractionNode extends TreeNode {
   }
 }
 
+class InterpolateNode extends TreeNode {
+  constructor(children = []) {
+    super("Interpolate");
+    this.maxChildren = 2;
+    this.k = 0.5;
+    this.addChild(children);
+  }
+
+  properties() {
+    return {"k": "float"};
+  }
+
+  makePeptide(p) {
+    if (this.children.length === 0) {
+      return this.noop();
+    }
+
+    if (this.children.length === 1) {
+      return this.children[0].peptide(p);
+    }
+
+    return P.add(P.mul(P.const(1 - this.k), this.children[0].peptide(p)),
+                 P.mul(P.const(this.k), this.children[1].peptide(p)));
+  }
+}
 
 // Detect environment and export accordingly
 (function() {
-  const nodes = { UnionNode, IntersectionNode, SubtractionNode };
+  const nodes = { UnionNode, IntersectionNode, SubtractionNode, InterpolateNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {
