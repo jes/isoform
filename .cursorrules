@@ -74,33 +74,19 @@ The document is edited as a tree of nodes. Node types are:
 
 We compile the SDFs to GLSL, rendered with ray marching.
 
-There are 2 parts to this, firstly a node can implement `generateShaderImplementation()`
-which returns GLSL code that is used *by* the node, for example the `SphereNode` creates
-an `sdSphere()` function. `generateShaderImplementation()` is evaluated for the entire
-tree and only the unique implementations are included in the final shader.
+The rendering process now uses Peptide, which is an arithmetic abstraction for defining SDFs. Each node implements a `makePeptide(p)` method (which is called by the `peptide(p)` method in the TreeNode base class) that returns a Peptide expression representing the SDF for that node.
 
-If you need the same implementation for every instantiation of the node type, you can use
-a fixed function name like `sdSphere()`. If you need different code for each instance,
-you can give it a unique name like:
+The Peptide expressions are then compiled to GLSL or JavaScript code using the PeptideSSA class, which handles the compilation process. This is done in the `rebuildShaders` method in `js/main.js`.
 
-    return `
-      float ${this.getFunctionName()}(vec3 p) {
-        // ...
-      }
-    `;
+For example, in a node's `makePeptide` method, you would build a Peptide expression like:
 
-The `getFunctionName()` method is implemented by the `TreeNode` class and returns a string
-like `sdSphere_123` which is unique for each instance of the node.
+    makePeptide(p) {
+        // p is a Peptide expression representing the position
+        const radius = P.const(this.radius);
+        return P.sub(P.vlength(p), radius);
+    }
 
-And then the main rendering code is provided by `generateShaderCode()` which returns a string
-like `sdSphere(p)` which is used in the vertex shader to evaluate the SDF. If you need to
-evaluate child nodes, do it like:
-
-    return `min(${this.children[0].generateShaderCode()}, ${this.children[1].generateShaderCode()})`;
-
-Floating point values should always be formatted in shaders with 16 decimal places, for example:
-
-    `return ${this.fooValue.toFixed(16)}`;
+Peptide handles the compilation to GLSL, so you don't need to worry about writing GLSL code directly.
 
 ## Secondary node
 
@@ -151,7 +137,7 @@ Convert them to GLSL shader code like so:
 
 Peptide is an arithmetic abstraction that we will be using to define the SDFs. It will
 have capability to compile an arithmetic expression into GLSL, or evaluate it in JavaScript,
-and also have the capaibility to evaluate (or compile the expression for evaluation) over
+and also have the capability to evaluate (or compile the expression for evaluation) over
 intervals instead of single values.
 
 The Peptide code is all under the `peptide/js/` directory, and it has unit tests under
