@@ -1,8 +1,8 @@
 class Mesher {
     constructor(peptideExpr, options = {}) {
         this.peptideExpr = peptideExpr;
-        this.resolution = options.resolution || 32;
-        this.bounds = options.bounds || { min: new Vec3(-50, -50, -50), max: new Vec3(50, 50, 50) };
+        this.resolution = options.resolution || 48;
+        this.bounds = options.bounds || { min: new Vec3(-30, -30, -30), max: new Vec3(30, 30, 30) };
         this.isoLevel = options.isoLevel || 0.0;
         this.vertices = [];
         this.triangles = [];
@@ -180,6 +180,7 @@ class Mesher {
                 (v1.sub(v2).length() < 1e-6) || 
                 (v2.sub(v3).length() < 1e-6) || 
                 (v3.sub(v1).length() < 1e-6)) {
+                console.warn("Skipping degenerate triangle");
                 continue;
             }
             
