@@ -4,14 +4,6 @@ class SphereNode extends TreeNode {
     this.radius = radius;
   }
 
-  boundingSphere() {
-    return { centre: new Vec3(0, 0, 0), radius: this.radius };
-  }
-
-  getExactness() {
-    return TreeNode.EXACT;
-  }
-
   properties() {
     return {"radius": "float"};
   }
@@ -31,15 +23,6 @@ class CylinderNode extends TreeNode {
     this.diameter = diameter;
     this.height = height;
     this.roundRadius = roundRadius;
-  }
-
-  boundingSphere() {
-    const v = new Vec3(this.diameter/2, this.height/2, 0.0);
-    return { centre: new Vec3(0, 0, 0), radius: v.length() };
-  }
-
-  getExactness() {
-    return TreeNode.EXACT;
   }
 
   properties() {
@@ -75,17 +58,6 @@ class BoxNode extends TreeNode {
     this.radius = radius;
   }
 
-  boundingSphere() {
-    return { 
-      centre: new Vec3(0, 0, 0), 
-      radius: this.size.length()/2.0 + this.radius,
-    };
-  }
-
-  getExactness() {
-    return TreeNode.EXACT;
-  }
-
   properties() {
     return {"size": "vec3", "radius": "float"};
   }
@@ -119,17 +91,6 @@ class TorusNode extends TreeNode {
     super("Torus");
     this.majorDiameter = majorDiameter;
     this.minorDiameter = minorDiameter;
-  }
-
-  boundingSphere() {
-    return { 
-      centre: new Vec3(0, 0, 0), 
-      radius: this.majorDiameter/2 + this.minorDiameter/2 
-    };
-  }
-
-  getExactness() {
-    return TreeNode.EXACT;
   }
 
   properties() {

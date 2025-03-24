@@ -7,7 +7,6 @@ const ui = {
     document: null,
     collapsedNodeIds: new Set(),
     scrollPosition: 0,
-    showBoundingSphere: false,
     secondaryNode: null,
     
     init(doc) {
@@ -688,32 +687,6 @@ const ui = {
             });
         }
         
-        // Add the toggle bounds button functionality
-        const toggleBoundsButton = document.getElementById('toggle-bounds');
-        if (toggleBoundsButton) {
-            // Set initial state
-            if (this.showBoundingSphere) {
-                toggleBoundsButton.classList.add('active');
-            }
-            
-            // Add event listener
-            toggleBoundsButton.addEventListener('click', () => {
-                // Toggle the bounding sphere display
-                this.showBoundingSphere = !this.showBoundingSphere;
-
-                if (this.getSecondaryNode()) {
-                    app.document.markDirty();
-                }
-                
-                // Update the button appearance
-                if (this.showBoundingSphere) {
-                    toggleBoundsButton.classList.add('active');
-                } else {
-                    toggleBoundsButton.classList.remove('active');
-                }
-            });
-        }
-
         // Add the field toggle button functionality
         const toggleFieldButton = document.getElementById('toggle-field');
         if (toggleFieldButton) {

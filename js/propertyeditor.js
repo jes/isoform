@@ -21,7 +21,7 @@ class PropertyEditor {
         // Add a heading showing the node type
         const nodeTypeHeading = document.createElement('h3');
         nodeTypeHeading.className = 'node-type-heading';
-        nodeTypeHeading.textContent = (node.name || 'Unknown Node') + ' (' + node.getExactness() + ')';
+        nodeTypeHeading.textContent = (node.name || 'Unknown Node');
         this.container.appendChild(nodeTypeHeading);
         
         // Get the generic properties first (if the method exists)
@@ -332,7 +332,7 @@ class PropertyEditor {
         const nodeTypeHeading = this.container.querySelector('.node-type-heading');
         if (nodeTypeHeading) {
             // Update the heading text with the current exactness
-            nodeTypeHeading.textContent = (this.selectedNode.name || 'Unknown Node') + ' (' + this.selectedNode.getExactness() + ')';
+            nodeTypeHeading.textContent = (this.selectedNode.name || 'Unknown Node');
         }
     }
     

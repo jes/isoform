@@ -6,7 +6,6 @@ const app = {
     adjustmentInterval: 1000, // ms
     wasFocused: true, // Track if window was previously focused
     sketchNeedsRedraw: false,
-    lastBoundingSphereState: false,
     sdf: null,
     intervalSdf: null,
     primaryShaderLayer: null,   // Store primary shader layer
@@ -122,7 +121,7 @@ const app = {
         // Track the current secondary node
         const currentSecondaryNode = ui.getSecondaryNode();
 
-        if (!this.document.dirty() && currentSecondaryNode === this.lastSecondaryNode && ui.showBoundingSphere === this.lastBoundingSphereState) {
+        if (!this.document.dirty() && currentSecondaryNode === this.lastSecondaryNode) {
             return;
         }
 
@@ -153,21 +152,9 @@ const app = {
         this.secondaryShaderLayer = null;
         if (currentSecondaryNode !== null) {
             let expr;
-            if (ui.showBoundingSphere) {
-                const tree = new TransformNode(
-                    currentSecondaryNode.boundingSphere().centre, 
-                    [0, 0, 0], 
-                    0, 
-                    new SphereNode(currentSecondaryNode.boundingSphere().radius)
-                );
-                startTime = performance.now();
-                expr = tree.peptide(P.vvar('p'));
-                console.log(`Peptide expression for bounding sphere took ${performance.now() - startTime} ms`);
-            } else {
-                startTime = performance.now();
-                expr = currentSecondaryNode.peptide(P.vvar('p'));
-                console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
-            }
+            startTime = performance.now();
+            expr = currentSecondaryNode.peptide(P.vvar('p'));
+            console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
             startTime = performance.now();
             const ssa = new PeptideSSA(expr);
             console.log(`SSA took ${performance.now() - startTime} ms`);
@@ -177,7 +164,6 @@ const app = {
         }
 
         this.lastSecondaryNode = currentSecondaryNode;
-        this.lastBoundingSphereState = ui.showBoundingSphere;
         this.lastAdjustmentTime = Date.now();
         
         this.hideLoadingIndicator();

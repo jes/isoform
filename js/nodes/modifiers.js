@@ -8,55 +8,8 @@ class TransformNode extends TreeNode {
     this.addChild(children);
   }
 
-  boundingSphere() {
-    if (!this.hasChildren()) {
-      return { centre: new Vec3(0, 0, 0), radius: 0 };
-    }
-    
-    // Get the child's bounding sphere
-    const childSphere = this.children[0].boundingSphere();
-    
-    // If the radius is infinite, no need to transform
-    if (childSphere.radius === Infinity) {
-      return childSphere;
-    }
-    
-    // Create Vec3 for the center (already a Vec3 in the updated version)
-    let center = childSphere.centre;
-    
-    // Apply rotation if there's a non-zero angle
-    if (this.rotationAngle !== 0) {
-      // Normalize the rotation axis
-      const axisLength = Math.sqrt(
-        this.rotationAxis[0] * this.rotationAxis[0] + 
-        this.rotationAxis[1] * this.rotationAxis[1] + 
-        this.rotationAxis[2] * this.rotationAxis[2]
-      );
-      
-      const normalizedAxis = axisLength > 0 ? 
-        this.rotationAxis.div(axisLength) : 
-        new Vec3(0, 1, 0);
-      
-      // Rotate the center point
-      center = center.rotateAround(normalizedAxis, this.rotationAngle * Math.PI / 180.0);
-    }
-    
-    // Apply translation
-    center = center.add(this.translation);
-    
-    // Return the transformed bounding sphere
-    return {
-      centre: center,
-      radius: childSphere.radius
-    };
-  }
-
   is2d() {
     return this.children.length > 0 && this.children[0].is2d();
-  }
-
-  getExactness() {
-    return TreeNode.EXACT;
   }
 
   properties() {
@@ -109,18 +62,6 @@ class DomainDeformNode extends TreeNode {
     this.addChild(children);
   }
 
-  boundingSphere() {
-    const childSphere = this.children[0].boundingSphere();
-    return {
-      centre: childSphere.centre,
-      radius: childSphere.radius + 1.5 * this.amplitude
-    };
-  }
-
-  getExactness() {
-    return TreeNode.ISOSURFACE;
-  }
-
   properties() {
     return {"amplitude": "float", "frequency": "float"};
   }
@@ -155,18 +96,6 @@ class DistanceDeformNode extends TreeNode {
     this.frequency = frequency; // Controls how dense the roughness pattern is
     this.maxChildren = 1;
     this.addChild(children);
-  }
-
-  boundingSphere() {
-    const childSphere = this.children[0].boundingSphere();
-    return {
-      centre: childSphere.centre,
-      radius: childSphere.radius + 1.5 * this.amplitude
-    };
-  }
-
-  getExactness() {
-    return TreeNode.ISOSURFACE;
   }
 
   properties() {
@@ -209,28 +138,6 @@ class ShellNode extends TreeNode {
     this.shellType = shellType; // "inside", "outside", or "centered"
     this.maxChildren = 1;
     this.addChild(children);
-  }
-
-  boundingSphere() {
-    const childSphere = this.children[0].boundingSphere();
-    
-    if (this.shellType === "inside") {
-      return childSphere;
-    } else if (this.shellType === "centered") {
-      return {
-        centre: childSphere.centre,
-        radius: childSphere.radius + this.thickness / 2
-      };
-    } else { // "outside" (default)
-      return {
-        centre: childSphere.centre,
-        radius: childSphere.radius + this.thickness
-      };
-    }
-  }
-
-  getExactness() {
-    return TreeNode.EXACT;
   }
 
   properties() {
@@ -315,10 +222,6 @@ class OffsetNode extends TreeNode {
     this.addChild(children);
   }
 
-  getExactness() {
-    return TreeNode.EXACT;
-  }
-
   properties() {
     return {"distance": "float"};
   }
@@ -347,20 +250,8 @@ class ScaleNode extends TreeNode {
     this.addChild(children);
   }
 
-  boundingSphere() {
-    const childSphere = this.children[0].boundingSphere();
-    return {
-      centre: childSphere.centre,
-      radius: childSphere.radius * this.k
-    };
-  }
-
   is2d() {
     return this.children.length > 0 && this.children[0].is2d();
-  }
-
-  getExactness() {
-    return this.alongAxis ? TreeNode.LOWERBOUND : TreeNode.EXACT;
   }
 
   properties() {
@@ -407,25 +298,6 @@ class TwistNode extends TreeNode {
     this.addChild(children);
   }
 
-  boundingSphere() {
-    if (!this.hasChildren()) {
-      return { centre: new Vec3(0, 0, 0), radius: 0 };
-    }
-    
-    const childSphere = this.children[0].boundingSphere();
-    
-    const maxDisplacement = childSphere.centre.length();
-    
-    return {
-      centre: new Vec3(0, 0, 0),
-      radius: childSphere.radius + maxDisplacement
-    };
-  }
-
-  getExactness() {
-    return TreeNode.ISOSURFACE;
-  }
-
   properties() {
     return {"height": "float", "axis": "vec3"};
   }
@@ -469,18 +341,6 @@ class MirrorNode extends TreeNode {
     this.blendRadius = 0.0;
     this.chamfer = false;
     this.addChild(children);
-  }
-
-  boundingSphere() {
-    const childSphere = this.children[0].boundingSphere();
-    return {
-      centre: new Vec3(0, 0, 0),
-      radius: childSphere.centre.length() + childSphere.radius,
-    };
-  }
-
-  getExactness() {
-    return TreeNode.LOWERBOUND;
   }
 
   properties() {
@@ -530,10 +390,6 @@ class LinearPatternNode extends TreeNode {
     this.addChild(children);
   }
 
-  getExactness() {
-    return TreeNode.LOWERBOUND;
-  }
-
   properties() {
     return {"axis": "vec3", "spacing": "float", "copies": "int", "blendRadius": "float", "chamfer": "bool"};
   }
@@ -572,10 +428,6 @@ class PolarPatternNode extends TreeNode {
     this.blendRadius = 0.0;
     this.chamfer = false;
     this.addChild(children);
-  }
-
-  getExactness() {
-    return TreeNode.LOWERBOUND;
   }
 
   properties() {
@@ -630,10 +482,6 @@ class ExtrudeNode extends TreeNode {
     this.addChild(children);
   }
 
-  getExactness() {
-    return TreeNode.LOWERBOUND;
-  }
-
   properties() {
     return {"height": "float", "blendRadius": "float", "chamfer": "bool", "draftAngle": "float"};
   }
@@ -668,10 +516,6 @@ class DistanceDeformInsideNode extends TreeNode {
     this.addChild(children);
   }
 
-  getExactness() {
-    return TreeNode.EXACT;
-  }
-
   properties() {
     return {"amplitude": "float"};
   }
@@ -700,10 +544,6 @@ class RevolveNode extends TreeNode {
     this.axis = new Vec3(0, 0, 1);
     this.maxChildren = 1;
     this.addChild(children);
-  }
-
-  getExactness() {
-    return TreeNode.EXACT;
   }
 
   properties() {

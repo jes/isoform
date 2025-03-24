@@ -10,10 +10,6 @@ class SketchNode extends TreeNode {
     return true;
   }
 
-  getExactness() {
-    return TreeNode.EXACT;
-  }
-
   makePeptide(p) {
     if (this.polycurves.length === 0 || this.polycurves[0].length < 2) {
       return this.noop();

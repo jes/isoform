@@ -29,16 +29,6 @@ class TreeNode {
     return false;
   }
 
-  // override this to return the bounding sphere of the node
-  boundingSphere() {
-    return { centre: new Vec3(0, 0, 0), radius: Infinity };
-  }
-
-  // override this to return the exactness of the node
-  getExactness() {
-    return TreeNode.ISOSURFACE;
-  }
-
   // override this to return the properties of the node
   properties() {
     return {};
