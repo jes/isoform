@@ -156,3 +156,11 @@ intervals instead of single values.
 
 The Peptide code is all under the `peptide/js/` directory, and it has unit tests under
 `peptide/test/`.
+
+Peptide expressions are formed like:
+
+    P.const(1.0);
+    P.var('n');
+    P.add(P.const(1.0), P.var('n'));
+    P.vvar('myVec3');
+    P.vadd(P.vvar('myVec3'), P.vconst(new Vec3(1.0, 2.0, 3.0)));

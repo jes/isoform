@@ -477,6 +477,17 @@ const ui = {
             this.renderTree();
         }, isDisabled ? '👁️' : '👁️‍🗨️');
         
+        // Add STL export options
+        this.addMenuItem(contextMenu, 'Export ASCII STL', () => {
+            this.exportNodeAsSTL(node, false);
+            contextMenu.remove();
+        }, '📄');
+        
+        this.addMenuItem(contextMenu, 'Export Binary STL', () => {
+            this.exportNodeAsSTL(node, true);
+            contextMenu.remove();
+        }, '📦');
+        
         // Only add move options for non-root nodes
         if (node.parent) {
             // Find the index of this node in its parent's children array
@@ -824,5 +835,46 @@ const ui = {
         if (node instanceof SketchNode) {
             this.sketchEditor.open(node);
         }
+    },
+
+    // Add this new method to handle STL export
+    exportNodeAsSTL(node, binary = false) {
+        // Show a loading indicator
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'loading-indicator';
+        loadingIndicator.innerHTML = '<div class="spinner"></div><div>Generating mesh...</div>';
+        document.body.appendChild(loadingIndicator);
+        
+        // Use setTimeout to allow the UI to update before starting the heavy computation
+        setTimeout(() => {
+            try {
+                // Create a default filename based on the node's display name
+                const nodeName = node.displayName || node.constructor.name;
+                const filename = `${nodeName.replace(/\s+/g, '_')}.stl`;
+                
+                // Create mesher from the node with default options
+                const mesher = Mesher.fromTreeNode(node, {
+                    resolution: 64,  // Default resolution
+                    bounds: { min: new Vec3(-50, -50, -50), max: new Vec3(50, 50, 50) },
+                    isoLevel: 0.0
+                });
+                
+                // Generate the mesh
+                mesher.generateMesh();
+                
+                // Export as STL
+                if (binary) {
+                    mesher.exportBinarySTL(filename);
+                } else {
+                    mesher.exportSTL(filename);
+                }
+            } catch (error) {
+                console.error("Error exporting STL:", error);
+                alert(`Error exporting STL: ${error.message}`);
+            } finally {
+                // Remove the loading indicator
+                loadingIndicator.remove();
+            }
+        }, 100);
     },
 };

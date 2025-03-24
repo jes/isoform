@@ -45,11 +45,8 @@ class TreeNode {
   }
 
   // override this to return the peptide expression for the node
-  peptide(p) {
-    if (this.isDisabled) {
-      return this.noop();
-    }
-    return this.makePeptide(p);
+  makePeptide(p) {
+    return this.noop();
   }
 
   getIcon() {
@@ -193,8 +190,11 @@ class TreeNode {
     return this.children.length > 0;
   }
 
-  makePeptide(p) {
-    return this.noop();
+  peptide(p) {
+    if (this.isDisabled) {
+      return this.noop();
+    }
+    return this.makePeptide(p);
   }
 
   noop() {
