@@ -114,11 +114,7 @@ class Mesher {
         const edgeTable = MarchingCubesTables.EDGE_TABLE[cubeIndex];
         
         // Define the 12 edges of the cube
-        const edgeVertices = [
-            [0, 1], [1, 2], [2, 3], [3, 0],  // bottom face edges
-            [4, 5], [5, 6], [6, 7], [7, 4],  // top face edges
-            [0, 4], [1, 5], [2, 6], [3, 7]   // vertical edges
-        ];
+        const edgeVertices = MarchingCubesTables.EDGES;
         
         // Calculate intersection points for each edge
         const intersections = new Array(12);
