@@ -84,16 +84,16 @@ class Mesher {
 
     // Process a single cube in the grid
     processCube(i, j, k, grid, cellSize) {
-        // Define the 8 corners of the cube in a consistent order
+        // Define the 8 corners of the cube based on the specific convention of your lookup tables
         const cornerIndices = [
-            [i, j, k],         // 0: bottom-left-back
-            [i+1, j, k],       // 1: bottom-right-back
-            [i+1, j, k+1],     // 2: bottom-right-front
-            [i, j, k+1],       // 3: bottom-left-front
-            [i, j+1, k],       // 4: top-left-back
-            [i+1, j+1, k],     // 5: top-right-back
-            [i+1, j+1, k+1],   // 6: top-right-front
-            [i, j+1, k+1]      // 7: top-left-front
+            [i, j, k],         // 0: (0,0,0)
+            [i+1, j, k],       // 1: (1,0,0)
+            [i, j+1, k],       // 2: (0,1,0)
+            [i+1, j+1, k],     // 3: (1,1,0)
+            [i, j, k+1],       // 4: (0,0,1)
+            [i+1, j, k+1],     // 5: (1,0,1)
+            [i, j+1, k+1],     // 6: (0,1,1)
+            [i+1, j+1, k+1]    // 7: (1,1,1)
         ];
         
         // Get the SDF values at each corner
