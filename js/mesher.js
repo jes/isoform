@@ -1,6 +1,7 @@
 class Mesher {
     constructor(peptideExpr, options = {}) {
         this.peptideExpr = peptideExpr;
+        this.peptideVars = {};
         this.resolution = options.resolution || 128;
         this.bounds = options.bounds || { min: new Vec3(-20, -20, -20), max: new Vec3(20, 20, 20) };
         this.isoLevel = options.isoLevel || 0.0;
@@ -15,7 +16,11 @@ class Mesher {
             // compile to JS on first use
             const ssa = new PeptideSSA(this.peptideExpr);
             const fn = eval(ssa.compileToJS());
-            this.sdf = (p) => fn({p: p});
+            this.sdf = (p) => {
+                const vars = {p: p, ...this.peptideVars};
+                const result = fn(vars);
+                return result;
+            };
         }
 
         if (this.sdf) {

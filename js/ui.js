@@ -945,6 +945,7 @@ const ui = {
                 
                 // Create mesher from the node with default options
                 const mesher = Mesher.fromTreeNode(node);
+                mesher.peptideVars = this.document.uniforms();
                 
                 // Generate the mesh
                 mesher.generateMesh();
