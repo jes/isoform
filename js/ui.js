@@ -843,10 +843,10 @@ const ui = {
     },
 
     openDocument() {
-        // Open a file dialog to select a JSON file
+        // Open a file dialog to select an isoform file
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
-        fileInput.accept = '.json';
+        fileInput.accept = '.isoform';
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -880,7 +880,7 @@ const ui = {
         // Create a download link
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${this.document.displayName}.json`;
+        link.download = `${this.document.displayName}.isoform`;
         link.click();
     },
 
