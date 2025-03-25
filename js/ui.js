@@ -82,6 +82,48 @@ const ui = {
         
         // Initial render of the tree
         this.renderTree();
+
+        // Add dropdown menu functionality
+        const appTitle = document.getElementById('app-title');
+        const fileDropdown = document.getElementById('file-dropdown');
+
+        // Toggle dropdown when clicking on the app title
+        appTitle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileDropdown.classList.toggle('show');
+        });
+
+        // Close dropdown when clicking elsewhere
+        document.addEventListener('click', () => {
+            if (fileDropdown.classList.contains('show')) {
+                fileDropdown.classList.remove('show');
+            }
+        });
+
+        // Set up event listeners for dropdown items
+        document.getElementById('new-document').addEventListener('click', () => {
+            this.createNewDocument();
+            fileDropdown.classList.remove('show');
+        });
+
+        document.getElementById('open-document').addEventListener('click', () => {
+            this.openDocument();
+            fileDropdown.classList.remove('show');
+        });
+
+        document.getElementById('save-document').addEventListener('click', () => {
+            this.saveDocument();
+            fileDropdown.classList.remove('show');
+        });
+
+        document.getElementById('export-stl').addEventListener('click', () => {
+            if (this.selectedNode) {
+                this.exportNodeAsSTL(this.selectedNode);
+            } else if (this.document) {
+                this.exportNodeAsSTL(this.document);
+            }
+            fileDropdown.classList.remove('show');
+        });
     },
 
     initResizeHandle() {

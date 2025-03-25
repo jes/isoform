@@ -743,3 +743,43 @@ input[type="range"]::-moz-range-thumb {
 .popup-body p {
     margin: 8px 0;
 }
+
+/* App title and dropdown styles */
+.app-title-container {
+    position: relative;
+    display: inline-block;
+}
+
+#app-title {
+    cursor: pointer;
+    margin-bottom: 10px;
+    user-select: none;
+}
+
+.dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    background-color: #333;
+    border: 1px solid #444;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    min-width: 150px;
+}
+
+.dropdown.show {
+    display: block;
+}
+
+.dropdown-item {
+    padding: 8px 12px;
+    color: #ddd;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.dropdown-item:hover {
+    background-color: #444;
+}
