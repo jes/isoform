@@ -276,16 +276,16 @@ class ScaleNode extends TreeNode {
     }
 
     if (!this.alongAxis) {
-      const d = this.children[0].peptide(P.vdiv(p, P.const(this.k)));
+      const d = this.children[0].peptide(P.vdiv(p, this.uniform('k')));
       if (!d) return null;
-      return P.mul(d, P.const(this.k));
+      return P.mul(d, this.uniform('k'));
     }
 
-    const axis = P.vconst(this.axis.normalize());
+    const axis = P.vdiv(this.vuniform('axis'), P.vlength(this.vuniform('axis')));
     const projLength = P.vdot(p, axis);
     const projVec = P.vmul(axis, projLength);
     const perpVec = P.vsub(p, projVec);
-    const scaledP = P.vadd(perpVec, P.vdiv(projVec, P.const(this.k)));
+    const scaledP = P.vadd(perpVec, P.vdiv(projVec, this.uniform('k')));
 
     const d = this.children[0].peptide(scaledP);
     if (!d) return null;
@@ -293,7 +293,7 @@ class ScaleNode extends TreeNode {
     if (this.k > 1.0) {
       return d;
     } else {
-      return P.mul(d, P.const(this.k));
+      return P.mul(d, this.uniform('k'));
     }
   }
 
