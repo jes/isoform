@@ -127,6 +127,59 @@ class TreeNode {
     return this[propName];
   }
 
+  // Get all properties of the node, including those not in properties()
+  getAllProperties() {
+    const props = {};
+    
+    // Add properties from properties() method
+    const declaredProps = this.properties();
+    for (const propName in declaredProps) {
+      props[propName] = {
+        type: declaredProps[propName],
+        value: this[propName]
+      };
+    }
+    
+    // Add generic properties
+    const genericProps = this.genericProperties();
+    for (const propName in genericProps) {
+      if (!props[propName]) {
+        props[propName] = {
+          type: genericProps[propName],
+          value: this[propName]
+        };
+      }
+    }
+    
+    // Add other properties that exist on the object but aren't declared
+    for (const propName in this) {
+      // Skip internal properties, functions, and already added properties
+      if (propName.startsWith('_') || 
+          typeof this[propName] === 'function' ||
+          propName === 'children' ||
+          propName === 'parent' ||
+          propName === 'warnFunction' ||
+          props[propName]) {
+        continue;
+      }
+      
+      // Determine type based on value
+      let type = typeof this[propName];
+      if (this[propName] instanceof Vec3) {
+        type = 'vec3';
+      } else if (Array.isArray(this[propName])) {
+        type = 'array';
+      }
+      
+      props[propName] = {
+        type: type,
+        value: this[propName]
+      };
+    }
+    
+    return props;
+  }
+
   hasParent(node) {
     if (this == node) {
       return true;
@@ -290,6 +343,159 @@ class TreeNode {
       this.markDirty();
       return newChild;
     }
+  }
+
+  // Serialize with support for circular references
+  serialize() {
+    // Create a map to track visited nodes and their IDs
+    const visited = new Map();
+    const nodeMap = new Map();
+    
+    // First pass: assign IDs to all nodes in the tree
+    const assignIds = (node, path = []) => {
+      if (visited.has(node)) return;
+      
+      visited.set(node, true);
+      nodeMap.set(node, {
+        id: node.uniqueId,
+        path: [...path]
+      });
+      
+      for (let i = 0; i < node.children.length; i++) {
+        assignIds(node.children[i], [...path, 'children', i]);
+      }
+    };
+    
+    assignIds(this);
+    
+    // Second pass: create serializable object
+    const serializeNode = (node) => {
+      const result = {
+        type: node.constructor.name,
+        uniqueId: node.uniqueId,
+        name: node.name,
+        displayName: node.displayName,
+        maxChildren: node.maxChildren,
+        isDirty: node.isDirty,
+        isDisabled: node.isDisabled,
+        blendRadius: node.blendRadius,
+        chamfer: node.chamfer,
+        children: node.children.map(child => {
+          // For each child, either serialize it or reference it
+          if (nodeMap.get(child).path.length > nodeMap.get(node).path.length) {
+            // This is a forward reference, serialize normally
+            return serializeNode(child);
+          } else {
+            // This is a circular reference, just store the ID
+            return { circularRef: child.uniqueId };
+          }
+        })
+      };
+      
+      // Add all properties defined in the properties() method
+      const props = node.getAllProperties();
+      for (const propName in props) {
+        const value = node[propName];
+        if (value instanceof Vec3) {
+          result[propName] = { x: value.x, y: value.y, z: value.z, isVec3: true };
+        } else {
+          result[propName] = value;
+        }
+      }
+      
+      return result;
+    };
+    
+    return serializeNode(this);
+  }
+
+  // Static deserialization method
+  static fromSerialized(serialized) {
+    // Map to store nodes by their uniqueId for resolving circular references
+    const nodesById = new Map();
+    
+    // Function to create a node of the correct type
+    const createNode = (data) => {
+      // Handle circular references
+      if (data.circularRef !== undefined) {
+        return { isRef: true, id: data.circularRef };
+      }
+      
+      // Create a new instance of the correct node type
+      let node;
+      if (typeof window[data.type] === 'function') {
+        node = new window[data.type]();
+      } else {
+        // Fallback to TreeNode if specific type not found
+        node = new TreeNode();
+        console.warn(`Node type ${data.type} not found, using TreeNode instead`);
+      }
+      
+      // Restore basic properties
+      node.uniqueId = data.uniqueId;
+      node.name = data.name;
+      node.displayName = data.displayName;
+      node.maxChildren = data.maxChildren;
+      node.isDirty = data.isDirty;
+      node.isDisabled = data.isDisabled;
+      node.blendRadius = data.blendRadius;
+      node.chamfer = data.chamfer;
+      
+      // Store in map for circular reference resolution
+      nodesById.set(node.uniqueId, node);
+      
+      // Restore all other properties
+      for (const propName in data) {
+        if (!['type', 'uniqueId', 'name', 'displayName', 'maxChildren', 
+              'isDirty', 'isDisabled', 'children', 'blendRadius', 'chamfer'].includes(propName)) {
+          const value = data[propName];
+          
+          // Handle Vec3 properties
+          if (value && value.isVec3) {
+            node[propName] = new Vec3(value.x, value.y, value.z);
+          } else {
+            node[propName] = value;
+          }
+        }
+      }
+      
+      // Process children (but don't add them yet)
+      node._pendingChildren = data.children.map(childData => createNode(childData));
+      
+      return node;
+    };
+    
+    // Create all nodes first
+    const rootNode = createNode(serialized);
+    
+    // Second pass: resolve all references and add children
+    const resolveReferences = (node) => {
+      if (node._pendingChildren) {
+        for (let i = 0; i < node._pendingChildren.length; i++) {
+          let child = node._pendingChildren[i];
+          
+          // Resolve circular reference
+          if (child.isRef) {
+            child = nodesById.get(child.id);
+          } else {
+            resolveReferences(child);
+          }
+          
+          // Add child to parent
+          node.addChild(child);
+        }
+        
+        // Clean up temporary property
+        delete node._pendingChildren;
+      }
+    };
+    
+    resolveReferences(rootNode);
+    
+    // Update the next ID to be higher than any existing ID
+    TreeNode.nextId = Math.max(...Array.from(nodesById.keys())) + 1;
+    
+    return rootNode;
   }
 }
 

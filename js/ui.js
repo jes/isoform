@@ -112,15 +112,6 @@ const ui = {
             this.saveDocument();
             fileDropdown.classList.remove('show');
         });
-
-        document.getElementById('export-stl').addEventListener('click', () => {
-            if (this.selectedNode) {
-                this.exportNodeAsSTL(this.selectedNode);
-            } else if (this.document) {
-                this.exportNodeAsSTL(this.document);
-            }
-            fileDropdown.classList.remove('show');
-        });
     },
 
     initResizeHandle() {
@@ -849,6 +840,48 @@ const ui = {
             this.treeViewComponent.setSelectedNode(newDoc);
             this.propertyEditorComponent.render(newDoc);
         }
+    },
+
+    openDocument() {
+        // Open a file dialog to select a JSON file
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.json';
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const json = JSON.parse(e.target.result);
+                        app.document = TreeNode.fromSerialized(json);
+                        this.document = app.document;
+                        this.renderTree();
+                        this.selectedNode = app.document;
+                        this.treeViewComponent.setSelectedNode(app.document);
+                        this.propertyEditorComponent.render(app.document);
+                    } catch (error) {
+                        console.error("Error loading document:", error);
+                        alert("Error loading document. Please try again.");
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+        fileInput.click();
+    },
+
+    saveDocument() {
+        // Save the current document to a JSON file
+        const json = JSON.stringify(this.document.serialize());
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // Create a download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${this.document.displayName}.json`;
+        link.click();
     },
 
     moveNodeInDirection(node, direction) {
