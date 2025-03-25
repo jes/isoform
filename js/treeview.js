@@ -213,6 +213,18 @@ class TreeView {
         
         return container;
     }
+
+    isCollapsed(node) {
+        return this.collapsedNodeIds.has(node.uniqueId);
+    }
+
+    collapseNode(node) {
+        this.collapsedNodeIds.add(node.uniqueId);
+    }
+
+    expandNode(node) {
+        this.collapsedNodeIds.delete(node.uniqueId);
+    }
     
     setupDragAndDrop(element, node) {
         // Make the element draggable

@@ -5,10 +5,9 @@ const ui = {
     sketchEditor: null,
     selectedNode: null,
     document: null,
-    collapsedNodeIds: new Set(),
-    scrollPosition: 0,
     secondaryNode: null,
-    
+    clipboard: null,
+
     init(doc) {
         this.document = doc;
         this.treeView = document.getElementById('tree-view');
@@ -281,7 +280,6 @@ const ui = {
             if (node.children.length == 1 || (node.children.length > 1 && canAddChildren)) {
                 this.addMenuItem(contextMenu, 'Delete this', () => {
                     this.replaceNode(node, [...node.children]);
-                    contextMenu.remove();
                     this.renderTree();
                 }, '🗑️');
             }
@@ -292,13 +290,11 @@ const ui = {
                 // Create a copy of the children array to avoid modification issues during iteration
                 const childrenToDelete = [...node.children];
                 childrenToDelete.forEach(child => child.delete());
-                contextMenu.remove();
                 this.renderTree();
             }, '🗑️');
         } else if (node.parent) { // Only allow deleting non-root nodes
             this.addMenuItem(contextMenu, 'Delete this', () => {
                 node.delete();
-                contextMenu.remove();
                 this.renderTree();
             }, '🗑️');
         }
@@ -306,7 +302,6 @@ const ui = {
         if (node.parent && node.children.length > 0) {
             this.addMenuItem(contextMenu, 'Delete with children', () => {
                 node.delete();
-                contextMenu.remove();
                 this.renderTree();
             }, '🗑️');
         }
@@ -441,7 +436,6 @@ const ui = {
                 const newNode = new combinator.constructor();
                 newNode.setUniqueName(this.document);
                 this.replaceNode(node, newNode, true);
-                contextMenu.remove();
             }, combinator.icon);
         });
     },
@@ -470,7 +464,6 @@ const ui = {
                 const newNode = new modifier.constructor();
                 newNode.setUniqueName(this.document);
                 this.replaceNode(node, newNode, true);
-                contextMenu.remove();
             }, modifier.icon);
         });
     },
@@ -492,7 +485,6 @@ const ui = {
                 const newNode = new shape.constructor();
                 newNode.setUniqueName(this.document);
                 node.addChild(newNode);
-                contextMenu.remove();
                 this.renderTree();
                 // Select the newly added node
                 this.selectedNode = newNode;
@@ -512,19 +504,16 @@ const ui = {
             } else {
                 node.disable();
             }
-            contextMenu.remove();
             this.renderTree();
         }, isDisabled ? '👁️' : '👁️‍🗨️');
         
         // Add STL export options
         this.addMenuItem(contextMenu, 'Export ASCII STL', () => {
             this.exportNodeAsSTL(node, false);
-            contextMenu.remove();
         }, '📄');
         
         this.addMenuItem(contextMenu, 'Export Binary STL', () => {
             this.exportNodeAsSTL(node, true);
-            contextMenu.remove();
         }, '📦');
         
         // Only add move options for non-root nodes
@@ -537,7 +526,6 @@ const ui = {
             if (nodeIndex > 0) {
                 this.addMenuItem(contextMenu, 'Move Up', () => {
                     this.moveNodeInDirection(node, -1);
-                    contextMenu.remove();
                 }, '⬆️');
             }
             
@@ -545,7 +533,6 @@ const ui = {
             if (nodeIndex < siblings.length - 1) {
                 this.addMenuItem(contextMenu, 'Move Down', () => {
                     this.moveNodeInDirection(node, 1);
-                    contextMenu.remove();
                 }, '⬇️');
             }
         }
@@ -568,7 +555,17 @@ const ui = {
         textSpan.textContent = text;
         menuItem.appendChild(textSpan);
         
-        menuItem.addEventListener('click', onClick);
+        // Wrap the original onClick handler to automatically remove the menu
+        menuItem.addEventListener('click', (e) => {
+            // Call the original handler
+            onClick(e);
+            
+            // Automatically remove the context menu
+            if (menu.parentNode) {
+                menu.remove();
+            }
+        });
+        
         menu.appendChild(menuItem);
         return menuItem;
     },
@@ -982,10 +979,12 @@ const ui = {
             this.addMenuItem(contextMenu, 'Cut', () => {
                 this.clipboard = {
                     node: node,
-                    operation: 'cut'
+                    operation: 'cut',
+                    wasCollapsed: this.treeViewComponent.isCollapsed(node)
                 };
-                node.delete();
-                contextMenu.remove();
+                node.disable();
+                this.treeViewComponent.collapseNode(node);
+                this.renderTree();
             }, '✂️');
         }
         
@@ -995,14 +994,12 @@ const ui = {
                 node: node.clone(),
                 operation: 'copy'
             };
-            contextMenu.remove();
         }, '📋');
         
         // Paste option (only if there's something in the clipboard and the node can accept more children)
         if (this.clipboard && node.canAddMoreChildren()) {
             this.addMenuItem(contextMenu, 'Paste', () => {
                 this.pasteNode(this.clipboard, node);
-                contextMenu.remove();
             }, '📌');
         }
     },
@@ -1016,6 +1013,11 @@ const ui = {
             // Remove the node from its current parent
             const sourceNode = clipboard.node;
             const originalParent = sourceNode.parent;
+
+            sourceNode.enable();
+            if (!clipboard.wasCollapsed) {
+                this.treeViewComponent.expandNode(sourceNode);
+            }
             
             if (originalParent) {
                 // Check if target is not a descendant of source (would create circular reference)
@@ -1031,8 +1033,8 @@ const ui = {
                 originalParent.removeChild(sourceNode);
                 targetNode.addChild(sourceNode);
                 
-                // Clear the clipboard after a cut operation
-                this.clipboard = null;
+                // Turn the operation into a copy so that we can paste more
+                this.clipboard.operation = 'copy';
                 
                 // Update the tree view
                 this.renderTree();
