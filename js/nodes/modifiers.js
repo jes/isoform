@@ -550,7 +550,7 @@ class DistanceDeformInsideNode extends TreeNode {
     if (!d0) return null;
     const d1 = this.children[1].peptide(p);
     if (!d1) return d0;
-    return P.add(d0, P.min(P.mul(d1, P.const(this.amplitude)), P.const(0.0)));
+    return P.add(d0, P.min(P.mul(d1, this.uniform('amplitude')), P.const(0.0)));
   }
   
   getIcon() {
