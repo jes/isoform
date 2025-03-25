@@ -458,17 +458,17 @@ class PolarPatternNode extends TreeNode {
       return this.noop();
     }
 
-    const totalAngle = this.angle * Math.PI / 180.0; // Convert to radians
+    const totalAngle = P.mul(this.uniform('angle'), P.const(Math.PI / 180.0));
     const toAxisSpace = P.mconst(new Mat3().rotateToAxis(this.axis.normalize()));
     const fromAxisSpace = P.mtranspose(toAxisSpace);
 
     const q = P.mvmul(toAxisSpace, p);
-    const angleIncrement = totalAngle / this.copies;
+    const angleIncrement = P.div(totalAngle, P.const(this.copies));
     let d = this.children[0].peptide(p);
     for (let i = 1; i < this.copies; i++) {
-      const angle = angleIncrement * i;
-      const c = P.cos(P.const(angle));
-      const s = P.sin(P.const(angle));
+      const angle = P.mul(angleIncrement, P.const(i));
+      const c = P.cos(angle);
+      const s = P.sin(angle);
       const rotated = P.vec3(
         P.sub(P.mul(c, P.vecX(q)), P.mul(s, P.vecY(q))),
         P.add(P.mul(s, P.vecX(q)), P.mul(c, P.vecY(q))),
