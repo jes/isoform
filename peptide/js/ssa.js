@@ -144,6 +144,9 @@ class PeptideSSA {
      * @returns {Function} A function that takes variable values and returns the result
      */
     compileToJS() {
+        if (this.operations.length === 0) {
+            throw new Error('No operations to compile');
+        }
         let code = '(vars) => {\n';
         
         let seen = new Set();
@@ -171,6 +174,9 @@ class PeptideSSA {
     }
 
     compileToJSInterval() {
+        if (this.operations.length === 0) {
+            throw new Error('No operations to compile');
+        }
         let code = '(vars) => {\n';
         
         let seen = new Set();
@@ -198,6 +204,9 @@ class PeptideSSA {
     }
 
     compileToGLSL(signature = 'float map(vec3 p)') {
+        if (this.operations.length === 0) {
+            throw new Error('No operations to compile');
+        }
         let code = '';
 
         let seen = new Set();
@@ -223,6 +232,9 @@ class PeptideSSA {
     }
 
     compileToGLSLInterval(signature = 'float map(ivec3 p)') {
+        if (this.operations.length === 0) {
+            throw new Error('No operations to compile');
+        }
         let code = '';
 
         let seen = new Set();

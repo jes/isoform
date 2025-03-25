@@ -47,6 +47,8 @@ class TreeNode {
   /// the rest of this class should not generally be overridden
 
   min(a, b){
+    if (!a) return b;
+    if (!b) return a;
     if (this.blendRadius > 0.0) {
       if (this.chamfer) {
         return P.chmin(a, b, P.const(this.blendRadius));
@@ -58,6 +60,8 @@ class TreeNode {
   }
 
   max(a, b){
+    if (!a) return b;
+    if (!b) return a;
     if (this.blendRadius > 0.0) {
       if (this.chamfer) {
         return P.chmax(a, b, P.const(this.blendRadius));
@@ -188,7 +192,7 @@ class TreeNode {
   }
 
   noop() {
-    return P.const(10000042.0);
+    return null;
   }
 
   disable() {

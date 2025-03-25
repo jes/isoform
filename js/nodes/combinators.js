@@ -18,8 +18,6 @@ class UnionNode extends TreeNode {
 
       let min = this.children[0].peptide(p);
       for (let i = 1; i < this.children.length; i++) {
-        if (this.children[i].isDisabled)
-          continue;
         min = this.min(min, this.children[i].peptide(p));
       }
       return min;
@@ -50,8 +48,6 @@ class IntersectionNode extends TreeNode {
 
     let max = this.children[0].peptide(p);
     for (let i = 1; i < this.children.length; i++) {
-      if (this.children[i].isDisabled)
-        continue;
       max = this.max(max, this.children[i].peptide(p));
     }
     return max;
@@ -82,9 +78,9 @@ class SubtractionNode extends TreeNode {
 
     let max = this.children[0].peptide(p);
     for (let i = 1; i < this.children.length; i++) {
-      if (this.children[i].isDisabled)
-        continue;
-      max = this.max(max, P.sub(P.const(0), this.children[i].peptide(p)));
+      const child = this.children[i].peptide(p);
+      if (!child) continue;
+      max = this.max(max, P.sub(P.const(0), child));
     }
     return max;
   }
@@ -115,8 +111,14 @@ class InterpolateNode extends TreeNode {
       return this.children[0].peptide(p);
     }
 
-    return P.add(P.mul(P.const(1 - this.k), this.children[0].peptide(p)),
-                 P.mul(P.const(this.k), this.children[1].peptide(p)));
+    const child0 = this.children[0].peptide(p); 
+    const child1 = this.children[1].peptide(p);
+
+    if (!child0) return child1;
+    if (!child1) return child0;
+
+    return P.add(P.mul(P.const(1 - this.k), child0),
+                 P.mul(P.const(this.k), child1));
   }
 }
 

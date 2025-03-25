@@ -90,8 +90,11 @@ const app = {
         await this.rebuildShaders();
 
         // Prepare shader layers for rendering
-        this.primaryShaderLayer.setUniform('float', 'uOpacity', camera.opacity);
-        const shaderLayers = [this.primaryShaderLayer];
+        const shaderLayers = [];
+        if (this.primaryShaderLayer) {
+            this.primaryShaderLayer.setUniform('float', 'uOpacity', camera.opacity);
+            shaderLayers.push(this.primaryShaderLayer);
+        }
         if (this.secondaryShaderLayer) {
             this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.5);
             shaderLayers.push(this.secondaryShaderLayer);
@@ -131,20 +134,24 @@ const app = {
         if (this.document.dirty()) {
             let startTime = performance.now();
             const expr = this.document.peptide(P.vvar('p'));
-            console.log(`Peptide expression took ${performance.now() - startTime} ms`);
-            startTime = performance.now();
-            const ssa = new PeptideSSA(expr);
-            console.log(`SSA took ${performance.now() - startTime} ms`);
+            if (expr) {
+                console.log(`Peptide expression took ${performance.now() - startTime} ms`);
+                startTime = performance.now();
+                const ssa = new PeptideSSA(expr);
+                console.log(`SSA took ${performance.now() - startTime} ms`);
+                
+                this.primaryShaderLayer = await this.createShaderLayer(ssa);
+                this.primaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.6, 0.6, 0.6]);
 
-            this.primaryShaderLayer = await this.createShaderLayer(ssa);
-            this.primaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.6, 0.6, 0.6]);
+                // keep hold of the compiled SDF so that we can use it for coordinate display
+                const fn = eval(ssa.compileToJS());
+                this.sdf = (p) => fn({p: p});
 
-            // keep hold of the compiled SDF so that we can use it for coordinate display
-            const fn = eval(ssa.compileToJS());
-            this.sdf = (p) => fn({p: p});
-
-            const intervalFn = eval(ssa.compileToJSInterval());
-            this.intervalSdf = (p) => intervalFn({p: p});
+                const intervalFn = eval(ssa.compileToJSInterval());
+                this.intervalSdf = (p) => intervalFn({p: p});
+            } else {
+                this.primaryShaderLayer = null;
+            }
 
             this.document.markClean();
         }
@@ -154,13 +161,17 @@ const app = {
             let expr;
             startTime = performance.now();
             expr = currentSecondaryNode.peptide(P.vvar('p'));
-            console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
-            startTime = performance.now();
-            const ssa = new PeptideSSA(expr);
-            console.log(`SSA took ${performance.now() - startTime} ms`);
-            
-            this.secondaryShaderLayer = await this.createShaderLayer(ssa);
-            this.secondaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.8, 0.2, 0.2]);
+            if (expr) {
+                console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
+                startTime = performance.now();
+                const ssa = new PeptideSSA(expr);
+                console.log(`SSA took ${performance.now() - startTime} ms`);
+                
+                this.secondaryShaderLayer = await this.createShaderLayer(ssa);
+                this.secondaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.8, 0.2, 0.2]);
+            } else {
+                this.secondaryShaderLayer = null;
+            }
         }
 
         this.lastSecondaryNode = currentSecondaryNode;

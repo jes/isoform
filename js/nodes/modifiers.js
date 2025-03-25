@@ -80,7 +80,9 @@ class DomainDeformNode extends TreeNode {
     const py2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecX(p), P.vecZ(p)), P.const(2.42)), P.const(this.frequency))), P.const(this.amplitude)));
     const pz2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecY(p), P.vecX(p)), P.const(14.5)), P.const(this.frequency))), P.const(this.amplitude)));
 
-    return P.div(this.children[0].peptide(P.vadd(p, P.vec3(P.add(px1, px2), P.add(py1, py2), P.add(pz1, pz2)))), P.const(Math.max(1.0, 2.0 * this.frequency * this.amplitude)));
+    const child = this.children[0].peptide(P.vadd(p, P.vec3(P.add(px1, px2), P.add(py1, py2), P.add(pz1, pz2))));
+    if (!child) return null;
+    return P.div(child, P.const(Math.max(1.0, 2.0 * this.frequency * this.amplitude)));
   }
 
   getIcon() {
@@ -109,6 +111,7 @@ class DistanceDeformNode extends TreeNode {
     }
     
     const d = this.children[0].peptide(p);
+    if (!d) return null;
 
     const freq = P.const(this.frequency);
     const ampl = P.const(this.amplitude);
@@ -154,6 +157,7 @@ class ShellNode extends TreeNode {
     }
     
     const d = this.children[0].peptide(p);
+    if (!d) return null;
     const negD = P.sub(P.const(0), d);
     
     if (this.shellType === "inside") {
@@ -199,13 +203,17 @@ class InfillNode extends TreeNode {
     }
 
     const d = this.children[0].peptide(p);
-    const negD = P.sub(P.const(0), d);
-    const dShell = P.max(d, P.sub(negD, P.const(this.thickness)));
     if (this.children.length == 1) {
       return d;
     }
+    if (!d) return null;
 
     const d2 = this.children[1].peptide(p);
+    if (!d2) return d;
+
+    const negD = P.sub(P.const(0), d);
+    const dShell = P.max(d, P.sub(negD, P.const(this.thickness)));
+
     return P.min(dShell, P.max(d, d2));
   }
 
@@ -232,7 +240,9 @@ class OffsetNode extends TreeNode {
       return this.noop();
     }
 
-    return P.add(this.children[0].peptide(p), P.const(this.distance));
+    const d = this.children[0].peptide(p);
+    if (!d) return null;
+    return P.add(d, P.const(this.distance));
   }
 
   getIcon() {
@@ -269,18 +279,24 @@ class ScaleNode extends TreeNode {
     }
 
     if (!this.alongAxis) {
-      return P.mul(this.children[0].peptide(P.vdiv(p, P.const(this.k))), P.const(this.k));
+      const d = this.children[0].peptide(P.vdiv(p, P.const(this.k)));
+      if (!d) return null;
+      return P.mul(d, P.const(this.k));
     }
-    
+
     const axis = P.vconst(this.axis.normalize());
     const projLength = P.vdot(p, axis);
     const projVec = P.vmul(axis, projLength);
     const perpVec = P.vsub(p, projVec);
     const scaledP = P.vadd(perpVec, P.vdiv(projVec, P.const(this.k)));
+
+    const d = this.children[0].peptide(scaledP);
+    if (!d) return null;
+
     if (this.k > 1.0) {
-      return this.children[0].peptide(scaledP);
+      return d;
     } else {
-      return P.mul(this.children[0].peptide(scaledP), P.const(this.k));
+      return P.mul(d, P.const(this.k));
     }
   }
 
@@ -497,6 +513,7 @@ class ExtrudeNode extends TreeNode {
     }
     const p2d = P.vec3(P.vecX(p), P.vecY(p), P.const(0.0));
     const d2d = this.children[0].peptide(p2d);
+    if (!d2d) return null;
     const dz = P.sub(P.abs(P.vecZ(p)), P.const(this.height/2));
     const pz = P.clamp(P.add(P.vecZ(p), P.const(this.height/2)), P.const(0.0), P.const(this.height));
     const d = P.add(P.mul(d2d, P.const(Math.cos(this.draftAngle * Math.PI / 180.0))), P.mul(pz, P.const(Math.tan(this.draftAngle * Math.PI / 180.0))));
@@ -529,8 +546,11 @@ class DistanceDeformInsideNode extends TreeNode {
       this.warn("DistanceDeformInside node needs a second child to specify the space to deform");
       return this.children[0].peptide(p);
     }
-    const dist = this.children[1].peptide(p);
-    return P.add(this.children[0].peptide(p), P.min(P.mul(dist, P.const(this.amplitude)), P.const(0.0)));
+    const d0 = this.children[0].peptide(p);
+    if (!d0) return null;
+    const d1 = this.children[1].peptide(p);
+    if (!d1) return d0;
+    return P.add(d0, P.min(P.mul(d1, P.const(this.amplitude)), P.const(0.0)));
   }
   
   getIcon() {
