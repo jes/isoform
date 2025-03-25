@@ -32,11 +32,6 @@
             <p><strong>Pan:</strong> Shift + mousemove</p>
             <p><strong>Zoom:</strong> Mouse wheel</p>
         </div>
-       
-        <div class="control-group">
-            <label for="resolution-scale">Resolution Scale:</label>
-            <span id="resolution-scale">1.0</span>
-        </div>
     </div>
     
     <div id="canvas-container">
@@ -59,6 +54,12 @@
                 <label for="step-factor-slider">Step:</label>
                 <input type="range" id="step-factor-slider" min="0.1" max="1.0" step="0.05" value="1.0">
                 <span class="slider-value" id="step-factor-value">1.0</span>
+            </div>
+            
+            <!-- Add resolution scale display -->
+            <div class="display-container">
+                <span style="margin-right: 5px;">Scale:</span>
+                <span id="resolution-scale">1.0</span>
             </div>
         </div>
         <div id="fps-counter">FPS: 0</div>

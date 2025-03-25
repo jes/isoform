@@ -640,7 +640,7 @@ input[type="range"]::-moz-range-thumb {
 .slider-container label {
     margin-right: 5px;
     color: white;
-    font-size: 0.8em;
+    font-size: 0.9em;
     display: inline;
     margin: 0 5px 0 0;
     white-space: nowrap;
@@ -652,8 +652,17 @@ input[type="range"]::-moz-range-thumb {
 
 .slider-value {
     color: white;
-    font-size: 0.8em;
+    font-size: 0.9em;
     margin-left: 5px;
     min-width: 25px;
     text-align: center;
+}
+
+.display-container {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+    white-space: nowrap;
+    color: white;
+    font-size: 0.9em;
 }
