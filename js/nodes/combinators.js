@@ -117,8 +117,10 @@ class InterpolateNode extends TreeNode {
     if (!child0) return child1;
     if (!child1) return child0;
 
-    return P.add(P.mul(P.const(1 - this.k), child0),
-                 P.mul(P.const(this.k), child1));
+    const uniformK = this.uniform('k');
+
+    return P.add(P.mul(P.sub(P.const(1), uniformK), child0),
+                 P.mul(uniformK, child1));
   }
 }
 

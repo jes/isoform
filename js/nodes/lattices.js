@@ -9,11 +9,11 @@ class GyroidNode extends TreeNode {
   }
 
   makePeptide(p) {
-    p = P.vdiv(p, P.const(this.scale));
+    p = P.vdiv(p, this.uniform('scale'));
     const gyroid = P.add(P.mul(P.sin(P.vecX(p)), P.cos(P.vecY(p))),
                    P.add(P.mul(P.sin(P.vecY(p)), P.cos(P.vecZ(p))),
                          P.mul(P.sin(P.vecZ(p)), P.cos(P.vecX(p)))));
-    return P.mul(gyroid, P.const(0.5 * this.scale));
+    return P.mul(gyroid, P.mul(P.const(0.5), this.uniform('scale')));
   }
 }
 
@@ -32,14 +32,15 @@ class CubicLatticeNode extends TreeNode {
   }
 
   makePeptide(p) {
-    const q = P.vabs(P.vsub(P.vmod(P.vabs(p), P.const(this.scale*2.0)), P.vconst(new Vec3(this.scale))));
+    const scaleV3 = P.vec3(this.uniform('scale'), this.uniform('scale'), this.uniform('scale'));
+    const q = P.vabs(P.vsub(P.vmod(P.vabs(p), P.mul(P.const(2.0), this.uniform('scale'))), scaleV3));
 
     const dx = this.min(P.vecY(q), P.vecZ(q));
     const dy = this.min(P.vecX(q), P.vecZ(q));
     const dz = this.min(P.vecX(q), P.vecY(q));
     
     const d = this.max(this.max(dx, dy), dz);
-    return P.sub(d, P.const(this.thickness));
+    return P.sub(d, this.uniform('thickness'));
   }
 
   getIcon() {
