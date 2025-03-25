@@ -763,6 +763,35 @@ const ui = {
         // Initialize with default value
         stepFactorValue.textContent = stepFactorSlider.value;
         camera.stepFactor = parseFloat(stepFactorSlider.value);
+
+        // Add help button functionality
+        const helpButton = document.getElementById('help-button');
+        const navigationHelp = document.getElementById('navigation-help');
+        const closeHelp = document.getElementById('close-help');
+        
+        if (helpButton && navigationHelp && closeHelp) {
+            helpButton.addEventListener('click', () => {
+                navigationHelp.style.display = 'flex';
+            });
+            
+            closeHelp.addEventListener('click', () => {
+                navigationHelp.style.display = 'none';
+            });
+            
+            // Close when clicking outside the popup content
+            navigationHelp.addEventListener('click', (e) => {
+                if (e.target === navigationHelp) {
+                    navigationHelp.style.display = 'none';
+                }
+            });
+            
+            // Close with Escape key
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && navigationHelp.style.display === 'flex') {
+                    navigationHelp.style.display = 'none';
+                }
+            });
+        }
     },
 
     initMainToolbar() {

@@ -25,13 +25,6 @@
             <h3>Properties</h3>
             <div id="property-editor"></div>
         </div>
-       
-        <div class="control-group">
-            <h3>Navigation</h3>
-            <p><strong>Rotate:</strong> Alt + mousemove</p>
-            <p><strong>Pan:</strong> Shift + mousemove</p>
-            <p><strong>Zoom:</strong> Mouse wheel</p>
-        </div>
     </div>
     
     <div id="canvas-container">
@@ -45,6 +38,9 @@
             <button id="toggle-edges" style="width: 50px" class="view-button toggle-button">Edges</button>
             <button id="toggle-field" style="width: 50px" class="view-button toggle-button">Field</button>
             <button id="toggle-steps" style="width: 50px" class="view-button toggle-button">Steps</button>
+            
+            <!-- Add help button -->
+            <button id="help-button" class="view-button help-button" title="Navigation Help">?</button>
             
             <div class="slider-container">
                 <label for="opacity-slider">Opacity:</label>
@@ -67,6 +63,23 @@
     </div>
 
     <div id="coord-display" style="position: fixed; background: rgba(0,0,0,0.7); color: white; padding: 8px; border-radius: 4px; display: none;"></div>
+
+    <!-- Add navigation help popup -->
+    <div id="navigation-help" class="popup-overlay" style="display: none;">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h3>Navigation Controls</h3>
+                <button id="close-help" class="close-button">×</button>
+            </div>
+            <div class="popup-body">
+                <p><strong>Rotate:</strong> Alt + mousemove</p>
+                <p><strong>Pan:</strong> Shift + mousemove</p>
+                <p><strong>Zoom:</strong> Mouse wheel</p>
+                <p><strong>View Buttons:</strong> XY, XZ, YZ for standard views</p>
+                <p><strong>Rotation Buttons:</strong> ↺ and ↻ to rotate around view axis</p>
+            </div>
+        </div>
+    </div>
 
     <!-- Load scripts -->
     <script src="peptide/js/vec3.js"></script>
