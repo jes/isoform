@@ -580,12 +580,11 @@ class RevolveNode extends TreeNode {
       // carry on anyway
     }
 
-    const axis = this.axis.normalize();
+    const axis = P.vdiv(this.vuniform('axis'), P.vlength(this.vuniform('axis')));
     
     // Project p onto the axis to get the closest point on the axis
-    const axisP = P.vconst(axis);
-    const projDist = P.vdot(p, axisP);
-    const projPoint = P.vmul(axisP, projDist);
+    const projDist = P.vdot(p, axis);
+    const projPoint = P.vmul(axis, projDist);
     
     // Vector from the axis to the point
     const toPoint = P.vsub(p, projPoint);
