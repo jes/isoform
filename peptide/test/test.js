@@ -726,6 +726,23 @@ addTest('trigonometric functions', (evaluate) => {
         P.mul(P.cos(x), P.cos(x))
     );
     assertEquals(evaluate(composed, { x: 1.234 }), 1.0); // sin²(x) + cos²(x) = 1
+
+    // Test tan
+    const angle2 = P.const(Math.PI / 4);
+    const tanExpr = P.tan(angle2);
+    assertEquals(evaluate(tanExpr), 1.0); // tan(π/4) = 1
+
+    // Test with variables
+    const tanVar = P.tan(x);
+    
+    assertEquals(evaluate(tanVar, { x: 0 }), 0.0); // tan(0) = 0
+
+    // Test composition of tan
+    const composed2 = P.add(
+        P.mul(P.tan(x), P.tan(x)),
+        P.const(1)
+    );
+    assertEquals(evaluate(composed2, { x: Math.PI / 4 }), 2.0); // tan²(π/4) + 1 = 2
 });
 
 addTest('trigonometric type checking', (evaluate) => {
@@ -734,6 +751,9 @@ addTest('trigonometric type checking', (evaluate) => {
     // Should throw when trying to use vector with sin/cos
     assertThrows(() => evaluate(P.sin(vec)));
     assertThrows(() => evaluate(P.cos(vec)));
+
+    // Should throw when trying to use vector with tan
+    assertThrows(() => evaluate(P.tan(vec)));
 });
 
 addTest('vector modulo', (evaluate) => {
