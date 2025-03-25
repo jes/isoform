@@ -158,15 +158,15 @@ class ShellNode extends TreeNode {
     const negD = P.sub(P.const(0), d);
     
     if (this.shellType === "inside") {
-      return P.max(d, P.sub(negD, P.const(this.thickness)));
+      return P.max(d, P.sub(negD, this.uniform('thickness')));
     } else if (this.shellType === "centered") {
-      const halfThickness = P.const(this.thickness / 2);
+      const halfThickness = P.div(this.uniform('thickness'), P.const(2.0));
       return P.max(
         P.sub(d, halfThickness), 
         P.sub(negD, halfThickness)
       );
     } else { // "outside" (default)
-      return P.max(P.sub(d, P.const(this.thickness)), negD);
+      return P.max(P.sub(d, this.uniform('thickness')), negD);
     }
   }
 
