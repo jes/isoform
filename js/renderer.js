@@ -313,7 +313,7 @@ const renderer = {
             
             // Update display
             if (this.fpsElement) {
-                this.fpsElement.textContent = `FPS: ${this.currentFps}`;
+                this.fpsElement.textContent = `${this.currentFps} fps`;
             }
             
             // Reset counters
