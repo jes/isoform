@@ -21,14 +21,14 @@
                 </div>
             </div>
         </div>
-        <div class="control-group">
-            <h3>Document Tree</h3>
-            <small>(Right click to edit)</small>
+        <div class="control-group" id="tree-view-container">
             <div id="tree-view"></div>
         </div>
         
-        <div class="control-group">
-            <h3>Properties</h3>
+        <!-- Add resize handle between tree view and property editor -->
+        <div id="vertical-resize-handle"></div>
+        
+        <div class="control-group" id="property-editor-container">
             <div id="property-editor"></div>
         </div>
     </div>
@@ -81,8 +81,7 @@
                 <p><strong>Rotate:</strong> Alt + mousemove</p>
                 <p><strong>Pan:</strong> Shift + mousemove</p>
                 <p><strong>Zoom:</strong> Mouse wheel</p>
-                <p><strong>View Buttons:</strong> XY, XZ, YZ for standard views</p>
-                <p><strong>Rotation Buttons:</strong> ↺ and ↻ to rotate around view axis</p>
+                <p>Edit the document tree with right click or drag and drop.</p>
             </div>
         </div>
     </div>

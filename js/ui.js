@@ -966,3 +966,32 @@ const ui = {
         }, 100);
     },
 };
+
+document.addEventListener('DOMContentLoaded', function() {
+    const resizeHandle = document.getElementById('vertical-resize-handle');
+    const treeViewContainer = document.getElementById('tree-view-container');
+    const propertyEditorContainer = document.getElementById('property-editor-container');
+    let isResizing = false;
+
+    resizeHandle.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        document.body.style.cursor = 'ns-resize';
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+        const totalHeight = treeViewContainer.offsetHeight + propertyEditorContainer.offsetHeight;
+        const newTreeHeight = e.clientY - treeViewContainer.getBoundingClientRect().top;
+        const newPropertyHeight = totalHeight - newTreeHeight;
+
+        if (newTreeHeight > 50 && newPropertyHeight > 50) { // Minimum height for each section
+            treeViewContainer.style.flex = `0 0 ${newTreeHeight}px`;
+            propertyEditorContainer.style.flex = `0 0 ${newPropertyHeight}px`;
+        }
+    });
+
+    document.addEventListener('mouseup', function() {
+        isResizing = false;
+        document.body.style.cursor = 'default';
+    });
+});

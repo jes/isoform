@@ -17,19 +17,38 @@ canvas {
     background: rgb(64, 64, 64);
 }
 #ui-panel {
-    width: 250px; /* Default width */
-    min-width: 250px; /* Ensure it has a minimum width */
+    display: flex;
+    flex-direction: column;
+    width: 250px;
+    min-width: 250px;
     background-color: rgba(30, 30, 40, 0.8);
     color: white;
     padding: 5px 10px 5px 5px;
     font-family: Arial, sans-serif;
-    overflow-y: auto;
-    position: relative; /* For the resize handle */
-    /* Add a border to make it clearly visible during debugging */
+    overflow: hidden; /* Ensure no overflow */
+    position: relative;
     border-left: 2px solid #888;
+    height: 100vh;
 }
+
+#tree-view-container, #property-editor-container {
+    flex: 1 1 50%; /* Allow both to grow and shrink equally, starting at 50% */
+    overflow: auto; /* Allow scrolling if content overflows */
+}
+
+#vertical-resize-handle {
+    height: 5px;
+    background-color: #555;
+    cursor: ns-resize;
+    transition: background-color 0.2s;
+}
+
+#vertical-resize-handle:hover {
+    background-color: #777;
+}
+
 .control-group {
-    margin-bottom: 15px;
+    /*margin-bottom: 15px;*/
 }
 h1 {
     margin-top: 0;
@@ -77,9 +96,8 @@ input[type="checkbox"] {
 
 /* Tree View Styles */
 #tree-view {
-    max-height: 200px;
+    min-height: calc(100% - 30px);
     overflow-y: auto;
-    margin-bottom: 10px;
     border: 1px solid #444;
     background-color: rgba(40, 40, 50, 0.8);
     padding: 5px;
