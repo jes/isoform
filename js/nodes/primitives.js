@@ -9,7 +9,7 @@ class SphereNode extends TreeNode {
   }
 
   makePeptide(p) {
-    return P.sub(P.vlength(p), P.const(this.radius));
+    return P.sub(P.vlength(p), this.uniform('radius'));
   }
 
   getIcon() {
@@ -32,15 +32,17 @@ class CylinderNode extends TreeNode {
   makePeptide(p) {
     const pxy = P.vec3(P.vecX(p), P.vecY(p), P.const(0));
     const pz = P.abs(P.vecZ(p));
-    let dx = P.sub(P.vlength(pxy), P.const(this.diameter/2));
-    let dz = P.sub(pz, P.const(this.height/2));
+    const radius = P.div(this.uniform('diameter'), P.const(2.0));
+    const halfHeight = P.div(this.uniform('height'), P.const(2.0));
+    let dx = P.sub(P.vlength(pxy), radius);
+    let dz = P.sub(pz, halfHeight);
     if (this.roundRadius > 0.0) {
-      dx = P.add(dx, P.const(this.roundRadius));
-      dz = P.add(dz, P.const(this.roundRadius));
+      dx = P.add(dx, this.uniform('roundRadius'));
+      dz = P.add(dz, this.uniform('roundRadius'));
     }
     const dist = P.add(P.min(P.max(dx, dz), P.const(0.0)), P.vlength(P.vmax(P.vec3(dx, dz, P.const(0)), P.vconst(new Vec3(0.0)))));
     if (this.roundRadius > 0.0) {
-      return P.sub(dist, P.const(this.roundRadius));
+      return P.sub(dist, this.uniform('roundRadius'));
     } else {
       return dist;
     }
