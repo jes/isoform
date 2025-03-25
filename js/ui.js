@@ -1052,6 +1052,8 @@ const ui = {
             
             // Add the cloned node to the target
             targetNode.addChild(clonedNode);
+
+            clonedNode.setUniqueName(this.document);
             
             // Update the tree view
             this.renderTree();
