@@ -67,7 +67,6 @@ const app = {
         // set unique names for all nodes
         let dfs = (node) => {
             node.setUniqueName(doc);
-            console.log(node.displayName);
             for (let child of node.children) {
                 dfs(child);
             }
