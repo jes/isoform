@@ -26,19 +26,16 @@ class TransformNode extends TreeNode {
       return this.noop();
     }
     
-    let expr = P.vsub(p, P.vconst(this.translation));
+    let expr = P.vsub(p, this.vuniform('translation'));
 
     const angleRad = this.rotationAngle * Math.PI / 180.0;
     if (Math.abs(angleRad) > 0.000001) {
-      const normalizedAxis = this.rotationAxis.length() > 0 ? 
-        this.rotationAxis.normalize() : 
-        new Vec3(0, 1, 0);
- 
       // Rodrigues rotation formula
-      const axis = P.vconst(normalizedAxis);
-      const cosA = P.const(Math.cos(angleRad));
-      const sinA = P.const(Math.sin(angleRad));
-      const k = P.const(1.0 - Math.cos(angleRad));
+      const axis = P.vdiv(this.vuniform('rotationAxis'), P.vlength(this.vuniform('rotationAxis')));
+      const angleRad = P.mul(P.const(Math.PI), P.div(this.uniform('rotationAngle'), P.const(180.0)));
+      const cosA = P.cos(angleRad);
+      const sinA = P.sin(angleRad);
+      const k = P.sub(P.const(1.0), cosA);
       const a = P.vmul(P.vmul(axis, P.vdot(axis, expr)), k);
       const b = P.vmul(expr, cosA);
       const c = P.vmul(P.vcross(axis, expr), sinA);
