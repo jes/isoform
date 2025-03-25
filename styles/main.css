@@ -783,3 +783,14 @@ input[type="range"]::-moz-range-thumb {
 .dropdown-item:hover {
     background-color: #444;
 }
+
+.dropdown-arrow {
+    font-size: 0.6em;
+    vertical-align: middle;
+    margin-left: 5px;
+    color: #999;
+}
+
+#app-title:hover .dropdown-arrow {
+    color: #ccc;
+}
