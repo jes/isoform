@@ -110,8 +110,8 @@ class DistanceDeformNode extends TreeNode {
     const d = this.children[0].peptide(p);
     if (!d) return null;
 
-    const freq = P.const(this.frequency);
-    const ampl = P.const(this.amplitude);
+    const freq = this.uniform('frequency');
+    const ampl = this.uniform('amplitude');
 
     const noise1X = P.sin(P.mul(P.vecX(p), freq));
     const noise1Y = P.sin(P.mul(P.vecY(p), freq));
@@ -123,7 +123,7 @@ class DistanceDeformNode extends TreeNode {
     const noise2Y = P.sin(P.mul(P.vecY(p), P.mul(P.const(2.0), freq)));
     const noise2Z = P.sin(P.mul(P.vecZ(p), P.mul(P.const(2.0), freq)));
     const noise2 = P.mul(P.const(0.5), P.mul(noise2X, P.mul(noise2Y, noise2Z)));
-    return P.div(P.add(d, P.mul(ampl, P.add(noise1, noise2))), P.const(Math.max(1.0, 2.0 * this.frequency * this.amplitude)));
+    return P.div(P.add(d, P.mul(ampl, P.add(noise1, noise2))), P.max(P.const(1.0), P.mul(P.const(2.0), P.mul(freq, ampl))));
   }
 
   getIcon() {
