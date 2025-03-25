@@ -209,7 +209,7 @@ class InfillNode extends TreeNode {
     if (!d2) return d;
 
     const negD = P.sub(P.const(0), d);
-    const dShell = P.max(d, P.sub(negD, P.const(this.thickness)));
+    const dShell = P.max(d, P.sub(negD, this.uniform('thickness')));
 
     return P.min(dShell, P.max(d, d2));
   }
@@ -239,7 +239,7 @@ class OffsetNode extends TreeNode {
 
     const d = this.children[0].peptide(p);
     if (!d) return null;
-    return P.add(d, P.const(this.distance));
+    return P.add(d, this.uniform('distance'));
   }
 
   getIcon() {
