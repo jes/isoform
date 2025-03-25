@@ -627,3 +627,33 @@ input[type="range"]::-moz-range-thumb {
     background: rgba(100, 150, 200, 0.8);
     cursor: pointer;
 }
+
+.slider-container {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+    background-color: rgba(40, 40, 50, 0.8);
+    padding: 5px;
+    border-radius: 3px;
+}
+
+.slider-container label {
+    margin-right: 5px;
+    color: white;
+    font-size: 0.8em;
+    display: inline;
+    margin: 0 5px 0 0;
+    white-space: nowrap;
+}
+
+.slider-container input {
+    width: 80px;
+}
+
+.slider-value {
+    color: white;
+    font-size: 0.8em;
+    margin-left: 5px;
+    min-width: 25px;
+    text-align: center;
+}

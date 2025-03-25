@@ -747,6 +747,22 @@ const ui = {
                 camera.opacity = parseFloat(e.target.value);
             });
         }
+
+        // Initialize step factor slider
+        const stepFactorSlider = document.getElementById('step-factor-slider');
+        const stepFactorValue = document.getElementById('step-factor-value');
+
+        // Update the value display and camera when the slider changes
+        stepFactorSlider.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            stepFactorValue.textContent = value.toFixed(1);
+            camera.stepFactor = value;
+            app.coordinateSystemChanged();
+        });
+
+        // Initialize with default value
+        stepFactorValue.textContent = stepFactorSlider.value;
+        camera.stepFactor = parseFloat(stepFactorSlider.value);
     },
 
     initMainToolbar() {
