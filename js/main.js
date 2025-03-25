@@ -156,7 +156,11 @@ const app = {
 
                 // keep hold of the compiled SDF so that we can use it for coordinate display
                 const fn = eval(ssa.compileToJS());
-                this.sdf = (p) => fn({p: p});
+                this.sdf = (p) => {
+                    const vars = {p: p, ...this.document.uniforms()};
+                    const result = fn(vars);
+                    return result;
+                };
 
                 //const intervalFn = eval(ssa.compileToJSInterval());
                 //this.intervalSdf = (p) => intervalFn({p: p});
