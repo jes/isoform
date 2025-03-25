@@ -512,9 +512,11 @@ class ExtrudeNode extends TreeNode {
     const p2d = P.vec3(P.vecX(p), P.vecY(p), P.const(0.0));
     const d2d = this.children[0].peptide(p2d);
     if (!d2d) return null;
-    const dz = P.sub(P.abs(P.vecZ(p)), P.const(this.height/2));
-    const pz = P.clamp(P.add(P.vecZ(p), P.const(this.height/2)), P.const(0.0), P.const(this.height));
-    const d = P.add(P.mul(d2d, P.const(Math.cos(this.draftAngle * Math.PI / 180.0))), P.mul(pz, P.const(Math.tan(this.draftAngle * Math.PI / 180.0))));
+    const halfHeight = P.div(this.uniform('height'), P.const(2.0));
+    const dz = P.sub(P.abs(P.vecZ(p)), halfHeight);
+    const pz = P.clamp(P.add(P.vecZ(p), halfHeight), P.const(0.0), this.uniform('height'));
+    const draftAngleRad = P.mul(this.uniform('draftAngle'), P.const(Math.PI / 180.0));
+    const d = P.add(P.mul(d2d, P.cos(draftAngleRad)), P.mul(pz, P.tan(draftAngleRad)));
     return this.max(d, dz);
   }
   

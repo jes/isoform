@@ -158,8 +158,8 @@ const app = {
                 const fn = eval(ssa.compileToJS());
                 this.sdf = (p) => fn({p: p});
 
-                const intervalFn = eval(ssa.compileToJSInterval());
-                this.intervalSdf = (p) => intervalFn({p: p});
+                //const intervalFn = eval(ssa.compileToJSInterval());
+                //this.intervalSdf = (p) => intervalFn({p: p});
             } else {
                 this.primaryShaderLayer = null;
             }

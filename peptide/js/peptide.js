@@ -554,6 +554,15 @@ class Peptide {
         });
     }
 
+    static tan(a) {
+        a.assertType('float');
+        return new Peptide('tan', 'float', null, a, null, null, {
+            evaluate: (vars) => Math.tan(a.evaluate(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = Math.tan(${ssaOp.left});`,
+            glslCode: (ssaOp) => `${ssaOp.result} = tan(${ssaOp.left});`,
+        });
+    }
+
     static vecX(a) {
         a.assertType('vec3');
         return new Peptide('vecX', 'float', null, a, null, null, {
