@@ -103,10 +103,12 @@ const app = {
         if (this.primaryShaderLayer) {
             this.primaryShaderLayer.setUniform('float', 'uOpacity', camera.opacity);
             shaderLayers.push(this.primaryShaderLayer);
+            this.primaryShaderLayer.setUniforms(this.document.uniforms());
         }
         if (this.secondaryShaderLayer) {
             this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.5);
             shaderLayers.push(this.secondaryShaderLayer);
+            this.secondaryShaderLayer.setUniforms(this.document.uniforms());
         }
         
         // Render the scene with the shader layers
@@ -149,7 +151,7 @@ const app = {
                 const ssa = new PeptideSSA(expr);
                 console.log(`SSA took ${performance.now() - startTime} ms`);
                 
-                this.primaryShaderLayer = await this.createShaderLayer(ssa);
+                this.primaryShaderLayer = await this.createShaderLayer(ssa, this.primaryShaderLayer);
                 this.primaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.6, 0.6, 0.6]);
 
                 // keep hold of the compiled SDF so that we can use it for coordinate display
@@ -165,7 +167,6 @@ const app = {
             this.document.markClean();
         }
 
-        this.secondaryShaderLayer = null;
         if (currentSecondaryNode !== null) {
             let expr;
             startTime = performance.now();
@@ -176,11 +177,13 @@ const app = {
                 const ssa = new PeptideSSA(expr);
                 console.log(`SSA took ${performance.now() - startTime} ms`);
                 
-                this.secondaryShaderLayer = await this.createShaderLayer(ssa);
+                this.secondaryShaderLayer = await this.createShaderLayer(ssa, this.secondaryShaderLayer);
                 this.secondaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.8, 0.2, 0.2]);
             } else {
                 this.secondaryShaderLayer = null;
             }
+        } else {
+            this.secondaryShaderLayer = null;
         }
 
         this.lastSecondaryNode = currentSecondaryNode;
@@ -189,9 +192,14 @@ const app = {
         this.hideLoadingIndicator();
     },
 
-    async createShaderLayer(ssa) {
-        const program = await renderer.compileShaderProgram(scene.generateShaderCode(ssa));
-        return new ShaderLayer(program);
+    async createShaderLayer(ssa, lastShaderLayer) {
+        const uniforms = this.document.uniforms();
+        const src = scene.generateShaderCode(ssa, uniforms);
+        if (lastShaderLayer && lastShaderLayer.src == src) {
+            return lastShaderLayer;
+        }
+        const program = await renderer.compileShaderProgram(src);
+        return new ShaderLayer(program, src);
     },
 
     controlQuality() {

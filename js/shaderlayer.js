@@ -1,11 +1,20 @@
 // ShaderLayer class for managing shader programs and uniforms
 class ShaderLayer {
-    constructor(program) {
+    constructor(program, src) {
         this.program = program;
+        this.src = src;
         this.uniforms = new Map();
         this.attribLocations = {}; // Store attribute locations
         this.setAttribLocation('aVertexPosition', 
             renderer.gl.getAttribLocation(this.program, 'aVertexPosition'));
+    }
+
+    setUniforms(uniforms) {
+        for (const [name, value] of Object.entries(uniforms)) {
+            const type = value instanceof Vec3 ? 'vec3' : 'float';
+            this.setUniform(type, name, value);
+        }
+        return this;
     }
 
     // Set a uniform with its type and value

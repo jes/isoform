@@ -3,7 +3,16 @@ const scene = {
     init() {
     },
     
-    generateShaderCode(ssa) {
+    generateShaderCode(ssa, uniforms) {
+        let uniformsSrc = '';
+        // Sort the uniforms by their name
+        const sortedUniforms = Object.entries(uniforms).sort(([nameA], [nameB]) => nameA.localeCompare(nameB));
+        
+        for (const [name, value] of sortedUniforms) {
+            const type = value instanceof Vec3 ? 'vec3' : 'float';
+            uniformsSrc += `uniform ${type} ${name};\n`;
+        }
+
         const glslSrc = ssa.compileToGLSL(`float peptide(vec3 p)`);
 
         // Get the original shader source
@@ -22,7 +31,7 @@ const scene = {
         startIndex = originalSource.indexOf('\n', startIndex) + 1;
         
         // Build the new scene combination code
-        let newSceneCode = glslSrc + `
+        let newSceneCode = uniformsSrc + glslSrc + `
         float map(vec3 p) {
             return peptide(uRotationMatrix * p);
         }

@@ -19,6 +19,7 @@ class TreeNode {
     this.warnFunction = null; // function to call when a warning is issued
     this.isDirty = true; // whether the shader needs to be recompiled
     this.isDisabled = false; // whether the node is disabled (i.e. hidden)
+    this.propertyUniforms = {}; // uniforms for the node - map uniform name to property name
 
     this.blendRadius = 0.0;
     this.chamfer = false;
@@ -46,6 +47,35 @@ class TreeNode {
 
   /// the rest of this class should not generally be overridden
 
+  // return a map of uniform name to value
+  uniforms() {
+    return this.dfsUniforms();
+  }
+
+  dfsUniforms(uniforms = {}) {
+    for (const [uniformName, property] of Object.entries(this.propertyUniforms)) {
+      uniforms[uniformName] = this[property];
+    }
+    for (const child of this.children) {
+      child.dfsUniforms(uniforms);
+    }
+    return uniforms;
+  }
+
+  // return a Peptide node for a float uniform mapped to a named property
+  uniform(property) {
+    const uniformName = `u_${this.name}_${this.uniqueId}_${property}`;
+    this.propertyUniforms[uniformName] = property;
+    return P.var(uniformName);
+  }
+
+  // return a Peptide node for a vec3 uniform mapped to a named property
+  vuniform(property) {
+    const uniformName = `u_${this.name}_${this.uniqueId}_${property}`;
+    this.propertyUniforms[uniformName] = property;
+    return P.vvar(uniformName);
+  }
+
   // set a name for this node that doesn't already exist in the document
   setUniqueName(document) {
     this.displayName = null;
@@ -72,9 +102,9 @@ class TreeNode {
     if (!b) return a;
     if (this.blendRadius > 0.0) {
       if (this.chamfer) {
-        return P.chmin(a, b, P.const(this.blendRadius));
+        return P.chmin(a, b, this.uniform('blendRadius'));
       } else {
-        return P.smin(a, b, P.const(this.blendRadius));
+        return P.smin(a, b, this.uniform('blendRadius'));
       }
     }
     return P.min(a, b);
@@ -85,9 +115,9 @@ class TreeNode {
     if (!b) return a;
     if (this.blendRadius > 0.0) {
       if (this.chamfer) {
-        return P.chmax(a, b, P.const(this.blendRadius));
+        return P.chmax(a, b, this.uniform('blendRadius'));
       } else {
-        return P.smax(a, b, P.const(this.blendRadius));
+        return P.smax(a, b, this.uniform('blendRadius'));
       }
     }
     return P.max(a, b);
