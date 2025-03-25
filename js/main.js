@@ -146,7 +146,9 @@ const app = {
         // Only rebuild primary shader if document is dirty, or force
         if (force || this.document.dirty()) {
             if (this.document.dirty()) {
-                // push undo state only if the document is actually changed (i.e. not due to undo/redo)
+                // push undo state only if the document is actually changed (i.e.
+                // not if we're only rebuilding because force is true due to
+                // undo/redo)
                 this.pushUndoState();
             }
 
