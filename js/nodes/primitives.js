@@ -66,19 +66,21 @@ class BoxNode extends TreeNode {
 
   makePeptide(p) {
     let expr;
+    const halfSize = P.vdiv(this.vuniform('size'), P.const(2.0));
     if (this.radius <= 0.0) {
       // vec3 d = abs(p) - b/2.0;
       // return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0);
-      let d = P.vsub(P.vabs(p), P.vconst(this.size.div(2.0)));
+      let d = P.vsub(P.vabs(p), halfSize);
       expr = P.add(P.vlength(P.vmax(d, P.vconst(new Vec3(0.0)))),
                    P.min(P.max(P.vecX(d), P.max(P.vecY(d), P.vecZ(d))), P.const(0.0)));
     } else {
       // vec3 q = abs(p) - b/2.0 + r;
       // return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
-      let d = P.vadd(P.vsub(P.vabs(p), P.vconst(this.size.div(2.0))), P.vconst(new Vec3(this.radius)));
+      const radiusVec3 = P.vec3(this.uniform('radius'), this.uniform('radius'), this.uniform('radius'));
+      let d = P.vadd(P.vsub(P.vabs(p), halfSize), radiusVec3);
       expr = P.sub(P.add(P.vlength(P.vmax(d, P.vconst(new Vec3(0.0)))),
                          P.min(P.max(P.vecX(d), P.max(P.vecY(d), P.vecZ(d))), P.const(0.0))),
-                   P.const(this.radius));
+                   this.uniform('radius'));
     }
     return expr;
   }
