@@ -355,24 +355,10 @@ const renderer = {
         const { ro, rd } = this.calculateRayOriginAndDirection(p);
         
         // Raymarch from this point
-        const result1 = this.rayMarchFromPoint(ro, rd);
-        let result2;
-        try {
-            result2 = this.rayMarchIntervalFromPoint(ro, rd);
-        } catch (e) {
-            console.error(e);
-        }
+        const result = this.rayMarchFromPoint(ro, rd);
         
-        if (!result2) {
-            result2 = {
-                hit: false,
-                hitPosition: new Vec3(0, 0, 0),
-                steps: 0
-            };
-        }
-
         // Display coordinates if we hit something
-        this.displayCoordinatesIfHit(result1, result2);
+        this.displayCoordinatesIfHit(result);
     },
     
     calculateRayFromMousePosition(mousePos) {
@@ -395,11 +381,10 @@ const renderer = {
         return { ro, rd };
     },
     
-    displayCoordinatesIfHit(result1, result2) {
-        if (result1.hit || result2.hit) {
-            const coords1 = result1.hitPosition || new Vec3(0, 0, 0);
-            const coords2 = result2.hitPosition || new Vec3(0, 0, 0);
-            const text = `X: ${coords1.x.toFixed(3)}/${coords2.x.toFixed(3)}<br>Y: ${coords1.y.toFixed(3)}/${coords2.y.toFixed(3)}<br>Z: ${coords1.z.toFixed(3)}/${coords2.z.toFixed(3)}`;
+    displayCoordinatesIfHit(result) {
+        if (result.hit) {
+            const coords = result.hitPosition || new Vec3(0, 0, 0);
+            const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}`;
             
             this.coordDisplay.innerHTML = text;
             this.coordDisplay.style.display = 'block';
@@ -468,9 +453,7 @@ const renderer = {
 
         const endTime = performance.now();
         const duration = (endTime - startTime).toFixed(2);
-        if (duration > 1.0) {
-            console.log(`Interval raymarching took ${duration}ms (${result.steps} steps)`);
-        }
+        console.log(`Interval raymarching took ${duration}ms (${result.steps} steps)`);
 
         return result;
     },
@@ -507,7 +490,7 @@ const renderer = {
             }
 
             const stepSize = Math.max(0.0001, d);
-            p = p.add(rd.mul(stepSize));
+            p = p.add(rd.mul(stepSize * camera.stepFactor));
 
             if (d > lastD && result.distance > 10000.0) break;
             lastD = d;
@@ -516,9 +499,7 @@ const renderer = {
 
         const endTime = performance.now();
         const duration = (endTime - startTime).toFixed(2);
-        if (duration > 0.0) {
-            console.log(`Raymarching took ${duration}ms (${result.steps} steps)`);
-        }
+        console.log(`Raymarching took ${duration}ms (${result.steps} steps)`);
 
         return result;
     },
