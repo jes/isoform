@@ -102,8 +102,8 @@ class TorusNode extends TreeNode {
   }
 
   makePeptide(p) {
-    const major = P.const(this.majorDiameter/2);
-    const minor = P.const(this.minorDiameter/2);
+    const major = P.div(this.uniform('majorDiameter'), P.const(2.0));
+    const minor = P.div(this.uniform('minorDiameter'), P.const(2.0));
     const lenxy = P.vlength(P.vec3(P.vecX(p), P.vecY(p), P.const(0)));
     const q = P.vec3(P.sub(lenxy, major), P.vecZ(p), P.const(0));
     return P.sub(P.vlength(q), minor);
