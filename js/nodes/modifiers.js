@@ -69,17 +69,17 @@ class DomainDeformNode extends TreeNode {
       return this.noop();
     }
 
-    const px1 = P.mul(P.sin(P.mul(P.vecY(p), P.const(this.frequency))), P.const(this.amplitude));
-    const py1 = P.mul(P.sin(P.mul(P.vecZ(p), P.const(this.frequency))), P.const(this.amplitude));
-    const pz1 = P.mul(P.sin(P.mul(P.vecX(p), P.const(this.frequency))), P.const(this.amplitude));
+    const px1 = P.mul(P.sin(P.mul(P.vecY(p), this.uniform('frequency'))), this.uniform('amplitude'));
+    const py1 = P.mul(P.sin(P.mul(P.vecZ(p), this.uniform('frequency'))), this.uniform('amplitude'));
+    const pz1 = P.mul(P.sin(P.mul(P.vecX(p), this.uniform('frequency'))), this.uniform('amplitude'));
 
-    const px2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecZ(p), P.vecY(p)), P.const(1.0)), P.const(this.frequency))), P.const(this.amplitude)));
-    const py2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecX(p), P.vecZ(p)), P.const(2.42)), P.const(this.frequency))), P.const(this.amplitude)));
-    const pz2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecY(p), P.vecX(p)), P.const(14.5)), P.const(this.frequency))), P.const(this.amplitude)));
+    const px2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecZ(p), P.vecY(p)), P.const(1.0)), this.uniform('frequency'))), this.uniform('amplitude')));
+    const py2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecX(p), P.vecZ(p)), P.const(2.42)), this.uniform('frequency'))), this.uniform('amplitude')));
+    const pz2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecY(p), P.vecX(p)), P.const(14.5)), this.uniform('frequency'))), this.uniform('amplitude')));
 
     const child = this.children[0].peptide(P.vadd(p, P.vec3(P.add(px1, px2), P.add(py1, py2), P.add(pz1, pz2))));
     if (!child) return null;
-    return P.div(child, P.const(Math.max(1.0, 2.0 * this.frequency * this.amplitude)));
+    return P.div(child, P.max(P.const(1.0), P.mul(P.const(2.0), P.mul(this.uniform('frequency'), this.uniform('amplitude')))));
   }
 
   getIcon() {
