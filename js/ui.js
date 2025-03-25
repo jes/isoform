@@ -197,6 +197,17 @@ const ui = {
         
         // Use the TreeView component to render the tree
         this.treeViewComponent.render(app.document);
+        
+        // Check if the selected node still exists in the document tree
+        if (this.selectedNode) {
+            const nodeExists = this.nodeExistsInTree(this.selectedNode, app.document);
+            if (!nodeExists) {
+                // Node doesn't exist anymore, clear selection and property editor
+                this.selectedNode = null;
+                this.propertyEditorComponent.render(null);
+                this.treeViewComponent.setSelectedNode(null);
+            }
+        }
     },
     
     updateTreeIfNeeded(node, propName) {
@@ -1077,6 +1088,23 @@ const ui = {
         this.selectedNode = nodeToAdd;
         this.treeViewComponent.setSelectedNode(nodeToAdd);
         this.propertyEditorComponent.render(nodeToAdd);
+    },
+
+    // Helper function to check if a node exists in the tree
+    nodeExistsInTree(node, rootNode) {
+        if (!node || !rootNode) return false;
+        
+        // Check if the node is the root node
+        if (node === rootNode) return true;
+        
+        // Recursively check all children
+        for (const child of rootNode.children) {
+            if (this.nodeExistsInTree(node, child)) {
+                return true;
+            }
+        }
+        
+        return false;
     },
 };
 

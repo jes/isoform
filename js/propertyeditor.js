@@ -11,12 +11,17 @@ class PropertyEditor {
     }
     
     render(node) {
-        if (!node || !this.container) return;
+        // Clear the property editor
+        if (this.container) {
+            this.container.innerHTML = '';
+        }
+        
+        if (!node || !this.container) {
+            this.selectedNode = null;
+            return;
+        }
         
         this.selectedNode = node;
-        
-        // Clear the property editor
-        this.container.innerHTML = '';
         
         // Add a heading showing the node type
         const nodeTypeHeading = document.createElement('h3');

@@ -471,6 +471,8 @@ class TreeView {
     
     setSelectedNode(node) {
         this.selectedNode = node;
+
+        if (!node) return;
         
         // Update the UI to reflect the selection
         const nodeLabel = this.container.querySelector(`.tree-node-label[data-node-id="${node.uniqueId}"]`);
