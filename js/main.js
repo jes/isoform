@@ -64,6 +64,16 @@ const app = {
         extr.setProperty('chamfer', true);
         doc.addChild(new ShellNode(1, false, extr));
 
+        // set unique names for all nodes
+        let dfs = (node) => {
+            node.setUniqueName(doc);
+            console.log(node.displayName);
+            for (let child of node.children) {
+                dfs(child);
+            }
+        };
+        dfs(doc);
+
         this.document = doc;
         return doc;
     },

@@ -46,6 +46,27 @@ class TreeNode {
 
   /// the rest of this class should not generally be overridden
 
+  // set a name for this node that doesn't already exist in the document
+  setUniqueName(document) {
+    this.displayName = null;
+    const used = document.dfsUsedNames();
+    let name = this.name;
+    let i = 2;
+    while (used.has(name)) {
+      name = `${this.name}${i}`;
+      i++;
+    }
+    this.displayName = name;
+  }
+
+  dfsUsedNames(used = new Set()) {
+    used.add(this.displayName);
+    for (const child of this.children) {
+      child.dfsUsedNames(used);
+    }
+    return used;
+  }
+
   min(a, b){
     if (!a) return b;
     if (!b) return a;

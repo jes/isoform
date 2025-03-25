@@ -404,7 +404,9 @@ const ui = {
         
         combinators.forEach(combinator => {
             this.addMenuItem(contextMenu, combinator.name, () => {
-                this.replaceNode(node, new combinator.constructor(), true);
+                const newNode = new combinator.constructor();
+                newNode.setUniqueName(this.document);
+                this.replaceNode(node, newNode, true);
                 contextMenu.remove();
             }, combinator.icon);
         });
@@ -431,7 +433,9 @@ const ui = {
         
         modifiers.forEach(modifier => {
             this.addMenuItem(contextMenu, modifier.name, () => {
-                this.replaceNode(node, new modifier.constructor(), true);
+                const newNode = new modifier.constructor();
+                newNode.setUniqueName(this.document);
+                this.replaceNode(node, newNode, true);
                 contextMenu.remove();
             }, modifier.icon);
         });
@@ -452,6 +456,7 @@ const ui = {
         shapes.forEach(shape => {
             this.addMenuItem(contextMenu, `Add ${shape.name}`, () => {
                 const newNode = new shape.constructor();
+                newNode.setUniqueName(this.document);
                 node.addChild(newNode);
                 contextMenu.remove();
                 this.renderTree();
