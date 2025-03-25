@@ -277,6 +277,7 @@ class TreeNode {
   delete() {
     if (this.parent) {
       this.parent.removeChild(this);
+      this.parent = null;
     }
   }
 
@@ -527,6 +528,36 @@ class TreeNode {
     
     return rootNode;
   }
+
+  clone() {
+    // Create a new node from the serialized data
+    const cloned = TreeNode.fromSerialized(this.serialize());
+
+    // find the root node
+    let document = this;
+    while (document.parent) {
+      document = document.parent;
+    }
+    
+    // Generate new unique IDs for all nodes in the cloned tree
+    const regenerateIds = (node) => {
+      // Assign a new unique ID
+      node.uniqueId = TreeNode.nextId++;
+
+      // assign a unique name
+      node.setUniqueName(document);
+      
+      // Process all children recursively
+      for (const child of node.children) {
+        regenerateIds(child);
+      }
+    };
+    
+    regenerateIds(cloned);
+    
+    return cloned;
+  }
+
 }
 
 // Detect environment and export accordingly

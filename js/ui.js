@@ -249,6 +249,10 @@ const ui = {
         contextMenu.style.left = `${event.clientX}px`;
         contextMenu.style.top = `${event.clientY}px`;
 
+        // Add clipboard operations
+        this.buildClipboardOptions(contextMenu, node);
+        this.addMenuSeparator(contextMenu);
+
         // Only show combinators and modifiers if not the root node
         if (node.parent) {
             // Combinators
@@ -964,6 +968,97 @@ const ui = {
                 loadingIndicator.remove();
             }
         }, 100);
+    },
+
+    // Add this new method to handle clipboard operations
+    buildClipboardOptions(contextMenu, node) {
+        // Add clipboard to the UI object if it doesn't exist
+        if (!this.clipboard) {
+            this.clipboard = null;
+        }
+        
+        // Cut option (only for non-root nodes)
+        if (node.parent) {
+            this.addMenuItem(contextMenu, 'Cut', () => {
+                this.clipboard = {
+                    node: node,
+                    operation: 'cut'
+                };
+                node.delete();
+                contextMenu.remove();
+            }, '✂️');
+        }
+        
+        // Copy option
+        this.addMenuItem(contextMenu, 'Copy', () => {
+            this.clipboard = {
+                node: node.clone(),
+                operation: 'copy'
+            };
+            contextMenu.remove();
+        }, '📋');
+        
+        // Paste option (only if there's something in the clipboard and the node can accept more children)
+        if (this.clipboard && node.canAddMoreChildren()) {
+            this.addMenuItem(contextMenu, 'Paste', () => {
+                this.pasteNode(this.clipboard, node);
+                contextMenu.remove();
+            }, '📌');
+        }
+    },
+
+    // Add this method to handle the paste operation
+    pasteNode(clipboard, targetNode) {
+        if (!clipboard || !targetNode) return;
+        
+        // Handle cut operation
+        if (clipboard.operation === 'cut') {
+            // Remove the node from its current parent
+            const sourceNode = clipboard.node;
+            const originalParent = sourceNode.parent;
+            
+            if (originalParent) {
+                // Check if target is not a descendant of source (would create circular reference)
+                let current = targetNode;
+                while (current) {
+                    if (current === sourceNode) {
+                        console.warn("Cannot move a node to its descendant");
+                        return;
+                    }
+                    current = current.parent;
+                }
+                
+                originalParent.removeChild(sourceNode);
+                targetNode.addChild(sourceNode);
+                
+                // Clear the clipboard after a cut operation
+                this.clipboard = null;
+                
+                // Update the tree view
+                this.renderTree();
+                
+                // Select the moved node
+                this.selectedNode = sourceNode;
+                this.treeViewComponent.setSelectedNode(sourceNode);
+                this.propertyEditorComponent.render(sourceNode);
+            }
+        } 
+        // Handle copy operation
+        else if (clipboard.operation === 'copy') {
+            // Clone the node again to ensure we have a fresh copy
+            const clonedNode = clipboard.node.clone();
+            
+            // Add the cloned node to the target
+            targetNode.addChild(clonedNode);
+            
+            // Update the tree view
+            this.renderTree();
+            
+            // Select the new node
+            this.selectedNode = clonedNode;
+            this.treeViewComponent.setSelectedNode(clonedNode);
+            this.propertyEditorComponent.render(clonedNode);
+        }
     },
 };
 
