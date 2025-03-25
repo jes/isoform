@@ -330,7 +330,7 @@ class TwistNode extends TreeNode {
     const fromAxisSpace = P.mtranspose(toAxisSpace);
 
     const q = P.mvmul(toAxisSpace, p);
-    const angle = P.mul(P.const(-2.0 * Math.PI), P.div(P.vecZ(q), P.const(this.height)));
+    const angle = P.mul(P.const(-2.0 * Math.PI), P.div(P.vecZ(q), this.uniform('height')));
     const c = P.cos(angle);
     const s = P.sin(angle);
     const q2 = P.vec3(P.sub(P.mul(c, P.vecX(q)), P.mul(s, P.vecY(q))),
