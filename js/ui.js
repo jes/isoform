@@ -77,9 +77,6 @@ const ui = {
         // Initialize view toolbar
         this.initViewToolbar();
         
-        // Initialize main toolbar
-        this.initMainToolbar();
-        
         // Initial render of the tree
         this.renderTree();
 
@@ -836,26 +833,21 @@ const ui = {
         }
     },
 
-    initMainToolbar() {
-        const newDocumentButton = document.getElementById('new-document');
-        if (newDocumentButton) {
-            newDocumentButton.addEventListener('click', () => {
-                if (confirm('Create a new document? Any unsaved changes will be lost.')) {
-                    // Create a new empty document
-                    const newDoc = new UnionNode([]);
-                    newDoc.setProperty('displayName', 'Document');
-                    
-                    // Update the application document
-                    app.document = newDoc;
-                    
-                    // Update the UI
-                    this.document = newDoc;
-                    this.renderTree();
-                    this.selectedNode = newDoc;
-                    this.treeViewComponent.setSelectedNode(newDoc);
-                    this.propertyEditorComponent.render(newDoc);
-                }
-            });
+    createNewDocument() {
+        if (confirm('Create a new document? Any unsaved changes will be lost.')) {
+            // Create a new empty document
+            const newDoc = new UnionNode([]);
+            newDoc.setProperty('displayName', 'Document');
+            
+            // Update the application document
+            app.document = newDoc;
+            
+            // Update the UI
+            this.document = newDoc;
+            this.renderTree();
+            this.selectedNode = newDoc;
+            this.treeViewComponent.setSelectedNode(newDoc);
+            this.propertyEditorComponent.render(newDoc);
         }
     },
 
