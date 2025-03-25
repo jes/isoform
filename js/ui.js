@@ -4,12 +4,10 @@ const ui = {
     propertyEditor: null,
     sketchEditor: null,
     selectedNode: null,
-    document: null,
     secondaryNode: null,
     clipboard: null,
 
-    init(doc) {
-        this.document = doc;
+    init() {
         this.treeView = document.getElementById('tree-view');
         this.propertyEditor = document.getElementById('property-editor');
         
@@ -49,7 +47,7 @@ const ui = {
             },
             // Provide a way to get the document root
             getDocument: () => {
-                return this.document;
+                return app.document;
             }
         });
         
@@ -109,6 +107,17 @@ const ui = {
 
         document.getElementById('save-document').addEventListener('click', () => {
             this.saveDocument();
+            fileDropdown.classList.remove('show');
+        });
+
+        // Add event listeners for undo/redo buttons
+        document.getElementById('undo-action').addEventListener('click', () => {
+            app.undo();
+            fileDropdown.classList.remove('show');
+        });
+
+        document.getElementById('redo-action').addEventListener('click', () => {
+            app.redo();
             fileDropdown.classList.remove('show');
         });
     },
@@ -184,10 +193,10 @@ const ui = {
     },
     
     renderTree() {
-        if (!this.document || !this.treeView) return;
+        if (!app.document || !this.treeView) return;
         
         // Use the TreeView component to render the tree
-        this.treeViewComponent.render(this.document);
+        this.treeViewComponent.render(app.document);
     },
     
     updateTreeIfNeeded(node, propName) {
@@ -434,7 +443,7 @@ const ui = {
         combinators.forEach(combinator => {
             this.addMenuItem(contextMenu, combinator.name, () => {
                 const newNode = new combinator.constructor();
-                newNode.setUniqueName(this.document);
+                newNode.setUniqueName(app.document);
                 this.replaceNode(node, newNode, true);
             }, combinator.icon);
         });
@@ -462,7 +471,7 @@ const ui = {
         modifiers.forEach(modifier => {
             this.addMenuItem(contextMenu, modifier.name, () => {
                 const newNode = new modifier.constructor();
-                newNode.setUniqueName(this.document);
+                newNode.setUniqueName(app.document);
                 this.replaceNode(node, newNode, true);
             }, modifier.icon);
         });
@@ -483,7 +492,7 @@ const ui = {
         shapes.forEach(shape => {
             this.addMenuItem(contextMenu, `Add ${shape.name}`, () => {
                 const newNode = new shape.constructor();
-                newNode.setUniqueName(this.document);
+                newNode.setUniqueName(app.document);
                 node.addChild(newNode);
                 this.renderTree();
                 // Select the newly added node
@@ -834,8 +843,11 @@ const ui = {
             // Update the application document
             app.document = newDoc;
             
+            // Flush the undo stack
+            app.flushUndoStack();
+            
             // Update the UI
-            this.document = newDoc;
+            app.document = newDoc;
             this.renderTree();
             this.selectedNode = newDoc;
             this.treeViewComponent.setSelectedNode(newDoc);
@@ -856,7 +868,10 @@ const ui = {
                     try {
                         const json = JSON.parse(e.target.result);
                         app.document = TreeNode.fromSerialized(json);
-                        this.document = app.document;
+                        
+                        // Flush the undo stack
+                        app.flushUndoStack();
+                        
                         this.renderTree();
                         this.selectedNode = app.document;
                         this.treeViewComponent.setSelectedNode(app.document);
@@ -874,14 +889,14 @@ const ui = {
 
     saveDocument() {
         // Save the current document to a JSON file
-        const json = JSON.stringify(this.document.serialize());
+        const json = JSON.stringify(app.document.serialize());
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         
         // Create a download link
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${this.document.displayName}.isoform`;
+        link.download = `${app.document.displayName}.isoform`;
         link.click();
     },
 
@@ -946,7 +961,7 @@ const ui = {
                 
                 // Create mesher from the node with default options
                 const mesher = Mesher.fromTreeNode(node);
-                mesher.peptideVars = this.document.uniforms();
+                mesher.peptideVars = app.document.uniforms();
                 
                 // Generate the mesh
                 mesher.generateMesh();
@@ -1052,7 +1067,7 @@ const ui = {
         
         // Now that the node is in the tree, set a unique name if it's a copy
         if (clipboard.operation === 'copy') {
-            nodeToAdd.setUniqueName(this.document);
+            nodeToAdd.setUniqueName(app.document);
         }
         
         // Update the tree view

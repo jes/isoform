@@ -10,6 +10,8 @@ const app = {
     intervalSdf: null,
     primaryShaderLayer: null,   // Store primary shader layer
     secondaryShaderLayer: null, // Store secondary shader layer
+    undoStack: [],
+    undoPointer: 0,
 
     async init() {
         // Initialize components
@@ -20,8 +22,8 @@ const app = {
         // Create the scene document
         this.createDocument();
         
-        // Initialize UI with the document
-        ui.init(this.document);
+        // Initialize UI
+        ui.init();
         
         // Initialize sketch editor
         ui.initSketchEditor();
@@ -131,18 +133,23 @@ const app = {
         requestAnimationFrame(() => this.render());
     },
 
-    async rebuildShaders() {
+    async rebuildShaders(force = false) {
         // Track the current secondary node
         const currentSecondaryNode = ui.getSecondaryNode();
 
-        if (!this.document.dirty() && currentSecondaryNode === this.lastSecondaryNode) {
+        if (!this.document.dirty() && currentSecondaryNode === this.lastSecondaryNode && !force) {
             return;
         }
 
         this.showLoadingIndicator();
         
-        // Only rebuild primary shader if document is dirty
-        if (this.document.dirty()) {
+        // Only rebuild primary shader if document is dirty, or force
+        if (force || this.document.dirty()) {
+            if (this.document.dirty()) {
+                // push undo state only if the document is actually changed (i.e. not due to undo/redo)
+                this.pushUndoState();
+            }
+
             let startTime = performance.now();
             const expr = this.document.peptide(P.vvar('p'));
             if (expr) {
@@ -219,6 +226,42 @@ const app = {
                 this.lastAdjustmentTime = Date.now();
             }
         }
+    },
+
+    undo() {
+        if (this.undoPointer > 1) { // We need at least 2 states to undo (current + previous)
+            this.undoPointer--;
+            const state = this.undoStack[this.undoPointer - 1]; // Get the previous state
+            this.document = TreeNode.fromSerialized(state);
+            this.rebuildShaders(true);
+            ui.renderTree();
+        }
+    },
+
+    redo() {
+        if (this.undoPointer < this.undoStack.length) {
+            const state = this.undoStack[this.undoPointer];
+            this.document = TreeNode.fromSerialized(state);
+            this.undoPointer++;
+            this.rebuildShaders(true);
+            ui.renderTree();
+        }
+    },
+
+    pushUndoState() {
+        // Save the current state to the undo stack whenever the document changes
+        // Truncate the undo stack if we're not at the end (discard any redo states)
+        if (this.undoPointer < this.undoStack.length) {
+            this.undoStack.length = this.undoPointer;
+        }
+        // Add the current state to the undo stack
+        this.undoStack.push(this.document.serialize());
+        this.undoPointer = this.undoStack.length;
+    },
+
+    flushUndoStack() {
+        this.undoStack = [];
+        this.undoPointer = 0;
     },
 };
 

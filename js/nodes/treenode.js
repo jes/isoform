@@ -378,6 +378,7 @@ class TreeNode {
 
   // Serialize with support for circular references
   serialize() {
+    const startTime = performance.now();
     // Create a map to track visited nodes and their IDs
     const visited = new Map();
     const nodeMap = new Map();
@@ -437,7 +438,9 @@ class TreeNode {
       return result;
     };
     
-    return serializeNode(this);
+    const result = serializeNode(this);
+    console.log(`Serialize took ${performance.now() - startTime} ms`);
+    return result;
   }
 
   // Static deserialization method
