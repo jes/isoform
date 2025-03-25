@@ -1004,65 +1004,64 @@ const ui = {
         }
     },
 
-    // Add this method to handle the paste operation
     pasteNode(clipboard, targetNode) {
         if (!clipboard || !targetNode) return;
         
+        let nodeToAdd;
+        
         // Handle cut operation
         if (clipboard.operation === 'cut') {
-            // Remove the node from its current parent
             const sourceNode = clipboard.node;
-            const originalParent = sourceNode.parent;
-
+            
+            // Check if target is not a descendant of source (would create circular reference)
+            let current = targetNode;
+            while (current) {
+                if (current === sourceNode) {
+                    console.warn("Cannot move a node to its descendant");
+                    return;
+                }
+                current = current.parent;
+            }
+            
+            // Enable the node and restore expansion state
             sourceNode.enable();
             if (!clipboard.wasCollapsed) {
                 this.treeViewComponent.expandNode(sourceNode);
             }
             
+            // Remove from original parent
+            const originalParent = sourceNode.parent;
             if (originalParent) {
-                // Check if target is not a descendant of source (would create circular reference)
-                let current = targetNode;
-                while (current) {
-                    if (current === sourceNode) {
-                        console.warn("Cannot move a node to its descendant");
-                        return;
-                    }
-                    current = current.parent;
-                }
-                
                 originalParent.removeChild(sourceNode);
-                targetNode.addChild(sourceNode);
-                
-                // Turn the operation into a copy so that we can paste more
-                this.clipboard.operation = 'copy';
-                
-                // Update the tree view
-                this.renderTree();
-                
-                // Select the moved node
-                this.selectedNode = sourceNode;
-                this.treeViewComponent.setSelectedNode(sourceNode);
-                this.propertyEditorComponent.render(sourceNode);
             }
+            
+            // Use the original node
+            nodeToAdd = sourceNode;
+            
+            // Turn the operation into a copy so that we can paste more
+            this.clipboard.operation = 'copy';
         } 
         // Handle copy operation
-        else if (clipboard.operation === 'copy') {
-            // Clone the node again to ensure we have a fresh copy
-            const clonedNode = clipboard.node.clone();
-            
-            // Add the cloned node to the target
-            targetNode.addChild(clonedNode);
-
-            clonedNode.setUniqueName(this.document);
-            
-            // Update the tree view
-            this.renderTree();
-            
-            // Select the new node
-            this.selectedNode = clonedNode;
-            this.treeViewComponent.setSelectedNode(clonedNode);
-            this.propertyEditorComponent.render(clonedNode);
+        else {
+            // Create a fresh clone for each paste operation
+            nodeToAdd = clipboard.node.clone();
         }
+        
+        // Add the node to the target
+        targetNode.addChild(nodeToAdd);
+        
+        // Now that the node is in the tree, set a unique name if it's a copy
+        if (clipboard.operation === 'copy') {
+            nodeToAdd.setUniqueName(this.document);
+        }
+        
+        // Update the tree view
+        this.renderTree();
+        
+        // Select the pasted node
+        this.selectedNode = nodeToAdd;
+        this.treeViewComponent.setSelectedNode(nodeToAdd);
+        this.propertyEditorComponent.render(nodeToAdd);
     },
 };
 
