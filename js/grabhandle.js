@@ -14,6 +14,7 @@ class GrabHandle {
         
         // Internal state
         this.isDragging = false;
+        this.isHovering = false;
         this.lastMousePos = null;
         this.shaderLayer = null;
         
@@ -21,9 +22,11 @@ class GrabHandle {
         this._onMouseDown = this._onMouseDown.bind(this);
         this._onMouseMove = this._onMouseMove.bind(this);
         this._onMouseUp = this._onMouseUp.bind(this);
+        this._onMouseMoveForHover = this._onMouseMoveForHover.bind(this);
         
         // Set up event listeners
         this.canvas.addEventListener('mousedown', this._onMouseDown);
+        this.canvas.addEventListener('mousemove', this._onMouseMoveForHover);
         
         // Create shader program for rendering the handle
         if (this.renderer && this.renderer.gl) {
@@ -53,6 +56,7 @@ class GrabHandle {
     // Clean up event listeners
     destroy() {
         this.canvas.removeEventListener('mousedown', this._onMouseDown);
+        this.canvas.removeEventListener('mousemove', this._onMouseMoveForHover);
         document.removeEventListener('mousemove', this._onMouseMove);
         document.removeEventListener('mouseup', this._onMouseUp);
     }
@@ -73,6 +77,7 @@ class GrabHandle {
         uniform vec3 uCameraTarget;
         uniform float uCameraZoom;
         uniform mat3 uRotationMatrix;
+        uniform bool uIsHovering;
         out vec4 fragColor;
         
         void main() {
@@ -128,8 +133,15 @@ class GrabHandle {
                 return;
             }
             
+            // Modify color based on hover/drag state
+            vec3 finalColor = uHandleColor;
+            if (uIsHovering) {
+                // Slightly brighten color when hovering
+                finalColor = mix(finalColor, vec3(1.0, 1.0, 1.0), 0.5);
+            }
+            
             // Output fragment color with transparency
-            fragColor = vec4(uHandleColor, alpha);
+            fragColor = vec4(finalColor, alpha);
         }`;
         
         // Use the renderer's async methods for shader compilation
@@ -150,7 +162,8 @@ class GrabHandle {
         camera.setUniforms(this.shaderLayer);
         this.shaderLayer.setUniform('vec3', 'uHandlePosition', this.position)
                      .setUniform('vec3', 'uHandleColor', this.color)
-                     .setUniform('float', 'uHandleRadius', this.radius);  // Now pass percentage directly
+                     .setUniform('float', 'uHandleRadius', this.radius)
+                     .setUniform('bool', 'uIsHovering', this.isHovering||this.isDragging);
     }
     
     // Convert percentage radius to actual pixels
@@ -266,6 +279,37 @@ class GrabHandle {
         // Notify onChange callback if provided
         if (this.onChange) {
             this.onChange(this.position);
+        }
+    }
+    
+    // Handle mouse move for hover detection
+    _onMouseMoveForHover(e) {
+        // Skip hover detection if already dragging
+        if (this.isDragging) return;
+        
+        // Convert mouse position to screen coordinates
+        const mousePos = this._getMousePosition(e);
+        
+        // Check if the mouse is over the handle
+        const screenPos = camera.worldToScreen(this.position);
+        const distance = Math.sqrt(
+            Math.pow(mousePos.x - screenPos.x, 2) + 
+            Math.pow(mousePos.y - screenPos.y, 2)
+        );
+        
+        // Convert percentage radius to pixels for hit testing
+        const hitRadius = this._getPixelRadius();
+        
+        // Update hover state
+        const wasHovering = this.isHovering;
+        this.isHovering = distance <= hitRadius;
+        
+        // Only trigger a redraw if the hover state changed
+        if (wasHovering !== this.isHovering) {
+            // Request a redraw to update the handle appearance
+            if (this.renderer && typeof this.renderer.requestRedraw === 'function') {
+                this.renderer.requestRedraw();
+            }
         }
     }
 }
