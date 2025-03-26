@@ -230,30 +230,42 @@ class GrabHandle {
     }
     
     _updatePositionFromScreenDelta(deltaX, deltaY) {
-        // Get start and end positions in screen space
-        const startScreenPos = camera.worldToScreen(this.position);
-        const endScreenPos = { 
-            x: startScreenPos.x + deltaX, 
-            y: startScreenPos.y + deltaY 
-        };
+        // We need to determine how far to move along the constraint axis
+        // based on the screen-space mouse movement
         
-        // Convert screen positions to world positions
-        const startWorldPos = camera.screenToWorld(startScreenPos);
-        const endWorldPos = camera.screenToWorld(endScreenPos);
+        // 1. Calculate how the handle would appear on screen if moved a small amount along the axis
+        const testOffset = 0.1; // Small test offset along the axis
+        const testPos = this.position.add(this.axis.mul(testOffset));
         
-        // Calculate movement vector
-        const moveVec = new Vec3(
-            endWorldPos.x - startWorldPos.x,
-            endWorldPos.y - startWorldPos.y,
-            endWorldPos.z - startWorldPos.z
-        );
+        // 2. Project both current and test positions to screen space
+        const currentScreenPos = camera.worldToScreen(this.position);
+        const testScreenPos = camera.worldToScreen(testPos);
         
-        // Project movement onto the constraint axis
-        const dot = moveVec.dot(this.axis);
-        const projectedMove = this.axis.mul(dot);
+        // 3. Calculate the screen-space movement vector for our test offset
+        const screenDeltaX = testScreenPos.x - currentScreenPos.x;
+        const screenDeltaY = testScreenPos.y - currentScreenPos.y;
         
-        // Update position
-        this.position = this.position.add(projectedMove);
+        // 4. Calculate the screen-space distance moved per unit of axis movement
+        const screenDist = Math.sqrt(screenDeltaX * screenDeltaX + screenDeltaY * screenDeltaY);
+        const screenDistPerUnit = screenDist / testOffset;
+        
+        if (screenDistPerUnit < 0.001) {
+            // Avoid division by near-zero (happens when axis points directly into/out of screen)
+            return;
+        }
+        
+        // 5. Project the mouse movement onto the screen-space axis direction
+        const screenAxisDirX = screenDeltaX / screenDist;
+        const screenAxisDirY = screenDeltaY / screenDist;
+        
+        // Calculate how much the mouse moved along the projected axis direction
+        const mouseProjection = deltaX * screenAxisDirX + deltaY * screenAxisDirY;
+        
+        // 6. Convert screen-space movement to world-space movement along the axis
+        const axisMovement = mouseProjection / screenDistPerUnit;
+        
+        // 7. Update the position
+        this.position = this.position.add(this.axis.mul(axisMovement));
         
         // Notify onChange callback if provided
         if (this.onChange) {
