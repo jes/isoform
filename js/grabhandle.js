@@ -225,7 +225,7 @@ class GrabHandle {
         const rect = this.canvas.getBoundingClientRect();
         return {
             x: e.clientX - rect.left,
-            y: e.clientY - rect.top
+            y: this.canvas.height - (e.clientY - rect.top)
         };
     }
     
