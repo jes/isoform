@@ -12,7 +12,7 @@ const app = {
     secondaryShaderLayer: null, // Store secondary shader layer
     undoStack: [],
     undoPointer: 0,
-    grabHandle: null,
+    grabHandles: [],
 
     async init() {
         // Initialize components
@@ -76,22 +76,17 @@ const app = {
         };
         dfs(doc);
 
-        this.grabHandle = new GrabHandle({
-            position: new Vec3(0, 0, 0),
-            axis: new Vec3(1, 0, 0),
-            color: new Vec3(1, 0, 0),
-            canvas: renderer.canvas,
-            onChange: (pos) => {
-                //const boxSize = box.getProperty('size');
-                //box.setProperty('size', new Vec3(pos.x, boxSize.y, boxSize.z));
-                box.children[0].children[0].size.x = pos.x*2;
-                console.log('grab handle changed', pos);
-            }
-        });
- 
         this.document = doc;
         this.document.setProperty('displayName', 'Document');
         return doc;
+    },
+
+    addGrabHandle(grabHandle) {
+        this.grabHandles.push(grabHandle);
+    },
+
+    removeGrabHandles() {
+        this.grabHandles = [];
     },
     
     showLoadingIndicator() {
@@ -127,9 +122,9 @@ const app = {
             this.secondaryShaderLayer.setUniforms(this.document.uniforms());
             shaderLayers.push(this.secondaryShaderLayer);
         }
-        if (this.grabHandle) {
-            this.grabHandle.setUniforms();
-            shaderLayers.push(this.grabHandle.shaderLayer);
+        for (let grabHandle of this.grabHandles) {
+            grabHandle.setUniforms();
+            shaderLayers.push(grabHandle.shaderLayer);
         }
         
         // Render the scene with the shader layers

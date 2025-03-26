@@ -35,6 +35,12 @@ class TreeNode {
     return {};
   }
 
+  // override this to return the scalar properties of the node that can be edited with a grab handle
+  // name => { origin: Vec3, axis: Vec3 }
+  grabHandles() {
+    return {};
+  }
+
   // override this to return the peptide expression for the node
   makePeptide(p) {
     return this.noop();

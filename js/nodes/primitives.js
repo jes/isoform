@@ -8,6 +8,12 @@ class SphereNode extends TreeNode {
     return {"radius": "float"};
   }
 
+  grabHandles() {
+    return {
+      "radius": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0) },
+    };
+  }
+
   makePeptide(p) {
     return P.sub(P.vlength(p), this.uniform('radius'));
   }

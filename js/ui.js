@@ -14,15 +14,7 @@ const ui = {
         // Initialize the TreeView component
         this.treeViewComponent = new TreeView(this.treeView, {
             onNodeSelected: (node) => {
-                this.selectedNode = node;
-                this.propertyEditorComponent.render(node);
-                // Open sketch editor if it's a SketchNode
-                if (node instanceof SketchNode) {
-                    this.openSketchEditor(node);
-                } else {
-                    // Close sketch editor if open
-                    this.sketchEditor.close();
-                }
+                this.selectNode(node);
             },
             onNodeContextMenu: (e, node) => {
                 this.showContextMenu(e, node);
@@ -202,10 +194,7 @@ const ui = {
         if (this.selectedNode) {
             const nodeExists = this.nodeExistsInTree(this.selectedNode, app.document);
             if (!nodeExists) {
-                // Node doesn't exist anymore, clear selection and property editor
-                this.selectedNode = null;
-                this.propertyEditorComponent.render(null);
-                this.treeViewComponent.setSelectedNode(null);
+                this.selectNode(null);
             }
         }
     },
@@ -237,17 +226,31 @@ const ui = {
             transformNode.addChild(originalNode);
         }
        
-        // Update the tree view
+        this.selectNode(transformNode instanceof TreeNode ? transformNode : null);
         this.renderTree();
-        
-        // Only set selectedNode to transformNode if it's a TreeNode instance
-        // Otherwise set it to null
-        this.selectedNode = transformNode instanceof TreeNode ? transformNode : null;
-        
-        // If we have a valid selected node, set it in the TreeView component
-        if (this.selectedNode) {
-            this.treeViewComponent.setSelectedNode(this.selectedNode);
-            this.propertyEditorComponent.render(this.selectedNode);
+    },
+
+    selectNode(node) {
+        app.removeGrabHandles();
+        this.selectedNode = node;
+        if (node) {
+            this.treeViewComponent.setSelectedNode(node);
+            this.propertyEditorComponent.render(node);
+            Object.entries(node.grabHandles()).forEach(([name, { origin, axis }]) => {
+                app.addGrabHandle(new GrabHandle({
+                    position: origin.add(axis.mul(node.getProperty(name))),
+                    axis: axis,
+                    onChange: (pos) => {
+                        const length = pos.sub(origin).length();
+                        node.setProperty(name, length);
+                    },
+                }));
+            });
+        }
+        if (node instanceof SketchNode) {
+            this.openSketchEditor(node);
+        } else {
+            this.sketchEditor.close();
         }
     },
 
@@ -505,11 +508,8 @@ const ui = {
                 const newNode = new shape.constructor();
                 newNode.setUniqueName(app.document);
                 node.addChild(newNode);
+                this.selectNode(newNode);
                 this.renderTree();
-                // Select the newly added node
-                this.selectedNode = newNode;
-                this.treeViewComponent.setSelectedNode(newNode);
-                this.propertyEditorComponent.render(newNode);
             }, shape.icon);
         });
     },
@@ -658,12 +658,8 @@ const ui = {
         
         // Update the tree view - make sure this happens after all DOM operations
         setTimeout(() => {
+            this.selectNode(sourceNode);
             this.renderTree();
-            
-            // Select the moved node
-            this.selectedNode = sourceNode;
-            this.treeViewComponent.setSelectedNode(sourceNode);
-            this.propertyEditorComponent.render(sourceNode);
         }, 0);
     },
 
@@ -859,10 +855,8 @@ const ui = {
             
             // Update the UI
             app.document = newDoc;
+            this.selectNode(newDoc);
             this.renderTree();
-            this.selectedNode = newDoc;
-            this.treeViewComponent.setSelectedNode(newDoc);
-            this.propertyEditorComponent.render(newDoc);
         }
     },
 
@@ -883,10 +877,8 @@ const ui = {
                         // Flush the undo stack
                         app.flushUndoStack();
                         
+                        this.selectNode(app.document);
                         this.renderTree();
-                        this.selectedNode = app.document;
-                        this.treeViewComponent.setSelectedNode(app.document);
-                        this.propertyEditorComponent.render(app.document);
                     } catch (error) {
                         console.error("Error loading document:", error);
                         alert("Error loading document. Please try again.");
@@ -932,13 +924,8 @@ const ui = {
         // Mark the parent as dirty to regenerate the shader
         parent.markDirty();
         
-        // Update the tree view
+        this.selectNode(node);
         this.renderTree();
-        
-        // Keep the node selected
-        this.selectedNode = node;
-        this.treeViewComponent.setSelectedNode(node);
-        this.propertyEditorComponent.render(node);
     },
 
     initSketchEditor() {
@@ -1081,13 +1068,8 @@ const ui = {
             nodeToAdd.setUniqueName(app.document);
         }
         
-        // Update the tree view
+        this.selectNode(nodeToAdd);
         this.renderTree();
-        
-        // Select the pasted node
-        this.selectedNode = nodeToAdd;
-        this.treeViewComponent.setSelectedNode(nodeToAdd);
-        this.propertyEditorComponent.render(nodeToAdd);
     },
 
     // Helper function to check if a node exists in the tree
