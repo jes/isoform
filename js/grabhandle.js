@@ -6,7 +6,7 @@ class GrabHandle {
         this.axis = options.axis || new Vec3(1, 0, 0); // Default to X axis
         this.axis = this.axis.normalize(); // Ensure axis is normalized
         this.color = options.color || new Vec3(1, 0.5, 0);  // Default orange
-        this.radius = options.radius || 0.015;  // Handle size as percentage of minimum canvas dimension
+        this.radius = options.radius || 0.005;  // Handle size as percentage of minimum canvas dimension
         this.canvas = options.canvas || document.getElementById('glCanvas');
         this.onChange = options.onChange || null;
         this.onComplete = options.onComplete || null;
@@ -128,12 +128,8 @@ class GrabHandle {
                 return;
             }
             
-            // Add a highlight effect
-            float highlight = smoothstep(screenRadius * 0.7, screenRadius, dist);
-            vec3 color = mix(uHandleColor, vec3(1.0), highlight * 0.3);
-            
             // Output fragment color with transparency
-            fragColor = vec4(color, alpha);
+            fragColor = vec4(uHandleColor, alpha);
         }`;
         
         // Use the renderer's async methods for shader compilation

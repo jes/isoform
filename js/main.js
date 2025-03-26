@@ -89,7 +89,6 @@ const app = {
             }
         });
  
-
         this.document = doc;
         this.document.setProperty('displayName', 'Document');
         return doc;
