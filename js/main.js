@@ -12,6 +12,7 @@ const app = {
     secondaryShaderLayer: null, // Store secondary shader layer
     undoStack: [],
     undoPointer: 0,
+    grabHandle: null,
 
     async init() {
         // Initialize components
@@ -35,7 +36,8 @@ const app = {
         // Add focus/blur event listeners
         window.addEventListener('focus', this.onWindowFocus.bind(this));
         window.addEventListener('blur', this.onWindowBlur.bind(this));
-        
+
+       
         // Start the render loop
         this.render();
     },
@@ -74,6 +76,20 @@ const app = {
         };
         dfs(doc);
 
+        this.grabHandle = new GrabHandle({
+            position: new Vec3(0, 0, 0),
+            axis: new Vec3(1, 0, 0),
+            color: new Vec3(1, 0, 0),
+            canvas: renderer.canvas,
+            onChange: (pos) => {
+                //const boxSize = box.getProperty('size');
+                //box.setProperty('size', new Vec3(pos.x, boxSize.y, boxSize.z));
+                box.children[0].children[0].size.x = pos.x*2;
+                console.log('grab handle changed', pos);
+            }
+        });
+ 
+
         this.document = doc;
         this.document.setProperty('displayName', 'Document');
         return doc;
@@ -104,13 +120,17 @@ const app = {
         const shaderLayers = [];
         if (this.primaryShaderLayer) {
             this.primaryShaderLayer.setUniform('float', 'uOpacity', camera.opacity);
-            shaderLayers.push(this.primaryShaderLayer);
             this.primaryShaderLayer.setUniforms(this.document.uniforms());
+            shaderLayers.push(this.primaryShaderLayer);
         }
         if (this.secondaryShaderLayer) {
             this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.5);
-            shaderLayers.push(this.secondaryShaderLayer);
             this.secondaryShaderLayer.setUniforms(this.document.uniforms());
+            shaderLayers.push(this.secondaryShaderLayer);
+        }
+        if (this.grabHandle) {
+            this.grabHandle.setUniforms();
+            shaderLayers.push(this.grabHandle.shaderLayer);
         }
         
         // Render the scene with the shader layers

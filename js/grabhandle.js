@@ -6,7 +6,7 @@ class GrabHandle {
         this.axis = options.axis || new Vec3(1, 0, 0); // Default to X axis
         this.axis = this.axis.normalize(); // Ensure axis is normalized
         this.color = options.color || new Vec3(1, 0.5, 0);  // Default orange
-        this.radius = options.radius || 1;  // Handle size in pixels (screen space)
+        this.radius = options.radius || 0.015;  // Handle size as percentage of minimum canvas dimension
         this.canvas = options.canvas || document.getElementById('glCanvas');
         this.onChange = options.onChange || null;
         this.onComplete = options.onComplete || null;
@@ -67,7 +67,7 @@ class GrabHandle {
         
         uniform vec3 uHandlePosition;
         uniform vec3 uHandleColor;
-        uniform float uHandleRadius;
+        uniform float uHandleRadius;  // Now as percentage of minimum resolution dimension
         uniform vec2 uResolution;
         uniform vec3 uCameraPosition;
         uniform vec3 uCameraTarget;
@@ -115,8 +115,9 @@ class GrabHandle {
             // Calculate distance from current fragment to handle center
             float dist = length(fragCoord - handleScreenPos);
             
-            // Define handle radius in screen space
-            float screenRadius = uHandleRadius * uResolution.y / 40.0;
+            // Convert percentage radius to screen pixels
+            float minDimension = min(uResolution.x, uResolution.y);
+            float screenRadius = uHandleRadius * minDimension;
             
             // Create a circular shape with smooth edges
             float alpha = 1.0 - smoothstep(screenRadius - 1.0, screenRadius + 1.0, dist);
@@ -153,7 +154,13 @@ class GrabHandle {
         camera.setUniforms(this.shaderLayer);
         this.shaderLayer.setUniform('vec3', 'uHandlePosition', this.position)
                      .setUniform('vec3', 'uHandleColor', this.color)
-                     .setUniform('float', 'uHandleRadius', this.radius);
+                     .setUniform('float', 'uHandleRadius', this.radius);  // Now pass percentage directly
+    }
+    
+    // Convert percentage radius to actual pixels
+    _getPixelRadius() {
+        const minDimension = Math.min(this.canvas.width, this.canvas.height);
+        return this.radius * minDimension;
     }
     
     // Handle mouse events
@@ -171,8 +178,8 @@ class GrabHandle {
             Math.pow(mousePos.y - screenPos.y, 2)
         );
         
-        // Use the screen-space radius for hit testing
-        const hitRadius = this.radius * this.canvas.height / 100.0;
+        // Convert percentage radius to pixels for hit testing
+        const hitRadius = this._getPixelRadius();
         
         // If click is on handle, start dragging
         if (distance <= hitRadius) {
@@ -241,9 +248,17 @@ class GrabHandle {
             endWorldPos.z - startWorldPos.z
         );
         
+        // If we have a rotation matrix, ensure we project onto the properly rotated axis
+        // This ensures the handle works correctly in rotated coordinate systems
+        let axis = this.axis;
+        if (camera.rotationMatrix) {
+            // Apply the inverse rotation to our constraint axis to make it work in world space
+            axis = camera.rotationMatrix.mulVec3(this.axis);
+        }
+        
         // Project movement onto the constraint axis
-        const dot = moveVec.dot(this.axis);
-        const projectedMove = this.axis.mul(dot);
+        const dot = moveVec.dot(axis);
+        const projectedMove = axis.mul(dot);
         
         // Update position
         this.position = this.position.add(projectedMove);

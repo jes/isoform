@@ -4,6 +4,10 @@ function Vec3(x, y = x, z = x) {
     this.z = z;
 }
 
+Vec3.prototype.clone = function() {
+    return new Vec3(this.x, this.y, this.z);
+};
+
 Vec3.prototype.equals = function(v) {
     return this.x === v.x && this.y === v.y && this.z === v.z;
 };
