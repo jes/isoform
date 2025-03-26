@@ -35,6 +35,14 @@ class CylinderNode extends TreeNode {
     return {"diameter": "float", "height": "float", "roundRadius": "float"};
   }
 
+  grabHandles() {
+    return {
+      "diameter": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0) },
+      "height": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1) },
+      "roundRadius": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0) },
+    };
+  }
+
   makePeptide(p) {
     const pxy = P.vec3(P.vecX(p), P.vecY(p), P.const(0));
     const pz = P.abs(P.vecZ(p));
