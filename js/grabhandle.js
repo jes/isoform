@@ -248,17 +248,9 @@ class GrabHandle {
             endWorldPos.z - startWorldPos.z
         );
         
-        // If we have a rotation matrix, ensure we project onto the properly rotated axis
-        // This ensures the handle works correctly in rotated coordinate systems
-        let axis = this.axis;
-        if (camera.rotationMatrix) {
-            // Apply the inverse rotation to our constraint axis to make it work in world space
-            axis = camera.rotationMatrix.mulVec3(this.axis);
-        }
-        
         // Project movement onto the constraint axis
-        const dot = moveVec.dot(axis);
-        const projectedMove = axis.mul(dot);
+        const dot = moveVec.dot(this.axis);
+        const projectedMove = this.axis.mul(dot);
         
         // Update position
         this.position = this.position.add(projectedMove);
