@@ -201,7 +201,7 @@ const camera = {
             worldPos : new Vec3(worldPos.x, worldPos.y, worldPos.z);
         
         // Apply the active rotation matrix to the world position
-        const rotatedPos = this.activeRotationMatrix.mulVec3(worldPosVec);
+        const rotatedPos = this.activeRotationMatrix.transpose().mulVec3(worldPosVec);
         
         // 1. Build the camera basis vectors (same as in screenToWorld)
         const forward = this.target.sub(this.position);
@@ -285,13 +285,8 @@ const camera = {
         // Calculate intersection point in world space
         const worldPointRotated = viewPlanePoint.add(forwardNorm.mul(t));
         
-        // 7. Since the rotation is applied to objects (not the camera view),
-        // we need to apply the inverse rotation to get back to original world coordinates
-        // Inverse of rotation matrix is its transpose for orthogonal matrices
-        const inverseRotation = this.activeRotationMatrix.transpose();
-        
         // Apply inverse rotation
-        const worldPos = inverseRotation.mulVec3(worldPointRotated);
+        const worldPos = this.activeRotationMatrix.mulVec3(worldPointRotated);
         
         return { x: worldPos.x, y: worldPos.y, z: worldPos.z };
     },
