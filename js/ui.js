@@ -479,8 +479,9 @@ const ui = {
             { name: 'Linear Pattern', constructor: LinearPatternNode, icon: LinearPatternNode.prototype.getIcon() },
             { name: 'Polar Pattern', constructor: PolarPatternNode, icon: PolarPatternNode.prototype.getIcon() },
             { name: 'Extrude', constructor: ExtrudeNode, icon: ExtrudeNode.prototype.getIcon() },
+            { name: 'Helix Extrude', constructor: HelixExtrudeNode, icon: HelixExtrudeNode.prototype.getIcon() },
             { name: 'Revolve', constructor: RevolveNode, icon: RevolveNode.prototype.getIcon() },
-            { name: 'Distance Deform Inside', constructor: DistanceDeformInsideNode, icon: DistanceDeformInsideNode.prototype.getIcon() }
+            { name: 'Distance Deform Inside', constructor: DistanceDeformInsideNode, icon: DistanceDeformInsideNode.prototype.getIcon() },
         ];
         
         modifiers.forEach(modifier => {

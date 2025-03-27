@@ -624,11 +624,102 @@ class RevolveNode extends TreeNode {
   }
 }
 
+class HelixExtrudeNode extends TreeNode {
+  constructor(children = []) {
+    super("HelixExtrude");
+    this.height = 100.0;
+    this.radius = 20.0;
+    this.pitch = 50.0;
+    this.turns = 2.0;
+    this.maxChildren = 1;
+    this.blendRadius = 0.0;
+    this.chamfer = false;
+    this.addChild(children);
+  }
+
+  properties() {
+    return {
+      "height": "float", 
+      "radius": "float", 
+      "pitch": "float", 
+      "turns": "float",
+      "blendRadius": "float", 
+      "chamfer": "bool"
+    };
+  }
+
+  grabHandles() {
+    return {
+      "height": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1) },
+      "radius": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0) },
+      "pitch": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1) },
+      "blendRadius": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 1, 0) },
+    };
+  }
+
+  makePeptide(p) {
+    if (!this.hasChildren()) {
+      this.warn("HelixExtrude node has no child to transform");
+      return this.noop();
+    }
+    if (!this.children[0].is2d()) {
+      this.warn("HelixExtrude node requires a 2D child");
+      // carry on anyway
+    }
+
+    // Calculate total height based on turns and pitch
+    const totalHeight = P.mul(this.uniform('pitch'), this.uniform('turns'));
+    
+    // Get coordinates
+    const x = P.vecX(p);
+    const y = P.vecY(p);
+    const z = P.vecZ(p);
+    
+    // Find closest point on the helix
+    // This is an approximation - we find the closest point on the z-axis
+    // and then use that to determine where on the helix we are
+    
+    // Calculate the z-parameter for the helix
+    const t = P.div(z, this.uniform('pitch'));
+    
+    // Calculate the corresponding point on the helix
+    const hx = P.mul(this.uniform('radius'), P.cos(P.mul(t, P.const(2.0 * Math.PI))));
+    const hy = P.mul(this.uniform('radius'), P.sin(P.mul(t, P.const(2.0 * Math.PI))));
+    const hz = z;
+    
+    // Vector from point on helix to our point
+    const dx = P.sub(x, hx);
+    const dy = P.sub(y, hy);
+    
+    // Distance from point to helix in XY plane
+    const dr = P.vlength(P.vec3(dx, dy, P.const(0.0)));
+    
+    // Create a 2D point for the cross-section
+    // X = distance from helix centerline (radial)
+    // Y = position along helix (we use z directly)
+    const p2d = P.vec3(dr, P.const(0.0), P.const(0.0));
+    
+    // Get the SDF from the 2D child
+    const d2d = this.children[0].peptide(p2d);
+    if (!d2d) return null;
+    
+    // Limit the helix to the specified height
+    const heightLimit = P.sub(P.abs(z), totalHeight);
+    
+    // Return the maximum of the 2D SDF and the height limit
+    return this.max(d2d, heightLimit);
+  }
+  
+  getIcon() {
+    return "🌀";
+  }
+}
+
 // Detect environment and export accordingly
 (function() {
   const nodes = { TransformNode, DomainDeformNode, DistanceDeformNode, ShellNode,
     InfillNode, OffsetNode, ScaleNode, TwistNode, MirrorNode, LinearPatternNode,
-    PolarPatternNode, ExtrudeNode, RevolveNode, DistanceDeformInsideNode };
+    PolarPatternNode, ExtrudeNode, RevolveNode, DistanceDeformInsideNode, HelixExtrudeNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {
