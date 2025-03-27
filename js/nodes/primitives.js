@@ -78,6 +78,15 @@ class BoxNode extends TreeNode {
     return {"size": "vec3", "radius": "float"};
   }
 
+  grabHandles() {
+    return {
+      "size.x": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0), ratio: 0.5, get: () => this.size.x, set: (value) => this.setProperty('size', new Vec3(value, this.size.y, this.size.z)) },
+      "size.y": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 1, 0), ratio: 0.5, get: () => this.size.y, set: (value) => this.setProperty('size', new Vec3(this.size.x, value, this.size.z)) },
+      "size.z": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1), ratio: 0.5, get: () => this.size.z, set: (value) => this.setProperty('size', new Vec3(this.size.x, this.size.y, value)) },
+      "radius": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0) },
+    };
+  }
+
   makePeptide(p) {
     let expr;
     const halfSize = P.vdiv(this.vuniform('size'), P.const(2.0));

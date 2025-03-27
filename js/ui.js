@@ -236,15 +236,17 @@ const ui = {
         if (node) {
             this.treeViewComponent.setSelectedNode(node);
             this.propertyEditorComponent.render(node);
-            Object.entries(node.grabHandles()).forEach(([name, { origin, axis, ratio }]) => {
+            Object.entries(node.grabHandles()).forEach(([name, { origin, axis, ratio, get, set }]) => {
+                get ||= (() => node.getProperty(name));
+                set ||= ((value) => node.setProperty(name, value));
                 ratio ||= 1;
                 app.addGrabHandle(new GrabHandle({
-                    position: origin.add(axis.mul(node.getProperty(name)*ratio)),
+                    position: origin.add(axis.mul(get()*ratio)),
                     origin: origin,
                     axis: axis,
                     onChange: (pos) => {
                         const length = pos.sub(origin).length();
-                        node.setProperty(name, length/ratio);
+                        set(length/ratio);
                     },
                 }));
             });
