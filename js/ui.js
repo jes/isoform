@@ -239,6 +239,7 @@ const ui = {
             Object.entries(node.grabHandles()).forEach(([name, { origin, axis }]) => {
                 app.addGrabHandle(new GrabHandle({
                     position: origin.add(axis.mul(node.getProperty(name))),
+                    origin: origin,
                     axis: axis,
                     onChange: (pos) => {
                         const length = pos.sub(origin).length();

@@ -2,7 +2,7 @@ class GrabHandle {
     constructor(options = {}) {
         // Store handle properties
         this.position = options.position || new Vec3(0, 0, 0);
-        this.initialPosition = this.position.clone();
+        this.origin = options.origin || new Vec3(0, 0, 0);
         this.axis = options.axis || new Vec3(1, 0, 0); // Default to X axis
         this.axis = this.axis.normalize(); // Ensure axis is normalized
         this.color = options.color || new Vec3(1, 0.5, 0);  // Default orange
@@ -70,6 +70,7 @@ class GrabHandle {
         precision highp float;
         
         uniform vec3 uHandlePosition;
+        uniform vec3 uHandleOrigin;
         uniform vec3 uHandleColor;
         uniform float uHandleRadius;  // Now as percentage of minimum resolution dimension
         uniform vec2 uResolution;
@@ -92,20 +93,27 @@ class GrabHandle {
             vec3 right = normalize(cross(forward, worldUp));
             vec3 up = cross(right, forward);
             
-            // Apply rotation to handle position (match the main rendering)
+            // Apply rotation to handle position and origin (match the main rendering)
             vec3 rotatedHandlePos = transpose(uRotationMatrix) * uHandlePosition;
+            vec3 rotatedOriginPos = transpose(uRotationMatrix) * uHandleOrigin;
             
             // Project handle position to screen space
             // 1. Get view-space position of handle
             vec3 handleViewVec = rotatedHandlePos - ro;
+            vec3 originViewVec = rotatedOriginPos - ro;
             
             // 2. Project onto camera plane
             float handleProjDist = dot(forward, handleViewVec);
+            float originProjDist = dot(forward, originViewVec);
             
             // 3. Calculate view space coordinates
             vec2 handleViewPos = vec2(
                 dot(right, handleViewVec),
                 dot(up, handleViewVec)
+            );
+            vec2 originViewPos = vec2(
+                dot(right, originViewVec),
+                dot(up, originViewVec)
             );
             
             // 4. Apply zoom and aspect ratio
@@ -114,30 +122,74 @@ class GrabHandle {
             handleViewPos.y *= uCameraZoom;
             handleViewPos.x /= aspect;
             
+            originViewPos.x *= uCameraZoom;
+            originViewPos.y *= uCameraZoom;
+            originViewPos.x /= aspect;
+            
             // 5. Convert to screen coordinates
             vec2 handleScreenPos = (handleViewPos * 0.5 + 0.5) * uResolution;
+            vec2 originScreenPos = (originViewPos * 0.5 + 0.5) * uResolution;
             
             // Calculate distance from current fragment to handle center
-            float dist = length(fragCoord - handleScreenPos);
+            float distToHandle = length(fragCoord - handleScreenPos);
             
             // Convert percentage radius to screen pixels
             float minDimension = min(uResolution.x, uResolution.y);
             float screenRadius = uHandleRadius * minDimension;
             
-            // Create a circular shape with smooth edges
-            float alpha = 1.0 - smoothstep(screenRadius - 1.0, screenRadius + 1.0, dist);
+            // Calculate distance to the line segment between origin and handle
+            vec2 lineDir = handleScreenPos - originScreenPos;
+            float lineLength = length(lineDir);
             
-            // Hard cutoff for areas far from the handle to ensure complete transparency
-            if (dist > screenRadius + 2.0) {
-                fragColor = vec4(0.0, 0.0, 0.0, 0.0);
-                return;
+            // Normalize line direction
+            vec2 lineDirNorm = lineDir / max(lineLength, 0.001);
+            
+            // Vector from origin to current fragment
+            vec2 fragVec = fragCoord - originScreenPos;
+            
+            // Project fragment onto line
+            float projDist = dot(fragVec, lineDirNorm);
+            
+            // Clamp projection to line segment
+            projDist = clamp(projDist, 0.0, lineLength);
+            
+            // Find closest point on line segment
+            vec2 closestPoint = originScreenPos + lineDirNorm * projDist;
+            
+            // Distance from fragment to line
+            float distToLine = length(fragCoord - closestPoint);
+            
+            // Line thickness (even thinner than before)
+            float lineThickness = screenRadius * 0.25;
+            
+            // Create alpha for the line with smooth edges
+            float lineAlpha = 1.0 - smoothstep(lineThickness - 1.0, lineThickness + 1.0, distToLine);
+            lineAlpha *= 0.5; // Make line 50% opacity
+            
+            // Create alpha for the handle with smooth edges
+            float handleAlpha = 1.0 - smoothstep(screenRadius - 1.0, screenRadius + 1.0, distToHandle);
+            
+            // Don't combine alphas - keep them separate
+            float alpha = 0.0;
+            vec3 finalColor = uHandleColor;
+            
+            // Apply hover effect only to the handle, not the line
+            if (distToHandle <= screenRadius + 2.0) {
+                // This is the handle
+                alpha = handleAlpha;
+                if (uIsHovering) {
+                    // Slightly brighten color when hovering
+                    finalColor = mix(finalColor, vec3(1.0, 1.0, 1.0), 0.5);
+                }
+            } else if (distToLine <= lineThickness + 2.0) {
+                // This is the line
+                alpha = lineAlpha;
             }
             
-            // Modify color based on hover/drag state
-            vec3 finalColor = uHandleColor;
-            if (uIsHovering) {
-                // Slightly brighten color when hovering
-                finalColor = mix(finalColor, vec3(1.0, 1.0, 1.0), 0.5);
+            // Hard cutoff for areas far from both the handle and line
+            if (distToHandle > screenRadius + 2.0 && distToLine > lineThickness + 2.0) {
+                fragColor = vec4(0.0, 0.0, 0.0, 0.0);
+                return;
             }
             
             // Output fragment color with transparency
@@ -161,6 +213,7 @@ class GrabHandle {
         // Set uniforms for the shader
         camera.setUniforms(this.shaderLayer);
         this.shaderLayer.setUniform('vec3', 'uHandlePosition', this.position)
+                     .setUniform('vec3', 'uHandleOrigin', this.origin)
                      .setUniform('vec3', 'uHandleColor', this.color)
                      .setUniform('float', 'uHandleRadius', this.radius)
                      .setUniform('bool', 'uIsHovering', this.isHovering||this.isDragging);
