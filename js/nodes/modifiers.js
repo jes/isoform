@@ -513,7 +513,7 @@ class ExtrudeNode extends TreeNode {
 
   grabHandles() {
     return {
-      "height": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1) },
+      "height": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1), ratio: 0.5 },
       "draftAngle": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1) },
       "blendRadius": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1) },
     };
