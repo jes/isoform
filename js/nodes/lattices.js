@@ -8,6 +8,12 @@ class GyroidNode extends TreeNode {
     return {"scale": "float"};
   }
 
+  grabHandles() {
+    return {
+      "scale": { origin: new Vec3(0, 0, 0), ratio: 10, axis: new Vec3(1, 0, 0) },
+    };
+  }
+
   makePeptide(p) {
     p = P.vdiv(p, this.uniform('scale'));
     const gyroid = P.add(P.mul(P.sin(P.vecX(p)), P.cos(P.vecY(p))),
@@ -29,6 +35,14 @@ class CubicLatticeNode extends TreeNode {
   properties() {
     // XXX: don't expose chamfer because it seems broken?
     return {"scale": "float", "thickness": "float", "blendRadius": "float"};
+  }
+
+  grabHandles() {
+    return {
+      "scale": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0) },
+      "thickness": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1) },
+      "blendRadius": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0) },
+    };
   }
 
   makePeptide(p) {

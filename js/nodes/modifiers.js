@@ -20,6 +20,32 @@ class TransformNode extends TreeNode {
     };
   }
 
+  grabHandles() {
+    return {
+      "translation.x": {
+        origin: new Vec3(0, 0, 0),
+        axis: new Vec3(1, 0, 0),
+        color: new Vec3(1, 0, 0),
+        get: () => this.translation.x,  
+        set: (value) => this.setProperty('translation', new Vec3(value, this.translation.y, this.translation.z))
+      },
+      "translation.y": {
+        origin: new Vec3(0, 0, 0),
+        axis: new Vec3(0, 1, 0),
+        color: new Vec3(0, 1, 0),
+        get: () => this.translation.y,
+        set: (value) => this.setProperty('translation', new Vec3(this.translation.x, value, this.translation.z))
+      },
+      "translation.z": {
+        origin: new Vec3(0, 0, 0),
+        axis: new Vec3(0, 0, 1),
+        color: new Vec3(0, 0, 1),
+        get: () => this.translation.z,
+        set: (value) => this.setProperty('translation', new Vec3(this.translation.x, this.translation.y, value))
+      },
+    };
+  }
+
   makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("Transform node has no child to transform");
@@ -314,6 +340,12 @@ class TwistNode extends TreeNode {
   properties() {
     return {"height": "float", "axis": "vec3"};
   }
+
+  grabHandles() {
+    return {
+      "height": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1), ratio: 0.5, color: new Vec3(0, 0, 1) },
+    };
+  }
   
   makePeptide(p) {
     if (!this.hasChildren()) {
@@ -418,6 +450,12 @@ class LinearPatternNode extends TreeNode {
     return {"axis": "vec3", "spacing": "float", "copies": "int", "blendRadius": "float", "chamfer": "bool"};
   }
 
+  grabHandles() {
+    return {
+      "spacing": { origin: new Vec3(0, 0, 0), axis: this.axis },
+    };
+  }
+
   makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("LinearPattern node has no child");
@@ -513,7 +551,7 @@ class ExtrudeNode extends TreeNode {
 
   grabHandles() {
     return {
-      "height": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1), ratio: 0.5 },
+      "height": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1), ratio: 0.5, color: new Vec3(0, 0, 1) },
       "draftAngle": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1) },
       "blendRadius": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1) },
     };

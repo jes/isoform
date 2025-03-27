@@ -10,7 +10,7 @@ class SphereNode extends TreeNode {
 
   grabHandles() {
     return {
-      "radius": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0) },
+      "radius": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0), color: new Vec3(1, 0, 0) },
     };
   }
 
@@ -37,9 +37,9 @@ class CylinderNode extends TreeNode {
 
   grabHandles() {
     return {
-      "diameter": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0) },
-      "height": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1) },
-      "roundRadius": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0) },
+      "diameter": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0), ratio: 0.5, color: new Vec3(1, 0, 0) },
+      "height": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1), ratio: 0.5, color: new Vec3(0, 0, 1) },
+      "roundRadius": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0) }
     };
   }
 
@@ -143,6 +143,13 @@ class TorusNode extends TreeNode {
 
   properties() {
     return {"majorDiameter": "float", "minorDiameter": "float"};
+  }
+
+  grabHandles() {
+    return {
+      "majorDiameter": { origin: new Vec3(0, 0, 0), axis: new Vec3(1, 0, 0), ratio: 0.5, color: new Vec3(1, 0, 0) },
+      "minorDiameter": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1), ratio: 0.5, color: new Vec3(0, 0, 1) },
+    };
   }
 
   makePeptide(p) {
