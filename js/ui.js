@@ -236,7 +236,7 @@ const ui = {
         if (node) {
             this.treeViewComponent.setSelectedNode(node);
             this.propertyEditorComponent.render(node);
-            Object.entries(node.grabHandles()).forEach(([name, { origin, axis, ratio, get, set }]) => {
+            Object.entries(node.grabHandles()).forEach(([name, { origin, axis, ratio, get, set, color }]) => {
                 get ||= (() => node.getProperty(name));
                 set ||= ((value) => node.setProperty(name, value));
                 ratio ||= 1;
@@ -244,6 +244,7 @@ const ui = {
                     position: origin.add(axis.mul(get()*ratio)),
                     origin: origin,
                     axis: axis,
+                    color: color,
                     onChange: (pos) => {
                         const length = pos.sub(origin).length();
                         set(length/ratio);
