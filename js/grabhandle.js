@@ -193,7 +193,7 @@ class GrabHandle {
             }
             
             // Output fragment color with transparency
-            fragColor = vec4(finalColor, alpha);
+            fragColor = vec4(finalColor, alpha*0.75);
         }`;
         
         // Use the renderer's async methods for shader compilation

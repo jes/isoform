@@ -500,6 +500,14 @@ class ExtrudeNode extends TreeNode {
     return {"height": "float", "blendRadius": "float", "chamfer": "bool", "draftAngle": "float"};
   }
 
+  grabHandles() {
+    return {
+      "height": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1) },
+      "draftAngle": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1) },
+      "blendRadius": { origin: new Vec3(0, 0, 0), axis: new Vec3(0, 0, 1) },
+    };
+  }
+
   makePeptide(p) {
     if (!this.hasChildren()) {
       this.warn("Extrude node has no child to transform");
