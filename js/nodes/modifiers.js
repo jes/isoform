@@ -337,7 +337,18 @@ class TwistNode extends TreeNode {
                       P.add(P.mul(s, P.vecX(q)), P.mul(c, P.vecY(q))),
                       P.vecZ(q));
     const p2 = P.mvmul(fromAxisSpace, q2);
-    return this.children[0].peptide(p2);
+    
+    // Calculate the maximum scaling factor to preserve distance metric
+    // The scaling is largest at the maximum distance from the axis
+    const distFromAxis = P.vlength(P.vec3(P.vecX(q), P.vecY(q), P.const(0.0)));
+    const twistRate = P.div(P.const(2.0 * Math.PI), this.uniform('height'));
+    const maxScale = P.add(P.const(1.0), P.mul(distFromAxis, twistRate));
+    
+    // Get the SDF value from the child
+    const childSdf = this.children[0].peptide(p2);
+    
+    // Divide by the scaling factor to get a lower bound approximation
+    return P.div(childSdf, maxScale);
   }
 
   getIcon() {
