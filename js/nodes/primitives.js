@@ -81,7 +81,7 @@ class CylinderNode extends TreeNode {
 class BoxNode extends TreeNode {
   constructor(size = [10, 10, 10], radius = 0.0) {
     super("Box");
-    this.size = size instanceof Vec3 ? size : new Vec3(size[0]/2, size[1]/2, size[2]/2);
+    this.size = size instanceof Vec3 ? size : new Vec3(size[0], size[1], size[2]);
     this.radius = radius;
   }
 

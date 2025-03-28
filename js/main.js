@@ -13,6 +13,7 @@ const app = {
     undoStack: [],
     undoPointer: 0,
     grabHandles: [],
+    showAABB: false, // Add this line to track AABB visualization state
 
     async init() {
         // Initialize components
@@ -36,8 +37,14 @@ const app = {
         // Add focus/blur event listeners
         window.addEventListener('focus', this.onWindowFocus.bind(this));
         window.addEventListener('blur', this.onWindowBlur.bind(this));
-
-       
+        
+        // Add AABB toggle button listener
+        document.getElementById('toggle-aabb').addEventListener('click', (e) => {
+            this.showAABB = !this.showAABB;
+            e.target.classList.toggle('active');
+            this.rebuildShaders(true);
+        });
+        
         // Start the render loop
         this.render();
     },
@@ -187,9 +194,6 @@ const app = {
                     const result = fn(vars);
                     return result;
                 };
-
-                //const intervalFn = eval(ssa.compileToJSInterval());
-                //this.intervalSdf = (p) => intervalFn({p: p});
             } else {
                 this.primaryShaderLayer = null;
             }
@@ -199,16 +203,43 @@ const app = {
 
         if (currentSecondaryNode !== null) {
             let expr;
-            startTime = performance.now();
-            expr = currentSecondaryNode.peptide(P.vvar('p'));
+            let node;
+            
+            // If AABB visualization is enabled, create an AABB representation
+            if (this.showAABB) {
+                // Get the AABB of the secondary node
+                const nodeAABB = currentSecondaryNode.aabb();
+                const center = nodeAABB.getCenter();
+                const size = nodeAABB.getSize();
+                
+                // Create a BoxNode with the size of the AABB
+                const boxNode = new BoxNode([size.x, size.y, size.z], 0);
+                
+                // Create a TransformNode to position the box at the center of the AABB
+                const transformNode = new TransformNode([center.x, center.y, center.z], [0, 1, 0], 0, boxNode);
+                
+                // Generate the peptide expression for the AABB representation
+                startTime = performance.now();
+                expr = transformNode.peptide(P.vvar('p'));
+                node = transformNode;
+            } else {
+                // Use the normal secondary node
+                startTime = performance.now();
+                expr = currentSecondaryNode.peptide(P.vvar('p'));
+            }
+            
             if (expr) {
                 console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
                 const ssa = new PeptideSSA(expr);
                 console.log(`SSA took ${performance.now() - startTime} ms`);
                 
-                this.secondaryShaderLayer = await this.createShaderLayer(ssa, this.secondaryShaderLayer);
+                this.secondaryShaderLayer = await this.createShaderLayer(ssa, this.secondaryShaderLayer, node?.uniforms());
                 this.secondaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.8, 0.2, 0.2]);
+
+                if (this.showAABB) {
+                    this.secondaryShaderLayer.setUniforms(node.uniforms());
+                }
             } else {
                 this.secondaryShaderLayer = null;
             }
@@ -222,8 +253,8 @@ const app = {
         this.hideLoadingIndicator();
     },
 
-    async createShaderLayer(ssa, lastShaderLayer) {
-        const uniforms = this.document.uniforms();
+    async createShaderLayer(ssa, lastShaderLayer, uniforms = null) {
+        uniforms ||= this.document.uniforms();
         const src = scene.generateShaderCode(ssa, uniforms);
         if (lastShaderLayer && lastShaderLayer.src == src) {
             return lastShaderLayer;
