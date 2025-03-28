@@ -74,6 +74,28 @@ class TransformNode extends TreeNode {
   getIcon() {
     return "🔄";
   }
+
+  aabb() {
+    if (this.children.length === 0) {
+        return AABB.empty();
+    }
+
+    // Get the child's AABB
+    let childAABB = this.children[0].aabb();
+    
+    // Apply rotation if needed
+    if (Math.abs(this.rotationAngle) > 0.000001) {
+        const angleRad = this.rotationAngle * Math.PI / 180.0;
+        const axis = this.rotationAxis.normalize();
+        childAABB = childAABB.getRotatedAABB(axis, angleRad);
+    }
+    
+    // Apply translation
+    return new AABB(
+        childAABB.min.add(this.translation),
+        childAABB.max.add(this.translation)
+    );
+  }
 }
 
 class DomainDeformNode extends TreeNode {
@@ -111,8 +133,19 @@ class DomainDeformNode extends TreeNode {
   getIcon() {
     return "〰️";
   }
-}
 
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.empty();
+    }
+
+    const childAABB = this.children[0].aabb();
+    return new AABB(
+      childAABB.min.sub(new Vec3(this.amplitude, this.amplitude, this.amplitude)),
+      childAABB.max.add(new Vec3(this.amplitude, this.amplitude, this.amplitude))
+    );
+  }
+}
 
 class DistanceDeformNode extends TreeNode {
   constructor(amplitude = 0.1, frequency = 1.0, children = []) {
@@ -154,6 +187,18 @@ class DistanceDeformNode extends TreeNode {
 
   getIcon() {
     return "〰️";
+  }
+
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.empty();
+    }
+
+    const childAABB = this.children[0].aabb();
+    return new AABB(
+      childAABB.min.sub(new Vec3(this.amplitude, this.amplitude, this.amplitude)),
+      childAABB.max.add(new Vec3(this.amplitude, this.amplitude, this.amplitude))
+    );
   }
 }
 
@@ -205,6 +250,27 @@ class ShellNode extends TreeNode {
       return "🔍";
     }
   }
+
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.empty();
+    }
+
+    const childAABB = this.children[0].aabb();
+    if (this.shellType === "inside") {
+      return childAABB;
+    } else if (this.shellType === "centered") {
+      return new AABB(
+        childAABB.min.sub(new Vec3(this.thickness/2.0, this.thickness/2.0, this.thickness/2.0)),
+        childAABB.max.add(new Vec3(this.thickness/2.0, this.thickness/2.0, this.thickness/2.0))
+      );
+    } else {
+      return new AABB(
+        childAABB.min.sub(new Vec3(this.thickness, this.thickness, this.thickness)),
+        childAABB.max.add(new Vec3(this.thickness, this.thickness, this.thickness))
+      );
+    }
+  }
 }
 
 class InfillNode extends TreeNode {
@@ -243,6 +309,14 @@ class InfillNode extends TreeNode {
   getIcon() {
     return "🔍";
   }
+
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.empty();
+    }
+
+    return this.children[0].aabb();
+  }
 }
 
 class OffsetNode extends TreeNode {
@@ -270,6 +344,18 @@ class OffsetNode extends TreeNode {
 
   getIcon() {
     return "🔍";
+  }
+
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.empty();
+    }
+
+    const childAABB = this.children[0].aabb();
+    return new AABB(
+      childAABB.min.sub(new Vec3(this.distance, this.distance, this.distance)),
+      childAABB.max.add(new Vec3(this.distance, this.distance, this.distance))
+    );
   }
 }
 
@@ -325,6 +411,27 @@ class ScaleNode extends TreeNode {
 
   getIcon() {
     return "⇲";
+  }
+
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.empty();
+    }
+
+    const childAABB = this.children[0].aabb();
+    
+    if (!this.alongAxis) {
+      // Simple uniform scaling
+      return new AABB(
+        childAABB.min.mul(this.k),
+        childAABB.max.mul(this.k)
+      );
+    } else {
+      // Create a transformation matrix for the axis-aligned scaling
+      const axis = this.axis.normalize();
+      const scaleMatrix = new Mat3().makeAxisScale(axis, this.k);
+      return childAABB.getTransformedAABB(scaleMatrix);
+    }
   }
 }
 
@@ -432,6 +539,41 @@ class MirrorNode extends TreeNode {
   getIcon() {
     return "🪞";
   }
+
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.empty();
+    }
+
+    const childAABB = this.children[0].aabb();
+    
+    // Create the mirrored AABB based on the plane
+    let mirroredMin, mirroredMax;
+    
+    if (this.plane === "XY") {
+      // Mirror across z-axis (flip z coordinates)
+      mirroredMin = new Vec3(childAABB.min.x, childAABB.min.y, -childAABB.max.z);
+      mirroredMax = new Vec3(childAABB.max.x, childAABB.max.y, -childAABB.min.z);
+    } else if (this.plane === "XZ") {
+      // Mirror across y-axis (flip y coordinates)
+      mirroredMin = new Vec3(childAABB.min.x, -childAABB.max.y, childAABB.min.z);
+      mirroredMax = new Vec3(childAABB.max.x, -childAABB.min.y, childAABB.max.z);
+    } else { // YZ plane
+      // Mirror across x-axis (flip x coordinates)
+      mirroredMin = new Vec3(-childAABB.max.x, childAABB.min.y, childAABB.min.z);
+      mirroredMax = new Vec3(-childAABB.min.x, childAABB.max.y, childAABB.max.z);
+    }
+    
+    const mirroredAABB = new AABB(mirroredMin, mirroredMax);
+    
+    if (this.keepOriginal) {
+      // Use the built-in union method
+      return childAABB.getUnion(mirroredAABB);
+    } else {
+      // Just the mirrored AABB
+      return mirroredAABB;
+    }
+  }
 }
 
 class LinearPatternNode extends TreeNode {
@@ -478,6 +620,37 @@ class LinearPatternNode extends TreeNode {
 
   getIcon() {
     return "🔀";
+  }
+
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.empty();
+    }
+    
+    if (this.copies < 1) {
+      return AABB.empty();
+    }
+    
+    // Get the child's AABB
+    const childAABB = this.children[0].aabb();
+    
+    // Calculate the total displacement for all copies
+    const normalizedAxis = this.axis.normalize();
+    const totalDisplacement = normalizedAxis.mul(this.spacing * (this.copies - 1));
+    
+    // Create a result AABB
+    let result = childAABB.clone();
+    
+    // For the last copy's AABB
+    const lastCopyAABB = new AABB(
+      childAABB.min.add(totalDisplacement),
+      childAABB.max.add(totalDisplacement)
+    );
+    
+    // Expand to include the last copy
+    result = result.getUnion(lastCopyAABB);
+    
+    return result;
   }
 }
 
@@ -532,6 +705,36 @@ class PolarPatternNode extends TreeNode {
   getIcon() {
     return "🔀";
   }
+
+  aabb() {
+    if (this.children.length === 0 || this.copies < 1) {
+        return AABB.empty();
+    }
+    
+    // Get the child's AABB
+    const childAABB = this.children[0].aabb();
+    
+    // If only one copy or zero rotation angle, return the child's AABB
+    if (this.copies === 1 || Math.abs(this.angle) < 0.001) {
+        return childAABB;
+    }
+    
+    // Initialize result with the first copy's AABB
+    let result = childAABB.clone();
+    
+    // Get the normalized rotation axis and angle increment
+    const axis = this.axis.normalize();
+    const angleIncrement = (this.angle * Math.PI / 180.0) / this.copies;
+    
+    // For each copy (after the first one)
+    for (let i = 1; i < this.copies; i++) {
+        const angle = angleIncrement * i;
+        const copyAABB = childAABB.getRotatedAABB(axis, angle);
+        result = result.getUnion(copyAABB);
+    }
+    
+    return result;
+  }
 }
 
 class ExtrudeNode extends TreeNode {
@@ -580,6 +783,17 @@ class ExtrudeNode extends TreeNode {
   getIcon() {
     return "⬆️";
   }
+
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.empty();
+    }
+    const childAABB = this.children[0].aabb();
+    return new AABB(
+      childAABB.min.add(new Vec3(0, 0, this.uniform('height') / 2)),
+      childAABB.max.add(new Vec3(0, 0, this.uniform('height') / 2))
+    );
+  }
 }
 
 class DistanceDeformInsideNode extends TreeNode {
@@ -613,8 +827,14 @@ class DistanceDeformInsideNode extends TreeNode {
   getIcon() {
     return "🔍";
   }
+
+  aabb() {
+    if (this.children.length < 1) {
+      return AABB.empty();
+    }
+    return this.children[0].aabb();
+  }
 }
-  
 class RevolveNode extends TreeNode {
   constructor(children = []) {
     super("Revolve");

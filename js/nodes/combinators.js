@@ -56,6 +56,18 @@ class IntersectionNode extends TreeNode {
   getIcon() {
     return "🔄";
   }
+
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.infinite();
+    }
+
+    let aabb = this.children[0].aabb();
+    for (let i = 1; i < this.children.length; i++) {
+      aabb = aabb.getIntersection(this.children[i].aabb());
+    }
+    return aabb;
+  }
 }
 
 class SubtractionNode extends TreeNode {
@@ -87,6 +99,18 @@ class SubtractionNode extends TreeNode {
 
   getIcon() {
     return "➖";
+  }
+
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.infinite();
+    }
+
+    let aabb = this.children[0].aabb();
+    for (let i = 1; i < this.children.length; i++) {
+      aabb = aabb.getSubtraction(this.children[i].aabb());
+    }
+    return aabb;
   }
 }
 
@@ -121,6 +145,20 @@ class InterpolateNode extends TreeNode {
 
     return P.add(P.mul(P.sub(P.const(1), uniformK), child0),
                  P.mul(uniformK, child1));
+  }
+
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.infinite();
+    }
+    if (this.children.length === 1) {
+      return this.children[0].aabb();
+    }
+    
+    const child0 = this.children[0].aabb();
+    const child1 = this.children[1].aabb();
+
+    return child0.getUnion(child1);
   }
 }
 

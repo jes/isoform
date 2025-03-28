@@ -334,6 +334,70 @@ class AABB {
     equals(aabb) {
         return this.min.equals(aabb.min) && this.max.equals(aabb.max);
     }
+
+    /**
+     * Get an AABB that contains this AABB after rotation around an axis
+     * @param {Vec3} axis - Axis of rotation (normalized)
+     * @param {number} angleRad - Angle of rotation in radians
+     * @returns {AABB} New AABB that contains the rotated box
+     */
+    getRotatedAABB(axis, angleRad) {
+        // Create rotation matrix
+        const rotationMatrix = new Mat3().makeRotation(axis, angleRad);
+        
+        // Get all 8 corners of this AABB
+        const corners = [
+            new Vec3(this.min.x, this.min.y, this.min.z),
+            new Vec3(this.max.x, this.min.y, this.min.z),
+            new Vec3(this.min.x, this.max.y, this.min.z),
+            new Vec3(this.min.x, this.min.y, this.max.z),
+            new Vec3(this.max.x, this.max.y, this.min.z),
+            new Vec3(this.max.x, this.min.y, this.max.z),
+            new Vec3(this.min.x, this.max.y, this.max.z),
+            new Vec3(this.max.x, this.max.y, this.max.z)
+        ];
+        
+        // Create a new AABB to contain all rotated corners
+        const result = AABB.empty();
+        
+        // Rotate each corner and add to the new AABB
+        for (const corner of corners) {
+            const rotatedCorner = rotationMatrix.mulVec3(corner);
+            result.expandByPoint(rotatedCorner);
+        }
+        
+        return result;
+    }
+
+    /**
+     * Get an AABB that contains this AABB after transformation by a matrix
+     * @param {Mat3} matrix - Transformation matrix
+     * @returns {AABB} New AABB that contains the transformed box
+     */
+    getTransformedAABB(matrix) {
+        // Get all 8 corners of this AABB
+        const corners = [
+            new Vec3(this.min.x, this.min.y, this.min.z),
+            new Vec3(this.max.x, this.min.y, this.min.z),
+            new Vec3(this.min.x, this.max.y, this.min.z),
+            new Vec3(this.min.x, this.min.y, this.max.z),
+            new Vec3(this.max.x, this.max.y, this.min.z),
+            new Vec3(this.max.x, this.min.y, this.max.z),
+            new Vec3(this.min.x, this.max.y, this.max.z),
+            new Vec3(this.max.x, this.max.y, this.max.z)
+        ];
+        
+        // Create a new AABB to contain all transformed corners
+        const result = AABB.empty();
+        
+        // Transform each corner and add to the new AABB
+        for (const corner of corners) {
+            const transformedCorner = matrix.mulVec3(corner);
+            result.expandByPoint(transformedCorner);
+        }
+        
+        return result;
+    }
 }
 
 // Detect environment and export accordingly

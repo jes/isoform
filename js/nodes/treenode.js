@@ -51,6 +51,11 @@ class TreeNode {
     return "📄";
   }
 
+  // override this to return the AABB of the node
+  aabb() {
+    return AABB.infinite();
+  }
+
   /// the rest of this class should not generally be overridden
 
   // return a map of uniform name to value

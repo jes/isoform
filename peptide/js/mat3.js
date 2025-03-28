@@ -136,6 +136,84 @@ Mat3.prototype.rotateZ = function(angle) {
     );
 };
 
+// Create rotation matrix around arbitrary axis
+Mat3.prototype.makeRotation = function(axis, angle) {
+    // Return a new matrix (don't modify this one)
+    const result = new Mat3();
+    
+    // Normalize axis
+    axis = axis.normalize();
+    
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    const t = 1 - c;
+    
+    // Rodrigues rotation formula components
+    const x = axis.x;
+    const y = axis.y;
+    const z = axis.z;
+    
+    // Diagonal elements
+    result.m[0][0] = t * x * x + c;
+    result.m[1][1] = t * y * y + c;
+    result.m[2][2] = t * z * z + c;
+    
+    // Off-diagonal elements
+    const txy = t * x * y;
+    const txz = t * x * z;
+    const tyz = t * y * z;
+    
+    const sx = s * x;
+    const sy = s * y;
+    const sz = s * z;
+    
+    result.m[0][1] = txy - sz;
+    result.m[1][0] = txy + sz;
+    
+    result.m[0][2] = txz + sy;
+    result.m[2][0] = txz - sy;
+    
+    result.m[1][2] = tyz - sx;
+    result.m[2][1] = tyz + sx;
+    
+    return result;
+};
+
+// Create scaling matrix along arbitrary axis
+Mat3.prototype.makeAxisScale = function(axis, scale) {
+    // Return a new matrix (don't modify this one)
+    const result = new Mat3();
+    
+    // Normalize axis
+    axis = axis.normalize();
+    
+    // Compute outer product of axis with itself
+    const xx = axis.x * axis.x;
+    const xy = axis.x * axis.y;
+    const xz = axis.x * axis.z;
+    const yy = axis.y * axis.y;
+    const yz = axis.y * axis.z;
+    const zz = axis.z * axis.z;
+    
+    // Scale factor for axis component
+    const s = scale - 1.0;
+    
+    // Construct the matrix
+    result.m[0][0] = 1.0 + s * xx;
+    result.m[0][1] = s * xy;
+    result.m[0][2] = s * xz;
+    
+    result.m[1][0] = s * xy;
+    result.m[1][1] = 1.0 + s * yy;
+    result.m[1][2] = s * yz;
+    
+    result.m[2][0] = s * xz;
+    result.m[2][1] = s * yz;
+    result.m[2][2] = 1.0 + s * zz;
+    
+    return result;
+};
+
 // Export the class
 (function() {
     const nodes = { Mat3 };
