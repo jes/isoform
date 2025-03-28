@@ -21,6 +21,11 @@ class SphereNode extends TreeNode {
   getIcon() {
     return "🔴";
   }
+
+  aabb() {
+    return new AABB(new Vec3(-this.uniform('radius'), -this.uniform('radius'), -this.uniform('radius')),
+                   new Vec3(this.uniform('radius'), this.uniform('radius'), this.uniform('radius')));
+  }
 }
 
 class CylinderNode extends TreeNode {
@@ -64,6 +69,12 @@ class CylinderNode extends TreeNode {
 
   getIcon() {
     return "🔵";
+  }
+
+  aabb() {
+    const halfHeight = P.div(this.uniform('height'), P.const(2.0));
+    return new AABB(new Vec3(-this.uniform('diameter')/2, -this.uniform('diameter')/2, -halfHeight),
+                   new Vec3(this.uniform('diameter')/2, this.uniform('diameter')/2, halfHeight));
   }
 }
 
@@ -132,6 +143,11 @@ class BoxNode extends TreeNode {
   getIcon() {
     return "📦";
   }
+
+  aabb() {
+    return new AABB(new Vec3(-this.size.x/2, -this.size.y/2, -this.size.z/2),
+                   new Vec3(this.size.x/2, this.size.y/2, this.size.z/2));
+  }
 }
 
 class TorusNode extends TreeNode {
@@ -162,6 +178,15 @@ class TorusNode extends TreeNode {
 
   getIcon() {
     return "⭕";
+  }
+
+  aabb() {
+    return new AABB(new Vec3(-(this.uniform('majorDiameter')+this.uniform('minorDiameter'))/2,
+                             -(this.uniform('majorDiameter')+this.uniform('minorDiameter'))/2,
+                             -this.uniform('minorDiameter')/2),
+                   new Vec3((this.uniform('majorDiameter')+this.uniform('minorDiameter'))/2,
+                            (this.uniform('majorDiameter')+this.uniform('minorDiameter'))/2,
+                            this.uniform('minorDiameter')/2));
   }
 }
 
