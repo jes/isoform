@@ -114,6 +114,16 @@ class SketchNode extends TreeNode {
     this.polycurves[polycurveIndex].splice(vertexIndex, 1);
     this.markDirty();
   }
+
+  aabb() {
+    if (this.polycurves.length === 0) {
+      return AABB.empty();
+    }
+    const aabb = this.polycurves[0].reduce((acc, point) => {
+      return acc.expandByPoint(new Vec3(point.x, point.y, 0.0));
+    }, new AABB(new Vec3(0, 0, 0), new Vec3(0, 0, 0)));
+    return aabb;
+  }
 }
 
 // Detect environment and export accordingly
