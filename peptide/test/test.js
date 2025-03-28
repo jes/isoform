@@ -1268,6 +1268,65 @@ addTest('interval vlength', (evaluate) => {
     assertEquals(interval.max, Math.sqrt(3 * 3*3));
 });
 
+addTest('sign operations', (evaluate) => {
+    // Test with positive number
+    const pos = P.const(5);
+    const signPos = P.sign(pos);
+    assertEquals(evaluate(signPos), 1);
+    
+    // Test with negative number
+    const neg = P.const(-3);
+    const signNeg = P.sign(neg);
+    assertEquals(evaluate(signNeg), -1);
+    
+    // Test with zero
+    const zero = P.const(0);
+    const signZero = P.sign(zero);
+    assertEquals(evaluate(signZero), 0);
+    
+    // Test with variable
+    const x = P.var('x');
+    const signVar = P.sign(x);
+    assertEquals(evaluate(signVar, { x: -7 }), -1);
+    assertEquals(evaluate(signVar, { x: 4 }), 1);
+    assertEquals(evaluate(signVar, { x: 0 }), 0);
+    
+    // Test with expression
+    const expr = P.sign(P.sub(P.const(3), P.const(5)));
+    assertEquals(evaluate(expr), -1); // sign(3 - 5) = sign(-2) = -1
+});
+
+addTest('sign type checking', (evaluate) => {
+    const vec = P.vconst(new Vec3(1, 2, 3));
+    // Should throw when trying to use vector with sign
+    assertThrows(() => evaluate(P.sign(vec)));
+});
+
+addTest('sign interval evaluation', (evaluate) => {
+    const x = P.var('x');
+    const signX = P.sign(x);
+    
+    // Test with positive interval
+    const posInterval = signX.evaluateInterval({ x: new Ifloat(2, 5) });
+    assertEquals(posInterval.min, 1);
+    assertEquals(posInterval.max, 1);
+    
+    // Test with negative interval
+    const negInterval = signX.evaluateInterval({ x: new Ifloat(-5, -2) });
+    assertEquals(negInterval.min, -1);
+    assertEquals(negInterval.max, -1);
+    
+    // Test with interval containing zero
+    const mixedInterval = signX.evaluateInterval({ x: new Ifloat(-3, 4) });
+    assertEquals(mixedInterval.min, -1);
+    assertEquals(mixedInterval.max, 1);
+    
+    // Test with interval that is exactly zero
+    const zeroInterval = signX.evaluateInterval({ x: new Ifloat(0, 0) });
+    assertEquals(zeroInterval.min, 0);
+    assertEquals(zeroInterval.max, 0);
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,

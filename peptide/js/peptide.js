@@ -489,6 +489,33 @@ class Peptide {
         });
     }
 
+    static sign(a) {
+        a.assertType('float');
+        return new Peptide('sign', 'float', null, a, null, null, {
+            evaluate: (vars) => {
+                const val = a.evaluate(vars);
+                return val > 0 ? 1 : val < 0 ? -1 : 0;
+            },
+            evaluateInterval: (vars) => {
+                const interval = a.evaluateInterval(vars);
+                if (interval.min > 0) return new Ifloat(1);
+                if (interval.max < 0) return new Ifloat(-1);
+                if (interval.min === 0 && interval.max === 0) return new Ifloat(0);
+                // If the interval contains 0, the result could be -1, 0, or 1
+                return new Ifloat(-1, 1);
+            },
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} > 0 ? 1 : ${ssaOp.left} < 0 ? -1 : 0;`,
+            jsIntervalCode: (ssaOp) => {
+                return `if (${ssaOp.left}.min > 0) ${ssaOp.result} = new Ifloat(1);
+                else if (${ssaOp.left}.max < 0) ${ssaOp.result} = new Ifloat(-1);
+                else if (${ssaOp.left}.min === 0 && ${ssaOp.left}.max === 0) ${ssaOp.result} = new Ifloat(0);
+                else ${ssaOp.result} = new Ifloat(-1, 1);`;
+            },
+            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} > 0.0 ? 1.0 : ${ssaOp.left} < 0.0 ? -1.0 : 0.0;`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = isign(${ssaOp.left});`,
+        });
+    }
+
     static smin(a, b, k) {
         a.assertType('float');
         b.assertType('float');
