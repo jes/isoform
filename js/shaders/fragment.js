@@ -29,7 +29,7 @@ float map(vec3 p) {
 // Calculate normal at a point
 vec4 calcNormalAndEdge(vec3 p, float d) {
     float distanceToCamera = length(p - uCameraPosition);
-    float offset = 0.00001 * distanceToCamera * (1.0 / uCameraZoom);
+    float offset = 0.000001 * distanceToCamera * (1.0 / uCameraZoom);
 
     vec2 h = vec2(offset, 0.0);
     
