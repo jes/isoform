@@ -158,30 +158,12 @@ const camera = {
         // Convert angle to radians
         const angleRad = angleDegrees * Math.PI / 180.0;
         
-        // Calculate the viewing direction (forward vector)
-        const forward = this.target.sub(this.position);
+        // Create a rotation matrix around the Z axis
+        // This is simpler because in view space, the Z axis is the viewing direction
+        const rotZ = this.createRotationMatrixZ(-angleRad);
         
-        // Normalize the forward vector
-        const normalizedForward = forward.normalize();
-        
-        // Create a rotation matrix around the viewing direction using Rodrigues' formula
-        const c = Math.cos(angleRad);
-        const s = Math.sin(angleRad);
-        const t = 1 - c;
-        
-        const x = normalizedForward.x;
-        const y = normalizedForward.y;
-        const z = normalizedForward.z;
-        
-        // Create rotation matrix around arbitrary axis (viewing direction)
-        const rotMatrix = new Mat3(
-            t*x*x + c,    t*x*y - s*z,  t*x*z + s*y,
-            t*x*y + s*z,  t*y*y + c,    t*y*z - s*x,
-            t*x*z - s*y,  t*y*z + s*x,  t*z*z + c
-        );
-        
-        // Apply rotation to the current rotation matrix
-        this.baseRotationMatrix = rotMatrix.mul(this.baseRotationMatrix);
+        // Apply rotation to the current rotation matrices
+        this.baseRotationMatrix = this.baseRotationMatrix.mul(rotZ);
         this.activeRotationMatrix = this.baseRotationMatrix;
         
         // Reset any ongoing drag operation
