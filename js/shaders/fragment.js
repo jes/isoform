@@ -66,7 +66,6 @@ vec4 calcNormalAndEdge(vec3 p, float d) {
 // Ray marching
 struct MarchResult {
     float distance;    // Total distance marched
-    float minDistance; // Minimum distance encountered during march
     bool hit;          // Whether we hit something
     vec3 hitPosition;  // Position of the hit
     int steps;         // Number of steps taken
@@ -76,7 +75,6 @@ struct MarchResult {
 MarchResult rayMarch(vec3 ro, vec3 rd) {
     MarchResult result;
     result.distance = 0.0;
-    result.minDistance = 1000000.0;
     result.hit = false;
     result.steps = 0;
 
@@ -88,9 +86,6 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
         result.sdf = d;
         result.hitPosition = p;
         
-        // Track minimum distance encountered
-        result.minDistance = min(result.minDistance, d);
-
         if (d < 0.0) {
             result.hit = true;
             break;
