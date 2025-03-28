@@ -72,7 +72,7 @@ class CylinderNode extends TreeNode {
   }
 
   aabb() {
-    const halfHeight = P.div(this.height, P.const(2.0));
+    const halfHeight = this.height / 2;
     return new AABB(new Vec3(-this.diameter/2, -this.diameter/2, -halfHeight),
                    new Vec3(this.diameter/2, this.diameter/2, halfHeight));
   }
