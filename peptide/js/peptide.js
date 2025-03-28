@@ -536,18 +536,72 @@ class Peptide {
         return P.add(P.mix(b, a, h), P.mul(safeK, P.mul(h, P.sub(P.const(1), h))));
     }
 
-    static chmin(a, b, k) {
-        a.assertType('float');
-        b.assertType('float');
+    static absBevelC2(x, k, s) {
+        x.assertType('float');
         k.assertType('float');
-        return P.min(P.min(a, b), P.mul(P.const(0.7071), P.sub(P.add(a, b), k)));
+        s.assertType('float');
+        
+        const ax = P.div(P.abs(x), k);
+        
+        const v = P.div(P.sub(s, ax), P.sub(s, P.const(1.0)));
+        const vCubed = P.mul(P.mul(v, v), v);
+        
+        const poly = P.add(
+            P.const(0.5857864376269051),
+            P.mul(
+                vCubed,
+                P.add(
+                    P.const(0.14213562373095012),
+                    P.mul(
+                        P.add(
+                            P.const(0.7867965644035753),
+                            P.mul(P.const(-0.5147186257614305), v)
+                        ),
+                        v
+                    )
+                )
+            )
+        );
+        
+        const condition = P.step(ax, s);
+        const term1 = P.add(P.const(0.5857864376269051), P.mul(P.const(0.4142135623730949), s));
+        const term2 = P.mix(s, P.const(1.0), poly);
+        
+        return P.max(
+            P.abs(x),
+            P.mul(k, P.mix(term2, term1, condition))
+        );
     }
 
-    static chmax(a, b, k) {
+    static rampBevelC2(x, k, s) {
+        x.assertType('float');
+        k.assertType('float');
+        s.assertType('float');
+        
+        return P.mul(
+            P.add(x, P.absBevelC2(x, k, s)),
+            P.const(0.5)
+        );
+    }
+
+    static chmin(a, b, k, s = P.const(0.9)) {
         a.assertType('float');
         b.assertType('float');
         k.assertType('float');
-        return P.max(P.max(a, b), P.mul(P.const(0.7071), P.add(P.add(a, b), k)));
+        s.assertType('float');
+        
+        const diff = P.sub(a, b);
+        return P.sub(a, P.rampBevelC2(diff, k, s));
+    }
+
+    static chmax(a, b, k, s = P.const(0.9)) {
+        a.assertType('float');
+        b.assertType('float');
+        k.assertType('float');
+        s.assertType('float');
+        
+        const diff = P.sub(b, a);
+        return P.add(a, P.rampBevelC2(diff, k, s));
     }
 
     static sqrt(a) {
