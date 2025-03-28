@@ -86,6 +86,7 @@ const app = {
     },
 
     removeGrabHandles() {
+        this.grabHandles.forEach(grabHandle => grabHandle.destroy());
         this.grabHandles = [];
     },
     
