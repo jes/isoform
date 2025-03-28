@@ -207,6 +207,9 @@ const app = {
             
             // If AABB visualization is enabled, create an AABB representation
             if (this.showAABB) {
+                // TODO: instead of using TreeNodes, we could have a static shader
+                // that takes the center and size as uniforms and renders a box
+
                 // Get the AABB of the secondary node
                 const nodeAABB = currentSecondaryNode.aabb();
                 const center = nodeAABB.getCenter();
