@@ -148,3 +148,7 @@ Vec3.prototype.xz = function() {
 Vec3.prototype.yz = function() {
     return new Vec3(0.0, this.y, this.z);
 };
+
+Vec3.prototype.toString = function() {
+    return `Vec3(${this.x}, ${this.y}, ${this.z})`;
+};

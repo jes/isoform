@@ -28,13 +28,15 @@ const AABBTests = {
             this.testGetVolume,
             this.testGetSurfaceArea,
             this.testGetIntersection,
-            this.testGetUnion
+            this.testGetUnion,
+            this.testGetSubtraction
         ];
 
         const results = [];
         for (const test of tests) {
             try {
-                const result = await test();
+                // Bind the test function to this context
+                const result = await test.bind(this)();
                 results.push({
                     name: test.name.replace('test', ''),
                     passed: true
@@ -49,6 +51,34 @@ const AABBTests = {
             }
         }
         return results;
+    },
+
+    /**
+     * Helper method to assert that two AABBs are equal
+     * @param {AABB} actual The actual AABB
+     * @param {AABB} expected The expected AABB
+     * @param {string} message Optional message prefix for the error
+     */
+    assertAABBEquals: function(actual, expected, message = "AABB equality check failed") {
+        if (!actual.min.equals(expected.min) || !actual.max.equals(expected.max)) {
+            throw new Error(`${message}:\n` + 
+                `  Expected: min=${expected.min.toString()}, max=${expected.max.toString()}\n` +
+                `  Actual:   min=${actual.min.toString()}, max=${actual.max.toString()}`);
+        }
+    },
+
+    /**
+     * Helper method to assert that two Vec3s are equal
+     * @param {Vec3} actual The actual Vec3
+     * @param {Vec3} expected The expected Vec3
+     * @param {string} message Optional message prefix for the error
+     */
+    assertVec3Equals: function(actual, expected, message = "Vec3 equality check failed") {
+        if (!actual.equals(expected)) {
+            throw new Error(`${message}:\n` + 
+                `  Expected: ${expected.toString()}\n` +
+                `  Actual:   ${actual.toString()}`);
+        }
     },
 
     /**
@@ -82,13 +112,11 @@ const AABBTests = {
         const halfExtents = new Vec3(1, 2, 3);
         const aabb = AABB.fromCenterAndSize(center, halfExtents);
         
-        if (!aabb.min.equals(new Vec3(-1, -2, -3))) {
-            throw new Error("fromCenterAndSize did not set min correctly");
-        }
+        this.assertVec3Equals(aabb.min, new Vec3(-1, -2, -3), 
+            "fromCenterAndSize did not set min correctly");
         
-        if (!aabb.max.equals(new Vec3(1, 2, 3))) {
-            throw new Error("fromCenterAndSize did not set max correctly");
-        }
+        this.assertVec3Equals(aabb.max, new Vec3(1, 2, 3),
+            "fromCenterAndSize did not set max correctly");
     },
 
     /**
@@ -97,13 +125,11 @@ const AABBTests = {
     testEmpty: async function() {
         const aabb = AABB.empty();
         
-        if (aabb.min.x !== Infinity || aabb.min.y !== Infinity || aabb.min.z !== Infinity) {
-            throw new Error("Empty AABB min should be (Infinity, Infinity, Infinity)");
-        }
+        this.assertVec3Equals(aabb.min, new Vec3(Infinity, Infinity, Infinity),
+            "Empty AABB min should be (Infinity, Infinity, Infinity)");
         
-        if (aabb.max.x !== -Infinity || aabb.max.y !== -Infinity || aabb.max.z !== -Infinity) {
-            throw new Error("Empty AABB max should be (-Infinity, -Infinity, -Infinity)");
-        }
+        this.assertVec3Equals(aabb.max, new Vec3(-Infinity, -Infinity, -Infinity),
+            "Empty AABB max should be (-Infinity, -Infinity, -Infinity)");
     },
 
     /**
@@ -112,13 +138,11 @@ const AABBTests = {
     testInfinite: async function() {
         const aabb = AABB.infinite();
         
-        if (aabb.min.x !== -Infinity || aabb.min.y !== -Infinity || aabb.min.z !== -Infinity) {
-            throw new Error("Infinite AABB min should be (-Infinity, -Infinity, -Infinity)");
-        }
+        this.assertVec3Equals(aabb.min, new Vec3(-Infinity, -Infinity, -Infinity),
+            "Infinite AABB min should be (-Infinity, -Infinity, -Infinity)");
         
-        if (aabb.max.x !== Infinity || aabb.max.y !== Infinity || aabb.max.z !== Infinity) {
-            throw new Error("Infinite AABB max should be (Infinity, Infinity, Infinity)");
-        }
+        this.assertVec3Equals(aabb.max, new Vec3(Infinity, Infinity, Infinity),
+            "Infinite AABB max should be (Infinity, Infinity, Infinity)");
     },
 
     /**
@@ -151,9 +175,8 @@ const AABBTests = {
         const aabb = new AABB(new Vec3(0, 0, 0), new Vec3(2, 4, 6));
         const center = aabb.getCenter();
         
-        if (!center.equals(new Vec3(1, 2, 3))) {
-            throw new Error("getCenter returned incorrect value");
-        }
+        this.assertVec3Equals(center, new Vec3(1, 2, 3),
+            "getCenter returned incorrect value");
     },
 
     /**
@@ -163,9 +186,8 @@ const AABBTests = {
         const aabb = new AABB(new Vec3(1, 2, 3), new Vec3(4, 6, 9));
         const size = aabb.getSize();
         
-        if (!size.equals(new Vec3(3, 4, 6))) {
-            throw new Error("getSize returned incorrect value");
-        }
+        this.assertVec3Equals(size, new Vec3(3, 4, 6),
+            "getSize returned incorrect value");
     },
 
     /**
@@ -175,9 +197,8 @@ const AABBTests = {
         const aabb = new AABB(new Vec3(0, 0, 0), new Vec3(2, 4, 6));
         const halfExtents = aabb.getHalfExtents();
         
-        if (!halfExtents.equals(new Vec3(1, 2, 3))) {
-            throw new Error("getHalfExtents returned incorrect value");
-        }
+        this.assertVec3Equals(halfExtents, new Vec3(1, 2, 3),
+            "getHalfExtents returned incorrect value");
     },
 
     /**
@@ -403,22 +424,21 @@ const AABBTests = {
         const aabb2 = new AABB(new Vec3(1, 1, 1), new Vec3(3, 3, 3));
         
         const intersection = aabb1.getIntersection(aabb2);
-        
-        if (!intersection.min.equals(new Vec3(1, 1, 1))) {
-            throw new Error("getIntersection did not set min correctly");
-        }
-        
-        if (!intersection.max.equals(new Vec3(2, 2, 2))) {
-            throw new Error("getIntersection did not set max correctly");
-        }
+        this.assertAABBEquals(
+            intersection, 
+            new AABB(new Vec3(1, 1, 1), new Vec3(2, 2, 2)),
+            "getIntersection did not return correct result"
+        );
         
         // Test non-intersecting boxes
         const aabb3 = new AABB(new Vec3(3, 3, 3), new Vec3(4, 4, 4));
         const noIntersection = aabb1.getIntersection(aabb3);
         
-        if (!noIntersection.min.equals(new Vec3(Infinity, Infinity, Infinity))) {
-            throw new Error("getIntersection should return empty AABB for non-intersecting boxes");
-        }
+        this.assertAABBEquals(
+            noIntersection,
+            AABB.empty(),
+            "getIntersection should return empty AABB for non-intersecting boxes"
+        );
     },
 
     /**
@@ -430,12 +450,106 @@ const AABBTests = {
         
         const union = aabb1.getUnion(aabb2);
         
-        if (!union.min.equals(new Vec3(0, 0, 0))) {
-            throw new Error("getUnion did not set min correctly");
-        }
+        this.assertAABBEquals(
+            union,
+            new AABB(new Vec3(0, 0, 0), new Vec3(3, 3, 3)),
+            "getUnion did not return correct result"
+        );
+    },
+
+    /**
+     * Test getSubtraction method
+     */
+    testGetSubtraction: async function() {
+        // Case 1: No intersection
+        const aabb1 = new AABB(new Vec3(0, 0, 0), new Vec3(1, 1, 1));
+        const aabb2 = new AABB(new Vec3(2, 2, 2), new Vec3(3, 3, 3));
         
-        if (!union.max.equals(new Vec3(3, 3, 3))) {
-            throw new Error("getUnion did not set max correctly");
-        }
+        const noIntersection = aabb1.getSubtraction(aabb2);
+        this.assertAABBEquals(
+            noIntersection,
+            aabb1,
+            "getSubtraction should return original AABB when there's no intersection"
+        );
+        
+        // Case 2: Complete containment
+        const aabb3 = new AABB(new Vec3(0.5, 0.5, 0.5), new Vec3(0.8, 0.8, 0.8));
+        const aabb4 = new AABB(new Vec3(0, 0, 0), new Vec3(1, 1, 1));
+        
+        const completeContainment = aabb3.getSubtraction(aabb4);
+        this.assertAABBEquals(
+            completeContainment,
+            AABB.empty(),
+            "getSubtraction should return empty AABB when completely contained"
+        );
+        
+        // Case 3: Partial intersection - X-axis cut through
+        const aabb5 = new AABB(new Vec3(0, 0, 0), new Vec3(3, 3, 3));
+        const aabb6 = new AABB(new Vec3(-1, 1, 1), new Vec3(4, 2, 2));
+        
+        const xAxisCut = aabb5.getSubtraction(aabb6);
+        // Expected: An AABB containing both top and bottom parts
+        const expectedXCut = new AABB(
+            new Vec3(0, 0, 0),
+            new Vec3(3, 3, 3)
+        );
+        this.assertAABBEquals(
+            xAxisCut,
+            expectedXCut,
+            "getSubtraction should correctly handle X-axis cut through"
+        );
+        
+        // Case 4: Partial intersection - Y-axis cut through
+        const aabb7 = new AABB(new Vec3(0, 0, 0), new Vec3(3, 3, 3));
+        const aabb8 = new AABB(new Vec3(1, -1, 1), new Vec3(2, 4, 2));
+        
+        const yAxisCut = aabb7.getSubtraction(aabb8);
+        // Expected: An AABB containing both left and right parts
+        const expectedYCut = new AABB(
+            new Vec3(0, 0, 0),
+            new Vec3(3, 3, 3)
+        );
+        this.assertAABBEquals(
+            yAxisCut,
+            expectedYCut,
+            "getSubtraction should correctly handle Y-axis cut through"
+        );
+        
+        // Case 5: Partial intersection - Z-axis cut through
+        const aabb9 = new AABB(new Vec3(0, 0, 0), new Vec3(3, 3, 3));
+        const aabb10 = new AABB(new Vec3(1, 1, -1), new Vec3(2, 2, 4));
+        
+        const zAxisCut = aabb9.getSubtraction(aabb10);
+        this.assertAABBEquals(
+            zAxisCut,
+            new AABB(new Vec3(0, 0, 0), new Vec3(3, 3, 3)),
+            "getSubtraction should return original AABB when subtraction box cuts completely through an axis"
+        );
+        
+        // Case 6: Partial intersection - Corner removal
+        const aabb11 = new AABB(new Vec3(0, 0, 0), new Vec3(4, 4, 4));
+        const aabb12 = new AABB(new Vec3(3, 3, 3), new Vec3(5, 5, 5));
+        
+        const cornerRemoval = aabb11.getSubtraction(aabb12);
+        // The corner is removed, but we still need the smallest AABB containing all parts
+        // which is the original AABB in this case
+        this.assertAABBEquals(
+            cornerRemoval,
+            aabb11,
+            "getSubtraction should handle corner removal correctly"
+        );
+        
+        // Case 7: Partial intersection - Narrow slice removal
+        const aabb13 = new AABB(new Vec3(0, 0, 0), new Vec3(5, 5, 5));
+        const aabb14 = new AABB(new Vec3(2, -1, -1), new Vec3(3, 6, 6));
+        
+        const sliceRemoval = aabb13.getSubtraction(aabb14);
+        // This should keep left and right parts
+        const expectedSliceResult = new AABB(new Vec3(0, 0, 0), new Vec3(5, 5, 5));
+        this.assertAABBEquals(
+            sliceRemoval,
+            expectedSliceResult,
+            "getSubtraction should handle slice removal correctly"
+        );
     }
 };

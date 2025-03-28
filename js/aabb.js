@@ -235,6 +235,105 @@ class AABB {
             this.max.max(aabb.max)
         );
     }
+
+    /**
+     * Get the result of subtracting another AABB from this one
+     * @param {AABB} aabb - AABB to subtract
+     * @returns {AABB} New AABB approximating the subtraction result
+     * 
+     * Note: This attempts to find the smallest AABB that completely contains the result 
+     * of the boolean subtraction operation. Since AABB subtraction can result in non-AABB 
+     * shapes, this is an approximation.
+     */
+    getSubtraction(aabb) {
+        // If no intersection, return this AABB unchanged
+        if (!this.intersectsAABB(aabb)) {
+            return this.clone();
+        }
+        
+        // If other AABB completely contains this one, result is empty
+        if (aabb.containsAABB(this)) {
+            return AABB.empty();
+        }
+        
+        // For partial overlaps, we need to find the regions that remain after subtraction
+        // We'll compute up to 6 remaining regions and find the smallest AABB that contains them all
+        
+        // Get the intersection of the two AABBs
+        const intersection = this.getIntersection(aabb);
+        
+        // We'll create up to 6 sub-boxes (one for each face of the AABB that might remain)
+        // and combine them to get the minimal enclosing AABB
+        let result = AABB.empty();
+        
+        // X-axis: left and right regions
+        if (this.min.x < intersection.min.x) {
+            // Left part remains
+            result.expandByAABB(new AABB(
+                new Vec3(this.min.x, this.min.y, this.min.z),
+                new Vec3(intersection.min.x, this.max.y, this.max.z)
+            ));
+        }
+        
+        if (intersection.max.x < this.max.x) {
+            // Right part remains
+            result.expandByAABB(new AABB(
+                new Vec3(intersection.max.x, this.min.y, this.min.z),
+                new Vec3(this.max.x, this.max.y, this.max.z)
+            ));
+        }
+        
+        // Y-axis: bottom and top regions
+        if (this.min.y < intersection.min.y) {
+            // Bottom part remains (excluding any portions that were handled by X-axis cases)
+            result.expandByAABB(new AABB(
+                new Vec3(intersection.min.x, this.min.y, this.min.z),
+                new Vec3(intersection.max.x, intersection.min.y, this.max.z)
+            ));
+        }
+        
+        if (intersection.max.y < this.max.y) {
+            // Top part remains (excluding any portions that were handled by X-axis cases)
+            result.expandByAABB(new AABB(
+                new Vec3(intersection.min.x, intersection.max.y, this.min.z),
+                new Vec3(intersection.max.x, this.max.y, this.max.z)
+            ));
+        }
+        
+        // Z-axis: front and back regions
+        if (this.min.z < intersection.min.z) {
+            // Front part remains (excluding any portions that were handled by X and Y axis cases)
+            result.expandByAABB(new AABB(
+                new Vec3(intersection.min.x, intersection.min.y, this.min.z),
+                new Vec3(intersection.max.x, intersection.max.y, intersection.min.z)
+            ));
+        }
+        
+        if (intersection.max.z < this.max.z) {
+            // Back part remains (excluding any portions that were handled by X and Y axis cases)
+            result.expandByAABB(new AABB(
+                new Vec3(intersection.min.x, intersection.min.y, intersection.max.z),
+                new Vec3(intersection.max.x, intersection.max.y, this.max.z)
+            ));
+        }
+        
+        // If the result is still empty, the subtraction might have resulted in disjoint regions
+        // In this case, we return the original AABB as a conservative approximation
+        if (result.equals(AABB.empty())) {
+            return this.clone();
+        }
+        
+        return result;
+    }
+
+    /**
+     * Check if this AABB is equal to another AABB
+     * @param {AABB} aabb - AABB to compare with
+     * @returns {boolean} True if the AABBs are equal
+     */
+    equals(aabb) {
+        return this.min.equals(aabb.min) && this.max.equals(aabb.max);
+    }
 }
 
 // Detect environment and export accordingly
