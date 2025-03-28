@@ -790,8 +790,8 @@ class ExtrudeNode extends TreeNode {
     }
     const childAABB = this.children[0].aabb();
     return new AABB(
-      childAABB.min.add(new Vec3(0, 0, this.uniform('height') / 2)),
-      childAABB.max.add(new Vec3(0, 0, this.uniform('height') / 2))
+      childAABB.min.sub(new Vec3(0, 0, this.height / 2)),
+      childAABB.max.add(new Vec3(0, 0, this.height / 2))
     );
   }
 }
