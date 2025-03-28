@@ -26,6 +26,17 @@ class UnionNode extends TreeNode {
     getIcon() {
       return "🔀";
     }
+
+    aabb() {
+      if (this.children.length === 0) {
+        return AABB.empty();
+      }
+      let aabb = this.children[0].aabb();
+      for (let i = 1; i < this.children.length; i++) {
+        aabb = aabb.getUnion(this.children[i].aabb());
+      }
+      return aabb;
+    }
   }
 
 class IntersectionNode extends TreeNode {
@@ -59,7 +70,7 @@ class IntersectionNode extends TreeNode {
 
   aabb() {
     if (this.children.length === 0) {
-      return AABB.infinite();
+      return AABB.empty();
     }
 
     let aabb = this.children[0].aabb();
@@ -103,7 +114,7 @@ class SubtractionNode extends TreeNode {
 
   aabb() {
     if (this.children.length === 0) {
-      return AABB.infinite();
+      return AABB.empty();
     }
 
     let aabb = this.children[0].aabb();
@@ -149,7 +160,7 @@ class InterpolateNode extends TreeNode {
 
   aabb() {
     if (this.children.length === 0) {
-      return AABB.infinite();
+      return AABB.empty();
     }
     if (this.children.length === 1) {
       return this.children[0].aabb();
