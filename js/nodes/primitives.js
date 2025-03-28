@@ -72,9 +72,9 @@ class CylinderNode extends TreeNode {
   }
 
   aabb() {
-    const halfHeight = P.div(this.uniform('height'), P.const(2.0));
-    return new AABB(new Vec3(-this.uniform('diameter')/2, -this.uniform('diameter')/2, -halfHeight),
-                   new Vec3(this.uniform('diameter')/2, this.uniform('diameter')/2, halfHeight));
+    const halfHeight = P.div(this.height, P.const(2.0));
+    return new AABB(new Vec3(-this.diameter/2, -this.diameter/2, -halfHeight),
+                   new Vec3(this.diameter/2, this.diameter/2, halfHeight));
   }
 }
 
@@ -181,12 +181,12 @@ class TorusNode extends TreeNode {
   }
 
   aabb() {
-    return new AABB(new Vec3(-(this.uniform('majorDiameter')+this.uniform('minorDiameter'))/2,
-                             -(this.uniform('majorDiameter')+this.uniform('minorDiameter'))/2,
-                             -this.uniform('minorDiameter')/2),
-                   new Vec3((this.uniform('majorDiameter')+this.uniform('minorDiameter'))/2,
-                            (this.uniform('majorDiameter')+this.uniform('minorDiameter'))/2,
-                            this.uniform('minorDiameter')/2));
+    return new AABB(new Vec3(-(this.majorDiameter+this.minorDiameter)/2,
+                             -(this.majorDiameter+this.minorDiameter)/2,
+                             -this.minorDiameter/2),
+                   new Vec3((this.majorDiameter+this.minorDiameter)/2,
+                            (this.majorDiameter+this.minorDiameter)/2,
+                            this.minorDiameter/2));
   }
 }
 
