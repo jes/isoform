@@ -142,8 +142,6 @@ const app = {
             }
             this.sketchNeedsRedraw = false;
         }
-
-        ui.propertyEditorComponent?.refresh();
        
         // Request next frame
         requestAnimationFrame(() => this.render());
@@ -166,6 +164,8 @@ const app = {
                 // not if we're only rebuilding because force is true due to
                 // undo/redo)
                 this.pushUndoState();
+
+                ui.propertyEditorComponent?.refresh();
             }
 
             let startTime = performance.now();
