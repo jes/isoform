@@ -89,10 +89,7 @@ class MeshNode extends TreeNode {
     // Use a robust SDF that smoothly blends between the plane distance and edge distance
     // This helps prevent holes at triangle edges and corners
     const planeDist = P.abs(signedDist);
-    const blendedDist = P.add(
-      P.mul(isInside, planeDist),
-      P.mul(P.sub(P.const(1.0), isInside), minEdgeDist)
-    );
+    const blendedDist = P.mix(minEdgeDist, planeDist, isInside);
     
     // Add a small bias to help close any tiny gaps between triangles
     return blendedDist;
