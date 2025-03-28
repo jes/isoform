@@ -10,7 +10,7 @@ const camera = {
     lastMouseX: 0,
     lastMouseY: 0,
     zoomSpeed: 0.1,
-    showEdges: true,
+    showEdges: false,
     stepFactor: 1.0,
     dragStartX: 0,
     dragStartY: 0,
