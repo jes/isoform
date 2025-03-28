@@ -341,6 +341,56 @@ class PropertyEditor {
         }
     }
     
+    /**
+     * Refreshes all input values to match the current state of the selected node.
+     * This is useful when node properties are changed outside of the property editor.
+     */
+    refresh() {
+        if (!this.selectedNode || !this.container) return;
+        
+        // Get all property inputs
+        const propertyItems = this.container.querySelectorAll('.property-item');
+        
+        propertyItems.forEach(item => {
+            const label = item.querySelector('label');
+            if (!label) return;
+            
+            const propName = label.textContent;
+            const currentValue = this.selectedNode.getProperty(propName);
+            
+            // Find the input element(s)
+            const input = item.querySelector('input, select');
+            const vectorInputs = item.querySelectorAll('.vector-input input');
+            
+            if (input && !vectorInputs.length) {
+                // Handle regular inputs
+                if (input.type === 'checkbox') {
+                    if (input.checked !== (currentValue === true)) {
+                        input.checked = currentValue === true;
+                    }
+                } else if (input.type === 'text' || input.tagName === 'SELECT') {
+                    if (input.value != currentValue) { // Use loose equality to handle number/string conversions
+                        input.value = currentValue;
+                    }
+                }
+            } else if (vectorInputs.length) {
+                // Handle Vec3 inputs
+                let vecValue = currentValue;
+                if (Array.isArray(currentValue)) {
+                    vecValue = new Vec3(currentValue[0], currentValue[1], currentValue[2]);
+                }
+                
+                const components = ['x', 'y', 'z'];
+                components.forEach((component, index) => {
+                    const componentInput = vectorInputs[index];
+                    if (componentInput && componentInput.value != vecValue[component]) {
+                        componentInput.value = vecValue[component];
+                    }
+                });
+            }
+        });
+    }
+    
     // Evaluate arithmetic expressions
     evaluateExpression(expression) {
         try {

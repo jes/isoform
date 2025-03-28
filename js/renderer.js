@@ -515,6 +515,9 @@ const renderer = {
         // Process each layer with appropriate blending
         for (let i = 0; i < shaderLayers.length; i++) {
             const layer = shaderLayers[i];
+            if (!layer) {
+                continue;
+            }
             
             // First layer has blending disabled, subsequent layers have it enabled
             if (i === 0) {

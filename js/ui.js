@@ -1,7 +1,9 @@
 // UI management for tree view and property editor
 const ui = {
     treeView: null,
+    treeViewComponent: null,
     propertyEditor: null,
+    propertyEditorComponent: null,
     sketchEditor: null,
     selectedNode: null,
     secondaryNode: null,

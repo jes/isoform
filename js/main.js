@@ -142,6 +142,8 @@ const app = {
             }
             this.sketchNeedsRedraw = false;
         }
+
+        ui.propertyEditorComponent?.refresh();
        
         // Request next frame
         requestAnimationFrame(() => this.render());
