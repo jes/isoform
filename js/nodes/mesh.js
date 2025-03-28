@@ -4,6 +4,9 @@ class MeshNode extends TreeNode {
     this.triangles = triangles || [];
     this.maxChildren = 0; // Meshes are primitives, no children
     this.exactness = "Exact"; // Triangle distance is exact
+    
+    // Add property for mesh thickness/smoothing
+    this.thickness = 0.1;
   }
 
   makePeptide(p) {
@@ -26,8 +29,10 @@ class MeshNode extends TreeNode {
       distances.push(triDist);
     }
     
-    // Return minimum distance to any triangle
-    return distances.reduce((min, current) => P.min(min, current));
+    // Return minimum distance to any triangle with a thickness offset
+    // This helps fill small gaps between triangles
+    const minDist = distances.reduce((min, current) => P.min(min, current));
+    return P.sub(minDist, P.const(this.thickness));
   }
 
   distanceToTriangle(p, a, b, c) {
@@ -36,12 +41,12 @@ class MeshNode extends TreeNode {
     const bc = P.vsub(c, b);
     const ca = P.vsub(a, c);
     
-    // Normal vector of the triangle (not normalized)
+    // Normal vector of the triangle
     const normal = P.vcross(ab, P.vsub(c, a));
     const normalLength = P.vlength(normal);
     
-    // Normalized normal (add small epsilon to avoid division by zero)
-    const normalNorm = P.vdiv(normal, P.max(normalLength, P.const(1e-10)));
+    // Normalized normal with increased epsilon to avoid division by zero
+    const normalNorm = P.vdiv(normal, P.max(normalLength, P.const(1e-5)));
     
     // Calculate signed distance to plane
     const pa = P.vsub(p, a);
@@ -50,50 +55,56 @@ class MeshNode extends TreeNode {
     // Project point onto triangle plane
     const projected = P.vsub(p, P.vmul(normalNorm, signedDist));
     
-    // Check if point is inside the triangle using barycentric coordinates
-    // We'll use a simplified approach
-    
-    // Calculate edge test vectors
-    const e1 = P.vcross(P.vsub(projected, a), P.vsub(b, a));
-    const e2 = P.vcross(P.vsub(projected, b), P.vsub(c, b));
-    const e3 = P.vcross(P.vsub(projected, c), P.vsub(a, c));
-    
-    // Test if point is on the same side of all edges
-    const d1 = P.vdot(e1, normal);
-    const d2 = P.vdot(e2, normal);
-    const d3 = P.vdot(e3, normal);
-    
-    // Check if all signs are the same (all negative or all positive)
-    // Using step function: step(edge, value) returns 1 if value >= edge, 0 otherwise
-    const s1 = P.step(P.const(0), d1);
-    const s2 = P.step(P.const(0), d2);
-    const s3 = P.step(P.const(0), d3);
-    
-    // Point is inside if all s values are the same (either all 0 or all 1)
-    // We can test this with: s1*s2*s3 + (1-s1)*(1-s2)*(1-s3)
-    const allPos = P.mul(P.mul(s1, s2), s3);
-    const allNeg = P.mul(P.mul(P.sub(P.const(1), s1), P.sub(P.const(1), s2)), P.sub(P.const(1), s3));
-    const isInside = P.add(allPos, allNeg);
-    
     // Calculate edge distances
     const edgeDist1 = this.distanceToEdge(p, a, b);
     const edgeDist2 = this.distanceToEdge(p, b, c);
     const edgeDist3 = this.distanceToEdge(p, c, a);
     const minEdgeDist = P.min(edgeDist1, P.min(edgeDist2, edgeDist3));
     
-    // If inside, use signed plane distance, otherwise use edge distance
-    // mix(a, b, t) = a*(1-t) + b*t
-    // So if isInside=1, we get P.abs(signedDist), otherwise we get minEdgeDist
-    return P.mix(minEdgeDist, P.abs(signedDist), isInside);
+    // Check if projected point is inside triangle
+    // Using more robust edge tests
+    const ap = P.vsub(projected, a);
+    const bp = P.vsub(projected, b);
+    const cp = P.vsub(projected, c);
+    
+    // Cross products for each edge with the projected point
+    const cross1 = P.vcross(ab, ap);
+    const cross2 = P.vcross(bc, bp);
+    const cross3 = P.vcross(ca, cp);
+    
+    // Dot products with normal to check if they point in the same hemisphere
+    // Use a more forgiving test with larger epsilon
+    const d1 = P.vdot(cross1, normal);
+    const d2 = P.vdot(cross2, normal);
+    const d3 = P.vdot(cross3, normal);
+    
+    // Larger epsilon for more robust testing
+    const s1 = P.step(P.const(-1e-4), d1);
+    const s2 = P.step(P.const(-1e-4), d2);
+    const s3 = P.step(P.const(-1e-4), d3);
+    
+    // Point is inside if all values are positive
+    const isInside = P.mul(P.mul(s1, s2), s3);
+    
+    // Use a robust SDF that smoothly blends between the plane distance and edge distance
+    // This helps prevent holes at triangle edges and corners
+    const planeDist = P.abs(signedDist);
+    const blendedDist = P.add(
+      P.mul(isInside, planeDist),
+      P.mul(P.sub(P.const(1.0), isInside), minEdgeDist)
+    );
+    
+    // Add a small bias to help close any tiny gaps between triangles
+    return blendedDist;
   }
 
   distanceToEdge(p, a, b) {
     const ab = P.vsub(b, a);
     const ap = P.vsub(p, a);
     
-    // Project ap onto ab
+    // Project ap onto ab with better numerical stability
     const t = P.clamp(
-      P.div(P.vdot(ap, ab), P.max(P.vdot(ab, ab), P.const(1e-10))),
+      P.div(P.vdot(ap, ab), P.max(P.vdot(ab, ab), P.const(1e-5))),
       P.const(0), P.const(1)
     );
     
@@ -127,6 +138,15 @@ class MeshNode extends TreeNode {
         max.z = Math.max(max.z, v.z);
       }
     }
+    
+    // Expand the AABB slightly to account for thickness
+    const expand = this.thickness || 0.1;
+    min.x -= expand;
+    min.y -= expand;
+    min.z -= expand;
+    max.x += expand;
+    max.y += expand;
+    max.z += expand;
     
     return new AABB(min, max);
   }

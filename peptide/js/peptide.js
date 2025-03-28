@@ -243,6 +243,11 @@ class Peptide {
         });
     }
 
+    static vnormalize(a) {
+        a.assertType('vec3');
+        return P.vdiv(a, P.vlength(a));
+    }
+
     static vabs(a) {
         a.assertType('vec3');
         return new Peptide('vabs', 'vec3', null, a, null, null, {
