@@ -23,8 +23,8 @@ class SphereNode extends TreeNode {
   }
 
   aabb() {
-    return new AABB(new Vec3(-this.uniform('radius'), -this.uniform('radius'), -this.uniform('radius')),
-                   new Vec3(this.uniform('radius'), this.uniform('radius'), this.uniform('radius')));
+    return new AABB(new Vec3(-this.radius, -this.radius, -this.radius),
+                   new Vec3(this.radius, this.radius, this.radius));
   }
 }
 
