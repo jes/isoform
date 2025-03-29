@@ -94,17 +94,42 @@ class MeshNode extends TreeNode {
     const dist = P.vdot(P.vsub(p, v1), normal);
     const projP = P.vsub(p, P.vmul(normal, dist));
     
-    // Check if projected point is inside triangle using barycentric coordinates
-    const area = P.vlength(P.vcross(P.vsub(v2, v1), P.vsub(v3, v1)));
+    // Calculate barycentric coordinates directly
+    // We'll use vector operations to compute them
     
-    const area1 = P.vlength(P.vcross(P.vsub(v2, projP), P.vsub(v3, projP)));
-    const area2 = P.vlength(P.vcross(P.vsub(v3, projP), P.vsub(v1, projP)));
-    const area3 = P.vlength(P.vcross(P.vsub(v1, projP), P.vsub(v2, projP)));
+    // Vectors from v1 to projected point and other vertices
+    const v0 = edge1; // v2 - v1
+    const v1v3 = edge2; // v3 - v1
+    const vp = P.vsub(projP, v1); // projP - v1
     
-    const sum = P.add(P.add(area1, area2), area3);
+    // Compute dot products for the barycentric calculation
+    const d00 = P.vdot(v0, v0);
+    const d01 = P.vdot(v0, v1v3);
+    const d11 = P.vdot(v1v3, v1v3);
+    const d20 = P.vdot(vp, v0);
+    const d21 = P.vdot(vp, v1v3);
     
-    // Allow for some floating-point error
-    return P.lte(P.abs(P.sub(sum, area)), P.const(1e-5));
+    // Calculate denominator for barycentric coordinates
+    const denom = P.sub(P.mul(d00, d11), P.mul(d01, d01));
+    
+    // Calculate barycentric coordinates
+    const v = P.div(P.sub(P.mul(d11, d20), P.mul(d01, d21)), denom);
+    const w = P.div(P.sub(P.mul(d00, d21), P.mul(d01, d20)), denom);
+    const u = P.sub(P.one(), P.add(v, w));
+    
+    // Point is inside if all barycentric coordinates are between 0 and 1
+    const isUPositive = P.gte(u, P.zero());
+    const isVPositive = P.gte(v, P.zero());
+    const isWPositive = P.gte(w, P.zero());
+    const isULessOne = P.lte(u, P.one());
+    const isVLessOne = P.lte(v, P.one());
+    const isWLessOne = P.lte(w, P.one());
+    
+    // Combine all conditions
+    return P.and(P.and(isUPositive, isVPositive), 
+                 P.and(isWPositive, 
+                       P.and(isULessOne, 
+                             P.and(isVLessOne, isWLessOne))));
   }
 
   rayIntersectsTriangle(p, v1, v2, v3) {
