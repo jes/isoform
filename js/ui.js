@@ -974,9 +974,9 @@ const ui = {
                 
                 // Export as STL
                 if (binary) {
-                    STLExporter.exportBinarySTL(mesh, filename);
+                    STL.exportBinary(mesh, filename);
                 } else {
-                    STLExporter.exportSTL(mesh, filename);
+                    STL.export(mesh, filename);
                 }
             } catch (error) {
                 console.error("Error exporting STL:", error);

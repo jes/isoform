@@ -1,6 +1,6 @@
-class STLExporter {
+class STL {
     // Export a mesh as an ASCII STL file
-    static exportSTL(mesh, filename = 'mesh.stl') {
+    static export(mesh, filename = 'mesh.stl') {
         if (mesh.vertices.length === 0 || mesh.triangles.length === 0) {
             console.error("No mesh data to export.");
             return;
@@ -57,7 +57,7 @@ class STLExporter {
     }
 
     // Export a mesh as a binary STL file (more compact)
-    static exportBinarySTL(mesh, filename = 'mesh.stl') {
+    static exportBinary(mesh, filename = 'mesh.stl') {
         if (mesh.vertices.length === 0 || mesh.triangles.length === 0) {
             console.error("No mesh data to export.");
             return;
@@ -148,7 +148,7 @@ class STLExporter {
 
 // Export the STLExporter class
 (function() {
-  const nodes = { STLExporter };
+  const nodes = { STL };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {
