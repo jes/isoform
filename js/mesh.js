@@ -1,6 +1,6 @@
 class Mesh {
-    constructor() {
-        this.triangles = [];
+    constructor(triangles = []) {
+        this.triangles = triangles;
     }
 
     // Add a triangle to the mesh

@@ -74,14 +74,14 @@ const app = {
         extr.setProperty('chamfer', true);
         doc.addChild(new ShellNode(1, false, extr));*/
 
-        doc.addChild(new MeshNode([
+        doc.addChild(new MeshNode(new Mesh([
             // Base triangle (counter-clockwise when viewed from outside/below)
             [new Vec3(-10, -10, 0), new Vec3(10, 10, 0), new Vec3(10, -10, 0)],
             // Three faces connecting to apex (all counter-clockwise when viewed from outside)
             [new Vec3(-10, -10, 0), new Vec3(10, -10, 0), new Vec3(0, 0, 10)],
             [new Vec3(10, -10, 0), new Vec3(10, 10, 0), new Vec3(0, 0, 10)],
             [new Vec3(10, 10, 0), new Vec3(-10, -10, 0), new Vec3(0, 0, 10)]
-        ]));
+        ])));
 
         // set unique names for all nodes
         let dfs = (node) => {

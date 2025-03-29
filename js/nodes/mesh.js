@@ -1,7 +1,7 @@
 class MeshNode extends TreeNode {
-  constructor(triangles) {
+  constructor(mesh) {
     super("Mesh");
-    this.triangles = triangles || [];
+    this.mesh = mesh;
     this.maxChildren = 0; // Meshes are primitives, no children
   }
 
@@ -11,8 +11,8 @@ class MeshNode extends TreeNode {
     // Initialize sign to 1.0
     let sign = P.const(1.0);
 
-    for (let i = 0; i < this.triangles.length; i++) {
-      const tri = this.triangles[i];
+    for (let i = 0; i < this.mesh.triangles.length; i++) {
+      const tri = this.mesh.triangles[i];
       const [dist, newSign] = this.distanceToTriangle(p, tri, sign);
       minDist = P.min(minDist, dist);
       sign = newSign;
@@ -165,17 +165,17 @@ class MeshNode extends TreeNode {
   }
 
   aabb() {
-    if (!this.triangles || this.triangles.length === 0) {
+    if (!this.mesh || this.mesh.triangles.length === 0) {
       return AABB.empty();
     }
     
     // Initialize min and max with first vertex
-    let min = this.triangles[0][0].clone();
-    let max = this.triangles[0][0].clone();
+    let min = this.mesh.triangles[0][0].clone();
+    let max = this.mesh.triangles[0][0].clone();
     
     // Check all vertices to find min and max coordinates
-    for (let i = 0; i < this.triangles.length; i++) {
-      const tri = this.triangles[i];
+    for (let i = 0; i < this.mesh.triangles.length; i++) {
+      const tri = this.mesh.triangles[i];
       for (let j = 0; j < 3; j++) {
         const v = tri[j];
         min.x = Math.min(min.x, v.x);
