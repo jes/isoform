@@ -520,6 +520,65 @@ const ui = {
                 this.renderTree();
             }, shape.icon);
         });
+        
+        // Handle STL import separately
+        this.addMenuItem(contextMenu, 'Import STL', () => {
+            this.importSTL(node);
+        }, MeshNode.prototype.getIcon());
+    },
+
+    // Add this new method to handle STL import
+    importSTL(parentNode) {
+        // Create a file input element
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.stl';
+        
+        // Add event listener for file selection
+        fileInput.addEventListener('change', async (e) => {
+            if (e.target.files.length === 0) return;
+            
+            const file = e.target.files[0];
+            
+            // Show a loading indicator
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.className = 'loading-indicator';
+            loadingIndicator.innerHTML = '<div class="spinner"></div><div>Importing STL...</div>';
+            document.body.appendChild(loadingIndicator);
+            
+            try {
+                // Import the STL file
+                const mesh = await STL.import(file);
+                
+                // Create a new MeshNode with the imported mesh
+                const meshNode = new MeshNode(mesh);
+                
+                // Set a display name based on the file name
+                const fileName = file.name.replace(/\.stl$/i, '');
+                meshNode.setProperty('displayName', fileName);
+                
+                // Make sure the node has a unique name
+                meshNode.setUniqueName(app.document);
+                
+                // Add the mesh node to the parent
+                parentNode.addChild(meshNode);
+                
+                // Select the new node and update the tree
+                this.selectNode(meshNode);
+                this.renderTree();
+                
+                console.log(`Imported STL with ${mesh.vertices.length} vertices and ${mesh.triangles.length} triangles`);
+            } catch (error) {
+                console.error('Error importing STL:', error);
+                alert(`Failed to import STL: ${error}`);
+            } finally {
+                // Remove the loading indicator
+                loadingIndicator.remove();
+            }
+        });
+        
+        // Trigger the file dialog
+        fileInput.click();
     },
 
     buildDisplayOptions(contextMenu, node) {

@@ -144,6 +144,136 @@ class STL {
         
         console.log(`Binary STL file "${filename}" created with ${validTriangles} triangles`);
     }
+
+    // Import a mesh from an STL file (handles both ASCII and binary formats)
+    static async import(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    // Detect if the file is ASCII or binary
+                    const isASCII = STL.isAsciiSTL(e.target.result);
+                    
+                    if (isASCII) {
+                        resolve(STL.parseASCII(e.target.result));
+                    } else {
+                        resolve(STL.parseBinary(e.target.result));
+                    }
+                } catch (error) {
+                    reject(`Error parsing STL file: ${error.message}`);
+                }
+            };
+            
+            reader.onerror = function() {
+                reject('Error reading file');
+            };
+            
+            // Read the file based on the detected format
+            reader.readAsArrayBuffer(file);
+        });
+    }
+    
+    // Check if the STL file is in ASCII format
+    static isAsciiSTL(buffer) {
+        // Read the first 6 bytes to check for 'solid ' prefix
+        const header = new Uint8Array(buffer, 0, 6);
+        const headerStr = String.fromCharCode.apply(null, header);
+        return headerStr.toLowerCase().startsWith('solid ');
+    }
+    
+    // Parse ASCII STL file
+    static parseASCII(buffer) {
+        const decoder = new TextDecoder();
+        const text = decoder.decode(buffer);
+        const lines = text.split('\n');
+        
+        const vertices = [];
+        const triangles = [];
+        let vertexIndex = 0;
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            
+            if (line.startsWith('vertex ')) {
+                const parts = line.split(' ');
+                if (parts.length >= 4) {
+                    const x = parseFloat(parts[1]);
+                    const y = parseFloat(parts[2]);
+                    const z = parseFloat(parts[3]);
+                    vertices.push(new Vec3(x, y, z));
+                    
+                    // Create triangle when we have 3 vertices
+                    if (vertices.length % 3 === 0) {
+                        const idx = vertices.length;
+                        triangles.push([
+                            vertices[idx-3], 
+                            vertices[idx-2], 
+                            vertices[idx-1]
+                        ]);
+                    }
+                }
+            }
+        }
+        
+        return { vertices, triangles };
+    }
+    
+    // Parse binary STL file
+    static parseBinary(buffer) {
+        const view = new DataView(buffer);
+        const vertices = [];
+        const triangles = [];
+        
+        // Skip the header (80 bytes)
+        // Read number of triangles (4 bytes)
+        const triangleCount = view.getUint32(80, true);
+        
+        let offset = 84; // Start after header and triangle count
+        
+        for (let i = 0; i < triangleCount; i++) {
+            // Skip normal vector (12 bytes)
+            offset += 12;
+            
+            // Read vertices
+            const v1 = new Vec3(
+                view.getFloat32(offset, true),
+                view.getFloat32(offset + 4, true),
+                view.getFloat32(offset + 8, true)
+            );
+            offset += 12;
+            
+            const v2 = new Vec3(
+                view.getFloat32(offset, true),
+                view.getFloat32(offset + 4, true),
+                view.getFloat32(offset + 8, true)
+            );
+            offset += 12;
+            
+            const v3 = new Vec3(
+                view.getFloat32(offset, true),
+                view.getFloat32(offset + 4, true),
+                view.getFloat32(offset + 8, true)
+            );
+            offset += 12;
+            
+            // Add vertices
+            vertices.push(v1, v2, v3);
+            
+            // Create triangle
+            const idx = vertices.length;
+            triangles.push([
+                vertices[idx-3], 
+                vertices[idx-2], 
+                vertices[idx-1]
+            ]);
+            
+            // Skip attribute byte count (2 bytes)
+            offset += 2;
+        }
+        
+        return { vertices, triangles };
+    }
 }
 
 // Export the STLExporter class
