@@ -97,20 +97,23 @@ class ShaderLayer {
                         uniform.value.glTexture = gl.createTexture();
                         gl.bindTexture(gl.TEXTURE_3D, uniform.value.glTexture);
                         
-                        // Set texture parameters
-                        // R32F format doesn't support linear filtering in WebGL2, so we must use NEAREST
-                        gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-                        gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                        // Set texture parameters based on the interpolation mode
+                        const filterMode = uniform.value.interpolation === 'linear' ? gl.LINEAR : gl.NEAREST;
+                        gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, filterMode);
+                        gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, filterMode);
                         gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
                         gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                         gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
                         
                         // Upload the texture data
                         const [width, height, depth] = uniform.value.dimensions;
+                        
+                        // Use R16F format (16-bit float, single channel)
+                        // This format supports linear filtering in WebGL2
                         gl.texImage3D(
                             gl.TEXTURE_3D,
                             0,                  // level
-                            gl.R32F,            // internalformat - single channel 32-bit float
+                            gl.R16F,            // internalformat - 16-bit float, single channel
                             width,
                             height,
                             depth,
