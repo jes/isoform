@@ -21,19 +21,19 @@ class SketchNode extends TreeNode {
     const sdSqLine = (p, a, b) => {
       const pa = P.vsub(p, a);
       const ba = P.vsub(b, a);
-      const h = P.clamp(P.div(P.vdot(pa, ba), P.vdot(ba, ba)), P.const(0.0), P.const(1.0));
+      const h = P.clamp(P.div(P.vdot(pa, ba), P.vdot(ba, ba)), P.zero(), P.one());
       const d = P.vsub(pa, P.vmul(ba, h));
       return [P.vdot(d, d), P.sub(P.mul(P.vecX(ba), P.vecY(pa)), P.mul(P.vecY(ba), P.vecX(pa)))];
     }
 
-    const p2d = P.vec3(P.vecX(p), P.vecY(p), P.const(0.0));
+    const p2d = P.vec3(P.vecX(p), P.vecY(p), P.zero());
 
     // Starting point
     let va;
     let vb = P.vconst(new Vec3(startPoint.x, startPoint.y, 0.0));
     let pvb = P.vsub(p2d, vb);
     let d = P.vdot(pvb, pvb);
-    let s = P.const(1.0);
+    let s = P.one();
     const eps = P.const(0.00001);
 
     // Each line segment
@@ -45,9 +45,9 @@ class SketchNode extends TreeNode {
       const py = P.vecY(p2d);
       const vay = P.vecY(va);
       const vby = P.vecY(vb);
-      s = P.mix(s, P.sub(P.const(0.0), s), P.min(P.const(1.0),
-          P.add(P.mul(P.step(vay, py), P.mul(P.step(py, P.sub(vby, eps)), P.step(P.const(0.0), ds[1]))),
-                P.mul(P.step(vby, py), P.mul(P.step(py, P.sub(vay, eps)), P.step(ds[1], P.const(0.0)))))
+      s = P.mix(s, P.neg(s), P.min(P.one(),
+          P.add(P.mul(P.step(vay, py), P.mul(P.step(py, P.sub(vby, eps)), P.step(P.zero(), ds[1]))),
+                P.mul(P.step(vby, py), P.mul(P.step(py, P.sub(vay, eps)), P.step(ds[1], P.zero()))))
       ));
       d = P.min(d, ds[0]);
     }
@@ -60,9 +60,9 @@ class SketchNode extends TreeNode {
     const py = P.vecY(p2d);
     const vay = P.vecY(va);
     const vby = P.vecY(vb);
-    s = P.mix(s, P.sub(P.const(0.0), s), P.min(P.const(1.0),
-        P.add(P.mul(P.step(vay, py), P.mul(P.step(py, P.sub(vby, eps)), P.step(P.const(0.0), ds[1]))),
-              P.mul(P.step(vby, py), P.mul(P.step(py, P.sub(vay, eps)), P.step(ds[1], P.const(0.0)))))
+    s = P.mix(s, P.neg(s), P.min(P.one(),
+        P.add(P.mul(P.step(vay, py), P.mul(P.step(py, P.sub(vby, eps)), P.step(P.zero(), ds[1]))),
+              P.mul(P.step(vby, py), P.mul(P.step(py, P.sub(vay, eps)), P.step(ds[1], P.zero()))))
     ));
     d = P.min(d, ds[0]);
     d = P.mul(s, P.sqrt(P.abs(d))); // take abs(d) so that the interval can't contain negative numbers
@@ -78,8 +78,8 @@ class SketchNode extends TreeNode {
     // use mix() to select between the 2d distance and the 3d distance.
     
     const zdist = P.sub(P.abs(P.vecZ(p)), P.const(0.005));
-    const dist3d = P.vlength(P.vec3(zdist, P.max(d, P.const(0.0)), P.const(0.0)));
-    return P.mix(d, dist3d, P.step(P.const(0.0), zdist));
+    const dist3d = P.vlength(P.vec3(zdist, P.max(d, P.zero()), P.zero()));
+    return P.mix(d, dist3d, P.step(P.zero(), zdist));
   }
 
   getIcon() {

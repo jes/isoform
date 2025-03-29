@@ -37,6 +37,14 @@ class Peptide {
         });
     }
 
+    static zero() {
+        return P.zero();
+    }
+
+    static one() {
+        return P.one();
+    }
+
     static var(name) {
         return new Peptide('var', 'float', name, null, null, null, {
             evaluate: (vars) => {
@@ -510,7 +518,7 @@ class Peptide {
 
     static not(a) {
         a.assertType('float');
-        return P.eq(a, P.const(0));
+        return P.eq(a, P.zero());
     }
 
     static eq(a, b) {
@@ -528,7 +536,7 @@ class Peptide {
 
     static neg(a) {
         a.assertType('float');
-        return P.sub(P.const(0), a);
+        return P.sub(P.zero(), a);
     }
 
     static sign(a) {
@@ -564,8 +572,8 @@ class Peptide {
         k.assertType('float');
         // Add a small epsilon to k to avoid division by zero
         const safeK = P.max(k, P.const(1e-10));
-        const h = P.clamp(P.add(P.const(0.5), P.div(P.sub(b, a), P.mul(P.const(2), safeK))), P.const(0), P.const(1));
-        return P.sub(P.mix(b, a, h), P.mul(safeK, P.mul(h, P.sub(P.const(1), h))));
+        const h = P.clamp(P.add(P.const(0.5), P.div(P.sub(b, a), P.mul(P.const(2), safeK))), P.zero(), P.one());
+        return P.sub(P.mix(b, a, h), P.mul(safeK, P.mul(h, P.sub(P.one(), h))));
     }
 
     static smax(a, b, k) {
@@ -574,8 +582,8 @@ class Peptide {
         k.assertType('float');
         // Add a small epsilon to k to avoid division by zero
         const safeK = P.max(k, P.const(1e-10));
-        const h = P.clamp(P.sub(P.const(0.5), P.div(P.sub(b, a), P.mul(P.const(2), safeK))), P.const(0), P.const(1));
-        return P.add(P.mix(b, a, h), P.mul(safeK, P.mul(h, P.sub(P.const(1), h))));
+        const h = P.clamp(P.sub(P.const(0.5), P.div(P.sub(b, a), P.mul(P.const(2), safeK))), P.zero(), P.one());
+        return P.add(P.mix(b, a, h), P.mul(safeK, P.mul(h, P.sub(P.one(), h))));
     }
 
     static absBevelC2(x, k, s) {

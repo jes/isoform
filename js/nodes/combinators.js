@@ -103,7 +103,7 @@ class SubtractionNode extends TreeNode {
     for (let i = 1; i < this.children.length; i++) {
       const child = this.children[i].peptide(p);
       if (!child) continue;
-      max = this.max(max, P.sub(P.const(0), child));
+      max = this.max(max, P.neg(child));
     }
     return max;
   }
@@ -154,7 +154,7 @@ class InterpolateNode extends TreeNode {
 
     const uniformK = this.uniform('k');
 
-    return P.add(P.mul(P.sub(P.const(1), uniformK), child0),
+    return P.add(P.mul(P.sub(P.one(), uniformK), child0),
                  P.mul(uniformK, child1));
   }
 

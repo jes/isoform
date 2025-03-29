@@ -61,7 +61,7 @@ class TransformNode extends TreeNode {
       const angleRad = P.mul(P.const(Math.PI), P.div(this.uniform('rotationAngle'), P.const(180.0)));
       const cosA = P.cos(angleRad);
       const sinA = P.sin(angleRad);
-      const k = P.sub(P.const(1.0), cosA);
+      const k = P.sub(P.one(), cosA);
       const a = P.vmul(P.vmul(axis, P.vdot(axis, expr)), k);
       const b = P.vmul(expr, cosA);
       const c = P.vmul(P.vcross(axis, expr), sinA);
@@ -121,13 +121,13 @@ class DomainDeformNode extends TreeNode {
     const py1 = P.mul(P.sin(P.mul(P.vecZ(p), this.uniform('frequency'))), this.uniform('amplitude'));
     const pz1 = P.mul(P.sin(P.mul(P.vecX(p), this.uniform('frequency'))), this.uniform('amplitude'));
 
-    const px2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecZ(p), P.vecY(p)), P.const(1.0)), this.uniform('frequency'))), this.uniform('amplitude')));
+    const px2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecZ(p), P.vecY(p)), P.one()), this.uniform('frequency'))), this.uniform('amplitude')));
     const py2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecX(p), P.vecZ(p)), P.const(2.42)), this.uniform('frequency'))), this.uniform('amplitude')));
     const pz2 = P.mul(P.const(0.5), P.mul(P.cos(P.mul(P.add(P.add(P.vecY(p), P.vecX(p)), P.const(14.5)), this.uniform('frequency'))), this.uniform('amplitude')));
 
     const child = this.children[0].peptide(P.vadd(p, P.vec3(P.add(px1, px2), P.add(py1, py2), P.add(pz1, pz2))));
     if (!child) return null;
-    return P.div(child, P.max(P.const(1.0), P.mul(P.const(2.0), P.mul(this.uniform('frequency'), this.uniform('amplitude')))));
+    return P.div(child, P.max(P.one(), P.mul(P.const(2.0), P.mul(this.uniform('frequency'), this.uniform('amplitude')))));
   }
 
   getIcon() {
@@ -182,7 +182,7 @@ class DistanceDeformNode extends TreeNode {
     const noise2Y = P.sin(P.mul(P.vecY(p), P.mul(P.const(2.0), freq)));
     const noise2Z = P.sin(P.mul(P.vecZ(p), P.mul(P.const(2.0), freq)));
     const noise2 = P.mul(P.const(0.5), P.mul(noise2X, P.mul(noise2Y, noise2Z)));
-    return P.div(P.add(d, P.mul(ampl, P.add(noise1, noise2))), P.max(P.const(1.0), P.mul(P.const(2.0), P.mul(freq, ampl))));
+    return P.div(P.add(d, P.mul(ampl, P.add(noise1, noise2))), P.max(P.one(), P.mul(P.const(2.0), P.mul(freq, ampl))));
   }
 
   getIcon() {
@@ -226,7 +226,7 @@ class ShellNode extends TreeNode {
     
     const d = this.children[0].peptide(p);
     if (!d) return null;
-    const negD = P.sub(P.const(0), d);
+    const negD = P.neg(d);
     
     if (this.shellType === "inside") {
       return P.max(d, P.sub(negD, this.uniform('thickness')));
@@ -300,7 +300,7 @@ class InfillNode extends TreeNode {
     const d2 = this.children[1].peptide(p);
     if (!d2) return d;
 
-    const negD = P.sub(P.const(0), d);
+    const negD = P.neg(d);
     const dShell = P.max(d, P.sub(negD, this.uniform('thickness')));
 
     return P.min(dShell, P.max(d, d2));
@@ -479,9 +479,9 @@ class TwistNode extends TreeNode {
     
     // Calculate the maximum scaling factor to preserve distance metric
     // The scaling is largest at the maximum distance from the axis
-    const distFromAxis = P.vlength(P.vec3(P.vecX(q), P.vecY(q), P.const(0.0)));
+    const distFromAxis = P.vlength(P.vec3(P.vecX(q), P.vecY(q), P.zero()));
     const twistRate = P.div(P.const(2.0 * Math.PI), this.uniform('height'));
-    const maxScale = P.add(P.const(1.0), P.mul(distFromAxis, twistRate));
+    const maxScale = P.add(P.one(), P.mul(distFromAxis, twistRate));
     
     // Get the SDF value from the child
     const childSdf = this.children[0].peptide(p2);
@@ -519,11 +519,11 @@ class MirrorNode extends TreeNode {
     let pMirrored = p;
 
     if (this.plane === "XY") {
-      pMirrored = P.vec3(P.vecX(p), P.vecY(p), P.sub(P.const(0), P.vecZ(p)));
+      pMirrored = P.vec3(P.vecX(p), P.vecY(p), P.neg(P.vecZ(p)));
     } else if (this.plane === "XZ") {
-      pMirrored = P.vec3(P.vecX(p), P.sub(P.const(0), P.vecY(p)), P.vecZ(p));
+      pMirrored = P.vec3(P.vecX(p), P.neg(P.vecY(p)), P.vecZ(p));
     } else {
-      pMirrored = P.vec3(P.sub(P.const(0), P.vecX(p)), P.vecY(p), P.vecZ(p));
+      pMirrored = P.vec3(P.neg(P.vecX(p)), P.vecY(p), P.vecZ(p));
     }
     
     const mirrored = this.children[0].peptide(pMirrored);
@@ -769,12 +769,12 @@ class ExtrudeNode extends TreeNode {
       this.warn("Extrude node requires a 2D child");
       // carry on anyway
     }
-    const p2d = P.vec3(P.vecX(p), P.vecY(p), P.const(0.0));
+    const p2d = P.vec3(P.vecX(p), P.vecY(p), P.zero());
     const d2d = this.children[0].peptide(p2d);
     if (!d2d) return null;
     const halfHeight = P.div(this.uniform('height'), P.const(2.0));
     const dz = P.sub(P.abs(P.vecZ(p)), halfHeight);
-    const pz = P.clamp(P.add(P.vecZ(p), halfHeight), P.const(0.0), this.uniform('height'));
+    const pz = P.clamp(P.add(P.vecZ(p), halfHeight), P.zero(), this.uniform('height'));
     const draftAngleRad = P.mul(this.uniform('draftAngle'), P.const(Math.PI / 180.0));
     const d = P.add(P.mul(d2d, P.cos(draftAngleRad)), P.mul(pz, P.tan(draftAngleRad)));
     return this.max(d, dz);
@@ -821,7 +821,7 @@ class DistanceDeformInsideNode extends TreeNode {
     if (!d0) return null;
     const d1 = this.children[1].peptide(p);
     if (!d1) return d0;
-    return P.add(d0, P.min(P.mul(d1, this.uniform('amplitude')), P.const(0.0)));
+    return P.add(d0, P.min(P.mul(d1, this.uniform('amplitude')), P.zero()));
   }
   
   getIcon() {
@@ -872,7 +872,7 @@ class RevolveNode extends TreeNode {
     // Create a 2D point in the XY plane where:
     // X = distance from axis (radius)
     // Y = distance along axis (height)
-    const p2d = P.vec3(radius, projDist, P.const(0.0));
+    const p2d = P.vec3(radius, projDist, P.zero());
     
     return this.children[0].peptide(p2d);
   }
@@ -950,12 +950,12 @@ class HelixExtrudeNode extends TreeNode {
     const dy = P.sub(y, hy);
     
     // Distance from point to helix in XY plane
-    const dr = P.vlength(P.vec3(dx, dy, P.const(0.0)));
+    const dr = P.vlength(P.vec3(dx, dy, P.zero()));
     
     // Create a 2D point for the cross-section
     // X = distance from helix centerline (radial)
     // Y = position along helix (we use z directly)
-    const p2d = P.vec3(dr, P.const(0.0), P.const(0.0));
+    const p2d = P.vec3(dr, P.zero(), P.zero());
     
     // Get the SDF from the 2D child
     const d2d = this.children[0].peptide(p2d);

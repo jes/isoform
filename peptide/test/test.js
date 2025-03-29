@@ -133,14 +133,14 @@ addTest('variable lookup', (evaluate) => {
 
 addTest('variable evaluation', (evaluate) => {
     const x = P.var('x');
-    const expr = P.add(x, P.const(1));
+    const expr = P.add(x, P.one());
     assertEquals(evaluate(expr, { x: 5 }), 6);
 });
 
 addTest('complex expression', (evaluate) => {
     // (x + 1) * (y - 2)
     const expr = P.mul(
-        P.add(P.var('x'), P.const(1)),
+        P.add(P.var('x'), P.one()),
         P.sub(P.var('y'), P.const(2))
     );
     assertEquals(evaluate(expr, { x: 3, y: 5 }), 12); // (3 + 1) * (5 - 2) = 4 * 3 = 12
@@ -229,7 +229,7 @@ addTest('vector operations', (evaluate) => {
 });
 
 addTest('vec3 construction', (evaluate) => {
-    const x = P.const(1);
+    const x = P.one();
     const y = P.const(2);
     const z = P.const(3);
     const vec = P.vec3(x, y, z);
@@ -270,17 +270,17 @@ addTest('type mismatch errors', (evaluate) => {
 });
 
 addTest('insufficient arguments', (evaluate) => {
-    assertThrows(() => evaluate(P.vec3(P.const(1), P.const(2))));
-    assertThrows(() => evaluate(P.add(P.const(1))));
+    assertThrows(() => evaluate(P.vec3(P.one(), P.const(2))));
+    assertThrows(() => evaluate(P.add(P.one())));
 });
 
 addTest('invalid vector operations', (evaluate) => {
-    assertThrows(() => evaluate(P.vcross(P.const(1), P.vconst(new Vec3(1, 2, 3)))));
-    assertThrows(() => evaluate(P.vdot(P.const(1), P.vconst(new Vec3(1, 2, 3)))));
+    assertThrows(() => evaluate(P.vcross(P.one(), P.vconst(new Vec3(1, 2, 3)))));
+    assertThrows(() => evaluate(P.vdot(P.one(), P.vconst(new Vec3(1, 2, 3)))));
 });
 
 addTest('invalid scalar operations', (evaluate) => {
-    assertThrows(() => evaluate(P.add(P.const(1), P.vconst(new Vec3(1, 2, 3)))));
+    assertThrows(() => evaluate(P.add(P.one(), P.vconst(new Vec3(1, 2, 3)))));
     assertThrows(() => evaluate(P.sqrt(P.vconst(new Vec3(1, 2, 3)))));
 });
 
@@ -510,7 +510,7 @@ addTest('clamp operations', (evaluate) => {
     const clamped = P.clamp(x, min, max);
     assertEquals(evaluate(clamped), 4); // 5 clamped between 2 and 4
     
-    const x2 = P.const(1);
+    const x2 = P.one();
     const clamped2 = P.clamp(x2, min, max);
     assertEquals(evaluate(clamped2), 2); // 1 clamped between 2 and 4
     
@@ -520,18 +520,18 @@ addTest('clamp operations', (evaluate) => {
 });
 
 addTest('mix operations', (evaluate) => {
-    const a = P.const(0);
+    const a = P.zero();
     const b = P.const(10);
     const t = P.const(0.3);
     
     const mixed = P.mix(a, b, t);
     assertEquals(evaluate(mixed), 3); // mix(0, 10, 0.3) = 3
     
-    const t2 = P.const(0);
+    const t2 = P.zero();
     const mixed2 = P.mix(a, b, t2);
     assertEquals(evaluate(mixed2), 0); // mix(0, 10, 0) = 0
     
-    const t3 = P.const(1);
+    const t3 = P.one();
     const mixed3 = P.mix(a, b, t3);
     assertEquals(evaluate(mixed3), 10); // mix(0, 10, 1) = 10
 });
@@ -539,7 +539,7 @@ addTest('mix operations', (evaluate) => {
 addTest('smin operations', (evaluate) => {
     const a = P.const(5);
     const b = P.const(3);
-    const k = P.const(1);
+    const k = P.one();
     
     // When values are far apart, smin should behave like min
     const sminResult = P.smin(a, b, k);
@@ -559,7 +559,7 @@ addTest('smin operations', (evaluate) => {
     }
     
     // Test with k=0 (should behave exactly like min)
-    const zeroK = P.const(0);
+    const zeroK = P.zero();
     const sminZeroK = P.smin(a, b, zeroK);
     assertEquals(evaluate(sminZeroK), 3);
 });
@@ -567,7 +567,7 @@ addTest('smin operations', (evaluate) => {
 addTest('smax operations', (evaluate) => {
     const a = P.const(5);
     const b = P.const(3);
-    const k = P.const(1);
+    const k = P.one();
     
     // When values are far apart, smax should behave like max
     const smaxResult = P.smax(a, b, k);
@@ -587,7 +587,7 @@ addTest('smax operations', (evaluate) => {
     }
     
     // Test with k=0 (should behave exactly like max)
-    const zeroK = P.const(0);
+    const zeroK = P.zero();
     const smaxZeroK = P.smax(a, b, zeroK);
     assertEquals(evaluate(smaxZeroK), 5);
 });
@@ -740,7 +740,7 @@ addTest('trigonometric functions', (evaluate) => {
     // Test composition of tan
     const composed2 = P.add(
         P.mul(P.tan(x), P.tan(x)),
-        P.const(1)
+        P.one()
     );
     assertEquals(evaluate(composed2, { x: Math.PI / 4 }), 2.0); // tan²(π/4) + 1 = 2
 });
@@ -1147,7 +1147,7 @@ addTest('evaluateInterval for multiplication', (evaluate) => {
 addTest('evaluateInterval for complex expressions', (evaluate) => {
     // (x + 1) * (y - 2)
     const expr = P.mul(
-        P.add(P.var('x'), P.const(1)),
+        P.add(P.var('x'), P.one()),
         P.sub(P.var('y'), P.const(2))
     );
 
@@ -1280,7 +1280,7 @@ addTest('sign operations', (evaluate) => {
     assertEquals(evaluate(signNeg), -1);
     
     // Test with zero
-    const zero = P.const(0);
+    const zero = P.zero();
     const signZero = P.sign(zero);
     assertEquals(evaluate(signZero), 0);
     
@@ -1335,14 +1335,14 @@ addTest('logical and operation', (evaluate) => {
     assertEquals(evaluate(and1), 15); // 5 * 3 = 15 (logical AND is implemented as multiplication)
     
     // Test with one false value (zero)
-    const a2 = P.const(0);
+    const a2 = P.zero();
     const b2 = P.const(7);
     const and2 = P.and(a2, b2);
     assertEquals(evaluate(and2), 0); // 0 * 7 = 0
     
     // Test with both false values
-    const a3 = P.const(0);
-    const b3 = P.const(0);
+    const a3 = P.zero();
+    const b3 = P.zero();
     const and3 = P.and(a3, b3);
     assertEquals(evaluate(and3), 0); // 0 * 0 = 0
     
@@ -1417,7 +1417,7 @@ addTest('logical not operation', (evaluate) => {
     assertEquals(evaluate(not1), 0); // not(5) = 1 - 1 = 0
     
     // Test with false value (zero)
-    const a2 = P.const(0);
+    const a2 = P.zero();
     const not2 = P.not(a2);
     assertEquals(evaluate(not2), 1); // not(0) = 1 - 0 = 1
     
@@ -1461,14 +1461,14 @@ addTest('equality operation', (evaluate) => {
 
 addTest('conditional operation', (evaluate) => {
     // Test with true condition
-    const cond1 = P.const(1);
+    const cond1 = P.one();
     const then1 = P.const(5);
     const else1 = P.const(10);
     const if1 = P.cond(cond1, then1, else1);
     assertEquals(evaluate(if1), 5); // if(1) then 5 else 10
     
     // Test with false condition
-    const cond2 = P.const(0);
+    const cond2 = P.zero();
     const then2 = P.const(5);
     const else2 = P.const(10);
     const if2 = P.cond(cond2, then2, else2);
@@ -1484,7 +1484,7 @@ addTest('conditional operation', (evaluate) => {
     
     // Test with expressions
     const condExpr = P.gte(P.const(7), P.const(5));
-    const ifExpr = P.cond(condExpr, P.const(1), P.const(2));
+    const ifExpr = P.cond(condExpr, P.one(), P.const(2));
     assertEquals(evaluate(ifExpr), 1); // if(7 >= 5) then 1 else 2
 });
 
@@ -1500,7 +1500,7 @@ addTest('negation operation', (evaluate) => {
     assertEquals(evaluate(neg2), 3); // -(-3) = 3
     
     // Test with zero
-    const a3 = P.const(0);
+    const a3 = P.zero();
     const neg3 = P.neg(a3);
     assertEquals(evaluate(neg3), 0); // -0 = 0
     
@@ -1602,21 +1602,21 @@ addTest('matrix operations', (evaluate) => {
 
 addTest('trigonometric functions', (evaluate) => {
     // Test sin
-    const sin0 = P.sin(P.const(0));
+    const sin0 = P.sin(P.zero());
     assertEquals(evaluate(sin0), 0);
     
     const sinPiHalf = P.sin(P.const(Math.PI / 2));
     assertEquals(evaluate(sinPiHalf), 1, 1e-10);
     
     // Test cos
-    const cos0 = P.cos(P.const(0));
+    const cos0 = P.cos(P.zero());
     assertEquals(evaluate(cos0), 1);
     
     const cosPiHalf = P.cos(P.const(Math.PI / 2));
     assertEquals(evaluate(cosPiHalf), 0, 1e-10);
     
     // Test tan
-    const tan0 = P.tan(P.const(0));
+    const tan0 = P.tan(P.zero());
     assertEquals(evaluate(tan0), 0);
     
     const tanPi4 = P.tan(P.const(Math.PI / 4));
@@ -1635,25 +1635,25 @@ addTest('trigonometric functions', (evaluate) => {
 
 addTest('absBevelC2 and rampBevelC2 functions', (evaluate) => {
     // Test absBevelC2 with positive value
-    const abs1 = P.absBevelC2(P.const(5), P.const(1), P.const(0.9));
+    const abs1 = P.absBevelC2(P.const(5), P.one(), P.const(0.9));
     assertEquals(evaluate(abs1), 5);
     
     // Test absBevelC2 with negative value
-    const abs2 = P.absBevelC2(P.const(-3), P.const(1), P.const(0.9));
+    const abs2 = P.absBevelC2(P.const(-3), P.one(), P.const(0.9));
     assertEquals(evaluate(abs2), 3);
     
     // Test absBevelC2 with zero
-    const abs3 = P.absBevelC2(P.const(0), P.const(1), P.const(0.9));
+    const abs3 = P.absBevelC2(P.zero(), P.one(), P.const(0.9));
     assertEquals(evaluate(abs3), 0);
     
     // Test rampBevelC2
-    const ramp1 = P.rampBevelC2(P.const(5), P.const(1), P.const(0.9));
+    const ramp1 = P.rampBevelC2(P.const(5), P.one(), P.const(0.9));
     assertEquals(evaluate(ramp1), 5); // (5 + 5) / 2 = 5
     
-    const ramp2 = P.rampBevelC2(P.const(-3), P.const(1), P.const(0.9));
+    const ramp2 = P.rampBevelC2(P.const(-3), P.one(), P.const(0.9));
     assertEquals(evaluate(ramp2), 0); // (-3 + 3) / 2 = 0
     
-    const ramp3 = P.rampBevelC2(P.const(0), P.const(1), P.const(0.9));
+    const ramp3 = P.rampBevelC2(P.zero(), P.one(), P.const(0.9));
     assertEquals(evaluate(ramp3), 0); // (0 + 0) / 2 = 0
 });
 
