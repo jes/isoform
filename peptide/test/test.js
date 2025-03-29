@@ -1327,6 +1327,336 @@ addTest('sign interval evaluation', (evaluate) => {
     assertEquals(zeroInterval.max, 0);
 });
 
+addTest('logical and operation', (evaluate) => {
+    // Test with two true values (non-zero)
+    const a1 = P.const(5);
+    const b1 = P.const(3);
+    const and1 = P.and(a1, b1);
+    assertEquals(evaluate(and1), 15); // 5 * 3 = 15 (logical AND is implemented as multiplication)
+    
+    // Test with one false value (zero)
+    const a2 = P.const(0);
+    const b2 = P.const(7);
+    const and2 = P.and(a2, b2);
+    assertEquals(evaluate(and2), 0); // 0 * 7 = 0
+    
+    // Test with both false values
+    const a3 = P.const(0);
+    const b3 = P.const(0);
+    const and3 = P.and(a3, b3);
+    assertEquals(evaluate(and3), 0); // 0 * 0 = 0
+    
+    // Test with variables
+    const va = P.var('x');
+    const vb = P.var('y');
+    const andVar = P.and(va, vb);
+    assertEquals(evaluate(andVar, { x: 2, y: 3 }), 6); // 2 * 3 = 6
+    assertEquals(evaluate(andVar, { x: 0, y: 3 }), 0); // 0 * 3 = 0
+});
+
+addTest('greater than or equal operation', (evaluate) => {
+    // Test when first argument is greater than second
+    const a1 = P.const(7);
+    const b1 = P.const(3);
+    const gte1 = P.gte(a1, b1);
+    assertEquals(evaluate(gte1), 1.0); // 7 >= 3, should return 1.0
+    
+    // Test when first argument equals second
+    const a2 = P.const(5);
+    const b2 = P.const(5);
+    const gte2 = P.gte(a2, b2);
+    assertEquals(evaluate(gte2), 1.0); // 5 >= 5, should return 1.0
+    
+    // Test when first argument is less than second
+    const a3 = P.const(2);
+    const b3 = P.const(8);
+    const gte3 = P.gte(a3, b3);
+    assertEquals(evaluate(gte3), 0.0); // 2 < 8, should return 0.0
+    
+    // Test with variables
+    const va = P.var('x');
+    const vb = P.var('y');
+    const gteVar = P.gte(va, vb);
+    assertEquals(evaluate(gteVar, { x: 5, y: 2 }), 1.0); // 5 >= 2
+    assertEquals(evaluate(gteVar, { x: 3, y: 3 }), 1.0); // 3 >= 3
+    assertEquals(evaluate(gteVar, { x: 1, y: 4 }), 0.0); // 1 < 4
+});
+
+addTest('less than or equal operation', (evaluate) => {
+    // Test when first argument is less than second
+    const a1 = P.const(3);
+    const b1 = P.const(7);
+    const lte1 = P.lte(a1, b1);
+    assertEquals(evaluate(lte1), 1.0); // 3 <= 7, should return 1.0
+    
+    // Test when first argument equals second
+    const a2 = P.const(5);
+    const b2 = P.const(5);
+    const lte2 = P.lte(a2, b2);
+    assertEquals(evaluate(lte2), 1.0); // 5 <= 5, should return 1.0
+    
+    // Test when first argument is greater than second
+    const a3 = P.const(8);
+    const b3 = P.const(2);
+    const lte3 = P.lte(a3, b3);
+    assertEquals(evaluate(lte3), 0.0); // 8 > 2, should return 0.0
+    
+    // Test with variables
+    const va = P.var('x');
+    const vb = P.var('y');
+    const lteVar = P.lte(va, vb);
+    assertEquals(evaluate(lteVar, { x: 2, y: 5 }), 1.0); // 2 <= 5
+    assertEquals(evaluate(lteVar, { x: 3, y: 3 }), 1.0); // 3 <= 3
+    assertEquals(evaluate(lteVar, { x: 4, y: 1 }), 0.0); // 4 > 1
+});
+
+addTest('logical not operation', (evaluate) => {
+    // Test with true value (non-zero)
+    const a1 = P.const(5);
+    const not1 = P.not(a1);
+    assertEquals(evaluate(not1), 0); // not(5) = 1 - 1 = 0
+    
+    // Test with false value (zero)
+    const a2 = P.const(0);
+    const not2 = P.not(a2);
+    assertEquals(evaluate(not2), 1); // not(0) = 1 - 0 = 1
+    
+    // Test with variables
+    const va = P.var('x');
+    const notVar = P.not(va);
+    assertEquals(evaluate(notVar, { x: 7 }), 0); // not(7) = 0
+    assertEquals(evaluate(notVar, { x: 0 }), 1); // not(0) = 1
+    
+    // Test with expression
+    const expr = P.not(P.gte(P.const(3), P.const(5)));
+    assertEquals(evaluate(expr), 1); // not(3 >= 5) = not(0) = 1
+});
+
+addTest('equality operation', (evaluate) => {
+    // Test when values are equal
+    const a1 = P.const(5);
+    const b1 = P.const(5);
+    const eq1 = P.eq(a1, b1);
+    assertEquals(evaluate(eq1), 1.0); // 5 == 5, should return 1.0
+    
+    // Test when values are not equal
+    const a2 = P.const(3);
+    const b2 = P.const(7);
+    const eq2 = P.eq(a2, b2);
+    assertEquals(evaluate(eq2), 0.0); // 3 != 7, should return 0.0
+    
+    // Test with variables
+    const va = P.var('x');
+    const vb = P.var('y');
+    const eqVar = P.eq(va, vb);
+    assertEquals(evaluate(eqVar, { x: 4, y: 4 }), 1.0); // 4 == 4
+    assertEquals(evaluate(eqVar, { x: 2, y: 8 }), 0.0); // 2 != 8
+    
+    // Test with expressions
+    const expr1 = P.add(P.const(2), P.const(3));
+    const expr2 = P.const(5);
+    const eqExpr = P.eq(expr1, expr2);
+    assertEquals(evaluate(eqExpr), 1.0); // (2 + 3) == 5
+});
+
+addTest('conditional operation', (evaluate) => {
+    // Test with true condition
+    const cond1 = P.const(1);
+    const then1 = P.const(5);
+    const else1 = P.const(10);
+    const if1 = P.cond(cond1, then1, else1);
+    assertEquals(evaluate(if1), 5); // if(1) then 5 else 10
+    
+    // Test with false condition
+    const cond2 = P.const(0);
+    const then2 = P.const(5);
+    const else2 = P.const(10);
+    const if2 = P.cond(cond2, then2, else2);
+    assertEquals(evaluate(if2), 10); // if(0) then 5 else 10
+    
+    // Test with variables
+    const vc = P.var('c');
+    const vt = P.var('t');
+    const ve = P.var('e');
+    const ifVar = P.cond(vc, vt, ve);
+    assertEquals(evaluate(ifVar, { c: 1, t: 7, e: 3 }), 7); // if(1) then 7 else 3
+    assertEquals(evaluate(ifVar, { c: 0, t: 7, e: 3 }), 3); // if(0) then 7 else 3
+    
+    // Test with expressions
+    const condExpr = P.gte(P.const(7), P.const(5));
+    const ifExpr = P.cond(condExpr, P.const(1), P.const(2));
+    assertEquals(evaluate(ifExpr), 1); // if(7 >= 5) then 1 else 2
+});
+
+addTest('negation operation', (evaluate) => {
+    // Test with positive number
+    const a1 = P.const(5);
+    const neg1 = P.neg(a1);
+    assertEquals(evaluate(neg1), -5); // -5
+    
+    // Test with negative number
+    const a2 = P.const(-3);
+    const neg2 = P.neg(a2);
+    assertEquals(evaluate(neg2), 3); // -(-3) = 3
+    
+    // Test with zero
+    const a3 = P.const(0);
+    const neg3 = P.neg(a3);
+    assertEquals(evaluate(neg3), 0); // -0 = 0
+    
+    // Test with variables
+    const va = P.var('x');
+    const negVar = P.neg(va);
+    assertEquals(evaluate(negVar, { x: 7 }), -7); // -7
+    assertEquals(evaluate(negVar, { x: -4 }), 4); // -(-4) = 4
+    
+    // Test with expression
+    const expr = P.neg(P.add(P.const(2), P.const(3)));
+    assertEquals(evaluate(expr), -5); // -(2 + 3) = -5
+});
+
+addTest('vector component extraction', (evaluate) => {
+    const v = P.vconst(new Vec3(1, 2, 3));
+    
+    // Test vecX
+    const x = P.vecX(v);
+    assertEquals(evaluate(x), 1);
+    
+    // Test vecY
+    const y = P.vecY(v);
+    assertEquals(evaluate(y), 2);
+    
+    // Test vecZ
+    const z = P.vecZ(v);
+    assertEquals(evaluate(z), 3);
+    
+    // Test with variables
+    const vv = P.vvar('v');
+    const vx = P.vecX(vv);
+    const vy = P.vecY(vv);
+    const vz = P.vecZ(vv);
+    assertEquals(evaluate(vx, { v: new Vec3(4, 5, 6) }), 4);
+    assertEquals(evaluate(vy, { v: new Vec3(4, 5, 6) }), 5);
+    assertEquals(evaluate(vz, { v: new Vec3(4, 5, 6) }), 6);
+    
+    // Test type checking
+    const scalar = P.const(5);
+    assertThrows(() => evaluate(P.vecX(scalar)));
+    assertThrows(() => evaluate(P.vecY(scalar)));
+    assertThrows(() => evaluate(P.vecZ(scalar)));
+});
+
+addTest('matrix operations', (evaluate) => {
+    // Create test matrices
+    const m1 = new Mat3(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    const m2 = new Mat3(9, 8, 7, 6, 5, 4, 3, 2, 1);
+    
+    // Test matrix constant
+    const mc1 = P.mconst(m1);
+    const result1 = evaluate(mc1);
+    assertEquals(result1.m[0][0], 1);
+    assertEquals(result1.m[1][1], 5);
+    assertEquals(result1.m[2][2], 9);
+    
+    // Test matrix variable
+    const mv = P.mvar('m');
+    const result2 = evaluate(mv, { m: m2 });
+    assertEquals(result2.m[0][0], 9);
+    assertEquals(result2.m[1][1], 5);
+    assertEquals(result2.m[2][2], 1);
+    
+    // Test matrix transpose
+    const mt = P.mtranspose(P.mconst(m1));
+    const result3 = evaluate(mt);
+    assertEquals(result3.m[0][0], 1);
+    assertEquals(result3.m[0][1], 4);
+    assertEquals(result3.m[0][2], 7);
+    assertEquals(result3.m[1][0], 2);
+    assertEquals(result3.m[1][1], 5);
+    assertEquals(result3.m[1][2], 8);
+    assertEquals(result3.m[2][0], 3);
+    assertEquals(result3.m[2][1], 6);
+    assertEquals(result3.m[2][2], 9);
+    
+    // Test matrix-vector multiplication
+    const v = P.vconst(new Vec3(1, 2, 3));
+    const mv_mul = P.mvmul(P.mconst(m1), v);
+    const result4 = evaluate(mv_mul);
+    assertEquals(result4.x, 14); // 1*1 + 2*2 + 3*3
+    assertEquals(result4.y, 32); // 4*1 + 5*2 + 6*3
+    assertEquals(result4.z, 50); // 7*1 + 8*2 + 9*3
+    
+    // Test matrix-matrix multiplication
+    const mm_mul = P.mmul(P.mconst(m1), P.mconst(m2));
+    const result5 = evaluate(mm_mul);
+    assertEquals(result5.m[0][0], 30);
+    assertEquals(result5.m[0][1], 24);
+    assertEquals(result5.m[0][2], 18);
+    assertEquals(result5.m[1][0], 84);
+    assertEquals(result5.m[1][1], 69);
+    assertEquals(result5.m[1][2], 54);
+    assertEquals(result5.m[2][0], 138);
+    assertEquals(result5.m[2][1], 114);
+    assertEquals(result5.m[2][2], 90);
+});
+
+addTest('trigonometric functions', (evaluate) => {
+    // Test sin
+    const sin0 = P.sin(P.const(0));
+    assertEquals(evaluate(sin0), 0);
+    
+    const sinPiHalf = P.sin(P.const(Math.PI / 2));
+    assertEquals(evaluate(sinPiHalf), 1, 1e-10);
+    
+    // Test cos
+    const cos0 = P.cos(P.const(0));
+    assertEquals(evaluate(cos0), 1);
+    
+    const cosPiHalf = P.cos(P.const(Math.PI / 2));
+    assertEquals(evaluate(cosPiHalf), 0, 1e-10);
+    
+    // Test tan
+    const tan0 = P.tan(P.const(0));
+    assertEquals(evaluate(tan0), 0);
+    
+    const tanPi4 = P.tan(P.const(Math.PI / 4));
+    assertEquals(evaluate(tanPi4), 1, 1e-10);
+    
+    // Test with variables
+    const x = P.var('x');
+    const sinX = P.sin(x);
+    const cosX = P.cos(x);
+    const tanX = P.tan(x);
+    
+    assertEquals(evaluate(sinX, { x: 0 }), 0);
+    assertEquals(evaluate(cosX, { x: 0 }), 1);
+    assertEquals(evaluate(tanX, { x: 0 }), 0);
+});
+
+addTest('absBevelC2 and rampBevelC2 functions', (evaluate) => {
+    // Test absBevelC2 with positive value
+    const abs1 = P.absBevelC2(P.const(5), P.const(1), P.const(0.9));
+    assertEquals(evaluate(abs1), 5);
+    
+    // Test absBevelC2 with negative value
+    const abs2 = P.absBevelC2(P.const(-3), P.const(1), P.const(0.9));
+    assertEquals(evaluate(abs2), 3);
+    
+    // Test absBevelC2 with zero
+    const abs3 = P.absBevelC2(P.const(0), P.const(1), P.const(0.9));
+    assertEquals(evaluate(abs3), 0);
+    
+    // Test rampBevelC2
+    const ramp1 = P.rampBevelC2(P.const(5), P.const(1), P.const(0.9));
+    assertEquals(evaluate(ramp1), 5); // (5 + 5) / 2 = 5
+    
+    const ramp2 = P.rampBevelC2(P.const(-3), P.const(1), P.const(0.9));
+    assertEquals(evaluate(ramp2), 0); // (-3 + 3) / 2 = 0
+    
+    const ramp3 = P.rampBevelC2(P.const(0), P.const(1), P.const(0.9));
+    assertEquals(evaluate(ramp3), 0); // (0 + 0) / 2 = 0
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,

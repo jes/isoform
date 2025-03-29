@@ -476,6 +476,7 @@ class Peptide {
         });
     }
 
+    // 1 if a <= b, 0 otherwise
     static step(a, b) {
         a.assertType('float');
         b.assertType('float');
@@ -509,7 +510,7 @@ class Peptide {
 
     static not(a) {
         a.assertType('float');
-        return P.sub(P.const(1), a);
+        return P.eq(a, P.const(0));
     }
 
     static eq(a, b) {
