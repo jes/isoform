@@ -190,19 +190,13 @@ const app = {
             if (expr) {
                 console.log(`Peptide expression took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
-                const ssa = new PeptideSSA(expr);
+                let ssa;
+                [this.sdf, ssa] = this.document.getSDFAndSSA();
                 console.log(`SSA took ${performance.now() - startTime} ms`);
                 
                 this.primaryShaderLayer = await this.createShaderLayer(ssa, this.primaryShaderLayer);
                 this.primaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.6, 0.6, 0.6]);
 
-                // keep hold of the compiled SDF so that we can use it for coordinate display
-                const fn = eval(ssa.compileToJS());
-                this.sdf = (p) => {
-                    const vars = {p: p, ...this.document.uniforms()};
-                    const result = fn(vars);
-                    return result;
-                };
             } else {
                 this.primaryShaderLayer = null;
             }

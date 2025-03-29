@@ -307,6 +307,35 @@ class TreeNode {
     return this.makePeptide(p);
   }
 
+  // return a JavaScript function that implements the SDF
+  // function(vec3) => float
+  getSDF() {
+    const [sdf, ssa] = this.getSDFAndSSA();
+    return sdf;
+  }
+
+  // return a pair of [sdf, ssa]
+  getSDFAndSSA() {
+    if (this.isDisabled) {
+      // ??? what else can we do?
+      return (p) => 1000043.0;
+    }
+
+    const peptide = this.peptide(P.vvar('p'));
+    const ssa = new PeptideSSA(peptide);
+    const js = ssa.compileToJS();
+    const uniforms = this.uniforms();
+    const fn = eval(js);
+    return [
+      (p) => {
+        const vars = {p: p, ...uniforms};
+        const result = fn(vars);
+        return result;
+      },
+      ssa
+    ];
+  }
+
   noop() {
     return null;
   }

@@ -1,35 +1,17 @@
 class Mesher {
-    constructor(peptideExpr, options = {}) {
-        this.peptideExpr = peptideExpr;
-        this.peptideVars = {};
+    constructor(sdf, options = {}) {
+        this.sdf = sdf;
         this.resolution = options.resolution || 128;
         this.bounds = options.bounds || { min: new Vec3(-20, -20, -20), max: new Vec3(20, 20, 20) };
         this.isoLevel = options.isoLevel || 0.0;
-        this.sdf = null;
-    }
-
-    // Evaluate the SDF at a specific point
-    evaluateSDF(p) {
-        if (this.peptideExpr && !this.sdf) {
-            // compile to JS on first use
-            const ssa = new PeptideSSA(this.peptideExpr);
-            const fn = eval(ssa.compileToJS());
-            this.sdf = (p) => {
-                const vars = {p: p, ...this.peptideVars};
-                const result = fn(vars);
-                return result;
-            };
-        }
-
-        if (this.sdf) {
-            return this.sdf(p);
-        }
-
-        throw new Error("No peptide expression");
     }
 
     // Generate the mesh using marching cubes algorithm
     generateMesh() {
+        if (!this.sdf) {
+            throw new Error("No SDF");
+        }
+
         console.log("Generating mesh...");
         const { resolution, bounds } = this;
         const mesh = new Mesh();
@@ -50,7 +32,7 @@ class Mesher {
             for (let j = 0; j <= resolution; j++) {
                 for (let k = 0; k <= resolution; k++) {
                     const position = bounds.min.add(new Vec3(i, j, k).mul(cellSize));
-                    grid[i][j][k] = this.evaluateSDF(position);
+                    grid[i][j][k] = this.sdf(position);
                 }
             }
             
@@ -177,12 +159,12 @@ class Mesher {
             
             // Get gradient direction at center (approximate SDF normal)
             const h = cellSize.x * 0.1; // Small offset for gradient calculation
-            const gx1 = this.evaluateSDF(center.add(new Vec3(h, 0, 0)));
-            const gx2 = this.evaluateSDF(center.add(new Vec3(-h, 0, 0)));
-            const gy1 = this.evaluateSDF(center.add(new Vec3(0, h, 0)));
-            const gy2 = this.evaluateSDF(center.add(new Vec3(0, -h, 0)));
-            const gz1 = this.evaluateSDF(center.add(new Vec3(0, 0, h)));
-            const gz2 = this.evaluateSDF(center.add(new Vec3(0, 0, -h)));
+            const gx1 = this.sdf(center.add(new Vec3(h, 0, 0)));
+            const gx2 = this.sdf(center.add(new Vec3(-h, 0, 0)));
+            const gy1 = this.sdf(center.add(new Vec3(0, h, 0)));
+            const gy2 = this.sdf(center.add(new Vec3(0, -h, 0)));
+            const gz1 = this.sdf(center.add(new Vec3(0, 0, h)));
+            const gz2 = this.sdf(center.add(new Vec3(0, 0, -h)));
             
             const gradient = new Vec3(
                 gx1 - gx2,
@@ -205,12 +187,8 @@ class Mesher {
 
     // Generate mesh from a TreeNode
     static fromTreeNode(node, options = {}) {
-        // Create a Peptide expression from the node
-        const p = P.vvar('p');
-        const peptideExpr = node.peptide(p);
-        
-        // Create and return a mesher
-        return new Mesher(peptideExpr, options);
+        const sdf = node.getSDF();
+        return new Mesher(sdf, options);
     }
 }
 
