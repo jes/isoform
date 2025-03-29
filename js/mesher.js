@@ -5,8 +5,6 @@ class Mesher {
         this.resolution = options.resolution || 128;
         this.bounds = options.bounds || { min: new Vec3(-20, -20, -20), max: new Vec3(20, 20, 20) };
         this.isoLevel = options.isoLevel || 0.0;
-        this.vertices = [];
-        this.triangles = [];
         this.sdf = null;
     }
 
@@ -34,6 +32,7 @@ class Mesher {
     generateMesh() {
         console.log("Generating mesh...");
         const { resolution, bounds } = this;
+        const mesh = new Mesh();
         
         // Calculate cell size using Vec3 operations
         const cellSize = bounds.max.sub(bounds.min).div(resolution);
@@ -63,14 +62,12 @@ class Mesher {
 
         // Run marching cubes
         console.log("Running marching cubes algorithm...");
-        this.vertices = [];
-        this.triangles = [];
         
         // Process each cell in the grid
         for (let i = 0; i < resolution; i++) {
             for (let j = 0; j < resolution; j++) {
                 for (let k = 0; k < resolution; k++) {
-                    this.processCube(i, j, k, grid, cellSize);
+                    this.processCube(i, j, k, grid, cellSize, mesh);
                 }
             }
             
@@ -80,15 +77,12 @@ class Mesher {
             }
         }
         
-        console.log(`Mesh generation complete: ${this.vertices.length} vertices, ${this.triangles.length} triangles`);
-        return {
-            vertices: this.vertices,
-            triangles: this.triangles
-        };
+        console.log(`Mesh generation complete: ${mesh.vertexCount()} vertices, ${mesh.triangleCount()} triangles`);
+        return mesh;
     }
 
     // Process a single cube in the grid
-    processCube(i, j, k, grid, cellSize) {
+    processCube(i, j, k, grid, cellSize, mesh) {
         // Define the 8 corners of the cube based on the specific convention of your lookup tables
         const cornerIndices = [
             [i, j, k],         // 0: (0,0,0)
@@ -200,163 +194,17 @@ class Mesher {
             // (dot product < 0 means vectors point in opposite directions)
             const shouldFlip = normal.dot(gradient) < 0;
             
-            // Add vertices to the list
-            const baseIndex = this.vertices.length;
-            this.vertices.push(v1, v2, v3);
+            // Add vertices to the mesh
+            const baseIndex = mesh.vertices.length;
+            mesh.vertices.push(v1, v2, v3);
             
             // Add the triangle with correct orientation
             if (shouldFlip) {
-                this.triangles.push([baseIndex, baseIndex+2, baseIndex+1]); // Reversed winding
+                mesh.triangles.push([baseIndex, baseIndex+2, baseIndex+1]); // Reversed winding
             } else {
-                this.triangles.push([baseIndex, baseIndex+1, baseIndex+2]); // Normal winding
+                mesh.triangles.push([baseIndex, baseIndex+1, baseIndex+2]); // Normal winding
             }
         }
-    }
-
-    // Export the mesh as an STL file
-    exportSTL(filename = 'mesh.stl') {
-        if (this.vertices.length === 0 || this.triangles.length === 0) {
-            console.error("No mesh data to export. Call generateMesh() first.");
-            return;
-        }
-
-        console.log("Generating STL data...");
-        
-        // STL file header (80 bytes)
-        let stlData = 'solid exported\n';
-        
-        // Process each triangle
-        for (let i = 0; i < this.triangles.length; i++) {
-            const triangle = this.triangles[i];
-            // Make sure we have valid indices and vertices
-            if (triangle.length !== 3 || 
-                !this.vertices[triangle[0]] || 
-                !this.vertices[triangle[1]] || 
-                !this.vertices[triangle[2]]) {
-                console.warn(`Skipping invalid triangle at index ${i}`);
-                continue;
-            }
-            
-            const v1 = this.vertices[triangle[0]];
-            const v2 = this.vertices[triangle[1]];
-            const v3 = this.vertices[triangle[2]];
-            
-            // Calculate normal using Vec3 cross product and normalize
-            const edge1 = v2.sub(v1);
-            const edge2 = v3.sub(v1);
-            const normal = edge1.cross(edge2).normalize();
-            
-            // Add the triangle to the STL data
-            stlData += `  facet normal ${normal.x.toFixed(6)} ${normal.y.toFixed(6)} ${normal.z.toFixed(6)}\n`;
-            stlData += '    outer loop\n';
-            stlData += `      vertex ${v1.x.toFixed(6)} ${v1.y.toFixed(6)} ${v1.z.toFixed(6)}\n`;
-            stlData += `      vertex ${v2.x.toFixed(6)} ${v2.y.toFixed(6)} ${v2.z.toFixed(6)}\n`;
-            stlData += `      vertex ${v3.x.toFixed(6)} ${v3.y.toFixed(6)} ${v3.z.toFixed(6)}\n`;
-            stlData += '    endloop\n';
-            stlData += '  endfacet\n';
-        }
-        
-        stlData += 'endsolid exported\n';
-        
-        // Create a download link
-        const blob = new Blob([stlData], { type: 'application/octet-stream' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        console.log(`STL file "${filename}" created with ${this.triangles.length} triangles`);
-    }
-
-    // Export the mesh as a binary STL file (more compact)
-    exportBinarySTL(filename = 'mesh.stl') {
-        if (this.vertices.length === 0 || this.triangles.length === 0) {
-            console.error("No mesh data to export. Call generateMesh() first.");
-            return;
-        }
-
-        console.log("Generating binary STL data...");
-        
-        // Count valid triangles first
-        let validTriangles = 0;
-        for (let i = 0; i < this.triangles.length; i++) {
-            const triangle = this.triangles[i];
-            if (triangle.length === 3 && 
-                this.vertices[triangle[0]] && 
-                this.vertices[triangle[1]] && 
-                this.vertices[triangle[2]]) {
-                validTriangles++;
-            }
-        }
-        
-        // Calculate buffer size: header(80) + triangle count(4) + triangles(50 each)
-        const bufferSize = 84 + (validTriangles * 50);
-        const buffer = new ArrayBuffer(bufferSize);
-        const view = new DataView(buffer);
-        
-        // Fill header with spaces (80 bytes)
-        for (let i = 0; i < 80; i++) {
-            view.setUint8(i, 32); // 32 is ASCII for space
-        }
-        
-        // Set triangle count
-        view.setUint32(80, validTriangles, true);
-        
-        // Process each triangle
-        let offset = 84; // Start after header and triangle count
-        for (let i = 0; i < this.triangles.length; i++) {
-            const triangle = this.triangles[i];
-            // Skip invalid triangles
-            if (triangle.length !== 3 || 
-                !this.vertices[triangle[0]] || 
-                !this.vertices[triangle[1]] || 
-                !this.vertices[triangle[2]]) {
-                continue;
-            }
-            
-            const v1 = this.vertices[triangle[0]];
-            const v2 = this.vertices[triangle[1]];
-            const v3 = this.vertices[triangle[2]];
-            
-            // Calculate normal
-            const edge1 = v2.sub(v1);
-            const edge2 = v3.sub(v1);
-            const normal = edge1.cross(edge2).normalize();
-            
-            // Write normal
-            view.setFloat32(offset, normal.x, true); offset += 4;
-            view.setFloat32(offset, normal.y, true); offset += 4;
-            view.setFloat32(offset, normal.z, true); offset += 4;
-            
-            // Write vertices
-            view.setFloat32(offset, v1.x, true); offset += 4;
-            view.setFloat32(offset, v1.y, true); offset += 4;
-            view.setFloat32(offset, v1.z, true); offset += 4;
-            
-            view.setFloat32(offset, v2.x, true); offset += 4;
-            view.setFloat32(offset, v2.y, true); offset += 4;
-            view.setFloat32(offset, v2.z, true); offset += 4;
-            
-            view.setFloat32(offset, v3.x, true); offset += 4;
-            view.setFloat32(offset, v3.y, true); offset += 4;
-            view.setFloat32(offset, v3.z, true); offset += 4;
-            
-            // Attribute byte count (unused, set to 0)
-            view.setUint16(offset, 0, true); offset += 2;
-        }
-        
-        // Create a download link
-        const blob = new Blob([buffer], { type: 'application/octet-stream' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        console.log(`Binary STL file "${filename}" created with ${validTriangles} triangles`);
     }
 
     // Generate mesh from a TreeNode

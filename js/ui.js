@@ -970,13 +970,13 @@ const ui = {
                 mesher.peptideVars = app.document.uniforms();
                 
                 // Generate the mesh
-                mesher.generateMesh();
+                const mesh = mesher.generateMesh();
                 
                 // Export as STL
                 if (binary) {
-                    mesher.exportBinarySTL(filename);
+                    STLExporter.exportBinarySTL(mesh, filename);
                 } else {
-                    mesher.exportSTL(filename);
+                    STLExporter.exportSTL(mesh, filename);
                 }
             } catch (error) {
                 console.error("Error exporting STL:", error);
