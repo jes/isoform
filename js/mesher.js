@@ -77,7 +77,7 @@ class Mesher {
             }
         }
         
-        console.log(`Mesh generation complete: ${mesh.vertexCount()} vertices, ${mesh.triangleCount()} triangles`);
+        console.log(`Mesh generation complete: ${mesh.triangleCount()} triangles`);
         return mesh;
     }
 
@@ -194,15 +194,11 @@ class Mesher {
             // (dot product < 0 means vectors point in opposite directions)
             const shouldFlip = normal.dot(gradient) < 0;
             
-            // Add vertices to the mesh
-            const baseIndex = mesh.vertices.length;
-            mesh.vertices.push(v1, v2, v3);
-            
             // Add the triangle with correct orientation
             if (shouldFlip) {
-                mesh.triangles.push([baseIndex, baseIndex+2, baseIndex+1]); // Reversed winding
+                mesh.triangles.push([v1, v3, v2]); // Reversed winding
             } else {
-                mesh.triangles.push([baseIndex, baseIndex+1, baseIndex+2]); // Normal winding
+                mesh.triangles.push([v1, v2, v3]); // Normal winding
             }
         }
     }

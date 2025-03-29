@@ -1,7 +1,7 @@
 class STL {
     // Export a mesh as an ASCII STL file
     static export(mesh, filename = 'mesh.stl') {
-        if (mesh.vertices.length === 0 || mesh.triangles.length === 0) {
+        if (mesh.triangles.length === 0) {
             console.error("No mesh data to export.");
             return;
         }
@@ -16,16 +16,16 @@ class STL {
             const triangle = mesh.triangles[i];
             // Make sure we have valid indices and vertices
             if (triangle.length !== 3 || 
-                !mesh.vertices[triangle[0]] || 
-                !mesh.vertices[triangle[1]] || 
-                !mesh.vertices[triangle[2]]) {
+                !triangle[0] || 
+                !triangle[1] || 
+                !triangle[2]) {
                 console.warn(`Skipping invalid triangle at index ${i}`);
                 continue;
             }
             
-            const v1 = mesh.vertices[triangle[0]];
-            const v2 = mesh.vertices[triangle[1]];
-            const v3 = mesh.vertices[triangle[2]];
+            const v1 = triangle[0];
+            const v2 = triangle[1];
+            const v3 = triangle[2];
             
             // Calculate normal using Vec3 cross product and normalize
             const edge1 = v2.sub(v1);
@@ -70,9 +70,9 @@ class STL {
         for (let i = 0; i < mesh.triangles.length; i++) {
             const triangle = mesh.triangles[i];
             if (triangle.length === 3 && 
-                mesh.vertices[triangle[0]] && 
-                mesh.vertices[triangle[1]] && 
-                mesh.vertices[triangle[2]]) {
+                triangle[0] && 
+                triangle[1] && 
+                triangle[2]) {
                 validTriangles++;
             }
         }
@@ -96,15 +96,15 @@ class STL {
             const triangle = mesh.triangles[i];
             // Skip invalid triangles
             if (triangle.length !== 3 || 
-                !mesh.vertices[triangle[0]] || 
-                !mesh.vertices[triangle[1]] || 
-                !mesh.vertices[triangle[2]]) {
+                !triangle[0] || 
+                !triangle[1] || 
+                !triangle[2]) {
                 continue;
             }
             
-            const v1 = mesh.vertices[triangle[0]];
-            const v2 = mesh.vertices[triangle[1]];
-            const v3 = mesh.vertices[triangle[2]];
+            const v1 = triangle[0];
+            const v2 = triangle[1];
+            const v3 = triangle[2];
             
             // Calculate normal
             const edge1 = v2.sub(v1);

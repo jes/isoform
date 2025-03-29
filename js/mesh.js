@@ -1,13 +1,6 @@
 class Mesh {
     constructor() {
-        this.vertices = [];
         this.triangles = [];
-    }
-
-    // Add a vertex to the mesh and return its index
-    addVertex(vertex) {
-        this.vertices.push(vertex);
-        return this.vertices.length - 1;
     }
 
     // Add a triangle to the mesh
@@ -17,14 +10,7 @@ class Mesh {
 
     // Add a face using three vertices directly
     addFace(v1, v2, v3) {
-        const baseIndex = this.vertices.length;
-        this.vertices.push(v1, v2, v3);
-        this.triangles.push([baseIndex, baseIndex + 1, baseIndex + 2]);
-    }
-
-    // Return the number of vertices
-    vertexCount() {
-        return this.vertices.length;
+        this.triangles.push([v1, v2, v3]);
     }
 
     // Return the number of triangles
@@ -34,7 +20,6 @@ class Mesh {
 
     // Clear the mesh
     clear() {
-        this.vertices = [];
         this.triangles = [];
     }
 }
