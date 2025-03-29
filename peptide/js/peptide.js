@@ -38,11 +38,11 @@ class Peptide {
     }
 
     static zero() {
-        return P.zero();
+        return P.const(0);
     }
 
     static one() {
-        return P.one();
+        return P.const(1);
     }
 
     static var(name) {
