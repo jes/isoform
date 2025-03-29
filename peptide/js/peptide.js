@@ -489,6 +489,47 @@ class Peptide {
         });
     }
 
+    static and(a, b) {
+        a.assertType('float');
+        b.assertType('float');
+        return P.mul(a, b);
+    }
+
+    static gte(a, b) {
+        a.assertType('float');
+        b.assertType('float');
+        return P.step(b, a);
+    }
+
+    static lte(a, b) {
+        a.assertType('float');
+        b.assertType('float');
+        return P.step(a, b);
+    }
+
+    static not(a) {
+        a.assertType('float');
+        return P.sub(P.const(1), a);
+    }
+
+    static eq(a, b) {
+        a.assertType('float');
+        b.assertType('float');
+        return P.mul(P.step(a, b), P.step(b, a));
+    }
+
+    static cond(a, b, c) {
+        a.assertType('float');
+        b.assertType('float');
+        c.assertType('float');
+        return P.mix(c, b, a);
+    }
+
+    static neg(a) {
+        a.assertType('float');
+        return P.sub(P.const(0), a);
+    }
+
     static sign(a) {
         a.assertType('float');
         return new Peptide('sign', 'float', null, a, null, null, {

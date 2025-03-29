@@ -3,113 +3,140 @@ class MeshNode extends TreeNode {
     super("Mesh");
     this.triangles = triangles || [];
     this.maxChildren = 0; // Meshes are primitives, no children
-    this.exactness = "Exact"; // Triangle distance is exact
-    
-    // Add property for mesh thickness/smoothing
-    this.thickness = 0.1;
   }
 
   makePeptide(p) {
-    if (!this.triangles || this.triangles.length === 0) {
-      return P.const(1000); // Return large distance if no triangles
-    }
-    
-    // Calculate distance to each triangle and take minimum
-    let distances = [];
-    
+    // Initialize with a large positive value
+    let minDist = P.const(1e10);
+    // Initialize sign to 1.0
+    let sign = P.const(1.0);
+
     for (let i = 0; i < this.triangles.length; i++) {
       const tri = this.triangles[i];
-      // Triangle vertices
-      const a = P.vconst(tri[0]);
-      const b = P.vconst(tri[1]);
-      const c = P.vconst(tri[2]);
-      
-      // Calculate distance to triangle
-      const triDist = this.distanceToTriangle(p, a, b, c);
-      distances.push(triDist);
+      const [dist, newSign] = this.distanceToTriangle(p, tri, sign);
+      minDist = P.min(minDist, dist);
+      sign = newSign;
     }
-    
-    // Return minimum distance to any triangle with a thickness offset
-    // This helps fill small gaps between triangles
-    const minDist = distances.reduce((min, current) => P.min(min, current));
-    return P.sub(minDist, P.const(this.thickness));
+
+    return P.mul(minDist, sign);
   }
 
-  distanceToTriangle(p, a, b, c) {
-    // Edge vectors
-    const ab = P.vsub(b, a);
-    const bc = P.vsub(c, b);
-    const ca = P.vsub(a, c);
+  distanceToTriangle(p, tri, sign) {
+    const a = P.vconst(tri[0]);
+    const b = P.vconst(tri[1]);
+    const c = P.vconst(tri[2]);
+
+    // distances to vertices
+    const distA = this.distanceToVertex(p, a);
+    const distB = this.distanceToVertex(p, b);
+    const distC = this.distanceToVertex(p, c);
+    const distVertices = P.min(distA, P.min(distB, distC));
+
+    // distances to edges
+    const distAB = this.distanceToEdge(p, a, b);
+    const distBC = this.distanceToEdge(p, b, c);
+    const distCA = this.distanceToEdge(p, c, a);
+    const distEdges = P.min(distAB, P.min(distBC, distCA));
+
+    // distance to triangle plane
+    const distPlane = this.distanceToPlane(p, a, b, c);
+    const isInPlane = this.isWithinTriangle(p, a, b, c);
+
+    // the distance to the triangle is the minimum of the distances to the
+    // vertices, edges, and plane, but distance to plane is only considered
+    // if the point is within the triangle
+    const dist2 = P.min(distVertices, distEdges);
+    const dist3 = P.min(dist2, distPlane);
+    const dist = P.mix(dist2, dist3, isInPlane);
+
+    // invert the sign if a ray from p to infinity intersects this triangle
+    const rayIntersects = this.rayIntersectsTriangle(p, a, b, c);
+    sign = P.mix(sign, P.neg(sign), rayIntersects);
+
+    return [dist, sign];
+  }
+
+  distanceToVertex(p, v) {
+    return P.vlength(P.vsub(p, v));
+  }
+
+  distanceToEdge(p, v1, v2) {
+    const edge = P.vsub(v2, v1);
+    const pv1 = P.vsub(p, v1);
     
-    // Normal vector of the triangle
-    const normal = P.vcross(ab, P.vsub(c, a));
-    const normalLength = P.vlength(normal);
+    // Project point onto edge line
+    const t = P.clamp(P.div(P.vdot(pv1, edge), P.vdot(edge, edge)), P.const(0.0), P.const(1.0));
     
-    // Normalized normal with increased epsilon to avoid division by zero
-    const normalNorm = P.vdiv(normal, P.max(normalLength, P.const(1e-5)));
+    // Point on the edge
+    const projection = P.vadd(v1, P.vmul(edge, t));
     
-    // Calculate signed distance to plane
-    const pa = P.vsub(p, a);
-    const signedDist = P.vdot(pa, normalNorm);
+    // Distance from point to the projection on the edge
+    return P.vlength(P.vsub(p, projection));
+  }
+
+  distanceToPlane(p, v1, v2, v3) {
+    // Calculate triangle normal
+    const edge1 = P.vsub(v2, v1);
+    const edge2 = P.vsub(v3, v1);
+    const normal = P.vnormalize(P.vcross(edge1, edge2));
+    
+    // Distance from point to plane
+    return P.abs(P.vdot(P.vsub(p, v1), normal));
+  }
+
+  isWithinTriangle(p, v1, v2, v3) {
+    // Calculate triangle normal
+    const edge1 = P.vsub(v2, v1);
+    const edge2 = P.vsub(v3, v1);
+    const normal = P.vnormalize(P.vcross(edge1, edge2));
     
     // Project point onto triangle plane
-    const projected = P.vsub(p, P.vmul(normalNorm, signedDist));
+    const dist = P.vdot(P.vsub(p, v1), normal);
+    const projP = P.vsub(p, P.vmul(normal, dist));
     
-    // Calculate edge distances
-    const edgeDist1 = this.distanceToEdge(p, a, b);
-    const edgeDist2 = this.distanceToEdge(p, b, c);
-    const edgeDist3 = this.distanceToEdge(p, c, a);
-    const minEdgeDist = P.min(edgeDist1, P.min(edgeDist2, edgeDist3));
+    // Check if projected point is inside triangle using barycentric coordinates
+    const area = P.vlength(P.vcross(P.vsub(v2, v1), P.vsub(v3, v1)));
     
-    // Check if projected point is inside triangle
-    // Using more robust edge tests
-    const ap = P.vsub(projected, a);
-    const bp = P.vsub(projected, b);
-    const cp = P.vsub(projected, c);
+    const area1 = P.vlength(P.vcross(P.vsub(v2, projP), P.vsub(v3, projP)));
+    const area2 = P.vlength(P.vcross(P.vsub(v3, projP), P.vsub(v1, projP)));
+    const area3 = P.vlength(P.vcross(P.vsub(v1, projP), P.vsub(v2, projP)));
     
-    // Cross products for each edge with the projected point
-    const cross1 = P.vcross(ab, ap);
-    const cross2 = P.vcross(bc, bp);
-    const cross3 = P.vcross(ca, cp);
+    const sum = P.add(P.add(area1, area2), area3);
     
-    // Dot products with normal to check if they point in the same hemisphere
-    // Use a more forgiving test with larger epsilon
-    const d1 = P.vdot(cross1, normal);
-    const d2 = P.vdot(cross2, normal);
-    const d3 = P.vdot(cross3, normal);
-    
-    // Larger epsilon for more robust testing
-    const s1 = P.step(P.const(-1e-4), d1);
-    const s2 = P.step(P.const(-1e-4), d2);
-    const s3 = P.step(P.const(-1e-4), d3);
-    
-    // Point is inside if all values are positive
-    const isInside = P.mul(P.mul(s1, s2), s3);
-    
-    // Use a robust SDF that smoothly blends between the plane distance and edge distance
-    // This helps prevent holes at triangle edges and corners
-    const planeDist = P.abs(signedDist);
-    const blendedDist = P.mix(minEdgeDist, planeDist, isInside);
-    
-    // Add a small bias to help close any tiny gaps between triangles
-    return blendedDist;
+    // Allow for some floating-point error
+    return P.lte(P.abs(P.sub(sum, area)), P.const(1e-5));
   }
 
-  distanceToEdge(p, a, b) {
-    const ab = P.vsub(b, a);
-    const ap = P.vsub(p, a);
+  rayIntersectsTriangle(p, v1, v2, v3) {
+    // Calculate triangle normal
+    const edge1 = P.vsub(v2, v1);
+    const edge2 = P.vsub(v3, v1);
+    const normal = P.vnormalize(P.vcross(edge1, edge2));
     
-    // Project ap onto ab with better numerical stability
-    const t = P.clamp(
-      P.div(P.vdot(ap, ab), P.max(P.vdot(ab, ab), P.const(1e-5))),
-      P.const(0), P.const(1)
-    );
+    // Ray direction (assuming ray from point in +Z direction)
+    const rayDir = P.vconst(new Vec3(0, 0, 1));
     
-    // Calculate closest point on segment
-    const closest = P.vadd(a, P.vmul(ab, t));
+    // Check if ray is parallel to triangle
+    const ndotray = P.vdot(normal, rayDir);
     
-    // Return distance to closest point
-    return P.vlength(P.vsub(p, closest));
+    // If ray is parallel to triangle, no intersection
+    const isParallel = P.eq(ndotray, P.const(0.0));
+    
+    // Calculate intersection point
+    const d = P.vdot(normal, v1);
+    const t = P.div(P.sub(d, P.vdot(normal, p)), ndotray);
+    
+    // Check if intersection is behind the ray origin
+    const isBehind = P.lte(t, P.const(0.0));
+    
+    // Calculate intersection point
+    const intersection = P.vadd(p, P.vmul(rayDir, t));
+    
+    // Check if intersection point is inside triangle
+    const isInside = this.isWithinTriangle(intersection, v1, v2, v3);
+    
+    // Ray intersects triangle if it's not parallel, not behind, and inside triangle
+    return P.and(P.not(isParallel), P.and(P.not(isBehind), isInside));
   }
 
   aabb() {
