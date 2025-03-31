@@ -34,6 +34,7 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = new Ifloat(${value});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${value.toFixed(16)};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = ifloat(${value.toFixed(16)});`,
+            derivative: (varName) => [P.zero(), P.zero(), P.zero()],
         });
     }
 
@@ -41,8 +42,24 @@ class Peptide {
         return P.const(0);
     }
 
+    static vzero() {
+        return P.vconst(new Vec3(0, 0, 0));
+    }
+
+    static mzero() {
+        return P.mconst(new Mat3(0, 0, 0, 0, 0, 0, 0, 0, 0));
+    }
+
     static one() {
         return P.const(1);
+    }
+
+    static vone() {
+        return P.vconst(new Vec3(1, 1, 1));
+    }
+
+    static mone() {
+        return P.mconst(new Mat3(1, 0, 0, 0, 1, 0, 0, 0, 1));
     }
 
     static var(name) {
@@ -72,6 +89,7 @@ class Peptide {
             },
             glslCode: (ssaOp) => `${ssaOp.result} = ${name};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = ifloat(${name});`,
+            derivative: (varName) => varName === name ? [P.one(), P.one(), P.one()] : [P.zero(), P.zero(), P.zero()],
         });
     }
 
@@ -93,6 +111,7 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = new Ivec3(${vec3Clone.x}, ${vec3Clone.y}, ${vec3Clone.z});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${vec3Clone.glsl()};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = itov3(${vec3Clone.glsl()});`,
+            derivative: (varName) => [P.vzero(), P.vzero(), P.vzero()],
         });
     }
 
@@ -130,6 +149,9 @@ class Peptide {
             },
             glslCode: (ssaOp) => `${ssaOp.result} = ${name};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = ${name};`,
+            derivative: (varName) => varName === name ?
+                [P.vconst(new Vec3(1, 0, 0)), P.vconst(new Vec3(0, 1, 0)), P.vconst(new Vec3(0, 0, 1))]
+              : [P.vzero(), P.vzero(), P.vzero()],
         });
     }
 
@@ -144,6 +166,7 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = new Mat3(${mat3.m[0][0]}, ${mat3.m[0][1]}, ${mat3.m[0][2]}, ${mat3.m[1][0]}, ${mat3.m[1][1]}, ${mat3.m[1][2]}, ${mat3.m[2][0]}, ${mat3.m[2][1]}, ${mat3.m[2][2]});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${mat3.glsl()};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = ${mat3.glsl()};`,
+            derivative: (varName) => [P.mzero(), P.mzero(), P.mzero()],
         });
     }
 
@@ -171,6 +194,7 @@ class Peptide {
             },
             glslCode: (ssaOp) => `${ssaOp.result} = ${name};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = ${name};`,
+            derivative: (varName) => [P.mzero(), P.mzero(), P.mzero()],
         });
     }
 
@@ -184,6 +208,15 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.add(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = iadd3(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                return [
+                    P.vadd(aDerivative[0], bDerivative[0]),
+                    P.vadd(aDerivative[1], bDerivative[1]),
+                    P.vadd(aDerivative[2], bDerivative[2])
+                ];
+            },
         });
     }
 
@@ -197,6 +230,15 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sub(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = isub3(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                return [
+                    P.vsub(aDerivative[0], bDerivative[0]),
+                    P.vsub(aDerivative[1], bDerivative[1]),
+                    P.vsub(aDerivative[2], bDerivative[2])
+                ];
+            },
         });
     }
 
@@ -210,6 +252,15 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = imul3(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                return [
+                    P.vadd(P.vmul(aDerivative[0], b), P.vmul(a, bDerivative[0])),
+                    P.vadd(P.vmul(aDerivative[1], b), P.vmul(a, bDerivative[1])),
+                    P.vadd(P.vmul(aDerivative[2], b), P.vmul(a, bDerivative[2]))
+                ];
+            },
         });
     }
 
@@ -223,6 +274,17 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.div(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = idiv3(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                // For a/b, the derivative is (a'*b - a*b')/b²
+                const bSquared = P.mul(b, b);
+                return [
+                    P.vdiv(P.vsub(P.vmul(aDerivative[0], b), P.vmul(a, bDerivative[0])), bSquared),
+                    P.vdiv(P.vsub(P.vmul(aDerivative[1], b), P.vmul(a, bDerivative[1])), bSquared),
+                    P.vdiv(P.vsub(P.vmul(aDerivative[2], b), P.vmul(a, bDerivative[2])), bSquared)
+                ];
+            },
         });
     }
 
@@ -236,6 +298,19 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mod(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = mod(${ssaOp.left}, ${ssaOp.right});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = imod3(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                
+                // The derivative of mod is complex and discontinuous at the boundaries
+                // For a continuous approximation, we can use the derivative of a
+                // since mod(a,b) behaves like a when a is within the range [0,b)
+                return [
+                    aDerivative[0],
+                    aDerivative[1],
+                    aDerivative[2]
+                ];
+            },
         });
     }
 
@@ -248,6 +323,20 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.length();`,
             glslCode: (ssaOp) => `${ssaOp.result} = length(${ssaOp.left});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = ilength3(${ssaOp.left});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const length = P.vlength(a);
+                const safeLength = P.max(length, P.const(1e-10));
+                
+                // The derivative of length(v) with respect to a vector variable
+                // is the dot product of the normalized vector and the derivative
+                const normalizedA = P.vdiv(a, safeLength);
+                return [
+                    P.vdot(normalizedA, aDerivative[0]),
+                    P.vdot(normalizedA, aDerivative[1]),
+                    P.vdot(normalizedA, aDerivative[2])
+                ];
+            },
         });
     }
 
@@ -265,6 +354,29 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.abs();`,
             glslCode: (ssaOp) => `${ssaOp.result} = abs(${ssaOp.left});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = mat3(iabs(${ssaOp.left}[0].xy), 0.0, iabs(${ssaOp.left}[1].xy), 0.0, iabs(${ssaOp.left}[2].xy), 0.0);`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                
+                // The derivative of abs(x) is sign(x)
+                // For each component, we need to multiply the derivative by the sign of the original value
+                return [
+                    P.vmul(aDerivative[0], P.vec3(
+                        P.sign(P.vecX(a)),
+                        P.sign(P.vecY(a)),
+                        P.sign(P.vecZ(a))
+                    )),
+                    P.vmul(aDerivative[1], P.vec3(
+                        P.sign(P.vecX(a)),
+                        P.sign(P.vecY(a)),
+                        P.sign(P.vecZ(a))
+                    )),
+                    P.vmul(aDerivative[2], P.vec3(
+                        P.sign(P.vecX(a)),
+                        P.sign(P.vecY(a)),
+                        P.sign(P.vecZ(a))
+                    ))
+                ];
+            },
         });
     }
 
@@ -278,6 +390,32 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.min(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = min(${ssaOp.left}, ${ssaOp.right});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = imin3(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                
+                // The derivative of min(a,b) is:
+                // - derivative of a where a < b
+                // - derivative of b where b < a
+                // - undefined (we use average) where a = b
+                return [
+                    P.vec3(
+                        P.mix(bDerivative[0].vecX, aDerivative[0].vecX, P.step(P.vecX(b), P.vecX(a))),
+                        P.mix(bDerivative[0].vecY, aDerivative[0].vecY, P.step(P.vecY(b), P.vecY(a))),
+                        P.mix(bDerivative[0].vecZ, aDerivative[0].vecZ, P.step(P.vecZ(b), P.vecZ(a)))
+                    ),
+                    P.vec3(
+                        P.mix(bDerivative[1].vecX, aDerivative[1].vecX, P.step(P.vecX(b), P.vecX(a))),
+                        P.mix(bDerivative[1].vecY, aDerivative[1].vecY, P.step(P.vecY(b), P.vecY(a))),
+                        P.mix(bDerivative[1].vecZ, aDerivative[1].vecZ, P.step(P.vecZ(b), P.vecZ(a)))
+                    ),
+                    P.vec3(
+                        P.mix(bDerivative[2].vecX, aDerivative[2].vecX, P.step(P.vecX(b), P.vecX(a))),
+                        P.mix(bDerivative[2].vecY, aDerivative[2].vecY, P.step(P.vecY(b), P.vecY(a))),
+                        P.mix(bDerivative[2].vecZ, aDerivative[2].vecZ, P.step(P.vecZ(b), P.vecZ(a)))
+                    )
+                ];
+            },
         });
     }
 
@@ -291,6 +429,31 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.max(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = max(${ssaOp.left}, ${ssaOp.right});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = imax3(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                
+                // For each component, select the derivative of whichever input is larger
+                // We use step function to create a smooth selection
+                const selectA_x = P.step(P.vecX(a), P.vecX(b));
+                const selectA_y = P.step(P.vecY(a), P.vecY(b));
+                const selectA_z = P.step(P.vecZ(a), P.vecZ(b));
+                
+                return [
+                    P.vadd(
+                        P.vmul(bDerivative[0], P.vec3(selectA_x, selectA_y, selectA_z)),
+                        P.vmul(aDerivative[0], P.vec3(P.sub(P.one(), selectA_x), P.sub(P.one(), selectA_y), P.sub(P.one(), selectA_z)))
+                    ),
+                    P.vadd(
+                        P.vmul(bDerivative[1], P.vec3(selectA_x, selectA_y, selectA_z)),
+                        P.vmul(aDerivative[1], P.vec3(P.sub(P.one(), selectA_x), P.sub(P.one(), selectA_y), P.sub(P.one(), selectA_z)))
+                    ),
+                    P.vadd(
+                        P.vmul(bDerivative[2], P.vec3(selectA_x, selectA_y, selectA_z)),
+                        P.vmul(aDerivative[2], P.vec3(P.sub(P.one(), selectA_x), P.sub(P.one(), selectA_y), P.sub(P.one(), selectA_z)))
+                    )
+                ];
+            },
         });
     }
 
@@ -304,6 +467,18 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.dot(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = dot(${ssaOp.left}, ${ssaOp.right});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = idot3(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                
+                // The derivative of dot(a,b) with respect to a vector variable
+                // is a combination of the derivatives of both vectors
+                return [
+                    P.add(P.vdot(aDerivative[0], b), P.vdot(a, bDerivative[0])),
+                    P.add(P.vdot(aDerivative[1], b), P.vdot(a, bDerivative[1])),
+                    P.add(P.vdot(aDerivative[2], b), P.vdot(a, bDerivative[2]))
+                ];
+            },
         });
     }
 
@@ -317,6 +492,18 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.cross(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = cross(${ssaOp.left}, ${ssaOp.right});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = icross3(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                
+                // The derivative of cross(a,b) with respect to a vector variable
+                // is cross(da/dx, b) + cross(a, db/dx)
+                return [
+                    P.vadd(P.vcross(aDerivative[0], b), P.vcross(a, bDerivative[0])),
+                    P.vadd(P.vcross(aDerivative[1], b), P.vcross(a, bDerivative[1])),
+                    P.vadd(P.vcross(aDerivative[2], b), P.vcross(a, bDerivative[2]))
+                ];
+            },
         });
     }
 
@@ -335,6 +522,18 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = new Ivec3(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
             glslCode: (ssaOp) => `${ssaOp.result} = vec3(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = ivec3(${ssaOp.left}.x, ${ssaOp.left}.y, 0.0, ${ssaOp.right}.x, ${ssaOp.right}.y, 0.0, ${ssaOp.third}.x, ${ssaOp.third}.y, 0.0);`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                const cDerivative = c.derivative(varName);
+                
+                // The derivative of vec3(a,b,c) is vec3(da/dx,db/dx,dc/dx)
+                return [
+                    P.vec3(aDerivative[0], bDerivative[0], cDerivative[0]),
+                    P.vec3(aDerivative[1], bDerivative[1], cDerivative[1]),
+                    P.vec3(aDerivative[2], bDerivative[2], cDerivative[2])
+                ];
+            },
         });
     }
 
@@ -348,6 +547,17 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.add(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} + ${ssaOp.right};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = iadd(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                
+                // The derivative of a+b is da/dx + db/dx
+                return [
+                    P.add(aDerivative[0], bDerivative[0]),
+                    P.add(aDerivative[1], bDerivative[1]),
+                    P.add(aDerivative[2], bDerivative[2])
+                ];
+            },
         });
     }
 
@@ -361,6 +571,17 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sub(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} - ${ssaOp.right};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = isub(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                
+                // The derivative of a-b is da/dx - db/dx
+                return [
+                    P.sub(aDerivative[0], bDerivative[0]),
+                    P.sub(aDerivative[1], bDerivative[1]),
+                    P.sub(aDerivative[2], bDerivative[2])
+                ];
+            },
         });
     }
 
@@ -389,6 +610,17 @@ class Peptide {
                 }
                 return `${ssaOp.result} = imul(${ssaOp.left}, ${ssaOp.right});`;
             },
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                
+                // The derivative of a*b is a*(db/dx) + b*(da/dx)
+                return [
+                    P.add(P.mul(a, bDerivative[0]), P.mul(b, aDerivative[0])),
+                    P.add(P.mul(a, bDerivative[1]), P.mul(b, aDerivative[1])),
+                    P.add(P.mul(a, bDerivative[2]), P.mul(b, aDerivative[2]))
+                ];
+            },
         });
     }
 
@@ -402,6 +634,18 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.div(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} / ${ssaOp.right};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = idiv(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                
+                // The derivative of a/b is (b*da/dx - a*db/dx)/b²
+                const bSquared = P.mul(b, b);
+                return [
+                    P.div(P.sub(P.mul(b, aDerivative[0]), P.mul(a, bDerivative[0])), bSquared),
+                    P.div(P.sub(P.mul(b, aDerivative[1]), P.mul(a, bDerivative[1])), bSquared),
+                    P.div(P.sub(P.mul(b, aDerivative[2]), P.mul(a, bDerivative[2])), bSquared)
+                ];
+            },
         });
     }
 
@@ -415,6 +659,19 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mod(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = mod(${ssaOp.left}, ${ssaOp.right});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = imod(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                
+                // The derivative of mod is complex and discontinuous at the boundaries
+                // For a continuous approximation, we can use the derivative of a
+                // since mod(a,b) behaves like a when a is within the range [0,b)
+                return [
+                    aDerivative[0],
+                    aDerivative[1],
+                    aDerivative[2]
+                ];
+            },
         });
     }
 
@@ -427,6 +684,17 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.abs();`,
             glslCode: (ssaOp) => `${ssaOp.result} = abs(${ssaOp.left});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = iabs(${ssaOp.left});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                
+                // The derivative of abs(x) is sign(x)
+                // sign(x) = x/|x| for x ≠ 0, and 0 for x = 0
+                return [
+                    P.mul(P.sign(a), aDerivative[0]),
+                    P.mul(P.sign(a), aDerivative[1]),
+                    P.mul(P.sign(a), aDerivative[2])
+                ];
+            },
         });
     }
 
@@ -440,6 +708,21 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = Ifloat.min(${ssaOp.left}, ${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = min(${ssaOp.left}, ${ssaOp.right});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = imin(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                
+                // The derivative of min(a,b) is:
+                // - derivative of a where a < b
+                // - derivative of b where b < a
+                // - undefined (we use average) where a = b
+                const selectA = P.step(P.sub(b, a), P.const(0));
+                return [
+                    P.add(P.mul(selectA, aDerivative[0]), P.mul(P.sub(P.const(1), selectA), bDerivative[0])),
+                    P.add(P.mul(selectA, aDerivative[1]), P.mul(P.sub(P.const(1), selectA), bDerivative[1])),
+                    P.add(P.mul(selectA, aDerivative[2]), P.mul(P.sub(P.const(1), selectA), bDerivative[2]))
+                ];
+            },
         });
     }
 
@@ -453,6 +736,21 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = Ifloat.max(${ssaOp.left}, ${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = max(${ssaOp.left}, ${ssaOp.right});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = imax(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                
+                // The derivative of max(a,b) is:
+                // - derivative of a where a > b
+                // - derivative of b where b > a
+                // - undefined (we use average) where a = b
+                const selectA = P.step(P.sub(a, b), P.const(0));
+                return [
+                    P.add(P.mul(selectA, aDerivative[0]), P.mul(P.sub(P.const(1), selectA), bDerivative[0])),
+                    P.add(P.mul(selectA, aDerivative[1]), P.mul(P.sub(P.const(1), selectA), bDerivative[1])),
+                    P.add(P.mul(selectA, aDerivative[2]), P.mul(P.sub(P.const(1), selectA), bDerivative[2]))
+                ];
+            },
         });
     }
 
@@ -467,6 +765,43 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = Ifloat.clamp(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
             glslCode: (ssaOp) => `${ssaOp.result} = clamp(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = iclamp(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const minDerivative = min.derivative(varName);
+                const maxDerivative = max.derivative(varName);
+                
+                // The derivative of clamp(a, min, max) is:
+                // - derivative of a when min < a < max
+                // - derivative of min when a <= min
+                // - derivative of max when a >= max
+                const belowMin = P.step(P.sub(min, a), P.const(0));
+                const aboveMax = P.step(P.sub(a, max), P.const(0));
+                const inRange = P.sub(P.const(1), P.add(belowMin, aboveMax));
+                
+                return [
+                    P.add(
+                        P.add(
+                            P.mul(belowMin, minDerivative[0]),
+                            P.mul(inRange, aDerivative[0])
+                        ),
+                        P.mul(aboveMax, maxDerivative[0])
+                    ),
+                    P.add(
+                        P.add(
+                            P.mul(belowMin, minDerivative[1]),
+                            P.mul(inRange, aDerivative[1])
+                        ),
+                        P.mul(aboveMax, maxDerivative[1])
+                    ),
+                    P.add(
+                        P.add(
+                            P.mul(belowMin, minDerivative[2]),
+                            P.mul(inRange, aDerivative[2])
+                        ),
+                        P.mul(aboveMax, maxDerivative[2])
+                    )
+                ];
+            },
         });
     }
 
@@ -481,20 +816,68 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = Ifloat.mix(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
             glslCode: (ssaOp) => `${ssaOp.result} = mix(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = imix(${ssaOp.left}, ${ssaOp.right}, ${ssaOp.third});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                const bDerivative = b.derivative(varName);
+                const tDerivative = t.derivative(varName);
+                
+                // The derivative of mix(a, b, t) = a*(1-t) + b*t is:
+                // da/dx*(1-t) + db/dx*t + (b-a)*dt/dx
+                const oneMinusT = P.sub(P.const(1), t);
+                const bMinusA = P.sub(b, a);
+                
+                return [
+                    P.add(
+                        P.add(
+                            P.mul(aDerivative[0], oneMinusT),
+                            P.mul(bDerivative[0], t)
+                        ),
+                        P.mul(bMinusA, tDerivative[0])
+                    ),
+                    P.add(
+                        P.add(
+                            P.mul(aDerivative[1], oneMinusT),
+                            P.mul(bDerivative[1], t)
+                        ),
+                        P.mul(bMinusA, tDerivative[1])
+                    ),
+                    P.add(
+                        P.add(
+                            P.mul(aDerivative[2], oneMinusT),
+                            P.mul(bDerivative[2], t)
+                        ),
+                        P.mul(bMinusA, tDerivative[2])
+                    )
+                ];
+            },
         });
     }
 
-    // 1 if a <= b, 0 otherwise
-    static step(a, b) {
-        a.assertType('float');
-        b.assertType('float');
-        return new Peptide('step', 'float', null, a, b, null, {
-            evaluate: (vars) => a.evaluate(vars) <= b.evaluate(vars) ? 1.0 : 0.0,
-            evaluateInterval: (vars) => Ifloat.step(a.evaluateInterval(vars), b.evaluateInterval(vars)),
-            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} <= ${ssaOp.right} ? 1.0 : 0.0;`,
+    // 1 if edge <= x, 0 otherwise
+    static step(edge, x) {
+        edge.assertType('float');
+        x.assertType('float');
+        return new Peptide('step', 'float', null, edge, x, null, {
+            evaluate: (vars) => {
+                const edgev = edge.evaluate(vars);
+                const xv = x.evaluate(vars);
+                return xv < edgev ? 0.0 : 1.0;
+            },
+            evaluateInterval: (vars) => Ifloat.step(edge.evaluateInterval(vars), x.evaluateInterval(vars)),
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.right} < ${ssaOp.left} ? 0.0 : 1.0;`,
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = Ifloat.step(${ssaOp.left}, ${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = step(${ssaOp.left}, ${ssaOp.right});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = istep(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                // The derivative of step(edge, x) is technically a Dirac delta function at x = edge
+                // For numerical purposes, we approximate it as 0 everywhere
+                // This is a reasonable approximation for most SDF applications
+                return [
+                    P.zero(),
+                    P.zero(),
+                    P.zero()
+                ];
+            },
         });
     }
 
@@ -539,30 +922,40 @@ class Peptide {
         return P.sub(P.zero(), a);
     }
 
-    static sign(a) {
-        a.assertType('float');
-        return new Peptide('sign', 'float', null, a, null, null, {
+    static sign(x) {
+        x.assertType('float');
+        return new Peptide('sign', 'float', null, x, null, null, {
             evaluate: (vars) => {
-                const val = a.evaluate(vars);
-                return val > 0 ? 1 : val < 0 ? -1 : 0;
+                const xv = x.evaluate(vars);
+                return xv > 0.0 ? 1.0 : (xv < 0.0 ? -1.0 : 0.0);
             },
             evaluateInterval: (vars) => {
-                const interval = a.evaluateInterval(vars);
+                const interval = x.evaluateInterval(vars);
                 if (interval.min > 0) return new Ifloat(1);
                 if (interval.max < 0) return new Ifloat(-1);
                 if (interval.min === 0 && interval.max === 0) return new Ifloat(0);
                 // If the interval contains 0, the result could be -1, 0, or 1
                 return new Ifloat(-1, 1);
             },
-            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} > 0 ? 1 : ${ssaOp.left} < 0 ? -1 : 0;`,
+            jsCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} > 0.0 ? 1.0 : (${ssaOp.left} < 0.0 ? -1.0 : 0.0);`,
             jsIntervalCode: (ssaOp) => {
                 return `if (${ssaOp.left}.min > 0) ${ssaOp.result} = new Ifloat(1);
                 else if (${ssaOp.left}.max < 0) ${ssaOp.result} = new Ifloat(-1);
                 else if (${ssaOp.left}.min === 0 && ${ssaOp.left}.max === 0) ${ssaOp.result} = new Ifloat(0);
                 else ${ssaOp.result} = new Ifloat(-1, 1);`;
             },
-            glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} > 0.0 ? 1.0 : ${ssaOp.left} < 0.0 ? -1.0 : 0.0;`,
+            glslCode: (ssaOp) => `${ssaOp.result} = sign(${ssaOp.left});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = isign(${ssaOp.left});`,
+            derivative: (varName) => {
+                // The derivative of sign(x) is technically 2*delta(x) where delta is the Dirac delta function
+                // For numerical purposes, we approximate it as 0 everywhere
+                // This is a reasonable approximation for most SDF applications
+                return [
+                    P.zero(),
+                    P.zero(),
+                    P.zero()
+                ];
+            },
         });
     }
 
@@ -663,6 +1056,20 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sqrt();`,
             glslCode: (ssaOp) => `${ssaOp.result} = sqrt(${ssaOp.left});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = isqrt(${ssaOp.left});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                
+                // The derivative of sqrt(x) is 1/(2*sqrt(x))
+                // We need to handle the case where x is close to 0
+                const safeA = P.max(a, P.const(1e-10));
+                const factor = P.div(P.const(0.5), P.sqrt(safeA));
+                
+                return [
+                    P.mul(factor, aDerivative[0]),
+                    P.mul(factor, aDerivative[1]),
+                    P.mul(factor, aDerivative[2])
+                ];
+            },
         });
     }
 
@@ -675,6 +1082,18 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.sin();`,
             glslCode: (ssaOp) => `${ssaOp.result} = sin(${ssaOp.left});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = isin(${ssaOp.left});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                
+                // The derivative of sin(x) is cos(x)
+                const cosA = P.cos(a);
+                
+                return [
+                    P.mul(cosA, aDerivative[0]),
+                    P.mul(cosA, aDerivative[1]),
+                    P.mul(cosA, aDerivative[2])
+                ];
+            },
         });
     }
 
@@ -687,6 +1106,18 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.cos();`,
             glslCode: (ssaOp) => `${ssaOp.result} = cos(${ssaOp.left});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = icos(${ssaOp.left});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                
+                // The derivative of cos(x) is -sin(x)
+                const negSinA = P.neg(P.sin(a));
+                
+                return [
+                    P.mul(negSinA, aDerivative[0]),
+                    P.mul(negSinA, aDerivative[1]),
+                    P.mul(negSinA, aDerivative[2])
+                ];
+            },
         });
     }
 
@@ -695,7 +1126,23 @@ class Peptide {
         return new Peptide('tan', 'float', null, a, null, null, {
             evaluate: (vars) => Math.tan(a.evaluate(vars)),
             jsCode: (ssaOp) => `${ssaOp.result} = Math.tan(${ssaOp.left});`,
+            jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.tan();`,
             glslCode: (ssaOp) => `${ssaOp.result} = tan(${ssaOp.left});`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = itan(${ssaOp.left});`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                
+                // The derivative of tan(x) is sec²(x) = 1/cos²(x)
+                const cosA = P.cos(a);
+                const cosASquared = P.mul(cosA, cosA);
+                const secASquared = P.div(P.const(1.0), cosASquared);
+                
+                return [
+                    P.mul(secASquared, aDerivative[0]),
+                    P.mul(secASquared, aDerivative[1]),
+                    P.mul(secASquared, aDerivative[2])
+                ];
+            },
         });
     }
 
@@ -708,6 +1155,16 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.x;`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.x;`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}[0].xy;`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                
+                // The derivative of vecX(a) extracts the x component of the derivative of a
+                return [
+                    P.vecX(aDerivative[0]),
+                    P.vecX(aDerivative[1]),
+                    P.vecX(aDerivative[2])
+                ];
+            },
         });
     }
     
@@ -720,6 +1177,16 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.y;`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.y;`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}[1].xy;`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                
+                // The derivative of vecY(a) extracts the y component of the derivative of a
+                return [
+                    P.vecY(aDerivative[0]),
+                    P.vecY(aDerivative[1]),
+                    P.vecY(aDerivative[2])
+                ];
+            },
         });
     }
     
@@ -732,6 +1199,16 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.z;`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.z;`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}[2].xy;`,
+            derivative: (varName) => {
+                const aDerivative = a.derivative(varName);
+                
+                // The derivative of vecZ(a) extracts the z component of the derivative of a
+                return [
+                    P.vecZ(aDerivative[0]),
+                    P.vecZ(aDerivative[1]),
+                    P.vecZ(aDerivative[2])
+                ];
+            },
         });
     }
 
@@ -744,6 +1221,14 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.transpose();`,
             glslCode: (ssaOp) => `${ssaOp.result} = transpose(${ssaOp.left});`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = transpose(${ssaOp.left});`,
+            derivative: (varName) => {
+                // Since matrices are constant, the derivative is zero
+                return [
+                    P.mzero(),
+                    P.mzero(),
+                    P.mzero()
+                ];
+            },
         });
     }
 
@@ -763,6 +1248,17 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = new Ivec3(new Ifloat(0).add(new Ifloat(${ssaOp.left}.m[0][0]).mul(${ssaOp.right}.x)).add(new Ifloat(${ssaOp.left}.m[0][1]).mul(${ssaOp.right}.y)).add(new Ifloat(${ssaOp.left}.m[0][2]).mul(${ssaOp.right}.z)), new Ifloat(0).add(new Ifloat(${ssaOp.left}.m[1][0]).mul(${ssaOp.right}.x)).add(new Ifloat(${ssaOp.left}.m[1][1]).mul(${ssaOp.right}.y)).add(new Ifloat(${ssaOp.left}.m[1][2]).mul(${ssaOp.right}.z)), new Ifloat(0).add(new Ifloat(${ssaOp.left}.m[2][0]).mul(${ssaOp.right}.x)).add(new Ifloat(${ssaOp.left}.m[2][1]).mul(${ssaOp.right}.y)).add(new Ifloat(${ssaOp.left}.m[2][2]).mul(${ssaOp.right}.z)));`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = imvmul(${ssaOp.left}, ${ssaOp.right});`,
+            derivative: (varName) => {
+                // Since matrices are constant, the derivative depends only on the vector
+                const bDerivative = b.derivative(varName);
+                
+                // The derivative of M*v is M*dv/dx
+                return [
+                    P.mvmul(a, bDerivative[0]),
+                    P.mvmul(a, bDerivative[1]),
+                    P.mvmul(a, bDerivative[2])
+                ];
+            },
         });
     }
 
@@ -776,6 +1272,14 @@ class Peptide {
             jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.mul(${ssaOp.right});`,
             glslCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left} * ${ssaOp.right};`,
+            derivative: (varName) => {
+                // Since matrices are constant, the derivative is zero
+                return [
+                    P.mzero(),
+                    P.mzero(),
+                    P.mzero()
+                ];
+            },
         });
     }
 
@@ -807,6 +1311,17 @@ class Peptide {
             throw new Error(`Operation '${this.op}' returned ${typeof result} but declared vec3 type`);
         }
         return result;
+    }
+
+    // take the derivative of the expression with respect to the given variable name, which
+    // is assumed to be a vec3 variable, and the result is an array of three Peptide expressions,
+    // corresponding to the three components of the derivative
+    derivative(varName) {
+        const derivFn = this.ops.derivative;
+        if (!derivFn) {
+            throw new Error(`Operation '${this.op}' has no derivative function`);
+        }
+        return derivFn(varName);
     }
 
     // turn the tree into a DAG by eliminating common subexpressions

@@ -1657,6 +1657,207 @@ addTest('absBevelC2 and rampBevelC2 functions', (evaluate) => {
     assertEquals(evaluate(ramp3), 0); // (0 + 0) / 2 = 0
 });
 
+addTest('basic derivative - constant', (evaluate) => {
+    const c = P.const(5);
+    const derivative = c.derivative('p');
+    
+    assertEquals(evaluate(derivative[0]), 0);
+    assertEquals(evaluate(derivative[1]), 0);
+    assertEquals(evaluate(derivative[2]), 0);
+});
+
+addTest('basic derivative - variable', (evaluate) => {
+    const p = P.vvar('p');
+    const derivative = p.derivative('p');
+    
+    const vars = { p: new Vec3(1, 2, 3) };
+    const dx = evaluate(derivative[0], vars);
+    const dy = evaluate(derivative[1], vars);
+    const dz = evaluate(derivative[2], vars);
+    
+    assertEquals(dx.x, 1);
+    assertEquals(dx.y, 0);
+    assertEquals(dx.z, 0);
+    
+    assertEquals(dy.x, 0);
+    assertEquals(dy.y, 1);
+    assertEquals(dy.z, 0);
+    
+    assertEquals(dz.x, 0);
+    assertEquals(dz.y, 0);
+    assertEquals(dz.z, 1);
+});
+
+addTest('derivative - addition', (evaluate) => {
+    const p = P.vvar('p');
+    const c = P.const(5);
+    const sum = P.add(P.vecX(p), c);
+    
+    const derivative = sum.derivative('p');
+    const vars = { p: new Vec3(1, 2, 3) };
+    
+    assertEquals(evaluate(derivative[0], vars), 1);
+    assertEquals(evaluate(derivative[1], vars), 0);
+    assertEquals(evaluate(derivative[2], vars), 0);
+});
+
+addTest('derivative - subtraction', (evaluate) => {
+    const p = P.vvar('p');
+    const c = P.const(5);
+    const diff = P.sub(P.vecY(p), c);
+    
+    const derivative = diff.derivative('p');
+    const vars = { p: new Vec3(1, 2, 3) };
+    
+    assertEquals(evaluate(derivative[0], vars), 0);
+    assertEquals(evaluate(derivative[1], vars), 1);
+    assertEquals(evaluate(derivative[2], vars), 0);
+});
+
+addTest('derivative - multiplication', (evaluate) => {
+    const p = P.vvar('p');
+    const c = P.const(5);
+    const product = P.mul(P.vecZ(p), c);
+    
+    const derivative = product.derivative('p');
+    const vars = { p: new Vec3(1, 2, 3) };
+    
+    assertEquals(evaluate(derivative[0], vars), 0);
+    assertEquals(evaluate(derivative[1], vars), 0);
+    assertEquals(evaluate(derivative[2], vars), 5);
+});
+
+addTest('derivative - division', (evaluate) => {
+    const p = P.vvar('p');
+    const c = P.const(2);
+    const quotient = P.div(P.vecX(p), c);
+    
+    const derivative = quotient.derivative('p');
+    const vars = { p: new Vec3(1, 2, 3) };
+    
+    assertEquals(evaluate(derivative[0], vars), 0.5);
+    assertEquals(evaluate(derivative[1], vars), 0);
+    assertEquals(evaluate(derivative[2], vars), 0);
+});
+
+addTest('derivative - vector length', (evaluate) => {
+    const p = P.vvar('p');
+    const length = P.vlength(p);
+    
+    // At point (1,0,0), d/dx(|p|) = 1, d/dy(|p|) = 0, d/dz(|p|) = 0
+    const derivative1 = length.derivative('p');
+    const vars1 = { p: new Vec3(1, 0, 0) };
+    
+    assertEquals(evaluate(derivative1[0], vars1), 1, 0.0001);
+    assertEquals(evaluate(derivative1[1], vars1), 0, 0.0001);
+    assertEquals(evaluate(derivative1[2], vars1), 0, 0.0001);
+    
+    // At point (0,2,0), d/dx(|p|) = 0, d/dy(|p|) = 1, d/dz(|p|) = 0
+    const vars2 = { p: new Vec3(0, 2, 0) };
+    
+    assertEquals(evaluate(derivative1[0], vars2), 0, 0.0001);
+    assertEquals(evaluate(derivative1[1], vars2), 1, 0.0001);
+    assertEquals(evaluate(derivative1[2], vars2), 0, 0.0001);
+});
+
+addTest('derivative - vector dot product', (evaluate) => {
+    const p = P.vvar('p');
+    const v = P.vconst(new Vec3(2, 3, 4));
+    const dot = P.vdot(p, v);
+    
+    const derivative = dot.derivative('p');
+    const vars = { p: new Vec3(1, 2, 3) };
+    
+    assertEquals(evaluate(derivative[0], vars), 2);
+    assertEquals(evaluate(derivative[1], vars), 3);
+    assertEquals(evaluate(derivative[2], vars), 4);
+});
+
+addTest('derivative - sqrt', (evaluate) => {
+    const p = P.vvar('p');
+    const expr = P.sqrt(P.vecX(p));
+    
+    const derivative = expr.derivative('p');
+    const vars = { p: new Vec3(4, 0, 0) };
+    
+    // d/dx(sqrt(x)) = 1/(2*sqrt(x)) = 1/(2*2) = 0.25 at x=4
+    assertEquals(evaluate(derivative[0], vars), 0.25);
+    assertEquals(evaluate(derivative[1], vars), 0);
+    assertEquals(evaluate(derivative[2], vars), 0);
+});
+
+addTest('derivative - sin and cos', (evaluate) => {
+    const p = P.vvar('p');
+    const sinExpr = P.sin(P.vecX(p));
+    const cosExpr = P.cos(P.vecX(p));
+    
+    const sinDerivative = sinExpr.derivative('p');
+    const cosDerivative = cosExpr.derivative('p');
+    
+    // At p = (0,0,0), sin(0) = 0, cos(0) = 1
+    // d/dx(sin(x)) = cos(x) = 1 at x=0
+    // d/dx(cos(x)) = -sin(x) = 0 at x=0
+    const vars = { p: new Vec3(0, 0, 0) };
+    
+    assertEquals(evaluate(sinDerivative[0], vars), 1);
+    assertEquals(evaluate(sinDerivative[1], vars), 0);
+    assertEquals(evaluate(sinDerivative[2], vars), 0);
+    
+    assertEquals(evaluate(cosDerivative[0], vars), 0);
+    assertEquals(evaluate(cosDerivative[1], vars), 0);
+    assertEquals(evaluate(cosDerivative[2], vars), 0);
+});
+
+addTest('derivative - chain rule', (evaluate) => {
+    const p = P.vvar('p');
+    // f(p) = sin(sqrt(x²+y²+z²)) = sin(|p|)
+    const expr = P.sin(P.vlength(p));
+    
+    const derivative = expr.derivative('p');
+    
+    // At p = (1,0,0), |p| = 1, sin(1) ≈ 0.8415
+    // d/dx(sin(|p|)) = cos(|p|) * d/dx(|p|) = cos(1) * 1 ≈ 0.5403 * 1
+    // d/dy(sin(|p|)) = cos(|p|) * d/dy(|p|) = cos(1) * 0 = 0
+    // d/dz(sin(|p|)) = cos(|p|) * d/dz(|p|) = cos(1) * 0 = 0
+    const vars = { p: new Vec3(1, 0, 0) };
+    
+    assertEquals(evaluate(derivative[0], vars), Math.cos(1), 0.0001);
+    assertEquals(evaluate(derivative[1], vars), 0, 0.0001);
+    assertEquals(evaluate(derivative[2], vars), 0, 0.0001);
+});
+
+addTest('derivative - matrix-vector multiplication', (evaluate) => {
+    const p = P.vvar('p');
+    const m = P.mconst(new Mat3(
+        1, 0, 0,
+        0, 2, 0,
+        0, 0, 3
+    ));
+    const expr = P.mvmul(m, p);
+    
+    const derivative = expr.derivative('p');
+    const vars = { p: new Vec3(1, 2, 3) };
+    
+    const dx = evaluate(derivative[0], vars);
+    const dy = evaluate(derivative[1], vars);
+    const dz = evaluate(derivative[2], vars);
+    
+    // d/dx(M*p) = M * d/dx(p) = M * (1,0,0) = (1,0,0)
+    assertEquals(dx.x, 1);
+    assertEquals(dx.y, 0);
+    assertEquals(dx.z, 0);
+    
+    // d/dy(M*p) = M * d/dy(p) = M * (0,1,0) = (0,2,0)
+    assertEquals(dy.x, 0);
+    assertEquals(dy.y, 2);
+    assertEquals(dy.z, 0);
+    
+    // d/dz(M*p) = M * d/dz(p) = M * (0,0,1) = (0,0,3)
+    assertEquals(dz.x, 0);
+    assertEquals(dz.y, 0);
+    assertEquals(dz.z, 3);
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,
