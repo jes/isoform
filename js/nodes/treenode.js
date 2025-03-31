@@ -73,18 +73,29 @@ class TreeNode {
     return uniforms;
   }
 
+  uniformName(property) {
+    return `u_${this.name}_${this.uniqueId}_${property}`;
+  }
+
   // return a Peptide node for a float uniform mapped to a named property
   uniform(property) {
-    const uniformName = `u_${this.name}_${this.uniqueId}_${property}`;
+    const uniformName = this.uniformName(property);
     this.propertyUniforms[uniformName] = property;
     return P.var(uniformName);
   }
 
   // return a Peptide node for a vec3 uniform mapped to a named property
   vuniform(property) {
-    const uniformName = `u_${this.name}_${this.uniqueId}_${property}`;
+    const uniformName = this.uniformName(property);
     this.propertyUniforms[uniformName] = property;
     return P.vvar(uniformName);
+  }
+
+  // return a namefor a texture3d uniform
+  uniformTexture3d(property) {
+    const uniformName = this.uniformName(property);
+    this.propertyUniforms[uniformName] = property;
+    return `u_${this.name}_${this.uniqueId}_${property}`;
   }
 
   // set a name for this node that doesn't already exist in the document

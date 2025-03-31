@@ -9,7 +9,16 @@ const scene = {
         const sortedUniforms = Object.entries(uniforms).sort(([nameA], [nameB]) => nameA.localeCompare(nameB));
         
         for (const [name, value] of sortedUniforms) {
-            const type = value instanceof Vec3 ? 'vec3' : 'float';
+            let type;
+            if (typeof value === 'number') {
+                type = 'float';
+            } else if (value instanceof Vec3) {
+                type = 'vec3';
+            } else if (value instanceof Texture3D) {
+                type = 'sampler3D';
+            } else {
+                throw new Error(`Unsupported uniform type for ${name}: ${value?.constructor?.name || typeof value}`);
+            }
             uniformsSrc += `uniform ${type} ${name};\n`;
         }
 

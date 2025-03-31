@@ -11,7 +11,16 @@ class ShaderLayer {
 
     setUniforms(uniforms) {
         for (const [name, value] of Object.entries(uniforms)) {
-            const type = value instanceof Vec3 ? 'vec3' : 'float';
+            let type;
+            if (typeof value === 'number') {
+                type = 'float';
+            } else if (value instanceof Vec3) {
+                type = 'vec3';
+            } else if (value instanceof Texture3D) {
+                type = 'sampler3D';
+            } else {
+                throw new Error(`Unsupported uniform type for ${name}: ${value?.constructor?.name || typeof value}`);
+            }
             this.setUniform(type, name, value);
         }
         return this;
@@ -41,6 +50,9 @@ class ShaderLayer {
     applyUniforms(gl) {
         // Use the program
         gl.useProgram(this.program);
+        
+        // Track texture units used
+        let textureUnit = 0;
         
         // Apply each uniform based on its type
         this.uniforms.forEach((uniform, name) => {
@@ -75,9 +87,48 @@ class ShaderLayer {
                 case 'mat4':
                     gl.uniformMatrix4fv(location, false, uniform.value);
                     break;
-                case 'sampler2D':
-                    // For textures, value should be the texture unit number (0, 1, etc.)
-                    gl.uniform1i(location, uniform.value);
+                case 'sampler3D':
+                    // For 3D textures, we need to:
+                    // 1. Activate a texture unit
+                    gl.activeTexture(gl.TEXTURE0 + textureUnit);
+                    
+                    // 2. Create and configure the WebGL texture if it doesn't exist
+                    if (!uniform.value.glTexture) {
+                        uniform.value.glTexture = gl.createTexture();
+                        gl.bindTexture(gl.TEXTURE_3D, uniform.value.glTexture);
+                        
+                        // Set texture parameters
+                        // R32F format doesn't support linear filtering in WebGL2, so we must use NEAREST
+                        gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                        gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                        gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                        gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                        gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+                        
+                        // Upload the texture data
+                        const [width, height, depth] = uniform.value.dimensions;
+                        gl.texImage3D(
+                            gl.TEXTURE_3D,
+                            0,                  // level
+                            gl.R32F,            // internalformat - single channel 32-bit float
+                            width,
+                            height,
+                            depth,
+                            0,                  // border
+                            gl.RED,             // format - single channel
+                            gl.FLOAT,           // type
+                            new Float32Array(uniform.value.data)
+                        );
+                    } else {
+                        // Just bind the existing texture
+                        gl.bindTexture(gl.TEXTURE_3D, uniform.value.glTexture);
+                    }
+                    
+                    // 3. Set the uniform to use this texture unit
+                    gl.uniform1i(location, textureUnit);
+                    
+                    // 4. Increment texture unit for next texture
+                    textureUnit++;
                     break;
                 default:
                     console.warn(`Unsupported uniform type: ${uniform.type}`);

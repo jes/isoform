@@ -1320,6 +1320,62 @@ class Peptide {
         });
     }
 
+    static texture3d(name, pos) {
+        pos.assertType('vec3');
+        return new Peptide('texture3d', 'float', name, pos, null, null, {
+            evaluate: (vars) => {
+                if (!(name in vars) || !vars[name].sample) {
+                    throw new Error(`Texture '${name}' not found or not a valid texture`);
+                }
+                return vars[name].sample(pos.evaluate(vars));
+            },
+            evaluateInterval: (vars) => {
+                if (!(name in vars) || !vars[name].sampleInterval) {
+                    throw new Error(`Texture '${name}' not found or not a valid texture for interval arithmetic`);
+                }
+                return vars[name].sampleInterval(pos.evaluateInterval(vars));
+            },
+            jsCode: (ssaOp) => {
+                return `if (!('${name}' in vars) || !vars['${name}'].sample) throw new Error("Texture '${name}' not found or not a valid texture");\n`
+                    + `  ${ssaOp.result} = vars['${name}'].sample(${ssaOp.left});`;
+            },
+            jsIntervalCode: (ssaOp) => {
+                return `if (!('${name}' in vars) || !vars['${name}'].sampleInterval) throw new Error("Texture '${name}' not found or not a valid texture for interval arithmetic");\n`
+                    + `  ${ssaOp.result} = vars['${name}'].sampleInterval(${ssaOp.left});`;
+            },
+            glslCode: (ssaOp) => `${ssaOp.result} = texture(${name}, ${ssaOp.left}).r;`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = itexture3D(${name}, ${ssaOp.left});`,
+        });
+    }
+
+    static vtexture3d(name, pos) {
+        pos.assertType('vec3');
+        return new Peptide('vtexture3d', 'vec3', name, pos, null, null, {
+            evaluate: (vars) => {
+                if (!(name in vars) || !vars[name].sampleVec) {
+                    throw new Error(`Texture '${name}' not found or not a valid vector texture`);
+                }
+                return vars[name].sampleVec(pos.evaluate(vars));
+            },
+            evaluateInterval: (vars) => {
+                if (!(name in vars) || !vars[name].sampleVecInterval) {
+                    throw new Error(`Texture '${name}' not found or not a valid vector texture for interval arithmetic`);
+                }
+                return vars[name].sampleVecInterval(pos.evaluateInterval(vars));
+            },
+            jsCode: (ssaOp) => {
+                return `if (!('${name}' in vars) || !vars['${name}'].sampleVec) throw new Error("Texture '${name}' not found or not a valid vector texture");\n`
+                    + `  ${ssaOp.result} = vars['${name}'].sampleVec(${ssaOp.left});`;
+            },
+            jsIntervalCode: (ssaOp) => {
+                return `if (!('${name}' in vars) || !vars['${name}'].sampleVecInterval) throw new Error("Texture '${name}' not found or not a valid vector texture for interval arithmetic");\n`
+                    + `  ${ssaOp.result} = vars['${name}'].sampleVecInterval(${ssaOp.left});`;
+            },
+            glslCode: (ssaOp) => `${ssaOp.result} = texture(${name}, ${ssaOp.left}).rgb;`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = itexture3DVec(${name}, ${ssaOp.left});`,
+        });
+    }
+
     evaluate(vars = {}) {
         const evalFn = this.ops.evaluate;
         if (!evalFn) {
