@@ -1345,6 +1345,13 @@ class Peptide {
             },
             glslCode: (ssaOp) => `${ssaOp.result} = texture(${name}, ${ssaOp.left}).r;`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = itexture3D(${name}, ${ssaOp.left});`,
+            derivative: (varName) => {
+                return [
+                    P.zero(),
+                    P.zero(),
+                    P.zero()
+                ];
+            },
         });
     }
 
