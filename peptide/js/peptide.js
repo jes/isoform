@@ -13,6 +13,26 @@ class Peptide {
                 console.warn(`No ${fn} operation function provided for ${op}`, this);
             }
         }
+
+        // constant folding
+        let obj;
+        if (value == null &&
+                (left == null || left.op == 'const' || left.op == 'vconst') &&
+                (right == null || right.op == 'const' || right.op == 'vconst') &&
+                (third == null || third.op == 'const' || third.op == 'vconst')) {
+            // all args constant: evaluate the node
+            if (type == 'float') obj = P.const(this.evaluate({}));
+            if (type == 'vec3') obj = P.vconst(this.evaluate({}));
+            if (obj) {
+                this.op = obj.op;
+                this.type = obj.type;
+                this.value = obj.value;
+                this.left = obj.left;
+                this.right = obj.right;
+                this.third = obj.third;
+                this.ops = obj.ops;
+            }
+        }
     }
 
     assertType(expectedType) {
@@ -549,6 +569,8 @@ class Peptide {
     static add(a, b) {
         a.assertType('float');
         b.assertType('float');
+        if (a.op == 'const' && a.value == 0) return b;
+        if (b.op == 'const' && b.value == 0) return a;
         return new Peptide('add', 'float', null, a, b, null, {
             evaluate: (vars) => a.evaluate(vars) + b.evaluate(vars),
             evaluateInterval: (vars) => a.evaluateInterval(vars).add(b.evaluateInterval(vars)),
@@ -573,6 +595,7 @@ class Peptide {
     static sub(a, b) {
         a.assertType('float');
         b.assertType('float');
+        if (b.op == 'const' && b.value == 0) return a;
         return new Peptide('sub', 'float', null, a, b, null, {
             evaluate: (vars) => a.evaluate(vars) - b.evaluate(vars),
             evaluateInterval: (vars) => a.evaluateInterval(vars).sub(b.evaluateInterval(vars)),
@@ -597,6 +620,10 @@ class Peptide {
     static mul(a, b) {
         a.assertType('float');
         b.assertType('float');
+        if (b.op == 'const' && b.value == 1) return a;
+        if (a.op == 'const' && a.value == 1) return b;
+        if (a.op == 'const' && a.value == 0) return P.zero();
+        if (b.op == 'const' && b.value == 0) return P.zero();
         return new Peptide('mul', 'float', null, a, b, null, {
             evaluate: (vars) => a.evaluate(vars) * b.evaluate(vars),
             evaluateInterval: (vars) => {
@@ -636,6 +663,7 @@ class Peptide {
     static div(a, b) {
         a.assertType('float');
         b.assertType('float');
+        if (b.op == 'const' && b.value == 1) return a;
         return new Peptide('div', 'float', null, a, b, null, {
             evaluate: (vars) => a.evaluate(vars) / b.evaluate(vars),
             evaluateInterval: (vars) => a.evaluateInterval(vars).div(b.evaluateInterval(vars)),
