@@ -193,8 +193,13 @@ const app = {
                 let ssa;
                 [this.sdf, ssa] = this.document.getSDFAndSSA();
                 console.log(`SSA took ${performance.now() - startTime} ms`);
+
+
+                const peptide = this.document.peptide(P.vvar('p')).derivative('p');
+                const peptideVec3 = P.vec3(peptide[0], peptide[1], peptide[2]);
+                const ssaNormal = new PeptideSSA(peptideVec3);
                 
-                this.primaryShaderLayer = await this.createShaderLayer(ssa, this.primaryShaderLayer);
+                this.primaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.primaryShaderLayer);
                 this.primaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.6, 0.6, 0.6]);
 
             } else {
@@ -238,9 +243,12 @@ const app = {
                 console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
                 const ssa = new PeptideSSA(expr);
+                const peptide = expr.derivative('p');
+                const peptideVec3 = P.vec3(peptide[0], peptide[1], peptide[2]);
+                const ssaNormal = new PeptideSSA(peptideVec3);
                 console.log(`SSA took ${performance.now() - startTime} ms`);
                 
-                this.secondaryShaderLayer = await this.createShaderLayer(ssa, this.secondaryShaderLayer, node?.uniforms());
+                this.secondaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.secondaryShaderLayer, node?.uniforms());
                 this.secondaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.8, 0.2, 0.2]);
 
                 if (this.showAABB) {
@@ -259,9 +267,9 @@ const app = {
         this.hideLoadingIndicator();
     },
 
-    async createShaderLayer(ssa, lastShaderLayer, uniforms = null) {
+    async createShaderLayer(ssa, ssaNormal, lastShaderLayer, uniforms = null) {
         uniforms ||= this.document.uniforms();
-        const src = scene.generateShaderCode(ssa, uniforms);
+        const src = scene.generateShaderCode(ssa, ssaNormal, uniforms);
         if (lastShaderLayer && lastShaderLayer.src == src) {
             return lastShaderLayer;
         }

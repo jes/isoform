@@ -24,6 +24,10 @@ float map(vec3 p) {
     p = uRotationMatrix * p;
     return 1000.0; // this will be replaced at runtime with an SDF of the object
 }
+vec3 mapNormal(vec3 p) {
+    p = uRotationMatrix * p;
+    return vec3(1.0, 0.0, 0.0); // compute the normal of map() at p
+}
 // end scene
 
 // Calculate normal at a point
@@ -230,9 +234,11 @@ OrthoProjectionResult orthoProjection(vec3 ro, vec3 rd, vec3 right, vec3 up, flo
     } else if (marchResult.hit) {
         // Calculate hit position and normal
         vec3 pos = marchResult.hitPosition;
-        vec4 normalAndEdge = calcNormalAndEdge(pos, marchResult.sdf);
+        /*vec4 normalAndEdge = calcNormalAndEdge(pos, marchResult.sdf);
         vec3 normal = normalAndEdge.xyz;
-        float edge = normalAndEdge.w;
+        float edge = normalAndEdge.w;*/
+        vec3 normal = mapNormal(pos);
+        float edge = 0.0;
         
         // Improved lighting setup with multiple light sources
         vec3 lightDir1 = normalize(vec3(0.5, 0.8, 0.6)); // Main light
