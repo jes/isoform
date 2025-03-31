@@ -715,8 +715,8 @@ class Peptide {
                 // The derivative of min(a,b) is:
                 // - derivative of a where a < b
                 // - derivative of b where b < a
-                // - undefined (we use average) where a = b
-                const selectA = P.step(P.sub(b, a), P.const(0));
+                // - undefined where a = b
+                const selectA = P.step(a, b);
                 return [
                     P.add(P.mul(selectA, aDerivative[0]), P.mul(P.sub(P.const(1), selectA), bDerivative[0])),
                     P.add(P.mul(selectA, aDerivative[1]), P.mul(P.sub(P.const(1), selectA), bDerivative[1])),
@@ -743,8 +743,8 @@ class Peptide {
                 // The derivative of max(a,b) is:
                 // - derivative of a where a > b
                 // - derivative of b where b > a
-                // - undefined (we use average) where a = b
-                const selectA = P.step(P.sub(a, b), P.const(0));
+                // - undefined where a = b
+                const selectA = P.step(b, a);
                 return [
                     P.add(P.mul(selectA, aDerivative[0]), P.mul(P.sub(P.const(1), selectA), bDerivative[0])),
                     P.add(P.mul(selectA, aDerivative[1]), P.mul(P.sub(P.const(1), selectA), bDerivative[1])),
