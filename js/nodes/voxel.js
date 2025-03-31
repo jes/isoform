@@ -31,8 +31,6 @@ class VoxelNode extends TreeNode {
     return this.aabbBox;
   }
 
-<<<<<<< HEAD
-=======
   boxSDF(p, size) {
     // This should calculate the SDF for a box centered at the origin
     // with dimensions given by size
@@ -48,22 +46,16 @@ class VoxelNode extends TreeNode {
     );
   }
 
->>>>>>> 9ae66c6 (Start of mesh simplification)
   makePeptide(p) {
     // Get the normalized position within the AABB
     const size = this.aabb().getSize();
     const min = this.aabb().min;
     
-<<<<<<< HEAD
-    // Normalize position to 0-1 range for texture sampling
-    // Split into component-wise division since vdiv expects a scalar second operand
-=======
     // Calculate distance to the outside of the bounding box
     // This is negative inside the box, positive outside
     const outsideDist = this.boxSDF(p, size);
     
     // Normalize position to 0-1 range for texture sampling
->>>>>>> 9ae66c6 (Start of mesh simplification)
     const posMinusMin = P.vsub(p, P.vconst(min));
     const sizeVec = P.vconst(size);
     
@@ -74,17 +66,12 @@ class VoxelNode extends TreeNode {
       P.div(P.vecZ(posMinusMin), P.vecZ(sizeVec))
     );
     
-<<<<<<< HEAD
-    // Sample the texture at the normalized position
-    return P.texture3d(this.uniformTexture3d("voxelTexture"), normalizedPos);
-=======
     // Sample the texture at the normalized position (inside distance)
     const insideDist = P.texture3d(this.uniformTexture3d("voxelTexture"), normalizedPos);
     
     // Return the larger of the two distances
     // This ensures correct distance both inside and outside the voxel grid
     return P.max(insideDist, outsideDist);
->>>>>>> 9ae66c6 (Start of mesh simplification)
   }
 
   fillFromTreeNode(treeNode) {
