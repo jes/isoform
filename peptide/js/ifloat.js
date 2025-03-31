@@ -119,6 +119,17 @@ class Ifloat {
         // cos(x) = sin(x + π/2)
         return this.add(new Ifloat(Math.PI/2)).sin();
     }
+
+    tan() {
+        // Check if the cosine interval contains zero
+        const cosInterval = this.cos();
+        if (cosInterval.containsZero()) {
+            // If the interval crosses a point where cos(x) = 0, tan(x) is undefined
+            // Return the largest possible interval
+            return new Ifloat(-Infinity, Infinity);
+        }
+        return this.sin().div(cosInterval);
+    }
 }
 
 // Detect environment and export accordingly
