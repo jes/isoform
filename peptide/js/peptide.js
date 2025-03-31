@@ -242,6 +242,15 @@ class Peptide {
         });
     }
 
+    // component-wise vector multiplication
+    static vmulv(a, b) {
+        a.assertType('vec3');
+        b.assertType('vec3');
+        return P.vec3(P.mul(P.vecX(a), P.vecX(b)),
+                      P.mul(P.vecY(a), P.vecY(b)),
+                      P.mul(P.vecZ(a), P.vecZ(b)));
+    }
+
     static vmul(a, b) {
         a.assertType('vec3');
         b.assertType('float');
@@ -360,17 +369,17 @@ class Peptide {
                 // The derivative of abs(x) is sign(x)
                 // For each component, we need to multiply the derivative by the sign of the original value
                 return [
-                    P.vmul(aDerivative[0], P.vec3(
+                    P.vmulv(aDerivative[0], P.vec3(
                         P.sign(P.vecX(a)),
                         P.sign(P.vecY(a)),
                         P.sign(P.vecZ(a))
                     )),
-                    P.vmul(aDerivative[1], P.vec3(
+                    P.vmulv(aDerivative[1], P.vec3(
                         P.sign(P.vecX(a)),
                         P.sign(P.vecY(a)),
                         P.sign(P.vecZ(a))
                     )),
-                    P.vmul(aDerivative[2], P.vec3(
+                    P.vmulv(aDerivative[2], P.vec3(
                         P.sign(P.vecX(a)),
                         P.sign(P.vecY(a)),
                         P.sign(P.vecZ(a))
@@ -441,16 +450,16 @@ class Peptide {
                 
                 return [
                     P.vadd(
-                        P.vmul(bDerivative[0], P.vec3(selectA_x, selectA_y, selectA_z)),
-                        P.vmul(aDerivative[0], P.vec3(P.sub(P.one(), selectA_x), P.sub(P.one(), selectA_y), P.sub(P.one(), selectA_z)))
+                        P.vmulv(bDerivative[0], P.vec3(selectA_x, selectA_y, selectA_z)),
+                        P.vmulv(aDerivative[0], P.vec3(P.sub(P.one(), selectA_x), P.sub(P.one(), selectA_y), P.sub(P.one(), selectA_z)))
                     ),
                     P.vadd(
-                        P.vmul(bDerivative[1], P.vec3(selectA_x, selectA_y, selectA_z)),
-                        P.vmul(aDerivative[1], P.vec3(P.sub(P.one(), selectA_x), P.sub(P.one(), selectA_y), P.sub(P.one(), selectA_z)))
+                        P.vmulv(bDerivative[1], P.vec3(selectA_x, selectA_y, selectA_z)),
+                        P.vmulv(aDerivative[1], P.vec3(P.sub(P.one(), selectA_x), P.sub(P.one(), selectA_y), P.sub(P.one(), selectA_z)))
                     ),
                     P.vadd(
-                        P.vmul(bDerivative[2], P.vec3(selectA_x, selectA_y, selectA_z)),
-                        P.vmul(aDerivative[2], P.vec3(P.sub(P.one(), selectA_x), P.sub(P.one(), selectA_y), P.sub(P.one(), selectA_z)))
+                        P.vmulv(bDerivative[2], P.vec3(selectA_x, selectA_y, selectA_z)),
+                        P.vmulv(aDerivative[2], P.vec3(P.sub(P.one(), selectA_x), P.sub(P.one(), selectA_y), P.sub(P.one(), selectA_z)))
                     )
                 ];
             },
