@@ -1858,6 +1858,217 @@ addTest('derivative - matrix-vector multiplication', (evaluate) => {
     assertEquals(dz.z, 3);
 });
 
+addTest('second derivative - constant', (evaluate) => {
+    const c = P.const(5);
+    const firstDerivative = c.derivative('p');
+    const secondDerivative = [
+        firstDerivative[0].derivative('p'),
+        firstDerivative[1].derivative('p'),
+        firstDerivative[2].derivative('p')
+    ];
+    
+    // All second derivatives of a constant should be zero
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            assertEquals(evaluate(secondDerivative[i][j]), 0);
+        }
+    }
+});
+
+addTest('second derivative - linear function', (evaluate) => {
+    const p = P.vvar('p');
+    const expr = P.add(P.vecX(p), P.mul(P.const(2), P.vecY(p)));
+    
+    const firstDerivative = expr.derivative('p');
+    const secondDerivative = [
+        firstDerivative[0].derivative('p'),
+        firstDerivative[1].derivative('p'),
+        firstDerivative[2].derivative('p')
+    ];
+    
+    // All second derivatives of a linear function should be zero
+    const vars = { p: new Vec3(1, 2, 3) };
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            assertEquals(evaluate(secondDerivative[i][j], vars), 0);
+        }
+    }
+});
+
+addTest('second derivative - quadratic function', (evaluate) => {
+    const p = P.vvar('p');
+    // f(p) = x^2 + y^2
+    const expr = P.add(
+        P.mul(P.vecX(p), P.vecX(p)),
+        P.mul(P.vecY(p), P.vecY(p))
+    );
+    
+    const firstDerivative = expr.derivative('p');
+    const secondDerivative = [
+        firstDerivative[0].derivative('p'),
+        firstDerivative[1].derivative('p'),
+        firstDerivative[2].derivative('p')
+    ];
+    
+    const vars = { p: new Vec3(1, 2, 3) };
+    
+    // d²f/dx² = 2, d²f/dy² = 2, all other second derivatives = 0
+    assertEquals(evaluate(secondDerivative[0][0], vars), 2);
+    assertEquals(evaluate(secondDerivative[1][1], vars), 2);
+    assertEquals(evaluate(secondDerivative[2][2], vars), 0);
+    
+    // Mixed partials should be 0 for this function
+    assertEquals(evaluate(secondDerivative[0][1], vars), 0);
+    assertEquals(evaluate(secondDerivative[0][2], vars), 0);
+    assertEquals(evaluate(secondDerivative[1][0], vars), 0);
+    assertEquals(evaluate(secondDerivative[1][2], vars), 0);
+    assertEquals(evaluate(secondDerivative[2][0], vars), 0);
+    assertEquals(evaluate(secondDerivative[2][1], vars), 0);
+});
+
+addTest('second derivative - sin function', (evaluate) => {
+    const p = P.vvar('p');
+    // f(p) = sin(x)
+    const expr = P.sin(P.vecX(p));
+    
+    const firstDerivative = expr.derivative('p');
+    const secondDerivative = [
+        firstDerivative[0].derivative('p'),
+        firstDerivative[1].derivative('p'),
+        firstDerivative[2].derivative('p')
+    ];
+    
+    // At p = (0,0,0)
+    // d²f/dx² = -sin(x) = 0
+    // All other second derivatives = 0
+    const vars = { p: new Vec3(0, 0, 0) };
+    
+    assertEquals(evaluate(secondDerivative[0][0], vars), 0);
+    assertEquals(evaluate(secondDerivative[1][1], vars), 0);
+    assertEquals(evaluate(secondDerivative[2][2], vars), 0);
+    
+    // At p = (π/2,0,0)
+    // d²f/dx² = -sin(x) = -1
+    // All other second derivatives = 0
+    const vars2 = { p: new Vec3(Math.PI/2, 0, 0) };
+    
+    assertEquals(evaluate(secondDerivative[0][0], vars2), -1, 0.0001);
+    assertEquals(evaluate(secondDerivative[1][1], vars2), 0);
+    assertEquals(evaluate(secondDerivative[2][2], vars2), 0);
+});
+
+addTest('second derivative - vector length', (evaluate) => {
+    const p = P.vvar('p');
+    // f(p) = |p| = sqrt(x² + y² + z²)
+    const expr = P.vlength(p);
+    
+    const firstDerivative = expr.derivative('p');
+    const secondDerivative = [
+        firstDerivative[0].derivative('p'),
+        firstDerivative[1].derivative('p'),
+        firstDerivative[2].derivative('p')
+    ];
+    
+    // At p = (1,0,0)
+    // d²f/dx² = 0
+    // d²f/dy² = 1
+    // d²f/dz² = 1
+    const vars = { p: new Vec3(1, 0, 0) };
+    
+    assertEquals(evaluate(secondDerivative[0][0], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[1][1], vars), 1, 0.0001);
+    assertEquals(evaluate(secondDerivative[2][2], vars), 1, 0.0001);
+    
+    // Mixed partials
+    assertEquals(evaluate(secondDerivative[0][1], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[0][2], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[1][0], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[1][2], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[2][0], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[2][1], vars), 0, 0.0001);
+});
+
+addTest('second derivative - complex function', (evaluate) => {
+    const p = P.vvar('p');
+    // f(p) = sin(x*y) + z²
+    const expr = P.add(
+        P.sin(P.mul(P.vecX(p), P.vecY(p))),
+        P.mul(P.vecZ(p), P.vecZ(p))
+    );
+    
+    const firstDerivative = expr.derivative('p');
+    const secondDerivative = [
+        firstDerivative[0].derivative('p'),
+        firstDerivative[1].derivative('p'),
+        firstDerivative[2].derivative('p')
+    ];
+    
+    // At p = (0,0,0)
+    // d²f/dx² = 0
+    // d²f/dy² = 0
+    // d²f/dz² = 2
+    // d²f/dxdy = d²f/dydx = 1 (mixed partial for sin(x*y))
+    const vars = { p: new Vec3(0, 0, 0) };
+    
+    assertEquals(evaluate(secondDerivative[0][0], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[1][1], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[2][2], vars), 2, 0.0001);
+    
+    // Mixed partials
+    assertEquals(evaluate(secondDerivative[0][1], vars), 1, 0.0001);
+    assertEquals(evaluate(secondDerivative[1][0], vars), 1, 0.0001);
+    assertEquals(evaluate(secondDerivative[0][2], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[2][0], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[1][2], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[2][1], vars), 0, 0.0001);
+});
+
+addTest('second derivative - chain rule', (evaluate) => {
+    const p = P.vvar('p');
+    // f(p) = sin(|p|²) = sin(x² + y² + z²)
+    const expr = P.sin(P.vdot(p, p));
+    
+    const firstDerivative = expr.derivative('p');
+    const secondDerivative = [
+        firstDerivative[0].derivative('p'),
+        firstDerivative[1].derivative('p'),
+        firstDerivative[2].derivative('p')
+    ];
+    
+    // At p = (0,0,0)
+    // d²f/dx² = 2*cos(0) = 2
+    // d²f/dy² = 2*cos(0) = 2
+    // d²f/dz² = 2*cos(0) = 2
+    const vars = { p: new Vec3(0, 0, 0) };
+    
+    assertEquals(evaluate(secondDerivative[0][0], vars), 2, 0.0001);
+    assertEquals(evaluate(secondDerivative[1][1], vars), 2, 0.0001);
+    assertEquals(evaluate(secondDerivative[2][2], vars), 2, 0.0001);
+    
+    // Mixed partials should be 0 at origin
+    assertEquals(evaluate(secondDerivative[0][1], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[0][2], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[1][0], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[1][2], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[2][0], vars), 0, 0.0001);
+    assertEquals(evaluate(secondDerivative[2][1], vars), 0, 0.0001);
+    
+    // At p = (1,1,1)
+    // More complex second derivatives due to chain rule
+    const vars2 = { p: new Vec3(1, 1, 1) };
+    const r2 = 3; // |p|² = 3
+    const cos3 = Math.cos(r2);
+    const sin3 = Math.sin(r2);
+    
+    // d²f/dx² = -4*sin(r²) + 2*cos(r²)
+    const expected_d2x = -4*sin3 + 2*cos3;
+    assertEquals(evaluate(secondDerivative[0][0], vars2), expected_d2x, 0.0001);
+    
+    // Mixed partials d²f/dxdy = -4*x*y*sin(r²) + 2*cos(r²)
+    const expected_d2xy = -4*sin3 + 0*cos3;
+    assertEquals(evaluate(secondDerivative[0][1], vars2), expected_d2xy, 0.0001);
+});
+
 // Export for browser
 window.PeptideTests = {
     direct: DirectT,
