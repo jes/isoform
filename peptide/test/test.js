@@ -30,6 +30,13 @@ class TestSuite {
 }
 
 // Enhanced assertion helpers
+function assertTrue(v) {
+    if (!v) {
+        const error = new Error(`Expected true`);
+        throw new Error(`Assertion failed\nExpected true\n${error.stack}`);
+    }
+}
+
 function assertEquals(a, b) {
     if (Math.abs(a - b) > 0.000001) {
         const error = new Error(`Expected ${a} to equal ${b}`);
@@ -2067,6 +2074,387 @@ addTest('second derivative - chain rule', (evaluate) => {
     // Mixed partials d²f/dxdy = -4*x*y*sin(r²) + 2*cos(r²)
     const expected_d2xy = -4*sin3 + 0*cos3;
     assertEquals(evaluate(secondDerivative[0][1], vars2), expected_d2xy, 0.0001);
+});
+
+addTest('derivative - min and max functions', (evaluate) => {
+    const p = P.vvar('p');
+    const x = P.vecX(p);
+    const y = P.vecY(p);
+    
+    // Test max function derivative
+    const maxExpr = P.max(x, y);
+    console.log(maxExpr.toString());
+    const maxDeriv = maxExpr.derivative('p');
+    console.log(maxDeriv.toString());
+    
+    // At p = (3, 1, 0), max(x,y) = max(3,1) = 3, so derivative should follow x
+    let vars = { p: new Vec3(3, 1, 0) };
+    assertEquals(evaluate(maxDeriv[0], vars), 1); // d/dx(max(x,y)) = 1 when x > y
+    assertEquals(evaluate(maxDeriv[1], vars), 0); // d/dy(max(x,y)) = 0 when x > y
+    assertEquals(evaluate(maxDeriv[2], vars), 0); // d/dz(max(x,y)) = 0
+    
+    // At p = (1, 3, 0), max(x,y) = max(1,3) = 3, so derivative should follow y
+    vars = { p: new Vec3(1, 3, 0) };
+    assertEquals(evaluate(maxDeriv[0], vars), 0); // d/dx(max(x,y)) = 0 when x < y
+    assertEquals(evaluate(maxDeriv[1], vars), 1); // d/dy(max(x,y)) = 1 when x < y
+    assertEquals(evaluate(maxDeriv[2], vars), 0); // d/dz(max(x,y)) = 0
+    
+    // Test min function derivative
+    const minExpr = P.min(x, y);
+    const minDeriv = minExpr.derivative('p');
+    
+    // At p = (3, 1, 0), min(x,y) = min(3,1) = 1, so derivative should follow y
+    vars = { p: new Vec3(3, 1, 0) };
+    assertEquals(evaluate(minDeriv[0], vars), 0); // d/dx(min(x,y)) = 0 when x > y
+    assertEquals(evaluate(minDeriv[1], vars), 1); // d/dy(min(x,y)) = 1 when x > y
+    assertEquals(evaluate(minDeriv[2], vars), 0); // d/dz(min(x,y)) = 0
+    
+    // At p = (1, 3, 0), min(x,y) = min(1,3) = 1, so derivative should follow x
+    vars = { p: new Vec3(1, 3, 0) };
+    assertEquals(evaluate(minDeriv[0], vars), 1); // d/dx(min(x,y)) = 1 when x < y
+    assertEquals(evaluate(minDeriv[1], vars), 0); // d/dy(min(x,y)) = 0 when x < y
+    assertEquals(evaluate(minDeriv[2], vars), 0); // d/dz(min(x,y)) = 0
+});
+
+addTest('derivative - abs function', (evaluate) => {
+    const p = P.vvar('p');
+    const x = P.vecX(p);
+    
+    // Test abs function derivative
+    const absExpr = P.abs(x);
+    const absDeriv = absExpr.derivative('p');
+    
+    // At p = (3, 0, 0), abs(x) = 3, derivative should be 1
+    let vars = { p: new Vec3(3, 0, 0) };
+    assertEquals(evaluate(absDeriv[0], vars), 1); // d/dx(abs(x)) = 1 when x > 0
+    assertEquals(evaluate(absDeriv[1], vars), 0);
+    assertEquals(evaluate(absDeriv[2], vars), 0);
+    
+    // At p = (-3, 0, 0), abs(x) = 3, derivative should be -1
+    vars = { p: new Vec3(-3, 0, 0) };
+    assertEquals(evaluate(absDeriv[0], vars), -1); // d/dx(abs(x)) = -1 when x < 0
+    assertEquals(evaluate(absDeriv[1], vars), 0);
+    assertEquals(evaluate(absDeriv[2], vars), 0);
+    
+    // At p = (0, 0, 0), abs(x) = 0, derivative is undefined (but implementation should handle it)
+    vars = { p: new Vec3(0, 0, 0) };
+    // We don't test the exact value at x=0 as it's undefined, but the code should not throw
+    evaluate(absDeriv[0], vars);
+});
+
+addTest('derivative - conditional expressions', (evaluate) => {
+    const p = P.vvar('p');
+    const x = P.vecX(p);
+    const y = P.vecY(p);
+    
+    // Test conditional: if x > 0 then x^2 else -x^2
+    const condition = P.gte(x, P.zero());
+    const thenExpr = P.mul(x, x);
+    const elseExpr = P.neg(P.mul(x, x));
+    const condExpr = P.cond(condition, thenExpr, elseExpr);
+    
+    const condDeriv = condExpr.derivative('p');
+    
+    // When x > 0, derivative should be 2x
+    let vars = { p: new Vec3(3, 0, 0) };
+    assertEquals(evaluate(condDeriv[0], vars), 6); // 2*3 = 6
+    
+    // When x < 0, derivative should be -2x
+    vars = { p: new Vec3(-3, 0, 0) };
+    assertEquals(evaluate(condDeriv[0], vars), 6); // -2*(-3) = 6
+    
+    // At x = 0, derivative is undefined (but implementation should handle it)
+    vars = { p: new Vec3(0, 0, 0) };
+    // We don't test the exact value at x=0 as it depends on implementation
+    evaluate(condDeriv[0], vars);
+});
+
+addTest('derivative - vector operations', (evaluate) => {
+    const p = P.vvar('p');
+    
+    // Test vector length derivative
+    const length = P.vlength(p);
+    const lengthDeriv = length.derivative('p');
+    
+    // At p = (1,0,0), d/dx(|p|) = 1, d/dy(|p|) = 0, d/dz(|p|) = 0
+    let vars = { p: new Vec3(1, 0, 0) };
+    assertEquals(evaluate(lengthDeriv[0], vars), 1, 0.0001);
+    assertEquals(evaluate(lengthDeriv[1], vars), 0, 0.0001);
+    assertEquals(evaluate(lengthDeriv[2], vars), 0, 0.0001);
+    
+    // At p = (1,1,1), d/dx(|p|) = 1/sqrt(3), d/dy(|p|) = 1/sqrt(3), d/dz(|p|) = 1/sqrt(3)
+    vars = { p: new Vec3(1, 1, 1) };
+    const expected = 1 / Math.sqrt(3);
+    assertEquals(evaluate(lengthDeriv[0], vars), expected, 0.0001);
+    assertEquals(evaluate(lengthDeriv[1], vars), expected, 0.0001);
+    assertEquals(evaluate(lengthDeriv[2], vars), expected, 0.0001);
+    
+    // Test vector dot product derivative
+    const v = P.vconst(new Vec3(2, 3, 4));
+    const dot = P.vdot(p, v);
+    const dotDeriv = dot.derivative('p');
+    
+    // d/dp(p·v) = v
+    vars = { p: new Vec3(1, 1, 1) };
+    assertEquals(evaluate(dotDeriv[0], vars), 2);
+    assertEquals(evaluate(dotDeriv[1], vars), 3);
+    assertEquals(evaluate(dotDeriv[2], vars), 4);
+});
+
+addTest('derivative - vector cross product', (evaluate) => {
+    const p = P.vvar('p');
+    const v = P.vconst(new Vec3(2, 3, 4));
+    const cross = P.vcross(p, v);
+    const crossDeriv = cross.derivative('p');
+    
+    // d/dp(p×v) is a matrix operation, we test by checking components
+    const vars = { p: new Vec3(1, 1, 1) };
+    
+    // d/dx(p×v)_x = 0
+    // d/dx(p×v)_y = -v_z = -4
+    // d/dx(p×v)_z = v_y = 3
+    const dx = evaluate(crossDeriv[0], vars);
+    assertEquals(dx.x, 0, 0.0001);
+    assertEquals(dx.y, -4, 0.0001);
+    assertEquals(dx.z, 3, 0.0001);
+    
+    // d/dy(p×v)_x = v_z = 4
+    // d/dy(p×v)_y = 0
+    // d/dy(p×v)_z = -v_x = -2
+    const dy = evaluate(crossDeriv[1], vars);
+    assertEquals(dy.x, 4, 0.0001);
+    assertEquals(dy.y, 0, 0.0001);
+    assertEquals(dy.z, -2, 0.0001);
+    
+    // d/dz(p×v)_x = -v_y = -3
+    // d/dz(p×v)_y = v_x = 2
+    // d/dz(p×v)_z = 0
+    const dz = evaluate(crossDeriv[2], vars);
+    assertEquals(dz.x, -3, 0.0001);
+    assertEquals(dz.y, 2, 0.0001);
+    assertEquals(dz.z, 0, 0.0001);
+});
+
+addTest('derivative - vector normalization', (evaluate) => {
+    const p = P.vvar('p');
+    const norm = P.vnormalize(p);
+    const normDeriv = norm.derivative('p');
+    
+    // At p = (1,0,0), the derivative is a matrix with specific values
+    const vars = { p: new Vec3(1, 0, 0) };
+    
+    // d/dx(p/|p|) at (1,0,0) should be (0,0,0)
+    // d/dy(p/|p|) at (1,0,0) should be (0,1,0)
+    // d/dz(p/|p|) at (1,0,0) should be (0,0,1)
+    const dx = evaluate(normDeriv[0], vars);
+    assertEquals(dx.x, 0, 0.0001);
+    assertEquals(dx.y, 0, 0.0001);
+    assertEquals(dx.z, 0, 0.0001);
+    
+    const dy = evaluate(normDeriv[1], vars);
+    assertEquals(dy.x, 0, 0.0001);
+    assertEquals(dy.y, 1, 0.0001);
+    assertEquals(dy.z, 0, 0.0001);
+    
+    const dz = evaluate(normDeriv[2], vars);
+    assertEquals(dz.x, 0, 0.0001);
+    assertEquals(dz.y, 0, 0.0001);
+    assertEquals(dz.z, 1, 0.0001);
+});
+
+addTest('derivative - complex SDF example', (evaluate) => {
+    const p = P.vvar('p');
+    
+    // Create a simple SDF for a sphere
+    const center = P.vconst(new Vec3(1, 2, 3));
+    const radius = P.const(2);
+    
+    // SDF for sphere: |p - center| - radius
+    const offset = P.vsub(p, center);
+    const distance = P.vlength(offset);
+    const sphereSdf = P.sub(distance, radius);
+    
+    // Compute the gradient (normal vector) using automatic differentiation
+    const gradient = sphereSdf.derivative('p');
+    
+    // Test at a point on the sphere surface
+    // Point: center + (1,1,0).normalize() * radius
+    const direction = new Vec3(1, 1, 0).normalize();
+    const surfacePoint = new Vec3(
+        1 + direction.x * 2,
+        2 + direction.y * 2,
+        3 + direction.z * 2
+    );
+    
+    const vars = { p: surfacePoint };
+    
+    // The gradient at the surface should be the normalized direction vector
+    const gradX = evaluate(gradient[0], vars);
+    const gradY = evaluate(gradient[1], vars);
+    const gradZ = evaluate(gradient[2], vars);
+    
+    assertEquals(gradX, direction.x, 0.0001);
+    assertEquals(gradY, direction.y, 0.0001);
+    assertEquals(gradZ, direction.z, 0.0001);
+});
+
+addTest('derivative - higher order derivatives', (evaluate) => {
+    const p = P.vvar('p');
+    const x = P.vecX(p);
+    
+    // f(x) = x^3
+    const f = P.mul(P.mul(x, x), x);
+    
+    // First derivative: f'(x) = 3x^2
+    const df = f.derivative('p');
+    
+    // Second derivative: f''(x) = 6x
+    const d2f = df[0].derivative('p');
+    
+    // Third derivative: f'''(x) = 6
+    const d3f = d2f[0].derivative('p');
+    
+    // Test at x = 2
+    const vars = { p: new Vec3(2, 0, 0) };
+    
+    assertEquals(evaluate(f, vars), 8); // 2^3 = 8
+    assertEquals(evaluate(df[0], vars), 12); // 3*2^2 = 12
+    assertEquals(evaluate(d2f[0], vars), 12); // 6*2 = 12
+    assertEquals(evaluate(d3f[0], vars), 6); // 6
+});
+
+addTest('derivative - mixed partial derivatives', (evaluate) => {
+    const p = P.vvar('p');
+    const x = P.vecX(p);
+    const y = P.vecY(p);
+    
+    // f(x,y) = x^2 * y^3
+    const f = P.mul(P.mul(x, x), P.mul(P.mul(y, y), y));
+    
+    // First partial derivatives
+    const df = f.derivative('p');
+    // df[0] = df/dx = 2x * y^3
+    // df[1] = df/dy = x^2 * 3y^2
+    
+    // Mixed partial derivatives
+    const d2f_dxdy = df[0].derivative('p')[1];
+    const d2f_dydx = df[1].derivative('p')[0];
+    // d2f_dxdy[1] = 2x * 3y^2
+    // d2f_dydx[0] = 2x * 3y^2
+    
+    // Test at (2,3)
+    const vars = { p: new Vec3(2, 3, 0) };
+    
+    // Expected: d²f/dxdy = d²f/dydx = 2 * 2 * 3 * 3 * 3 = 108
+    assertEquals(evaluate(d2f_dxdy, vars), 108, 0.0001);
+    assertEquals(evaluate(d2f_dydx, vars), 108, 0.0001);
+});
+
+addTest('derivative - numerical stability near singularities', (evaluate) => {
+    const p = P.vvar('p');
+    const x = P.vecX(p);
+    
+    // Test sqrt(x) derivative near x=0
+    const sqrtExpr = P.sqrt(x);
+    const sqrtDeriv = sqrtExpr.derivative('p');
+    
+    // d/dx(sqrt(x)) = 1/(2*sqrt(x)) which has a singularity at x=0
+    // Our implementation should handle this gracefully
+    
+    // Test at small positive value
+    let vars = { p: new Vec3(1e-6, 0, 0) };
+    const smallDerivValue = evaluate(sqrtDeriv[0], vars);
+    // Should be approximately 1/(2*sqrt(1e-6)) = 1/(2*1e-3) = 500
+    assertTrue(smallDerivValue > 0);
+    assertTrue(isFinite(smallDerivValue));
+    
+    // Test at zero - should not throw and return a finite value
+    vars = { p: new Vec3(0, 0, 0) };
+    const zeroDerivValue = evaluate(sqrtDeriv[0], vars);
+    assertTrue(isFinite(zeroDerivValue));
+    
+    // Test division derivative near singularity
+    const divExpr = P.div(P.const(1), x);
+    const divDeriv = divExpr.derivative('p');
+    
+    // d/dx(1/x) = -1/x² which has a singularity at x=0
+    
+    // Test at small value
+    vars = { p: new Vec3(1e-6, 0, 0) };
+    const smallDivDerivValue = evaluate(divDeriv[0], vars);
+    // Should be approximately -1/(1e-6)² = -1e12
+    assertTrue(smallDivDerivValue < 0);
+    assertTrue(isFinite(smallDivDerivValue));
+});
+
+addTest('derivative - performance with complex expressions', (evaluate) => {
+    const p = P.vvar('p');
+    
+    // Build a complex SDF with many operations
+    const buildComplexSdf = () => {
+        // Start with a sphere
+        const sphereCenter = P.vconst(new Vec3(0, 0, 0));
+        const sphereRadius = P.const(1);
+        const sphereDist = P.sub(P.vlength(P.vsub(p, sphereCenter)), sphereRadius);
+        
+        // Add a box
+        const boxSize = P.vconst(new Vec3(0.8, 0.8, 0.8));
+        const q = P.vsub(P.vabs(p), boxSize);
+        const boxDist = P.add(P.vlength(P.vmax(q, P.vzero())), P.min(P.max(P.vecX(q), P.max(P.vecY(q), P.vecZ(q))), P.zero()));
+        
+        // Combine with smooth union
+        const k = P.const(0.2);
+        const h = P.max(P.sub(P.const(1.0), P.div(P.abs(P.sub(sphereDist, boxDist)), k)), P.zero());
+        const smoothUnion = P.sub(
+            P.min(sphereDist, boxDist),
+            P.mul(P.mul(h, h), P.mul(k, P.const(0.25)))
+        );
+        
+        return smoothUnion;
+    };
+    
+    const complexSdf = buildComplexSdf();
+    
+    // Time the derivative computation
+    const startTime = performance.now();
+    const gradient = complexSdf.derivative('p');
+    const endTime = performance.now();
+    
+    // Just make sure it completes and returns something reasonable
+    const vars = { p: new Vec3(1.5, 0, 0) };
+    const gradX = evaluate(gradient[0], vars);
+    const gradY = evaluate(gradient[1], vars);
+    const gradZ = evaluate(gradient[2], vars);
+    
+    assertTrue(isFinite(gradX));
+    assertTrue(isFinite(gradY));
+    assertTrue(isFinite(gradZ));
+    
+    // Verify that the gradient is normalized at the surface
+    // Find a point near the surface
+    const findSurfacePoint = () => {
+        const dir = new Vec3(1, 1, 1).normalize();
+        let t = 0.5;
+        const maxIter = 10;
+        for (let i = 0; i < maxIter; i++) {
+            const pt = new Vec3(dir.x * t, dir.y * t, dir.z * t);
+            const dist = evaluate(complexSdf, { p: pt });
+            if (Math.abs(dist) < 0.01) return pt;
+            t -= dist * 0.5;
+        }
+        return new Vec3(dir.x * t, dir.y * t, dir.z * t);
+    };
+    
+    const surfacePoint = findSurfacePoint();
+    const surfaceVars = { p: surfacePoint };
+    
+    const gx = evaluate(gradient[0], surfaceVars);
+    const gy = evaluate(gradient[1], surfaceVars);
+    const gz = evaluate(gradient[2], surfaceVars);
+    
+    const gradLength = Math.sqrt(gx*gx + gy*gy + gz*gz);
+    // Gradient should be approximately normalized at the surface
+    assertEquals(gradLength, 1.0, 0.1);
 });
 
 // Export for browser
