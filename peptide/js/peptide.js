@@ -285,14 +285,14 @@ class Peptide {
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = idiv3(${ssaOp.left}, ${ssaOp.right});`,
             derivative: (varName) => {
                 const aDerivative = a.derivative(varName);
-                const bDerivative = b.derivative(varName);
-                // For a/b, the derivative is (a'*b - a*b')/b²
-                const bSquared = P.mul(b, b);
-                return [
-                    P.vdiv(P.vsub(P.vmul(aDerivative[0], b), P.vmul(a, bDerivative[0])), bSquared),
-                    P.vdiv(P.vsub(P.vmul(aDerivative[1], b), P.vmul(a, bDerivative[1])), bSquared),
-                    P.vdiv(P.vsub(P.vmul(aDerivative[2], b), P.vmul(a, bDerivative[2])), bSquared)
-                ];
+                const bInv = P.div(P.one(), b);
+                const bInvDerivative = bInv.derivative(varName);
+                // For a/b, the derivative is the same as the derivative of a*(1/b)
+                 return [
+                    P.vadd(P.vmul(aDerivative[0], bInv), P.vmul(a, bInvDerivative[0])),
+                    P.vadd(P.vmul(aDerivative[1], bInv), P.vmul(a, bInvDerivative[1])),
+                    P.vadd(P.vmul(aDerivative[2], bInv), P.vmul(a, bInvDerivative[2])),
+                 ];
             },
         });
     }
