@@ -1384,6 +1384,18 @@ class Peptide {
         // Start simplification from the root (this)
         return simplifyNode(this);
     }
+
+    toString() {
+        if (this.value !== null) {
+            return this.value.toString();
+        } else if (this.third !== null) {
+            return this.op + '(' + this.left.toString() + ', ' + this.right.toString() + ', ' + this.third.toString() + ')';
+        } else if (this.right !== null) {
+            return this.op + '(' + this.left.toString() + ', ' + this.right.toString() + ')';
+        } else {
+            return this.op + '(' + this.left.toString() + ')';
+        }
+    }
 }
 
 // Create global P variable
