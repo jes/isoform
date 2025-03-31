@@ -355,7 +355,10 @@ class Peptide {
             derivative: (varName) => {
                 const aDerivative = a.derivative(varName);
                 const length = P.vlength(a);
-                const safeLength = P.sqrt(P.add(P.mul(length, length), P.const(1e-20)));
+
+                // here we use sqrt(x^2+eps) as a smooth approximation to |x|
+                // to avoid division by zero
+                const safeLength = P.sqrt(P.add(P.mul(length, length), P.const(1e-10)));
                 
                 // The derivative of length(v) with respect to a vector variable
                 // is the dot product of the normalized vector and the derivative
