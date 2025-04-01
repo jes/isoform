@@ -50,10 +50,11 @@ class VoxelNode extends TreeNode {
     // Get the normalized position within the AABB
     const size = this.aabb().getSize();
     const min = this.aabb().min;
+    const center = this.aabb().getCenter();
     
     // Calculate distance to the outside of the bounding box
     // This is negative inside the box, positive outside
-    const outsideDist = this.boxSDF(p, size);
+    const outsideDist = this.boxSDF(P.vsub(p, P.vconst(center)), size);
     
     // Normalize position to 0-1 range for texture sampling
     const posMinusMin = P.vsub(p, P.vconst(min));
