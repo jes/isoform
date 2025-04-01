@@ -138,8 +138,8 @@ class MeshNode extends TreeNode {
     const edge2 = P.vsub(v3, v1);
     const normal = P.vnormalize(P.vcross(edge1, edge2));
     
-    // Ray direction (assuming ray from point in +Z direction)
-    const rayDir = P.vconst(new Vec3(0, 0, 1));
+    // Ray direction (arbitrary - non-axis-aligned to avoid numerical issues)
+    const rayDir = P.vconst(new Vec3(0.1246345, 0.12343434, 1234234).normalize());
     
     // Check if ray is parallel to triangle
     const ndotray = P.vdot(normal, rayDir);
