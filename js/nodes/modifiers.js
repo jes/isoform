@@ -746,11 +746,12 @@ class ExtrudeNode extends TreeNode {
     this.blendRadius = 0.0;
     this.chamfer = false;
     this.draftAngle = 0.0;
+    this.axis = new Vec3(0, 0, 1);
     this.addChild(children);
   }
 
   properties() {
-    return {"height": "float", "blendRadius": "float", "chamfer": "bool", "draftAngle": "float"};
+    return {"height": "float", "axis": "vec3", "blendRadius": "float", "chamfer": "bool", "draftAngle": "float"};
   }
 
   grabHandles() {
@@ -770,7 +771,12 @@ class ExtrudeNode extends TreeNode {
       this.warn("Extrude node requires a 2D child");
       // carry on anyway
     }
-    const p2d = P.vec3(P.vecX(p), P.vecY(p), P.zero());
+    if (this.axis.z == 0){
+      throw new Error("Extrude axis must have non-zero Z component");
+    }
+    const axis = P.vnormalize(this.vuniform('axis'));
+    const t = P.div(P.vecZ(p), P.vecZ(axis));
+    const p2d = P.vsub(p, P.vmul(axis, t));
     const d2d = this.children[0].peptide(p2d);
     if (!d2d) return null;
     const halfHeight = P.div(this.uniform('height'), P.const(2.0));
