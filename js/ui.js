@@ -550,21 +550,21 @@ const ui = {
                 // Import the STL file
                 const mesh = await STL.import(file);
                 
-                // Create a new MeshNode with the imported mesh
-                const meshNode = new MeshNode(mesh);
+                // Create a new VoxelNode with the imported mesh
+                const voxelNode = VoxelNode.fromMesh(mesh);
                 
                 // Set a display name based on the file name
                 const fileName = file.name.replace(/\.stl$/i, '');
-                meshNode.setProperty('displayName', fileName);
+                voxelNode.setProperty('displayName', fileName);
                 
                 // Make sure the node has a unique name
-                meshNode.setUniqueName(app.document);
+                voxelNode.setUniqueName(app.document);
                 
                 // Add the mesh node to the parent
-                parentNode.addChild(meshNode);
+                parentNode.addChild(voxelNode);
                 
                 // Select the new node and update the tree
-                this.selectNode(meshNode);
+                this.selectNode(voxelNode);
                 this.renderTree();
                 
                 console.log(`Imported STL with ${mesh.vertices.length} vertices and ${mesh.triangles.length} triangles`);
