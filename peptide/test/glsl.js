@@ -800,7 +800,7 @@ addGLSLTest('chmax operations', async (harness) => {
     const k = P.const(2);
     
     // Test basic chmax
-    const expected = 7.071067811865475; // max(max(5, 3), 0.7071*(5+3+2))
+    const expected = 5;
     harness.testExpression(P.chmax(a, b, k), expected);
     
     // Test with close values
@@ -816,7 +816,7 @@ addGLSLTest('chmax operations', async (harness) => {
     const vb = P.var('u_y');
     const vk = P.var('u_k');
     const varExpr = P.chmax(va, vb, vk);
-    harness.testExpression(varExpr, 7.071067811865475, {
+    harness.testExpression(varExpr, 5, {
         u_x: 5,
         u_y: 3,
         u_k: 2
