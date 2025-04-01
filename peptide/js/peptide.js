@@ -1163,27 +1163,7 @@ class Peptide {
 
     static tan(a) {
         a.assertType('float');
-        return new Peptide('tan', 'float', null, a, null, null, {
-            evaluate: (vars) => Math.tan(a.evaluate(vars)),
-            jsCode: (ssaOp) => `${ssaOp.result} = Math.tan(${ssaOp.left});`,
-            jsIntervalCode: (ssaOp) => `${ssaOp.result} = ${ssaOp.left}.tan();`,
-            glslCode: (ssaOp) => `${ssaOp.result} = tan(${ssaOp.left});`,
-            glslIntervalCode: (ssaOp) => `${ssaOp.result} = itan(${ssaOp.left});`,
-            derivative: (varName) => {
-                const aDerivative = a.derivative(varName);
-                
-                // The derivative of tan(x) is sec²(x) = 1/cos²(x)
-                const cosA = P.cos(a);
-                const cosASquared = P.mul(cosA, cosA);
-                const secASquared = P.div(P.const(1.0), cosASquared);
-                
-                return [
-                    P.mul(secASquared, aDerivative[0]),
-                    P.mul(secASquared, aDerivative[1]),
-                    P.mul(secASquared, aDerivative[2])
-                ];
-            },
-        });
+        return P.div(P.sin(a), P.cos(a));
     }
 
     static vecX(a) {
