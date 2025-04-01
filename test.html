@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AABB Unit Tests</title>
+    <title>Isoform Unit Tests</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -101,7 +101,7 @@
     </style>
 </head>
 <body>
-    <h1>AABB Unit Tests</h1>
+    <h1>Isoform Unit Tests</h1>
     
     <div id="test-summary" class="test-summary">
         <div id="overall-status"></div>
@@ -121,24 +121,37 @@
             <h2>AABB Tests</h2>
             <div id="aabb-test-output"></div>
         </div>
+        
+        <div class="test-suite">
+            <h2>TreeNode Tests</h2>
+            <div id="treenode-test-output"></div>
+        </div>
     </div>
 
     <!-- Load dependencies -->
     <script src="peptide/js/vec3.js"></script>
     <script src="peptide/js/mat3.js"></script>
     <script src="js/aabb.js"></script>
+    <script src="js/nodes/treenode.js"></script>
     <script src="test/aabb.js"></script>
+    <script src="test/treenode.js"></script>
     
     <script>
         (async () => {
             const startTime = performance.now();
             const aabbOutput = document.getElementById('aabb-test-output');
+            const treenodeOutput = document.getElementById('treenode-test-output');
             const overallStatus = document.getElementById('overall-status');
             const testStats = document.getElementById('test-stats');
             
             aabbOutput.innerHTML = '<p>Running AABB tests...</p>';
+            treenodeOutput.innerHTML = '<p>Running TreeNode tests...</p>';
             
+            // Run all test suites
             const aabbResults = await AABBTests.run();
+            
+            // Run TreeNode tests with the new format
+            const treenodeResults = await TreeNodeTests.run();
             
             const formatResults = (results) => results.map(result => `
                 <div class="${result.passed ? 'test-pass' : 'test-fail'}">
@@ -149,9 +162,10 @@
             `).join('');
             
             aabbOutput.innerHTML = formatResults(aabbResults);
+            treenodeOutput.innerHTML = formatResults(treenodeResults);
             
             // After running all tests, collect and display failures
-            const failedTests = aabbResults.filter(r => !r.passed);
+            const failedTests = [...aabbResults.filter(r => !r.passed), ...treenodeResults.filter(r => !r.passed)];
             
             if (failedTests.length > 0) {
                 const failedTestsSection = document.getElementById('failed-tests-section');
@@ -161,8 +175,8 @@
             }
 
             // Calculate overall statistics
-            const totalTests = aabbResults.length;
-            const passedTests = aabbResults.filter(r => r.passed).length;
+            const totalTests = aabbResults.length + treenodeResults.length;
+            const passedTests = aabbResults.filter(r => r.passed).length + treenodeResults.filter(r => r.passed).length;
             const failedTestCount = totalTests - passedTests;
             const testTime = (performance.now() - startTime).toFixed(0);
             

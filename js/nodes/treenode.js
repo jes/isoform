@@ -233,10 +233,9 @@ class TreeNode {
   }
 
   hasParent(node) {
-    if (this == node) {
-      return true;
-    }
-    return this.parent?.hasParent(node);
+    if (!this.parent) return false;
+    if (this.parent == node) return true;
+    return this.parent.hasParent(node);
   }
 
   containsNode(node) {
