@@ -2,7 +2,7 @@
 const camera = {
     position: new Vec3(0.0, 0.0, 1000.0),
     target: new Vec3(0.0, 0.0, 0.0),
-    zoom: 0.015,
+    zoom: 0.075,
     // Replace flat arrays with Mat3 objects
     baseRotationMatrix: new Mat3(), // Identity matrix
     activeRotationMatrix: new Mat3(), // Identity matrix
