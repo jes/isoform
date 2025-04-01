@@ -1109,5 +1109,117 @@ addGLSLTest('matrix rotateToAxis', async (harness) => {
     harness.testExpression(transformedZ, expectedNorm);
 });
 
+addGLSLTest('tan function', async (harness) => {
+    // Test tan with constants
+    const angle = P.const(Math.PI / 4); // 45 degrees
+    const tanExpr = P.tan(angle);
+    harness.testExpression(tanExpr, 1.0); // tan(45°) = 1.0
+
+    // Test with variables
+    const x = P.var('u_x');
+    const tanVar = P.tan(x);
+    
+    harness.testExpression(tanVar, 0.0, { u_x: 0 }); // tan(0) = 0
+    harness.testExpression(tanVar, 1.0, { u_x: Math.PI / 4 }); // tan(π/4) = 1
+    
+    // Test relationship with sin and cos: tan(x) = sin(x)/cos(x)
+    const angle2 = P.const(0.5);
+    const sinDiv = P.div(P.sin(angle2), P.cos(angle2));
+    const tanSame = P.tan(angle2);
+    
+    // Both expressions should produce the same result
+    const expected = Math.tan(0.5);
+    harness.testExpression(sinDiv, expected);
+    harness.testExpression(tanSame, expected);
+});
+
+addGLSLTest('absBevelC2 and rampBevelC2 functions', async (harness) => {
+    // Test absBevelC2 with positive value
+    const abs1 = P.absBevelC2(P.const(5), P.const(1), P.const(0.9));
+    harness.testExpression(abs1, 5.0);
+    
+    // Test absBevelC2 with negative value
+    const abs2 = P.absBevelC2(P.const(-3), P.const(1), P.const(0.9));
+    harness.testExpression(abs2, 3.0);
+    
+    // Test absBevelC2 with value near zero
+    const abs3 = P.absBevelC2(P.const(0), P.const(1), P.const(0.9));
+    // Use the JS evaluation as reference to ensure consistent results
+    const jsResult = abs3.evaluate({});
+    harness.testExpression(abs3, jsResult);
+    
+    // Test rampBevelC2 with positive value
+    const ramp1 = P.rampBevelC2(P.const(5), P.const(1), P.const(0.9));
+    harness.testExpression(ramp1, 5.0);
+    
+    // Test rampBevelC2 with negative value
+    const ramp2 = P.rampBevelC2(P.const(-3), P.const(1), P.const(0.9));
+    harness.testExpression(ramp2, 0.0);
+    
+    // Test rampBevelC2 with value near zero
+    const ramp3 = P.rampBevelC2(P.const(0), P.const(1), P.const(0.9));
+    // Use the JS evaluation as reference
+    const jsResult2 = ramp3.evaluate({});
+    harness.testExpression(ramp3, jsResult2);
+    
+    // Test with variables
+    const x = P.var('u_x');
+    const w = P.var('u_w');
+    const s = P.var('u_s');
+    
+    const absVar = P.absBevelC2(x, w, s);
+    const rampVar = P.rampBevelC2(x, w, s);
+    
+    harness.testExpression(absVar, 3.0, { u_x: -3, u_w: 1, u_s: 0.9 });
+    harness.testExpression(rampVar, 0.0, { u_x: -3, u_w: 1, u_s: 0.9 });
+});
+
+addGLSLTest('enhanced vector normalization', async (harness) => {
+    // Test normalization of different vectors
+    const v1 = P.vconst(new Vec3(3, 0, 0));
+    const norm1 = P.vnormalize(v1);
+    harness.testExpression(norm1, new Vec3(1, 0, 0));
+    
+    const v2 = P.vconst(new Vec3(1, 1, 1));
+    const norm2 = P.vnormalize(v2);
+    const expected = new Vec3(1, 1, 1).normalize();
+    harness.testExpression(norm2, expected);
+    
+    // Test with variables
+    const v = P.vvar('u_v');
+    const norm = P.vnormalize(v);
+    
+    // Test unit vector remains unit
+    harness.testExpression(norm, new Vec3(1, 0, 0), { u_v: new Vec3(1, 0, 0) });
+    
+    // Test normalization of variable vector
+    harness.testExpression(norm, expected, { u_v: new Vec3(1, 1, 1) });
+    
+    // Test that |normalize(v)| = 1 by checking length of normalized vector
+    const normLength = P.vlength(norm);
+    harness.testExpression(normLength, 1.0, { u_v: new Vec3(5, 7, -3) });
+});
+
+addGLSLTest('vector component-wise operations', async (harness) => {
+    // Test component-wise vector operations
+    const v1 = P.vconst(new Vec3(2, 3, 4));
+    const v2 = P.vconst(new Vec3(1, 2, 3));
+    
+    // Component-wise multiplication
+    const vmul = P.vmulv(v1, v2);
+    harness.testExpression(vmul, new Vec3(2, 6, 12)); // (2*1, 3*2, 4*3)
+    
+    // Test with variables
+    const va = P.vvar('u_va');
+    const vb = P.vvar('u_vb');
+    
+    const vmulVar = P.vmulv(va, vb);
+    
+    harness.testExpression(vmulVar, new Vec3(2, 6, 12), { 
+        u_va: new Vec3(2, 3, 4), 
+        u_vb: new Vec3(1, 2, 3) 
+    });
+});
+
 // Export for browser
 window.PeptideGLSLTests = GLSLTests;
