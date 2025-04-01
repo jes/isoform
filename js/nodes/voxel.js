@@ -78,6 +78,26 @@ class VoxelNode extends TreeNode {
     const sdf = treeNode.getSDF();
     this.aabbBox = treeNode.aabb().clone();
     
+    // Calculate voxel size based on the AABB dimensions and desired resolution
+    const aabbSize = this.aabbBox.getSize();
+    const voxelSize = new Vec3(
+      aabbSize.x / this.size,
+      aabbSize.y / this.size,
+      aabbSize.z / this.size
+    );
+    
+    // Add exactly one voxel worth of padding on each side
+    this.aabbBox.min = this.aabbBox.min.sub(voxelSize);
+    this.aabbBox.max = this.aabbBox.max.add(voxelSize);
+    
+    // Recalculate the actual voxel size after padding
+    const paddedSize = this.aabbBox.getSize();
+    const adjustedVoxelSize = new Vec3(
+      paddedSize.x / this.size,
+      paddedSize.y / this.size,
+      paddedSize.z / this.size
+    );
+    
     // Create a new array for the voxel data
     const voxelData = new Array(this.size * this.size * this.size).fill(0);
     
