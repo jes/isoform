@@ -485,6 +485,7 @@ class TwistNode extends TreeNode {
     
     // Get the SDF value from the child
     const childSdf = this.children[0].peptide(p2);
+    if (!childSdf) return null;
     
     // Divide by the scaling factor to get a lower bound approximation
     return P.div(childSdf, maxScale);
