@@ -201,8 +201,7 @@ const app = {
 
 
                 const peptide = this.document.peptide(P.vvar('p')).derivative('p');
-                const peptideVec3 = P.vec3(peptide[0], peptide[1], peptide[2]);
-                const ssaNormal = new PeptideSSA(peptideVec3);
+                const ssaNormal = P.vec3(peptide[0], peptide[1], peptide[2]).ssa();
                 
                 this.primaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.primaryShaderLayer);
                 this.primaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.6, 0.6, 0.6]);
@@ -247,10 +246,10 @@ const app = {
             if (expr) {
                 console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
-                const ssa = new PeptideSSA(expr);
+                const ssa = expr.ssa();
                 const peptide = expr.derivative('p');
                 const peptideVec3 = P.vec3(peptide[0], peptide[1], peptide[2]);
-                const ssaNormal = new PeptideSSA(peptideVec3);
+                const ssaNormal = peptideVec3.ssa();
                 console.log(`SSA took ${performance.now() - startTime} ms`);
                 
                 this.secondaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.secondaryShaderLayer, node?.uniforms());

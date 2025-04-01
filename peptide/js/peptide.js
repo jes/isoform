@@ -1578,6 +1578,10 @@ class Peptide {
             return this.op + '(' + this.left.toString() + ')';
         }
     }
+
+    ssa() {
+        return new PeptideSSA(this);
+    }
 }
 
 // Create global P variable

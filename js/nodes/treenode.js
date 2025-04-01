@@ -331,8 +331,7 @@ class TreeNode {
       return (p) => 1000043.0;
     }
 
-    const peptide = this.peptide(P.vvar('p'));
-    const ssa = new PeptideSSA(peptide);
+    const ssa = this.peptide(P.vvar('p')).ssa();
     const js = ssa.compileToJS();
     const uniforms = this.uniforms();
     const fn = eval(js);
