@@ -772,7 +772,8 @@ class ExtrudeNode extends TreeNode {
       // carry on anyway
     }
     if (this.axis.z == 0){
-      throw new Error("Extrude axis must have non-zero Z component");
+      this.warn("Extrude axis must have non-zero Z component");
+      return this.noop();
     }
     const axis = P.vnormalize(this.vuniform('axis'));
     const t = P.div(P.vecZ(p), P.vecZ(axis));
