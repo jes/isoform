@@ -122,6 +122,21 @@ ifloat icos(ifloat x) {
     return isin(iadd(x, ifloat(1.5707963267948966)));
 }
 
+ifloat isqr(ifloat a) {
+    if (a.x >= 0.0) {
+        // Interval is fully non-negative
+        return ifloat(a.x*a.x, a.y*a.y);
+    } 
+    else if (a.y <= 0.0) {
+        // Interval is fully non-positive
+        return ifloat(a.y*a.y, a.x*a.x);
+    }
+    else {
+        // Interval crosses zero
+        return ifloat(0.0, max(a.x*a.x, a.y*a.y));
+    }
+}
+
 // Operations on interval vectors (ivec3)
 ivec3 iadd3(ivec3 a, ivec3 b) {
     return mat3(
