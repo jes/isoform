@@ -1329,10 +1329,40 @@ class Peptide {
             glslCode: (ssaOp) => `${ssaOp.result} = texture(${name}, ${ssaOp.left}).r;`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = itexture3D(${name}, ${ssaOp.left});`,
             derivative: (varName) => {
+                const posDerivative = pos.derivative(varName);
+                
+                // Using finite differences to approximate texture gradient
+                // We'll create a small expression that computes the gradient at runtime
+                
+                // Define a small step size for finite differences
+                const h = P.const(0.01); // Small step size
+                
+                // Create offset vectors for sampling in each direction
+                const stepX = P.vec3(h, P.zero(), P.zero());
+                const stepY = P.vec3(P.zero(), h, P.zero());
+                const stepZ = P.vec3(P.zero(), P.zero(), h);
+                
+                // Sample the texture at the center point
+                const centerValue = P.texture3d(name, pos);
+                
+                // Sample the texture at offset points
+                const valueXPlus = P.texture3d(name, P.vadd(pos, stepX));
+                const valueYPlus = P.texture3d(name, P.vadd(pos, stepY));
+                const valueZPlus = P.texture3d(name, P.vadd(pos, stepZ));
+                
+                // Calculate finite differences (forward difference)
+                const gradientX = P.div(P.sub(valueXPlus, centerValue), h);
+                const gradientY = P.div(P.sub(valueYPlus, centerValue), h);
+                const gradientZ = P.div(P.sub(valueZPlus, centerValue), h);
+                
+                // Create a gradient vector
+                const gradient = P.vec3(gradientX, gradientY, gradientZ);
+                
+                // The derivative is the dot product of the gradient with the position derivative
                 return [
-                    P.zero(),
-                    P.zero(),
-                    P.zero()
+                    P.vdot(gradient, posDerivative[0]),
+                    P.vdot(gradient, posDerivative[1]),
+                    P.vdot(gradient, posDerivative[2])
                 ];
             },
         });
@@ -1363,6 +1393,75 @@ class Peptide {
             },
             glslCode: (ssaOp) => `${ssaOp.result} = texture(${name}, ${ssaOp.left}).rgb;`,
             glslIntervalCode: (ssaOp) => `${ssaOp.result} = itexture3DVec(${name}, ${ssaOp.left});`,
+            derivative: (varName) => {
+                const posDerivative = pos.derivative(varName);
+                
+                // Using finite differences to approximate texture gradient
+                // For vector textures, we need to compute the Jacobian matrix
+                
+                // Define a small step size for finite differences
+                const h = P.const(0.01); // Small step size
+                
+                // Create offset vectors for sampling in each direction
+                const stepX = P.vec3(h, P.zero(), P.zero());
+                const stepY = P.vec3(P.zero(), h, P.zero());
+                const stepZ = P.vec3(P.zero(), P.zero(), h);
+                
+                // Sample the texture at the center point
+                const centerValue = P.vtexture3d(name, pos);
+                
+                // Sample the texture at offset points
+                const valueXPlus = P.vtexture3d(name, P.vadd(pos, stepX));
+                const valueYPlus = P.vtexture3d(name, P.vadd(pos, stepY));
+                const valueZPlus = P.vtexture3d(name, P.vadd(pos, stepZ));
+                
+                // Calculate finite differences for each component
+                const gradientX = P.vdiv(P.vsub(valueXPlus, centerValue), h);
+                const gradientY = P.vdiv(P.vsub(valueYPlus, centerValue), h);
+                const gradientZ = P.vdiv(P.vsub(valueZPlus, centerValue), h);
+                
+                // For each component of the derivative, we need to compute:
+                // dF/dx_i = (dF/dp_x * dp_x/dx_i) + (dF/dp_y * dp_y/dx_i) + (dF/dp_z * dp_z/dx_i)
+                // where p is the position and x_i is the variable we're differentiating with respect to
+                
+                // Extract components of the position derivatives
+                const dx_dx = P.vecX(posDerivative[0]);
+                const dy_dx = P.vecY(posDerivative[0]);
+                const dz_dx = P.vecZ(posDerivative[0]);
+                
+                const dx_dy = P.vecX(posDerivative[1]);
+                const dy_dy = P.vecY(posDerivative[1]);
+                const dz_dy = P.vecZ(posDerivative[1]);
+                
+                const dx_dz = P.vecX(posDerivative[2]);
+                const dy_dz = P.vecY(posDerivative[2]);
+                const dz_dz = P.vecZ(posDerivative[2]);
+                
+                // Compute the derivatives using the chain rule
+                return [
+                    P.vadd(
+                        P.vadd(
+                            P.vmul(gradientX, dx_dx),
+                            P.vmul(gradientY, dy_dx)
+                        ),
+                        P.vmul(gradientZ, dz_dx)
+                    ),
+                    P.vadd(
+                        P.vadd(
+                            P.vmul(gradientX, dx_dy),
+                            P.vmul(gradientY, dy_dy)
+                        ),
+                        P.vmul(gradientZ, dz_dy)
+                    ),
+                    P.vadd(
+                        P.vadd(
+                            P.vmul(gradientX, dx_dz),
+                            P.vmul(gradientY, dy_dz)
+                        ),
+                        P.vmul(gradientZ, dz_dz)
+                    )
+                ];
+            },
         });
     }
 
