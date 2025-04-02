@@ -160,7 +160,6 @@ class PeptideSSA {
     compileToJSInterval() {
         return this._compileToJS('jsIntervalCode');
     }
-
     _compileToJS(jsCodeFn) {
         if (this.operations.length === 0) {
             throw new Error('No operations to compile');

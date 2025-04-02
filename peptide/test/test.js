@@ -2595,9 +2595,6 @@ addTest('common subexpression elimination - structural verification', (evaluate)
         if (nodesBySignature.has(signature)) {
             // If the reference isn't the same, it's a structural duplicate
             if (nodesBySignature.get(signature) !== expr) {
-                console.log('Found duplicate:', signature);
-                console.log('Original:', nodesBySignature.get(signature));
-                console.log('Duplicate:', expr);
                 return true;
             }
         } else {
