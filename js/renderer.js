@@ -361,22 +361,7 @@ const renderer = {
     
     onCanvasContextMenu(e) {
         e.preventDefault();
-
-        let node = this.nodeUnderCursor;
-        
-        if (!node) node = app.document;
-        
-        // Update the coordinate display to ensure we have the latest node under cursor
-        this.updateCoordinateDisplay();
-        
-        // If we have a node under the cursor, show its context menu
-        if (node) {
-            // Select the node first
-            ui.selectNode(node);
-            
-            // Show the context menu at the mouse position
-            ui.showContextMenu(e, node);
-        }
+        ui.showContextMenu(e, this.nodeUnderCursor || app.document);
     },
     
     updateCoordinateDisplay() {
