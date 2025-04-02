@@ -2083,9 +2083,7 @@ addTest('derivative - min and max functions', (evaluate) => {
     
     // Test max function derivative
     const maxExpr = P.max(x, y);
-    console.log(maxExpr.toString());
     const maxDeriv = maxExpr.derivative('p');
-    console.log(maxDeriv.toString());
     
     // At p = (3, 1, 0), max(x,y) = max(3,1) = 3, so derivative should follow x
     let vars = { p: new Vec3(3, 1, 0) };
@@ -2455,6 +2453,88 @@ addTest('derivative - performance with complex expressions', (evaluate) => {
     const gradLength = Math.sqrt(gx*gx + gy*gy + gz*gz);
     // Gradient should be approximately normalized at the surface
     assertEquals(gradLength, 1.0, 0.1);
+});
+
+addTest('struct field evaluation and common subexpression elimination', (evaluate) => {
+    // Create a counter to track evaluations
+    let evaluationCount = 0;
+    
+    // Create a complex expression that we can track
+    const createTrackedExpr = () => {
+        const x = P.var('x');
+        const y = P.var('y');
+        
+        // This is our complex subexpression
+        // sin(x*y) + cos(x/y) - something we'd want to compute only once
+        const complex = P.sub(
+            P.add(
+                P.sin(P.mul(x, y)),
+                P.cos(P.div(x, y))
+            ),
+            P.const(0)  // Add a no-op to make the expression more complex
+        );
+        
+        // Wrap with a tracking function
+        return new Peptide('tracked', complex.type, "no-constant-folding", null, null, null, {
+            evaluate: (vars) => {
+                evaluationCount++;
+                return complex.evaluate(vars);
+            },
+            evaluateInterval: (vars) => {
+                evaluationCount++;
+                return complex.evaluateInterval(vars);
+            },
+            jsCode: (ssaOp) => complex.ops.jsCode(ssaOp),
+            jsIntervalCode: (ssaOp) => complex.ops.jsIntervalCode(ssaOp),
+        });
+    };
+    
+    // 2 identical expressions, but they should only be evaluated once
+    const struct = P.struct({
+        field1: createTrackedExpr(),
+        field2: createTrackedExpr()
+    });
+    
+    // Setup variables
+    const vars = {
+        x: 2,
+        y: 3,
+    };
+    
+    // Reset counter
+    evaluationCount = 0;
+    
+    // Evaluate the expression
+    const result = evaluate(struct, vars);
+    
+    // Calculate expected result
+    const expectedResult = Math.sin(2*3) + Math.cos(2/3);
+    
+    // Verify result is correct
+    assertEquals(result.field1, expectedResult, 0.0001);
+    assertEquals(result.field2, expectedResult, 0.0001);
+    
+    // The key test: ensure the tracked expression was only evaluated once
+    // If common subexpression elimination is working, evaluationCount should be 1
+    // If not, it would be 2 (once for each field)
+    assertEquals(evaluationCount, 1, 
+        "The shared subexpression should only be evaluated once, but was evaluated " + evaluationCount + " times");
+    
+    // Test with a different operation to ensure the expression is still shared
+    const field1 = P.field(struct, 'field1');
+    const field2 = P.field(struct, 'field2');
+    const multiplied = P.mul(field1, field2);
+    
+    // Reset counter
+    evaluationCount = 0;
+    
+    // Evaluate
+    const mulResult = evaluate(multiplied, vars);
+    
+    // Verify
+    assertEquals(mulResult, expectedResult * expectedResult, 0.0001);
+    assertEquals(evaluationCount, 1,
+        "The shared subexpression should only be evaluated once for multiplication");
 });
 
 // Export for browser

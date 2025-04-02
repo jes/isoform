@@ -1465,6 +1465,34 @@ class Peptide {
         });
     }
 
+    static struct(data) {
+        return new Peptide('struct', 'struct', data, null, null, null, {
+            evaluate: (vars) => {
+                const result = {};
+                for (const key in data) {
+                    result[key] = data[key].evaluate(vars);
+                }
+                return result;
+            },
+            evaluateInterval: (vars) => {
+                const result = {};
+                for (const key in data) {
+                    result[key] = data[key].evaluateInterval(vars);
+                }
+                return result;
+            },
+        });
+    }
+
+    static field(struct, field) {
+        struct.assertType('struct');
+        const node = struct.value[field];
+        if (!node) {
+            throw new Error(`Field '${field}' not found in struct`);
+        }
+        return node;
+    }
+
     evaluate(vars = {}) {
         const evalFn = this.ops.evaluate;
         if (!evalFn) {
@@ -1477,6 +1505,8 @@ class Peptide {
             throw new Error(`Operation '${this.op}' returned ${typeof result} but declared vec3 type`);
         } else if (this.type === 'mat3' && !(result instanceof Mat3)) {
             throw new Error(`Operation '${this.op}' returned ${typeof result} but declared mat3 type`);
+        } else if (this.type === 'struct' && !(result instanceof Object)) {
+            throw new Error(`Operation '${this.op}' returned ${typeof result} but declared struct type`);
         }
         return result;
     }
@@ -1491,6 +1521,8 @@ class Peptide {
             throw new Error(`Operation '${this.op}' returned ${typeof result} but declared float type`);
         } else if (this.type === 'vec3' && !(result instanceof Ivec3)) {
             throw new Error(`Operation '${this.op}' returned ${typeof result} but declared vec3 type`);
+        } else if (this.type === 'struct' && !(result instanceof Object)) {
+            throw new Error(`Operation '${this.op}' returned ${typeof result} but declared struct type`);
         }
         return result;
     }
@@ -1564,7 +1596,15 @@ class Peptide {
         };
         
         // Start simplification from the root (this)
-        return simplifyNode(this);
+        if (this.type === 'struct') {
+            // For structs, simplify each field individually
+            for (const key in this.value) {
+                this.value[key] = simplifyNode(this.value[key]);
+            }
+            return this;
+        } else {
+            return simplifyNode(this);
+        }
     }
 
     toString() {
