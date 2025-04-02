@@ -154,11 +154,13 @@ void main() {
         }
         
         // Create new fragment shader with the provided code
-        const fsSource = this.fsTemplate
+        return this.fsTemplate
             .replace('{{PEPTIDE_CODE}}', peptideCode)
             .replace('{{TEST_CODE}}', testCode)
             .replace('{{GLSL_INTERVAL_LIBRARY}}', this.intervalMode ? glslIntervalLibrary : '');
+    }
         
+    compileFragmentShader(fsSource) {
         this.fragmentShader = this.compileShader(fsSource, this.gl.FRAGMENT_SHADER);
         this.gl.attachShader(this.program, this.fragmentShader);
         this.gl.linkProgram(this.program);
@@ -248,14 +250,26 @@ void main() {
     
     // Main test method
     testExpression(peptideExpr, expectedValue, variables = {}) {
+        // set up struct declaration if expectedValue is an object
+        let structDeclaration = '';
+        let structName = null;
+        if (peptideExpr.type === 'struct') {
+            structName = 'ResultStruct';
+            structDeclaration = `
+                struct ${structName} {
+                    ${Object.keys(expectedValue).map(field => `float ${field};`).join('\n')}
+                };
+            `;
+        }
+ 
         // Compile the Peptide expression to GLSL
         const ssa = new PeptideSSA(peptideExpr);
-        const returnType = peptideExpr.type;
+        const returnType = structName || peptideExpr.type;
         
         // Use interval or direct code based on mode
         const glslCode = this.intervalMode ? 
-            ssa.compileToGLSLInterval(`${this.getIntervalReturnType(returnType)} peptide()`) :
-            ssa.compileToGLSL(`${returnType} peptide()`);
+            ssa.compileToGLSLInterval(`${this.getIntervalReturnType(returnType)} peptide()`, structName) :
+            ssa.compileToGLSL(`${returnType} peptide()`, structName);
         
         // Create uniform declarations for variables
         let uniformDeclarations = '';
@@ -277,7 +291,7 @@ void main() {
                     `uniform mat3 ${name};\n`;
             }
         }
-        
+       
         // Create test code based on mode and type
         if (this.intervalMode) {
             testCode = this.createIntervalTestCode(peptideExpr.type, expectedValue);
@@ -285,11 +299,7 @@ void main() {
             testCode = this.createDirectTestCode(peptideExpr.type, expectedValue);
         }
 
-        // Store the complete shader code for debugging
-        const completeShaderCode = this.fsTemplate
-            .replace('{{PEPTIDE_CODE}}', uniformDeclarations + glslCode)
-            .replace('{{TEST_CODE}}', testCode)
-            .replace('{{GLSL_INTERVAL_LIBRARY}}', this.intervalMode ? glslIntervalLibrary : '');
+        const completeShaderCode = this.createFragmentShader(uniformDeclarations + structDeclaration + glslCode, testCode);
 
         const storeFailedTest = (actual) => {
             if (!window.peptideFailedTests) {
@@ -307,7 +317,7 @@ void main() {
 
         try {
             // Create and link the fragment shader
-            this.createFragmentShader(uniformDeclarations + glslCode, testCode);
+            this.compileFragmentShader(completeShaderCode);
         } catch (error) {
             console.error('GLSL test error:', error);
             storeFailedTest(error.message);
@@ -341,11 +351,17 @@ void main() {
         this.gl.deleteTexture(this.texture);
     }
 
-    getIntervalReturnType(type) {
-        return type === 'float' ? 'ifloat' : 'ivec3';
+    getIntervalReturnType(type, structName = 'ResultStruct') {
+        if (type === 'float') {
+            return 'ifloat';
+        } else if (type === 'vec3') {
+            return 'ivec3';
+        } else if (type === 'struct') {
+            return structName;
+        }
     }
 
-    createDirectTestCode(type, expectedValue) {
+    createDirectTestCode(type, expectedValue, structName = 'ResultStruct') {
         if (type === 'float') {
             return `
                 float result = peptide();
@@ -371,10 +387,30 @@ void main() {
                     fragColor.a = length(result - expected) / 255.0;
                 }
             `;
+        } else if (type === 'struct') {
+            const expectedStruct = expectedValue;
+            const fieldNames = Object.keys(expectedStruct);
+            const fieldChecks = fieldNames.map(field => 
+                `abs(result.${field} - ${expectedStruct[field].toFixed(16)}) < epsilon`
+            ).join(' && ');
+            
+            return `
+                ${structName} result = peptide();
+                float epsilon = 0.001;
+                
+                // Check all fields match expected values
+                if (${fieldChecks}) {
+                    fragColor = vec4(0.0, 1.0, 0.0, 1.0);
+                } else {
+                    fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                    // Use the first field's value for debug info
+                    fragColor.a = result.${fieldNames[0]} / 255.0;
+                }
+            `;
         }
     }
 
-    createIntervalTestCode(type, expectedValue) {
+    createIntervalTestCode(type, expectedValue, structName = 'ResultStruct') {
         if (type === 'float') {
             return `
                 ifloat result = peptide();
@@ -407,6 +443,12 @@ void main() {
                     fragColor.a = result[0].x / 255.0;
                 }
             `;
+        } else if (type === 'struct') {
+            const expectedStruct = expectedValue;
+            const fieldNames = Object.keys(expectedStruct);
+            const fieldChecks = fieldNames.map(field => 
+                `abs(result[0].${field} - ${expectedStruct[field].toFixed(16)}) < epsilon`
+            ).join(' && ');
         }
     }
 }
@@ -1219,6 +1261,42 @@ addGLSLTest('vector component-wise operations', async (harness) => {
         u_va: new Vec3(2, 3, 4), 
         u_vb: new Vec3(1, 2, 3) 
     });
+});
+
+addGLSLTest('struct field evaluation', async (harness) => {
+    // Create a complex expression that we can track
+    const createComplexExpr = () => {
+        const x = P.var('x');
+        const y = P.var('y');
+        
+        // This is our complex subexpression
+        // sin(x*y) + cos(x/y) - something we'd want to compute only once
+        return P.sub(
+            P.add(
+                P.sin(P.mul(x, y)),
+                P.cos(P.div(x, y))
+            ),
+            P.const(0)  // Add a no-op to make the expression more complex
+        );
+    };
+
+    // 2 identical expressions, but they should only be evaluated once
+    const struct = P.struct({
+        field1: createComplexExpr(),
+        field2: createComplexExpr()
+    });
+    
+    // Setup variables
+    const vars = {
+        x: 2,
+        y: 3,
+    };
+    
+    // Test the struct field evaluation
+    harness.testExpression(struct, {
+        field1: Math.sin(2*3) + Math.cos(2/3),
+        field2: Math.sin(2*3) + Math.cos(2/3)
+    }, vars);
 });
 
 // Export for browser

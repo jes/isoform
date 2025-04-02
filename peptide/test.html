@@ -42,6 +42,27 @@
             padding: 10px;
             overflow: auto;
             max-height: 400px;
+            position: relative;
+            font-family: monospace;
+            counter-reset: line;
+        }
+        
+        .debug-dialog pre code {
+            display: block;
+            padding-left: 3.5em;
+            counter-increment: line;
+        }
+        
+        .debug-dialog pre code:before {
+            content: counter(line);
+            position: absolute;
+            left: 0;
+            width: 3em;
+            text-align: right;
+            color: #888;
+            padding-right: 0.5em;
+            border-right: 1px solid #555;
+            user-select: none;
         }
         
         .debug-dialog-close {
@@ -316,7 +337,18 @@
                     .join('');
                 
                 document.getElementById('failed-variables').textContent = formattedVars;
-                document.getElementById('failed-glsl-code').textContent = test.shaderCode;
+                
+                // Format GLSL code with line numbers - preserve empty lines
+                const glslCode = test.shaderCode || '';
+                const codeLines = glslCode.split('\n');
+                const codeWithLineNumbers = codeLines
+                    .map(line => {
+                        // Use a non-breaking space for empty lines to ensure they take up space
+                        return `<code>${line.length === 0 ? '&nbsp;' : line}</code>`;
+                    })
+                    .join('');
+                
+                document.getElementById('failed-glsl-code').innerHTML = codeWithLineNumbers;
             }
         })();
     </script>

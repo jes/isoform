@@ -201,17 +201,17 @@ class PeptideSSA {
         return code;
     }
 
-    compileToGLSL(signature = 'float map(vec3 p)') {
-        return this._compileToGLSL('glslCode', signature);
+    compileToGLSL(signature = 'float map(vec3 p)', structName = null) {
+        return this._compileToGLSL('glslCode', signature, {}, structName);
     }
-    compileToGLSLInterval(signature = 'float map(ivec3 p)') {
+    compileToGLSLInterval(signature = 'float map(ivec3 p)', structName = null) {
         const typeMap = {
             float: 'ifloat',
             vec3: 'ivec3',
         };
-        return this._compileToGLSL('glslIntervalCode', signature, typeMap);
+        return this._compileToGLSL('glslIntervalCode', signature, typeMap, structName);
     }
-    _compileToGLSL(glslCodeFn, signature, typeMap = {}) {
+    _compileToGLSL(glslCodeFn, signature, typeMap = {}, structName = null) {
         if (this.operations.length === 0) {
             throw new Error('No operations to compile');
         }
@@ -234,8 +234,15 @@ class PeptideSSA {
             code += `  ${op.node.ops[glslCodeFn](op)}\n`;
         }
 
-        code += `  return ${this.operations[this.operations.length - 1].result};\n`;
-
+        if (this.struct) {
+            code += `  ${structName} result;\n`;
+            for (const field of Object.keys(this.struct)) {
+                code += `  result.${field} = ${this.struct[field]};\n`;
+            }
+            code += `  return result;\n`;
+        } else {
+            code += `  return ${this.operations[this.operations.length - 1].result};\n`;
+        }
         return `${signature} {\n${code}\n}`;
     }
 }
