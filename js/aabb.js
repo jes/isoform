@@ -208,6 +208,29 @@ class AABB {
     }
 
     /**
+     * Check if this AABB is empty (min >= max)
+     * @returns {boolean} True if this is an empty AABB
+     */
+    isEmpty() {
+        return (
+            this.min.x >= this.max.x ||
+            this.min.y >= this.max.y ||
+            this.min.z >= this.max.z
+        );
+    }
+
+    /**
+     * Check if this AABB is infinite
+     * @returns {boolean} True if this is an infinite AABB
+     */
+    isInfinite() {
+        return (
+            this.min.x === -Infinity && this.min.y === -Infinity && this.min.z === -Infinity &&
+            this.max.x === Infinity && this.max.y === Infinity && this.max.z === Infinity
+        );
+    }
+
+    /**
      * Get the intersection of this AABB with another AABB
      * @param {AABB} aabb - AABB to intersect with
      * @returns {AABB|null} New AABB representing the intersection, or null if no intersection
@@ -319,7 +342,7 @@ class AABB {
         
         // If the result is still empty, the subtraction might have resulted in disjoint regions
         // In this case, we return the original AABB as a conservative approximation
-        if (result.equals(AABB.empty())) {
+        if (result.isEmpty()) {
             return this.clone();
         }
         

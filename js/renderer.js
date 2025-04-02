@@ -25,7 +25,7 @@ const renderer = {
     coordDisplay: null,
     
     mouseDebounceTimeout: null,
-    mouseDebounceDelay: 50, // ms
+    mouseDebounceDelay: 0, // ms
     lastMousePosition: null,
 
     nodeUnderCursor: null,

@@ -138,6 +138,8 @@ const app = {
         if (this.primaryShaderLayer) {
             this.primaryShaderLayer.setUniform('float', 'uOpacity', camera.opacity);
             this.primaryShaderLayer.setUniforms(this.document.uniforms());
+            const hoverId = renderer.nodeUnderCursor?.uniqueId ?? -1;
+            this.primaryShaderLayer.setUniform('float', 'uObjectUnderCursor', hoverId);
             shaderLayers.push(this.primaryShaderLayer);
         }
         if (this.secondaryShaderLayer) {
@@ -213,7 +215,7 @@ const app = {
             this.document.markClean();
         }
 
-        if (currentSecondaryNode !== null) {
+        if (currentSecondaryNode !== null && !currentSecondaryNode.aabb().isInfinite()) {
             let expr;
             let node;
             
@@ -336,11 +338,7 @@ const app = {
     },
 
     defaultColor() {
-        return P.vconst(new Vec3(
-            Math.random(),
-            Math.random(),
-            Math.random()
-        ));
+        return P.vconst(new Vec3(0.6, 0.6, 0.6));
     },
 };
 
