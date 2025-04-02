@@ -255,11 +255,19 @@ void main() {
         let structName = null;
         if (peptideExpr.type === 'struct') {
             structName = 'ResultStruct';
-            structDeclaration = `
-                struct ${structName} {
-                    ${Object.keys(expectedValue).map(field => `float ${field};`).join('\n')}
-                };
-            `;
+            if (this.intervalMode) {
+                structDeclaration = `
+                    struct ${structName} {
+                        ${Object.keys(expectedValue).map(field => `${this.getIntervalType(peptideExpr.value[field].type)} ${field};`).join('\n')}
+                    };
+                `;
+            } else {
+                structDeclaration = `
+                    struct ${structName} {
+                        ${Object.keys(expectedValue).map(field => `${peptideExpr.value[field].type} ${field};`).join('\n')}
+                    };
+                `;
+            }
         }
  
         // Compile the Peptide expression to GLSL
@@ -268,7 +276,7 @@ void main() {
         
         // Use interval or direct code based on mode
         const glslCode = this.intervalMode ? 
-            ssa.compileToGLSLInterval(`${this.getIntervalReturnType(returnType)} peptide()`, structName) :
+            ssa.compileToGLSLInterval(`${this.getIntervalType(returnType)} peptide()`, structName) :
             ssa.compileToGLSL(`${returnType} peptide()`, structName);
         
         // Create uniform declarations for variables
@@ -351,14 +359,10 @@ void main() {
         this.gl.deleteTexture(this.texture);
     }
 
-    getIntervalReturnType(type, structName = 'ResultStruct') {
-        if (type === 'float') {
-            return 'ifloat';
-        } else if (type === 'vec3') {
-            return 'ivec3';
-        } else if (type === 'struct') {
-            return structName;
-        }
+    getIntervalType(type) {
+        if (type === 'float') return 'ifloat';
+        if (type === 'vec3') return 'ivec3';
+        return type;
     }
 
     createDirectTestCode(type, expectedValue, structName = 'ResultStruct') {
@@ -447,8 +451,23 @@ void main() {
             const expectedStruct = expectedValue;
             const fieldNames = Object.keys(expectedStruct);
             const fieldChecks = fieldNames.map(field => 
-                `abs(result[0].${field} - ${expectedStruct[field].toFixed(16)}) < epsilon`
+                `abs(result.${field}.x - ${expectedStruct[field].toFixed(16)}) < epsilon && 
+                 abs(result.${field}.y - ${expectedStruct[field].toFixed(16)}) < epsilon`
             ).join(' && ');
+            
+            return `
+                ${structName} result = peptide();
+                float epsilon = 0.001;
+                
+                // Check all fields match expected values within intervals
+                if (${fieldChecks}) {
+                    fragColor = vec4(0.0, 1.0, 0.0, 1.0);
+                } else {
+                    fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                    // Use the first field's value for debug info
+                    fragColor.a = result.${fieldNames[0]}.x / 255.0;
+                }
+            `;
         }
     }
 }
