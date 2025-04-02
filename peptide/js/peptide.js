@@ -964,14 +964,14 @@ class Peptide {
         a.assertType('float');
         b.assertType('float');
         c.assertType('float');
-        return P.mix(c, b, a);
+        return P.mix(c, b, P.step(P.const(0.5), a));
     }
 
     static vcond(a, b, c) {
         a.assertType('float');
         b.assertType('vec3');
         c.assertType('vec3');
-        return P.vmix(c, b, a);
+        return P.vmix(c, b, P.step(P.const(0.5), a));
     }
 
     static neg(a) {
