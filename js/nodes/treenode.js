@@ -58,6 +58,15 @@ class TreeNode {
 
   /// the rest of this class should not generally be overridden
 
+  findNodeById(id) {
+    if (this.uniqueId === id) return this;
+    for (const child of this.children) {
+      const result = child.findNodeById(id);
+      if (result) return result;
+    }
+    return null;
+  }
+
   // return a map of uniform name to value
   uniforms() {
     return this.dfsUniforms();

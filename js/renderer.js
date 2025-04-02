@@ -27,6 +27,8 @@ const renderer = {
     mouseDebounceTimeout: null,
     mouseDebounceDelay: 50, // ms
     lastMousePosition: null,
+
+    nodeUnderCursor: null,
     
     async init() {
         this.canvas = document.getElementById('glCanvas');
@@ -37,6 +39,8 @@ const renderer = {
         this.canvas.addEventListener('mouseout', () => {
             if (this.coordDisplay) this.coordDisplay.style.display = 'none';
         });
+
+        this.canvas.addEventListener('click', (e) => this.onCanvasClick(e));
 
         this.canvas.addEventListener('webglcontextlost', (event) => {
             console.log('WebGL context lost');
@@ -346,6 +350,11 @@ const renderer = {
             this.updateCoordinateDisplay();
         }, this.mouseDebounceDelay);
     },
+
+    onCanvasClick(e) {
+        if (!this.nodeUnderCursor) return;
+        ui.selectNode(this.nodeUnderCursor);
+    },
     
     updateCoordinateDisplay() {
         if (!this.lastMousePosition) return;
@@ -356,6 +365,8 @@ const renderer = {
         
         // Raymarch from this point
         const result = this.rayMarchFromPoint(ro, rd);
+
+        this.nodeUnderCursor = app.document.findNodeById(result.uniqueId);
         
         // Display coordinates if we hit something
         this.displayCoordinatesIfHit(result);
@@ -384,7 +395,7 @@ const renderer = {
     displayCoordinatesIfHit(result) {
         if (result.hit) {
             const coords = result.hitPosition || new Vec3(0, 0, 0);
-            const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}<br>ID: ${result.uniqueId}`;
+            const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}<br><i>(${this.nodeUnderCursor.displayName})</i>`;
             
             this.coordDisplay.innerHTML = text;
             this.coordDisplay.style.display = 'block';
