@@ -358,9 +358,12 @@ class OffsetNode extends TreeNode {
       return this.noop();
     }
 
-    const d = this.children[0].peptide(p);
-    if (!d) return null;
-    return P.add(d, this.uniform('distance'));
+    const child = this.children[0].peptide(p);
+    if (!child) return null;
+    return P.struct({
+      distance: P.add(P.field(child, 'distance'), this.uniform('distance')),
+      color: P.field(child, 'color'),
+    });
   }
 
   getIcon() {
@@ -409,9 +412,12 @@ class ScaleNode extends TreeNode {
     }
 
     if (!this.alongAxis) {
-      const d = this.children[0].peptide(P.vdiv(p, this.uniform('k')));
-      if (!d) return null;
-      return P.mul(d, this.uniform('k'));
+      const child = this.children[0].peptide(P.vdiv(p, this.uniform('k')));
+      if (!child) return null;
+      return P.struct({
+        distance: P.mul(P.field(child, 'distance'), this.uniform('k')),
+        color: P.field(child, 'color'),
+      });
     }
 
     const axis = P.vdiv(this.vuniform('axis'), P.vlength(this.vuniform('axis')));
@@ -420,13 +426,16 @@ class ScaleNode extends TreeNode {
     const perpVec = P.vsub(p, projVec);
     const scaledP = P.vadd(perpVec, P.vdiv(projVec, this.uniform('k')));
 
-    const d = this.children[0].peptide(scaledP);
-    if (!d) return null;
+    const child = this.children[0].peptide(scaledP);
+    if (!child) return null;
 
     if (this.k > 1.0) {
-      return d;
+      return child;
     } else {
-      return P.mul(d, this.uniform('k'));
+      return P.struct({
+        distance: P.mul(P.field(child, 'distance'), this.uniform('k')),
+        color: P.field(child, 'color'),
+      });
     }
   }
 
@@ -505,11 +514,14 @@ class TwistNode extends TreeNode {
     const maxScale = P.add(P.one(), P.mul(distFromAxis, twistRate));
     
     // Get the SDF value from the child
-    const childSdf = this.children[0].peptide(p2);
-    if (!childSdf) return null;
+    const child = this.children[0].peptide(p2);
+    if (!child) return null;
     
     // Divide by the scaling factor to get a lower bound approximation
-    return P.div(childSdf, maxScale);
+    return P.struct({
+      distance: P.div(P.field(child, 'distance'), maxScale),
+      color: P.field(child, 'color'),
+    });
   }
 
   getIcon() {
@@ -552,7 +564,7 @@ class MirrorNode extends TreeNode {
 
     if (this.keepOriginal) {
       const original = this.children[0].peptide(p);
-      return this.min(original, mirrored);
+      return this.structmin(original, mirrored);
     } else {
       return mirrored;
     }
@@ -632,12 +644,12 @@ class LinearPatternNode extends TreeNode {
 
     const axis = P.vdiv(this.vuniform('axis'), P.vlength(this.vuniform('axis')));
     const step = P.vmul(axis, this.uniform('spacing'));
-    let d = this.children[0].peptide(p);
+    let child = this.children[0].peptide(p);
     for (let i = 1; i < this.copies; i++) {
       const pi = P.vsub(p, P.vmul(step, P.const(i)));
-      d = this.min(d, this.children[0].peptide(pi));
+      child = this.structmin(child, this.children[0].peptide(pi));
     }
-    return d;
+    return child;
   }
 
   getIcon() {
@@ -708,7 +720,7 @@ class PolarPatternNode extends TreeNode {
 
     const q = P.mvmul(toAxisSpace, p);
     const angleIncrement = P.div(totalAngle, P.const(this.copies));
-    let d = this.children[0].peptide(p);
+    let child = this.children[0].peptide(p);
     for (let i = 1; i < this.copies; i++) {
       const angle = P.mul(angleIncrement, P.const(i));
       const c = P.cos(angle);
@@ -719,9 +731,9 @@ class PolarPatternNode extends TreeNode {
         P.vecZ(q)
       );
       const p1 = P.mvmul(fromAxisSpace, rotated);
-      d = this.min(d, this.children[0].peptide(p1));
+      child = this.structmin(child, this.children[0].peptide(p1));
     }
-    return d;
+    return child;
   }
 
   getIcon() {
