@@ -41,6 +41,9 @@ const renderer = {
         });
 
         this.canvas.addEventListener('click', (e) => this.onCanvasClick(e));
+        
+        // Add context menu handler for right-click on canvas
+        this.canvas.addEventListener('contextmenu', (e) => this.onCanvasContextMenu(e));
 
         this.canvas.addEventListener('webglcontextlost', (event) => {
             console.log('WebGL context lost');
@@ -354,6 +357,26 @@ const renderer = {
     onCanvasClick(e) {
         if (!this.nodeUnderCursor) return;
         ui.selectNode(this.nodeUnderCursor);
+    },
+    
+    onCanvasContextMenu(e) {
+        e.preventDefault();
+
+        let node = this.nodeUnderCursor;
+        
+        if (!node) node = app.document;
+        
+        // Update the coordinate display to ensure we have the latest node under cursor
+        this.updateCoordinateDisplay();
+        
+        // If we have a node under the cursor, show its context menu
+        if (node) {
+            // Select the node first
+            ui.selectNode(node);
+            
+            // Show the context menu at the mouse position
+            ui.showContextMenu(e, node);
+        }
     },
     
     updateCoordinateDisplay() {
