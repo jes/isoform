@@ -47,7 +47,7 @@ class PeptideSSA {
             resultVar = this.processNode(expr);
         }
 
-        //this.greedyAllocate();
+        this.greedyAllocate();
 
         return resultVar;
     }
@@ -56,7 +56,7 @@ class PeptideSSA {
         if (type === 'float') return 'f';
         if (type === 'vec3') return 'v';
         if (type === 'mat3') return 'm';
-        throw new Error('Unknown type: ' + type);
+        return type.charAt(0);
     }
 
     /**
@@ -77,6 +77,16 @@ class PeptideSSA {
                     usedVars.add(varName);
                     return varName;
                 }
+            }
+        }
+
+        // re-map struct field variable names
+        if (this.struct) {
+            for (const field in this.struct) {
+                if (!map.has(this.struct[field])) {
+                    map.set(this.struct[field], alloc(this.struct[field]));
+                }
+                this.struct[field] = map.get(this.struct[field]);
             }
         }
 
