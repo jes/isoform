@@ -22,7 +22,7 @@ const scene = {
             uniformsSrc += `uniform ${type} ${name};\n`;
         }
 
-        const glslSrc = ssa.compileToGLSL(`float peptide(vec3 p)`);
+        const glslSrc = ssa.compileToGLSL(`SDFResult peptide(vec3 p)`, 'SDFResult');
         const glslSrcNormal = ssaNormal.compileToGLSL(`vec3 peptideNormal(vec3 p)`);
 
         // Get the original shader source
@@ -43,7 +43,8 @@ const scene = {
         // Build the new scene combination code
         let newSceneCode = uniformsSrc + glslSrc + glslSrcNormal + `
         float map(vec3 p) {
-            return peptide(uRotationMatrix * p);
+            SDFResult result = peptide(uRotationMatrix * p);
+            return result.distance;
         }
         vec3 mapNormal(vec3 p) {
             vec3 grad = peptideNormal(uRotationMatrix * p);
@@ -54,6 +55,8 @@ const scene = {
         const newSource = originalSource.substring(0, startIndex) + 
                    newSceneCode +
                    originalSource.substring(endIndex);
+
+        console.log(newSource);
 
         return newSource;
     }

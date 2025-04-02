@@ -196,7 +196,7 @@ const app = {
                 console.log(`Peptide expression took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
                 let ssa;
-                [this.sdf, ssa] = this.document.getSDFAndSSA();
+                [this.sdf, ssa] = this.document.getSDFAndSSA(true);
                 console.log(`SSA took ${performance.now() - startTime} ms`);
 
 
@@ -246,7 +246,7 @@ const app = {
             if (expr) {
                 console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
-                const ssa = P.field(expr, 'distance').ssa();
+                const ssa = expr.ssa();
                 const peptide = P.field(expr, 'distance').derivative('p');
                 const peptideVec3 = P.vec3(peptide[0], peptide[1], peptide[2]);
                 const ssaNormal = peptideVec3.ssa();
@@ -333,7 +333,11 @@ const app = {
     },
 
     defaultColor() {
-        return P.vconst(new Vec3(0.6, 0.6, 0.6));
+        return P.vconst(new Vec3(
+            Math.random(),
+            Math.random(),
+            Math.random()
+        ));
     },
 };
 

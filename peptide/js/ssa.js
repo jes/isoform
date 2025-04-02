@@ -47,7 +47,7 @@ class PeptideSSA {
             resultVar = this.processNode(expr);
         }
 
-        this.greedyAllocate();
+        //this.greedyAllocate();
 
         return resultVar;
     }

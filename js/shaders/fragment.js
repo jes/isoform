@@ -20,6 +20,11 @@ uniform vec3 uObjectColor;
 
 float mapsign = 1.0;
 
+struct SDFResult {
+    float distance;
+    vec3 color;
+};
+
 // begin scene
 float map(vec3 p) {
     p = uRotationMatrix * p;
@@ -75,6 +80,7 @@ struct MarchResult {
     vec3 hitPosition;  // Position of the hit
     int steps;         // Number of steps taken
     float sdf;         // SDF value at the hit position
+    vec3 color;        // Color of the hit position
 };
 
 MarchResult rayMarch(vec3 ro, vec3 rd) {
@@ -82,17 +88,20 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
     result.distance = 0.0;
     result.hit = false;
     result.steps = 0;
+    result.color = vec3(0.9, 0.1, 0.1);
 
     vec3 p = ro;
     float lastD = 0.0;
     for (int i = 0; i < MAX_STEPS; i++) {
         result.steps++; // Increment step counter
-        float d = mapsign * map(p);
+        SDFResult m = peptide(uRotationMatrix * p);
+        float d = m.distance * mapsign;
         result.sdf = d;
         result.hitPosition = p;
         
         if (d < 0.0) {
             result.hit = true;
+            result.color = m.color;
             break;
         }
         
@@ -273,7 +282,7 @@ OrthoProjectionResult orthoProjection(vec3 ro, vec3 rd, vec3 right, vec3 up, flo
         
         // Combine lighting components
         vec3 diffuse = diff1 * lightColor1 + diff2 * lightColor2 + diff3 * lightColor3;
-        result.color = (ambient + diffuse + specular + rim) * uObjectColor;
+        result.color = (ambient + diffuse + specular + rim) * marchResult.color;
         
         // Apply edge highlighting
         vec3 edgeColor = vec3(1.0, 1.0, 1.0); // White edge highlight

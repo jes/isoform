@@ -968,7 +968,6 @@ class Peptide {
     }
 
     static vcond(a, b, c) {
-        console.log('vcond', a, b, c);
         a.assertType('float');
         b.assertType('vec3');
         c.assertType('vec3');

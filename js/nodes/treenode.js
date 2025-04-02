@@ -347,13 +347,19 @@ class TreeNode {
   }
 
   // return a pair of [sdf, ssa]
-  getSDFAndSSA() {
+  getSDFAndSSA(wantStruct = false) {
     if (this.isDisabled) {
       // ??? what else can we do?
       return (p) => 1000043.0;
     }
 
-    const ssa = P.field(this.peptide(P.vvar('p')), 'distance').ssa();
+    let expr;
+    if (wantStruct) {
+      expr = this.peptide(P.vvar('p'));
+    } else {
+      expr = P.field(this.peptide(P.vvar('p')), 'distance');
+    }
+    const ssa = expr.ssa();
     const js = ssa.compileToJS();
     const uniforms = this.uniforms();
     const fn = eval(js);
