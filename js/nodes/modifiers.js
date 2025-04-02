@@ -296,7 +296,7 @@ class InfillNode extends TreeNode {
   }
 
   properties() {
-    return {"thickness": "float"};
+    return {"thickness": "float", "blendRadius": "float", "chamfer": "bool"};
   }
 
   makePeptide(p) {
@@ -317,14 +317,16 @@ class InfillNode extends TreeNode {
     const negD = P.neg(P.field(child1, 'distance'));
     const dShell = P.max(P.field(child1, 'distance'), P.sub(negD, this.uniform('thickness')));
 
-    const intersection = this.structmax(child1, child2);
     const shellStruct = P.struct({
       distance: dShell,
       color: P.field(child1, 'color'),
     });
-    return this.structmin(shellStruct, intersection);
+    const innerStruct = P.struct({
+      distance: P.add(P.field(child1, 'distance'), this.uniform('thickness')),
+      color: P.field(child1, 'color'),
+    });
+    return this.structmin(shellStruct, this.structmax(innerStruct, child2));
   }
-
   getIcon() {
     return "🔍";
   }
