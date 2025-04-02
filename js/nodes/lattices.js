@@ -22,7 +22,6 @@ class GyroidNode extends TreeNode {
     const d = P.mul(gyroid, P.mul(P.const(0.5), this.uniform('scale')));
     return P.struct({
       distance: d,
-      color: app.defaultColor(),
     });
   }
 }
@@ -60,7 +59,6 @@ class CubicLatticeNode extends TreeNode {
     const d = this.max(this.max(dx, dy), dz);
     return P.struct({
       distance: P.sub(d, this.uniform('thickness')),
-      color: app.defaultColor(),
     });
   }
 

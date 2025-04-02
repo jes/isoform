@@ -365,7 +365,18 @@ class TreeNode {
     if (this.isDisabled) {
       return this.noop();
     }
-    return this.makePeptide(p);
+    const pep = this.makePeptide(p);
+    if (!pep) return null;
+    if (pep.type !== 'struct') {
+      this.warn(`Node "${this.name}" returned a non-struct peptide`);
+      return this.noop();
+    }
+    if (!pep.distance) {
+      this.warn(`Node "${this.name}" returned a peptide with no distance field`);
+      return this.noop();
+    }
+    if (!pep.color) pep.color = app.defaultColor();
+    return pep;
   }
 
   // return a JavaScript function that implements the SDF

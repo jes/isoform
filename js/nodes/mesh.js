@@ -19,8 +19,7 @@ class MeshNode extends TreeNode {
     }
 
     const distance = P.mul(minDist, sign);
-    const color = app.defaultColor();
-    return P.struct({distance, color});
+    return P.struct({distance});
   }
 
   distanceToTriangle(p, tri, sign) {

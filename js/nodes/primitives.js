@@ -18,7 +18,6 @@ class SphereNode extends TreeNode {
     const d = P.sub(P.vlength(p), this.uniform('radius'));
     return P.struct({
       distance: d,
-      color: app.defaultColor(),
     });
   }
 

@@ -56,8 +56,6 @@ const scene = {
                    newSceneCode +
                    originalSource.substring(endIndex);
 
-        console.log(newSource);
-
         return newSource;
     }
 }; 
