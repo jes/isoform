@@ -72,7 +72,7 @@ class VoxelNode extends TreeNode {
     
     // Return the larger of the two distances
     // This ensures correct distance both inside and outside the voxel grid
-    return P.max(insideDist, outsideDist);
+    return P.struct({distance: P.max(insideDist, outsideDist)});
   }
 
   fillFromTreeNode(treeNode) {
