@@ -2455,44 +2455,27 @@ addTest('derivative - performance with complex expressions', (evaluate) => {
     assertEquals(gradLength, 1.0, 0.1);
 });
 
-addTest('struct field evaluation and common subexpression elimination', (evaluate) => {
-    // Create a counter to track evaluations
-    let evaluationCount = 0;
-    
+addTest('struct field evaluation', (evaluate) => {
     // Create a complex expression that we can track
-    const createTrackedExpr = () => {
+    const createComplexExpr = () => {
         const x = P.var('x');
         const y = P.var('y');
         
         // This is our complex subexpression
         // sin(x*y) + cos(x/y) - something we'd want to compute only once
-        const complex = P.sub(
+        return P.sub(
             P.add(
                 P.sin(P.mul(x, y)),
                 P.cos(P.div(x, y))
             ),
             P.const(0)  // Add a no-op to make the expression more complex
         );
-        
-        // Wrap with a tracking function
-        return new Peptide('tracked', complex.type, "no-constant-folding", complex, null, null, {
-            evaluate: (vars) => {
-                evaluationCount++;
-                return complex.evaluate(vars);
-            },
-            evaluateInterval: (vars) => {
-                evaluationCount++;
-                return complex.evaluateInterval(vars);
-            },
-            jsCode: (ssaOp) => complex.ops.jsCode(ssaOp),
-            jsIntervalCode: (ssaOp) => complex.ops.jsIntervalCode(ssaOp),
-        });
     };
-    
+
     // 2 identical expressions, but they should only be evaluated once
     const struct = P.struct({
-        field1: createTrackedExpr(),
-        field2: createTrackedExpr()
+        field1: createComplexExpr(),
+        field2: createComplexExpr()
     });
     
     // Setup variables
@@ -2500,9 +2483,6 @@ addTest('struct field evaluation and common subexpression elimination', (evaluat
         x: 2,
         y: 3,
     };
-    
-    // Reset counter
-    evaluationCount = 0;
     
     // Evaluate the expression
     const result = evaluate(struct, vars);
@@ -2514,27 +2494,136 @@ addTest('struct field evaluation and common subexpression elimination', (evaluat
     assertEquals(result.field1, expectedResult, 0.0001);
     assertEquals(result.field2, expectedResult, 0.0001);
     
-    // The key test: ensure the tracked expression was only evaluated once
-    // If common subexpression elimination is working, evaluationCount should be 1
-    // If not, it would be 2 (once for each field)
-    assertEquals(evaluationCount, 1, 
-        "The shared subexpression should only be evaluated once, but was evaluated " + evaluationCount + " times");
-    
+    // Test with a different operation to ensure the expression is still shared
     // Test with a different operation to ensure the expression is still shared
     const field1 = P.field(struct, 'field1');
     const field2 = P.field(struct, 'field2');
     const multiplied = P.mul(field1, field2);
-    
-    // Reset counter
-    evaluationCount = 0;
     
     // Evaluate
     const mulResult = evaluate(multiplied, vars);
     
     // Verify
     assertEquals(mulResult, expectedResult * expectedResult, 0.0001);
-    assertEquals(evaluationCount, 1,
-        "The shared subexpression should only be evaluated once for multiplication");
+});
+
+addTest('common subexpression elimination - structural verification', (evaluate) => {
+    // Create a function to build a complex subexpression
+    const buildComplexExpr = () => {
+        const x = P.var('x');
+        const y = P.var('y');
+        // Complex expression: sin(x*y) * cos(x/y) + sqrt(x+y)
+        return P.add(
+            P.mul(
+                P.sin(P.mul(x, y)),
+                P.cos(P.div(x, y))
+            ),
+            P.sqrt(P.add(x, y))
+        );
+    };
+    
+    // Create two independent copies of the same expression
+    const expr1 = buildComplexExpr();
+    const expr2 = buildComplexExpr();
+    
+    // Combine them in a larger expression
+    const combined = P.add(expr1, expr2);
+
+    // before simplification, there should be duplicates
+    assertTrue(hasStructuralDuplicates(combined, new Map()));
+    
+    // Apply simplification
+    combined.simplify();
+    
+    // After simplification, structurally identical nodes should have the same reference
+    const nodesBySignature = new Map();
+    assertTrue(!hasStructuralDuplicates(combined, nodesBySignature));
+    
+    // Test with struct
+    const structExpr = P.struct({
+        field1: buildComplexExpr(),
+        field2: buildComplexExpr(),
+        field3: P.add(buildComplexExpr(), buildComplexExpr())
+    });
+    
+    // before simplification, there should be duplicates
+    assertTrue(hasStructuralDuplicatesInStruct(structExpr, new Map()));
+    
+    // Apply simplification
+    structExpr.simplify();
+    
+    // After simplification, structurally identical nodes should have the same reference
+    const structNodesBySignature = new Map();
+    assertTrue(!hasStructuralDuplicatesInStruct(structExpr, structNodesBySignature));
+    
+    // Helper function to create a signature for a node
+    function nodeSignature(node) {
+        if (!node) return 'null';
+        let valueStr;
+        if (node.value instanceof Vec3) {
+            valueStr = `v${node.value.x},${node.value.y},${node.value.z}`;
+        } else if (node.value instanceof Mat3) {
+            valueStr = 'm' + Array.from(node.value.m).flat().join(',');
+        } else if (node.value === null) {
+            valueStr = 'null';
+        } else {
+            valueStr = String(node.value);
+        }
+        
+        return [
+            node.op,
+            node.type,
+            valueStr,
+            node.left ? node.left.id : 'n',
+            node.right ? node.right.id : 'n',
+            node.third ? node.third.id : 'n'
+        ].join('|');
+    }
+    
+    // Helper function to check for structural duplicates in an expression tree
+    function hasStructuralDuplicates(expr, nodesBySignature, visited = new Set()) {
+        if (!expr) return false;
+        
+        // Skip if we've already visited this exact node
+        if (visited.has(expr)) return false;
+        visited.add(expr);
+        
+        // Create a signature that identifies this node's structure and its children
+        const signature = nodeSignature(expr);
+        
+        // Check if we've seen a structurally identical node before
+        if (nodesBySignature.has(signature)) {
+            // If the reference isn't the same, it's a structural duplicate
+            if (nodesBySignature.get(signature) !== expr) {
+                console.log('Found duplicate:', signature);
+                console.log('Original:', nodesBySignature.get(signature));
+                console.log('Duplicate:', expr);
+                return true;
+            }
+        } else {
+            // First time seeing this signature
+            nodesBySignature.set(signature, expr);
+        }
+        
+        // Check children
+        return hasStructuralDuplicates(expr.left, nodesBySignature, visited) || 
+               hasStructuralDuplicates(expr.right, nodesBySignature, visited) || 
+               hasStructuralDuplicates(expr.third, nodesBySignature, visited);
+    }
+    
+    // Helper function to check for structural duplicates in a struct
+    function hasStructuralDuplicatesInStruct(structExpr, nodesBySignature) {
+        const visited = new Set();
+        
+        // Check all fields in the struct
+        for (const key in structExpr.value) {
+            if (hasStructuralDuplicates(structExpr.value[key], nodesBySignature, visited)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
 });
 
 // Export for browser
