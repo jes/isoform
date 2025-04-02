@@ -384,7 +384,7 @@ const renderer = {
     displayCoordinatesIfHit(result) {
         if (result.hit) {
             const coords = result.hitPosition || new Vec3(0, 0, 0);
-            const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}`;
+            const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}<br>ID: ${result.uniqueId}`;
             
             this.coordDisplay.innerHTML = text;
             this.coordDisplay.style.display = 'block';
@@ -465,7 +465,8 @@ const renderer = {
             distance: 0.0,
             hit: false,
             hitPosition: null,
-            steps: 0
+            steps: 0,
+            uniqueId: null,
         };
 
         if (!app.sdf) {
@@ -481,11 +482,13 @@ const renderer = {
             
             // Apply rotation to point before evaluating SDF
             const rotatedP = camera.activeRotationMatrix.mulVec3(p);
-            const d = app.sdf(rotatedP);
+            const sdfResult = app.sdf(rotatedP);
+            const d = sdfResult.distance;
             
             if (d < 0.0) {
                 result.hit = true;
                 result.hitPosition = rotatedP;
+                result.uniqueId = sdfResult.uniqueId;
                 break;
             }
 

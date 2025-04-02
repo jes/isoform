@@ -22,6 +22,12 @@ float mapsign = 1.0;
 struct SDFResult {
     float distance;
     vec3 color;
+
+    // TODO: we don't need this in the shader, we could compile the Peptide
+    // expression without it like:
+    //   P.struct({distance: P.field(expr, 'distance'), color: P.field(expr, 'color')})
+    // but too annoying for now
+    float uniqueId;
 };
 
 // begin scene

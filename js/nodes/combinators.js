@@ -162,7 +162,9 @@ class InterpolateNode extends TreeNode {
 
     const color = P.vmix(P.field(child0, 'color'), P.field(child1, 'color'), uniformK);
 
-    return P.struct({distance, color});
+    const uniqueId = P.field(child0, 'uniqueId');
+
+    return P.struct({distance, color, uniqueId});
   }
 
   aabb() {
