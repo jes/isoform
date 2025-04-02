@@ -432,7 +432,10 @@ class ScaleNode extends TreeNode {
     if (this.k > 1.0) {
       return child;
     } else {
-      return P.struct({distance: P.mul(P.field(child, 'distance'), this.uniform('k'))});
+      return P.struct({
+        distance: P.mul(P.field(child, 'distance'), this.uniform('k')),
+        color: P.field(child, 'color'),
+      });
     }
   }
 
@@ -516,7 +519,10 @@ class TwistNode extends TreeNode {
     
     // TODO: "maxScale" here should be propagated as a Lipschitz factor
     // instead of dividing (maybe?)
-    return P.struct({distance: P.div(P.field(child, 'distance'), maxScale)});
+    return P.struct({
+      distance: P.div(P.field(child, 'distance'), maxScale),
+      color: P.field(child, 'color'),
+    });
   }
 
   getIcon() {
@@ -813,7 +819,10 @@ class ExtrudeNode extends TreeNode {
     const pz = P.clamp(P.add(P.vecZ(p), halfHeight), P.zero(), this.uniform('height'));
     const draftAngleRad = P.mul(this.uniform('draftAngle'), P.const(Math.PI / 180.0));
     const d = P.add(P.mul(P.field(child, 'distance'), P.cos(draftAngleRad)), P.mul(pz, P.tan(draftAngleRad)));
-    return P.struct({distance: this.max(d, dz)});
+    return P.struct({
+      distance: this.max(d, dz),
+      color: P.field(child, 'color'),
+    });
   }
   
   getIcon() {
