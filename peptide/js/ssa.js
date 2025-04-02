@@ -202,34 +202,16 @@ class PeptideSSA {
     }
 
     compileToGLSL(signature = 'float map(vec3 p)') {
-        if (this.operations.length === 0) {
-            throw new Error('No operations to compile');
-        }
-        let code = '';
-
-        let seen = new Set();
-        for (const op of this.operations) {
-            if (!seen.has(op.result)) {
-                code += `  ${op.node.type} ${op.result};\n`;
-                seen.add(op.result);
-            }
-        }
-
-        code += "\n";
-
-        for (const op of this.operations) {
-            if (!op.node.ops.glslCode) {
-                throw new Error('No GLSL code for ' + op.node.op);
-            }
-            code += `  ${op.node.ops.glslCode(op)}\n`;
-        }
-
-        code += `  return ${this.operations[this.operations.length - 1].result};\n`;
-
-        return `${signature} {\n${code}\n}`;
+        return this._compileToGLSL('glslCode', signature);
     }
-
     compileToGLSLInterval(signature = 'float map(ivec3 p)') {
+        const typeMap = {
+            float: 'ifloat',
+            vec3: 'ivec3',
+        };
+        return this._compileToGLSL('glslIntervalCode', signature, typeMap);
+    }
+    _compileToGLSL(glslCodeFn, signature, typeMap = {}) {
         if (this.operations.length === 0) {
             throw new Error('No operations to compile');
         }
@@ -238,13 +220,7 @@ class PeptideSSA {
         let seen = new Set();
         for (const op of this.operations) {
             if (!seen.has(op.result)) {
-                let type = op.node.type;
-                if (type === 'float') {
-                    type = 'ifloat';
-                } else if (type === 'vec3') {
-                    type = 'ivec3';
-                }
-                code += `  ${type} ${op.result};\n`;
+                code += `  ${typeMap[op.node.type] || op.node.type} ${op.result};\n`;
                 seen.add(op.result);
             }
         }
@@ -252,17 +228,16 @@ class PeptideSSA {
         code += "\n";
 
         for (const op of this.operations) {
-            if (!op.node.ops.glslIntervalCode) {
-                throw new Error('No GLSL interval code for ' + op.node.op);
+            if (!op.node.ops[glslCodeFn]) {
+                throw new Error('No ' + glslCodeFn + ' function for ' + op.node.op);
             }
-            code += `  ${op.node.ops.glslIntervalCode(op)}\n`;
+            code += `  ${op.node.ops[glslCodeFn](op)}\n`;
         }
 
         code += `  return ${this.operations[this.operations.length - 1].result};\n`;
 
         return `${signature} {\n${code}\n}`;
     }
-
 }
 
 // Detect environment and export accordingly
