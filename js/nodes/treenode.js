@@ -148,22 +148,51 @@ class TreeNode {
   structmin(a, b) {
     if (!a) return b;
     if (!b) return a;
+    
+    const distA = P.field(a, 'distance');
+    const distB = P.field(b, 'distance');
+    const colorA = P.field(a, 'color');
+    const colorB = P.field(b, 'color');
+    
+    const distance = this.min(distA, distB);
+    let color;
+    
+    // work out how much each object contributes to the final distance,
+    // and weight the color accordingly
+    const diffA = P.abs(P.sub(distance, distA));
+    const diffB = P.abs(P.sub(distance, distB));
+    const t = P.div(diffA, P.add(diffA, diffB));
+    color = P.vmix(colorA, colorB, t);
+    
     return P.struct({
-      distance: this.min(P.field(a, 'distance'), P.field(b, 'distance')),
-      color: P.vcond(P.lte(P.field(a, 'distance'), P.field(b, 'distance')),
-                    P.field(a, 'color'),
-                    P.field(b, 'color')),
+      distance: distance,
+      color: color
     });
   }
 
   structmax(a, b) {
     if (!a) return b;
     if (!b) return a;
+    
+    const distA = P.field(a, 'distance');
+    const distB = P.field(b, 'distance');
+    const colorA = P.field(a, 'color');
+    const colorB = P.field(b, 'color');
+
+    const distance = this.max(distA, distB);
+    let color = P.vcond(P.gte(distA, distB), colorA, colorB);
+
+    // work out how much each object contributes to the final distance,
+    // and weight the color accordingly
+    const diffA = P.abs(P.sub(distance, distA));
+    const diffB = P.abs(P.sub(distance, distB));
+    const t = P.div(diffA, P.add(diffA, diffB));
+    color = P.vmix(colorA, colorB, t);
+    
+    // Regular max with hard color selection
     return P.struct({
-      distance: this.max(P.field(a, 'distance'), P.field(b, 'distance')),
-      color: P.vcond(P.gte(P.field(a, 'distance'), P.field(b, 'distance')),
-                    P.field(a, 'color'),
-                    P.field(b, 'color')),
+      distance: distance,
+      color: color
     });
   }
 

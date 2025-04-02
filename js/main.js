@@ -86,6 +86,7 @@ const app = {
         const sphere = new SphereNode();
         const gyroid = new GyroidNode();
         const intersection = new IntersectionNode([sphere, gyroid]);
+        intersection.setProperty('blendRadius', 0.1);
         doc.addChild(intersection);
 
         // set unique names for all nodes
