@@ -358,7 +358,7 @@ class Peptide {
 
                 // here we use sqrt(x^2+eps) as a smooth approximation to |x|
                 // to avoid division by zero
-                const safeLength = P.sqrt(P.add(P.mul(length, length), P.const(1e-10)));
+                const safeLength = P.smoothabs(length);
                 
                 // The derivative of length(v) with respect to a vector variable
                 // is the dot product of the normalized vector and the derivative
@@ -736,6 +736,11 @@ class Peptide {
                 ];
             },
         });
+    }
+
+    static smoothabs(a) {
+        a.assertType('float');
+        return P.sqrt(P.add(P.mul(a, a), P.const(1e-10)));
     }
 
     static min(a, b) {

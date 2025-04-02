@@ -305,19 +305,24 @@ class InfillNode extends TreeNode {
       return this.noop();
     }
 
-    const d = this.children[0].peptide(p);
+    const child1 = this.children[0].peptide(p);
     if (this.children.length == 1) {
-      return d;
+      return child1;
     }
-    if (!d) return null;
+    if (!child1) return null;
 
-    const d2 = this.children[1].peptide(p);
-    if (!d2) return d;
+    const child2 = this.children[1].peptide(p);
+    if (!child2) return child1;
 
-    const negD = P.neg(d);
-    const dShell = P.max(d, P.sub(negD, this.uniform('thickness')));
+    const negD = P.neg(P.field(child1, 'distance'));
+    const dShell = P.max(P.field(child1, 'distance'), P.sub(negD, this.uniform('thickness')));
 
-    return P.min(dShell, P.max(d, d2));
+    const intersection = this.structmax(child1, child2);
+    const shellStruct = P.struct({
+      distance: dShell,
+      color: P.field(child1, 'color'),
+    });
+    return this.structmin(shellStruct, intersection);
   }
 
   getIcon() {

@@ -155,14 +155,21 @@ class TreeNode {
     const colorB = P.field(b, 'color');
     
     const distance = this.min(distA, distB);
-    let color;
     
     // work out how much each object contributes to the final distance,
     // and weight the color accordingly
     const diffA = P.abs(P.sub(distance, distA));
     const diffB = P.abs(P.sub(distance, distB));
-    const t = P.div(diffA, P.add(diffA, diffB));
-    color = P.vmix(colorA, colorB, t);
+    const sum = P.smoothabs(P.add(diffA, diffB));
+    
+    // Use colorA when sum is zero (when distances are equal)
+    const t = P.cond(
+      P.eq(sum, P.const(0.0)),
+      P.const(0.0),  // t = 0 means use colorA in vmix
+      P.div(diffA, sum)
+    );
+    
+    const color = P.vmix(colorA, colorB, t);
     
     return P.struct({
       distance: distance,
@@ -180,16 +187,22 @@ class TreeNode {
     const colorB = P.field(b, 'color');
 
     const distance = this.max(distA, distB);
-    let color = P.vcond(P.gte(distA, distB), colorA, colorB);
-
+    
     // work out how much each object contributes to the final distance,
     // and weight the color accordingly
     const diffA = P.abs(P.sub(distance, distA));
     const diffB = P.abs(P.sub(distance, distB));
-    const t = P.div(diffA, P.add(diffA, diffB));
-    color = P.vmix(colorA, colorB, t);
+    const sumDiff = P.smoothabs(P.add(diffA, diffB));
     
-    // Regular max with hard color selection
+    // Use colorA when sum is zero (when distances are equal)
+    const t = P.cond(
+      P.lte(sumDiff, P.const(0.00001)),
+      P.const(0.0),  // t = 0 means use colorA in vmix
+      P.div(diffA, sumDiff)
+    );
+    
+    const color = P.vmix(colorA, colorB, t);
+    
     return P.struct({
       distance: distance,
       color: color
