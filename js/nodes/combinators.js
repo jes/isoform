@@ -158,8 +158,11 @@ class InterpolateNode extends TreeNode {
 
     const uniformK = this.uniform('k');
 
-    return P.add(P.mul(P.sub(P.one(), uniformK), child0),
-                 P.mul(uniformK, child1));
+    const distance = P.mix(P.field(child0, 'distance'), P.field(child1, 'distance'), uniformK);
+
+    const color = P.vmix(P.field(child0, 'color'), P.field(child1, 'color'), uniformK);
+
+    return P.struct({distance, color});
   }
 
   aabb() {

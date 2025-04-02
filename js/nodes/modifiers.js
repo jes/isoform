@@ -127,7 +127,9 @@ class DomainDeformNode extends TreeNode {
 
     const child = this.children[0].peptide(P.vadd(p, P.vec3(P.add(px1, px2), P.add(py1, py2), P.add(pz1, pz2))));
     if (!child) return null;
-    return P.div(child, P.max(P.one(), P.mul(P.const(2.0), P.mul(this.uniform('frequency'), this.uniform('amplitude')))));
+    const distance = P.div(P.field(child, 'distance'), P.max(P.one(), P.mul(P.const(2.0), P.mul(this.uniform('frequency'), this.uniform('amplitude')))));
+    const color = P.field(child, 'color');
+    return P.struct({distance, color});
   }
 
   getIcon() {
@@ -166,8 +168,8 @@ class DistanceDeformNode extends TreeNode {
       return this.noop();
     }
     
-    const d = this.children[0].peptide(p);
-    if (!d) return null;
+    const child = this.children[0].peptide(p);
+    if (!child) return null;
 
     const freq = this.uniform('frequency');
     const ampl = this.uniform('amplitude');
@@ -182,7 +184,9 @@ class DistanceDeformNode extends TreeNode {
     const noise2Y = P.sin(P.mul(P.vecY(p), P.mul(P.const(2.0), freq)));
     const noise2Z = P.sin(P.mul(P.vecZ(p), P.mul(P.const(2.0), freq)));
     const noise2 = P.mul(P.const(0.5), P.mul(noise2X, P.mul(noise2Y, noise2Z)));
-    return P.div(P.add(d, P.mul(ampl, P.add(noise1, noise2))), P.max(P.one(), P.mul(P.const(2.0), P.mul(freq, ampl))));
+    const distance = P.div(P.add(P.field(child, 'distance'), P.mul(ampl, P.add(noise1, noise2))), P.max(P.one(), P.mul(P.const(2.0), P.mul(freq, ampl))));
+    const color = P.field(child, 'color');
+    return P.struct({distance, color});
   }
 
   getIcon() {
