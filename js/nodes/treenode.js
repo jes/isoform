@@ -145,6 +145,28 @@ class TreeNode {
     return P.max(a, b);
   }
 
+  structmin(a, b) {
+    if (!a) return b;
+    if (!b) return a;
+    return P.struct({
+      distance: this.min(P.field(a, 'distance'), P.field(b, 'distance')),
+      color: P.vcond(P.lte(P.field(a, 'distance'), P.field(b, 'distance')),
+                    P.field(a, 'color'),
+                    P.field(b, 'color')),
+    });
+  }
+
+  structmax(a, b) {
+    if (!a) return b;
+    if (!b) return a;
+    return P.struct({
+      distance: this.max(P.field(a, 'distance'), P.field(b, 'distance')),
+      color: P.vcond(P.gte(P.field(a, 'distance'), P.field(b, 'distance')),
+                    P.field(a, 'color'),
+                    P.field(b, 'color')),
+    });
+  }
+
   // "dirty" means the shader needs to be recompiled
   dirty() {
     return this.isDirty;
@@ -331,7 +353,7 @@ class TreeNode {
       return (p) => 1000043.0;
     }
 
-    const ssa = this.peptide(P.vvar('p')).ssa();
+    const ssa = P.field(this.peptide(P.vvar('p')), 'distance').ssa();
     const js = ssa.compileToJS();
     const uniforms = this.uniforms();
     const fn = eval(js);

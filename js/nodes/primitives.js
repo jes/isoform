@@ -15,7 +15,11 @@ class SphereNode extends TreeNode {
   }
 
   makePeptide(p) {
-    return P.sub(P.vlength(p), this.uniform('radius'));
+    const d = P.sub(P.vlength(p), this.uniform('radius'));
+    return P.struct({
+      distance: d,
+      color: app.defaultColor(),
+    });
   }
 
   getIcon() {

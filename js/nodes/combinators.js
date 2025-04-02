@@ -18,7 +18,7 @@ class UnionNode extends TreeNode {
 
       let min = this.children[0].peptide(p);
       for (let i = 1; i < this.children.length; i++) {
-        min = this.min(min, this.children[i].peptide(p));
+        min = this.structmin(min, this.children[i].peptide(p));
       }
       return min;
     }
@@ -59,7 +59,7 @@ class IntersectionNode extends TreeNode {
 
     let max = this.children[0].peptide(p);
     for (let i = 1; i < this.children.length; i++) {
-      max = this.max(max, this.children[i].peptide(p));
+      max = this.structmax(max, this.children[i].peptide(p));
     }
     return max;
   }
@@ -102,8 +102,12 @@ class SubtractionNode extends TreeNode {
     let max = this.children[0].peptide(p);
     for (let i = 1; i < this.children.length; i++) {
       const child = this.children[i].peptide(p);
+      const negChild = P.struct({
+        distance: P.neg(P.field(child, 'distance')),
+        color: P.field(child, 'color'),
+      });
       if (!child) continue;
-      max = this.max(max, P.neg(child));
+      max = this.structmax(max, negChild);
     }
     return max;
   }

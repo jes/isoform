@@ -191,7 +191,7 @@ const app = {
             }
 
             let startTime = performance.now();
-            const expr = this.document.peptide(P.vvar('p'));
+            const expr = P.field(this.document.peptide(P.vvar('p')), 'distance');
             if (expr) {
                 console.log(`Peptide expression took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
@@ -200,7 +200,7 @@ const app = {
                 console.log(`SSA took ${performance.now() - startTime} ms`);
 
 
-                const peptide = this.document.peptide(P.vvar('p')).derivative('p');
+                const peptide = P.field(this.document.peptide(P.vvar('p')), 'distance').derivative('p');
                 const ssaNormal = P.vec3(peptide[0], peptide[1], peptide[2]).ssa();
                 
                 this.primaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.primaryShaderLayer);
@@ -246,8 +246,8 @@ const app = {
             if (expr) {
                 console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
-                const ssa = expr.ssa();
-                const peptide = expr.derivative('p');
+                const ssa = P.field(expr, 'distance').ssa();
+                const peptide = P.field(expr, 'distance').derivative('p');
                 const peptideVec3 = P.vec3(peptide[0], peptide[1], peptide[2]);
                 const ssaNormal = peptideVec3.ssa();
                 console.log(`SSA took ${performance.now() - startTime} ms`);
@@ -330,6 +330,10 @@ const app = {
     flushUndoStack() {
         this.undoStack = [];
         this.undoPointer = 0;
+    },
+
+    defaultColor() {
+        return P.vconst(new Vec3(0.6, 0.6, 0.6));
     },
 };
 

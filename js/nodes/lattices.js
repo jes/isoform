@@ -19,7 +19,11 @@ class GyroidNode extends TreeNode {
     const gyroid = P.add(P.mul(P.sin(P.vecX(p)), P.cos(P.vecY(p))),
                    P.add(P.mul(P.sin(P.vecY(p)), P.cos(P.vecZ(p))),
                          P.mul(P.sin(P.vecZ(p)), P.cos(P.vecX(p)))));
-    return P.mul(gyroid, P.mul(P.const(0.5), this.uniform('scale')));
+    const d = P.mul(gyroid, P.mul(P.const(0.5), this.uniform('scale')));
+    return P.struct({
+      distance: d,
+      color: app.defaultColor(),
+    });
   }
 }
 
@@ -54,7 +58,10 @@ class CubicLatticeNode extends TreeNode {
     const dz = this.min(P.vecX(q), P.vecY(q));
     
     const d = this.max(this.max(dx, dy), dz);
-    return P.sub(d, this.uniform('thickness'));
+    return P.struct({
+      distance: P.sub(d, this.uniform('thickness')),
+      color: app.defaultColor(),
+    });
   }
 
   getIcon() {

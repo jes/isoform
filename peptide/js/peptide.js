@@ -893,6 +893,16 @@ class Peptide {
         });
     }
 
+    static vmix(a, b, t) {
+        a.assertType('vec3');
+        b.assertType('vec3');
+        t.assertType('float');
+        return P.vec3(P.mix(P.vecX(a), P.vecX(b), t),
+                      P.mix(P.vecY(a), P.vecY(b), t),
+                      P.mix(P.vecZ(a), P.vecZ(b), t));
+    }
+    
+
     // 1 if edge <= x, 0 otherwise
     static step(edge, x) {
         edge.assertType('float');
@@ -955,6 +965,14 @@ class Peptide {
         b.assertType('float');
         c.assertType('float');
         return P.mix(c, b, a);
+    }
+
+    static vcond(a, b, c) {
+        console.log('vcond', a, b, c);
+        a.assertType('float');
+        b.assertType('vec3');
+        c.assertType('vec3');
+        return P.vmix(c, b, a);
     }
 
     static neg(a) {
@@ -1485,6 +1503,7 @@ class Peptide {
     }
 
     static field(struct, field) {
+        if (struct == null) return null;
         struct.assertType('struct');
         const node = struct.value[field];
         if (!node) {
