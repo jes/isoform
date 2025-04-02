@@ -79,7 +79,7 @@ class SketchNode extends TreeNode {
     
     const zdist = P.sub(P.abs(P.vecZ(p)), P.const(0.005));
     const dist3d = P.vlength(P.vec3(zdist, P.max(d, P.zero()), P.zero()));
-    return P.mix(d, dist3d, P.step(P.zero(), zdist));
+    return P.struct({distance: P.mix(d, dist3d, P.step(P.zero(), zdist))});
   }
 
   getIcon() {

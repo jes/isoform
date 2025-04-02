@@ -432,10 +432,7 @@ class ScaleNode extends TreeNode {
     if (this.k > 1.0) {
       return child;
     } else {
-      return P.struct({
-        distance: P.mul(P.field(child, 'distance'), this.uniform('k')),
-        color: P.field(child, 'color'),
-      });
+      return P.struct({distance: P.mul(P.field(child, 'distance'), this.uniform('k'))});
     }
   }
 
@@ -517,11 +514,9 @@ class TwistNode extends TreeNode {
     const child = this.children[0].peptide(p2);
     if (!child) return null;
     
-    // Divide by the scaling factor to get a lower bound approximation
-    return P.struct({
-      distance: P.div(P.field(child, 'distance'), maxScale),
-      color: P.field(child, 'color'),
-    });
+    // TODO: "maxScale" here should be propagated as a Lipschitz factor
+    // instead of dividing (maybe?)
+    return P.struct({distance: P.div(P.field(child, 'distance'), maxScale)});
   }
 
   getIcon() {
@@ -644,12 +639,12 @@ class LinearPatternNode extends TreeNode {
 
     const axis = P.vdiv(this.vuniform('axis'), P.vlength(this.vuniform('axis')));
     const step = P.vmul(axis, this.uniform('spacing'));
-    let child = this.children[0].peptide(p);
+    let d = this.children[0].peptide(p);
     for (let i = 1; i < this.copies; i++) {
       const pi = P.vsub(p, P.vmul(step, P.const(i)));
-      child = this.structmin(child, this.children[0].peptide(pi));
+      d = this.structmin(d, this.children[0].peptide(pi));
     }
-    return child;
+    return d;
   }
 
   getIcon() {
@@ -720,7 +715,7 @@ class PolarPatternNode extends TreeNode {
 
     const q = P.mvmul(toAxisSpace, p);
     const angleIncrement = P.div(totalAngle, P.const(this.copies));
-    let child = this.children[0].peptide(p);
+    let d = this.children[0].peptide(p);
     for (let i = 1; i < this.copies; i++) {
       const angle = P.mul(angleIncrement, P.const(i));
       const c = P.cos(angle);
@@ -731,9 +726,9 @@ class PolarPatternNode extends TreeNode {
         P.vecZ(q)
       );
       const p1 = P.mvmul(fromAxisSpace, rotated);
-      child = this.structmin(child, this.children[0].peptide(p1));
+      d = this.structmin(d, this.children[0].peptide(p1));
     }
-    return child;
+    return d;
   }
 
   getIcon() {
@@ -811,14 +806,14 @@ class ExtrudeNode extends TreeNode {
     const axis = P.vnormalize(this.vuniform('axis'));
     const t = P.div(P.vecZ(p), P.vecZ(axis));
     const p2d = P.vsub(p, P.vmul(axis, t));
-    const d2d = this.children[0].peptide(p2d);
-    if (!d2d) return null;
+    const child = this.children[0].peptide(p2d);
+    if (!child) return null;
     const halfHeight = P.div(this.uniform('height'), P.const(2.0));
     const dz = P.sub(P.abs(P.vecZ(p)), halfHeight);
     const pz = P.clamp(P.add(P.vecZ(p), halfHeight), P.zero(), this.uniform('height'));
     const draftAngleRad = P.mul(this.uniform('draftAngle'), P.const(Math.PI / 180.0));
-    const d = P.add(P.mul(d2d, P.cos(draftAngleRad)), P.mul(pz, P.tan(draftAngleRad)));
-    return this.max(d, dz);
+    const d = P.add(P.mul(P.field(child, 'distance'), P.cos(draftAngleRad)), P.mul(pz, P.tan(draftAngleRad)));
+    return P.struct({distance: this.max(d, dz)});
   }
   
   getIcon() {
