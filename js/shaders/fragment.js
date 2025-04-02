@@ -282,7 +282,10 @@ OrthoProjectionResult orthoProjection(vec3 ro, vec3 rd, vec3 right, vec3 up, flo
         
         // Combine lighting components
         vec3 diffuse = diff1 * lightColor1 + diff2 * lightColor2 + diff3 * lightColor3;
-        result.color = (ambient + diffuse + specular + rim) * marchResult.color;
+        // Separate the specular from object color multiplication
+        vec3 baseColor = (ambient + diffuse) * marchResult.color;
+        // Add specular as partially independent from object color
+        result.color = baseColor + specular * (0.5 + 0.5 * marchResult.color) + rim;
         
         // Apply edge highlighting
         vec3 edgeColor = vec3(1.0, 1.0, 1.0); // White edge highlight
