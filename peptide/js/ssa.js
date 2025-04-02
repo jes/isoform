@@ -8,6 +8,7 @@ class PeptideSSA {
         this.operations = [];
         this.varCounter = 0;
         this.varMap = new Map(); // Maps Peptide nodes to SSA variable names
+        this.struct = null;
         if (expr) {
             this.convert(expr);
         }
@@ -33,19 +34,29 @@ class PeptideSSA {
         this.varMap = new Map();
 
         expr.simplify();
-        
-        const resultVar = this.processNode(expr);
+
+        let resultVar = null;
+
+        if (expr.type === 'struct') {
+            this.struct = {};
+            for (const field in expr.value) {
+                resultVar = this.processNode(expr.value[field]);
+                this.struct[field] = resultVar;
+            }
+        } else {
+            resultVar = this.processNode(expr);
+        }
 
         this.greedyAllocate();
-       
-        return {
-            operations: this.operations,
-            result: resultVar
-        };
+
+        return resultVar;
     }
 
     typePrefix(type) {
-        return type === 'float' ? 'f' : type === 'vec3' ? 'v' : type === 'mat3' ? 'm' : 'X';
+        if (type === 'float') return 'f';
+        if (type === 'vec3') return 'v';
+        if (type === 'mat3') return 'm';
+        throw new Error('Unknown type: ' + type);
     }
 
     /**
@@ -149,6 +160,7 @@ class PeptideSSA {
         }
         let code = '(vars) => {\n';
         
+        // declare variables
         let seen = new Set();
         for (const op of this.operations) {
             if (!seen.has(op.result)) {
@@ -159,6 +171,7 @@ class PeptideSSA {
         
         code += '\n';
 
+        // generate code
         for (const op of this.operations) {
             if (!op.node.ops.jsCode) {
                 throw new Error('No JS code for ' + op.node.op);
@@ -167,7 +180,16 @@ class PeptideSSA {
         }
         
         // Return the result
-        code += `  return ${this.operations[this.operations.length - 1].result};\n`;
+        if (this.struct) {
+            code += `  return {`;
+            for (const field of Object.keys(this.struct)) {
+                code += `  ${field}: ${this.struct[field]},`;
+            }
+            code += `  };\n`;
+        } else {
+            const lastOp = this.operations[this.operations.length - 1];
+            code += `  return ${lastOp.result};\n`;
+        }
         code += '}';
         
         return code;

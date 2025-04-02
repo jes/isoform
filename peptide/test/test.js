@@ -2475,7 +2475,7 @@ addTest('struct field evaluation and common subexpression elimination', (evaluat
         );
         
         // Wrap with a tracking function
-        return new Peptide('tracked', complex.type, "no-constant-folding", null, null, null, {
+        return new Peptide('tracked', complex.type, "no-constant-folding", complex, null, null, {
             evaluate: (vars) => {
                 evaluationCount++;
                 return complex.evaluate(vars);
