@@ -141,7 +141,7 @@ const app = {
             shaderLayers.push(this.primaryShaderLayer);
         }
         if (this.secondaryShaderLayer) {
-            this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.75);
+            this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.25);
             this.secondaryShaderLayer.setUniforms(this.document.uniforms());
             shaderLayers.push(this.secondaryShaderLayer);
         }
