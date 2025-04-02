@@ -145,6 +145,7 @@ const app = {
         if (this.secondaryShaderLayer) {
             this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.25);
             this.secondaryShaderLayer.setUniforms(this.document.uniforms());
+            this.secondaryShaderLayer.setUniform('float', 'uObjectUnderCursor', -1);
             shaderLayers.push(this.secondaryShaderLayer);
         }
         for (let grabHandle of this.grabHandles) {
