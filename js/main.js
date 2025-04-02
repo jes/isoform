@@ -140,7 +140,7 @@ const app = {
             shaderLayers.push(this.primaryShaderLayer);
         }
         if (this.secondaryShaderLayer) {
-            this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.5);
+            this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.75);
             this.secondaryShaderLayer.setUniforms(this.document.uniforms());
             shaderLayers.push(this.secondaryShaderLayer);
         }
@@ -204,7 +204,6 @@ const app = {
                 const ssaNormal = P.vec3(peptide[0], peptide[1], peptide[2]).ssa();
                 
                 this.primaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.primaryShaderLayer);
-                this.primaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.6, 0.6, 0.6]);
 
             } else {
                 this.primaryShaderLayer = null;
@@ -246,6 +245,10 @@ const app = {
             if (expr) {
                 console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
+                expr = P.struct({
+                    distance: P.field(expr, 'distance'),
+                    color: P.vconst(new Vec3(0.8, 0.2, 0.2))
+                });
                 const ssa = expr.ssa();
                 const peptide = P.field(expr, 'distance').derivative('p');
                 const peptideVec3 = P.vec3(peptide[0], peptide[1], peptide[2]);
@@ -253,7 +256,6 @@ const app = {
                 console.log(`SSA took ${performance.now() - startTime} ms`);
                 
                 this.secondaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.secondaryShaderLayer, node?.uniforms());
-                this.secondaryShaderLayer.setUniform('vec3', 'uObjectColor', [0.8, 0.2, 0.2]);
 
                 if (this.showAABB) {
                     this.secondaryShaderLayer.setUniforms(node.uniforms());

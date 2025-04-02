@@ -14,7 +14,6 @@ uniform float uStepFactor;
 uniform bool uShowField;
 uniform bool uShowSteps;
 uniform float uOpacity;
-uniform vec3 uObjectColor;
 
 #define MAX_STEPS 500
 
