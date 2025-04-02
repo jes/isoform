@@ -371,11 +371,11 @@ class TreeNode {
       this.warn(`Node "${this.name}" returned a non-struct peptide`);
       return this.noop();
     }
-    if (!pep.distance) {
+    if (!pep.value.distance) {
       this.warn(`Node "${this.name}" returned a peptide with no distance field`);
       return this.noop();
     }
-    if (!pep.color) pep.color = app.defaultColor();
+    if (!pep.value.color) pep.value.color = app.defaultColor();
     return pep;
   }
 

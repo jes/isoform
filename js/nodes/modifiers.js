@@ -228,20 +228,30 @@ class ShellNode extends TreeNode {
       return this.noop();
     }
     
-    const d = this.children[0].peptide(p);
-    if (!d) return null;
+    const child = this.children[0].peptide(p);
+    if (!child) return null;
+    const d = P.field(child, 'distance');
     const negD = P.neg(d);
     
     if (this.shellType === "inside") {
-      return P.max(d, P.sub(negD, this.uniform('thickness')));
+      return P.struct({
+        distance: P.max(d, P.sub(negD, this.uniform('thickness'))),
+        color: P.field(child, 'color'),
+      });
     } else if (this.shellType === "centered") {
       const halfThickness = P.div(this.uniform('thickness'), P.const(2.0));
-      return P.max(
-        P.sub(d, halfThickness), 
-        P.sub(negD, halfThickness)
-      );
+      return P.struct({
+        distance: P.max(
+          P.sub(d, halfThickness), 
+          P.sub(negD, halfThickness)
+        ),
+        color: P.field(child, 'color'),
+      });
     } else { // "outside" (default)
-      return P.max(P.sub(d, this.uniform('thickness')), negD);
+      return P.struct({
+        distance: P.max(P.sub(d, this.uniform('thickness')), negD),
+        color: P.field(child, 'color'),
+      });
     }
   }
 
