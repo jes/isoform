@@ -62,12 +62,11 @@ class CylinderNode extends TreeNode {
       dx = P.add(dx, this.uniform('roundRadius'));
       dz = P.add(dz, this.uniform('roundRadius'));
     }
-    const dist = P.add(P.min(P.max(dx, dz), P.zero()), P.vlength(P.vmax(P.vec3(dx, dz, P.zero()), P.vconst(new Vec3(0.0)))));
+    let dist = P.add(P.min(P.max(dx, dz), P.zero()), P.vlength(P.vmax(P.vec3(dx, dz, P.zero()), P.vconst(new Vec3(0.0)))));
     if (this.roundRadius > 0.0) {
-      return P.sub(dist, this.uniform('roundRadius'));
-    } else {
-      return dist;
+      dist = P.sub(dist, this.uniform('roundRadius'));
     }
+    return P.struct({distance: dist});
   }
 
   getIcon() {
@@ -140,7 +139,7 @@ class BoxNode extends TreeNode {
                          P.min(P.max(P.vecX(d), P.max(P.vecY(d), P.vecZ(d))), P.zero())),
                    this.uniform('radius'));
     }
-    return expr;
+    return P.struct({distance: expr});
   }
 
   getIcon() {
@@ -176,7 +175,7 @@ class TorusNode extends TreeNode {
     const minor = P.div(this.uniform('minorDiameter'), P.const(2.0));
     const lenxy = P.vlength(P.vec3(P.vecX(p), P.vecY(p), P.zero()));
     const q = P.vec3(P.sub(lenxy, major), P.vecZ(p), P.zero());
-    return P.sub(P.vlength(q), minor);
+    return P.struct({distance: P.sub(P.vlength(q), minor)});
   }
 
   getIcon() {
