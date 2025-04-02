@@ -24,8 +24,8 @@ class PolkaDotNode extends TreeNode {
     super("PolkaDot");
     this.background = new Vec3(1, 0, 0);
     this.foreground = new Vec3(0, 0, 0);
-    this.radius = 0.1;
-    this.spacing = 0.5;
+    this.radius = 0.5;
+    this.spacing = 1.5;
     this.maxChildren = 1;
   }
 
