@@ -850,7 +850,7 @@ class DistanceDeformInsideNode extends TreeNode {
   }
 
   properties() {
-    return {"amplitude": "float"};
+    return {"amplitude": "float", "blendRadius": "float", "chamfer": "bool"};
   }
 
   makePeptide(p) {
@@ -866,7 +866,10 @@ class DistanceDeformInsideNode extends TreeNode {
     if (!d0) return null;
     const d1 = this.children[1].peptide(p);
     if (!d1) return d0;
-    return P.add(d0, P.min(P.mul(d1, this.uniform('amplitude')), P.zero()));
+    return P.struct({
+      distance: P.add(P.field(d0, 'distance'), this.min(P.mul(P.field(d1, 'distance'), this.uniform('amplitude')), P.zero())),
+      color: P.field(d0, 'color'),
+    });
   }
   
   getIcon() {
@@ -1003,14 +1006,17 @@ class HelixExtrudeNode extends TreeNode {
     const p2d = P.vec3(dr, P.zero(), P.zero());
     
     // Get the SDF from the 2D child
-    const d2d = this.children[0].peptide(p2d);
-    if (!d2d) return null;
+    const child = this.children[0].peptide(p2d);
+    if (!child) return null;
     
     // Limit the helix to the specified height
     const heightLimit = P.sub(P.abs(z), totalHeight);
     
     // Return the maximum of the 2D SDF and the height limit
-    return this.max(d2d, heightLimit);
+    return P.struct({
+      distance: this.max(P.field(child, 'distance'), heightLimit),
+      color: P.field(child, 'color'),
+    });
   }
   
   getIcon() {
