@@ -249,7 +249,21 @@ class GrabHandle {
             this.lastMousePos = mousePos;
             document.addEventListener('mousemove', this._onMouseMove);
             document.addEventListener('mouseup', this._onMouseUp);
+            
+            // Stop propagation to prevent other handlers from firing
             e.preventDefault();
+            e.stopPropagation();
+            
+            // Add a one-time click handler to the document to capture and suppress the click
+            // that happens when the mouse is released
+            const suppressClickHandler = (clickEvent) => {
+                clickEvent.stopPropagation();
+                clickEvent.preventDefault();
+                document.removeEventListener('click', suppressClickHandler, true);
+            };
+            
+            // Use capture phase to intercept the click before it reaches other handlers
+            document.addEventListener('click', suppressClickHandler, true);
         }
     }
     
@@ -280,6 +294,10 @@ class GrabHandle {
             if (this.onComplete) {
                 this.onComplete(this.position);
             }
+            
+            // Prevent the mouseup from triggering other events
+            e.preventDefault();
+            e.stopPropagation();
         }
     }
     
