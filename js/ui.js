@@ -189,7 +189,7 @@ const ui = {
     
     renderTree() {
         if (!app.document || !this.treeView) return;
-        
+
         // Use the TreeView component to render the tree
         this.treeViewComponent.render(app.document);
         
@@ -230,6 +230,13 @@ const ui = {
         }
        
         this.selectNode(transformNode instanceof TreeNode ? transformNode : null);
+        this.renderTree();
+    },
+
+    preselectNode(node) {
+        if (node == this.preselectedNode) return;
+        this.preselectedNode = node;
+        this.treeViewComponent.setPreselectedNode(node);
         this.renderTree();
     },
 

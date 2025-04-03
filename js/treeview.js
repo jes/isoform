@@ -11,6 +11,7 @@ class TreeView {
         }, options);
         
         this.selectedNode = null;
+        this.preselectedNode = null;
         this.collapsedNodeIds = new Set();
         this.scrollPosition = 0;
         this.draggingNode = null;
@@ -93,6 +94,11 @@ class TreeView {
         label.className = 'tree-node-label';
         label.textContent = node.displayName;
         label.dataset.nodeId = node.uniqueId || Math.random().toString(36).substr(2, 9);
+        
+        // Add preselected styling if this is the preselected node
+        if (this.preselectedNode === node) {
+            label.classList.add('preselected');
+        }
         
         // Add strikethrough style if node is disabled
         if (node.isDisabled === true) {
@@ -490,6 +496,26 @@ class TreeView {
             
             // Highlight all children of this node
             this.highlightChildNodes(node, true);
+        }
+    }
+
+    setPreselectedNode(node) {
+        // Clear previous preselection
+        if (this.preselectedNode) {
+            const prevLabel = this.container.querySelector(`.tree-node-label[data-node-id="${this.preselectedNode.uniqueId}"]`);
+            if (prevLabel) {
+                prevLabel.classList.remove('preselected');
+            }
+        }
+        
+        this.preselectedNode = node;
+        
+        // Apply preselection styling
+        if (node) {
+            const nodeLabel = this.container.querySelector(`.tree-node-label[data-node-id="${node.uniqueId}"]`);
+            if (nodeLabel) {
+                nodeLabel.classList.add('preselected');
+            }
         }
     }
 }

@@ -134,6 +134,15 @@ input[type="checkbox"] {
     /* More subtle than the selected color */
 }
 
+.tree-node-label.preselected {
+    background-color: rgba(80, 100, 130, 0.5);
+    border-left: 2px solid rgba(100, 150, 200, 0.6);
+}
+
+.tree-node-label.preselected:hover {
+    background-color: rgba(90, 110, 140, 0.6);
+}
+
 .tree-toggle, .tree-toggle-placeholder {
     width: 16px;
     height: 16px;

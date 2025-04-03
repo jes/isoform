@@ -381,10 +381,11 @@ const renderer = {
                 if (this.selectLevel > 0) this.selectLevel--;
             }
 
-            ui.preselectedNode = this.nodeUnderCursor;
-            for (let i = 0; i < this.selectLevel && ui.preselectedNode.parent; i++) {
-                ui.preselectedNode = ui.preselectedNode.parent;
+            let node = this.nodeUnderCursor;
+            for (let i = 0; i < this.selectLevel && node.parent; i++) {
+                node = node.parent;
             }
+            ui.preselectNode(node);
             this.displayCoordinatesIfHit(this.rayMarchResult);
             
             e.preventDefault(); // Prevent default browser zoom
@@ -404,7 +405,7 @@ const renderer = {
         this.rayMarchResult = this.rayMarchFromPoint(ro, rd);
 
         this.nodeUnderCursor = app.document.findNodeById(this.rayMarchResult.uniqueId);
-        ui.preselectedNode = this.nodeUnderCursor;
+        ui.preselectNode(this.nodeUnderCursor);
         
         // Display coordinates if we hit something
         this.displayCoordinatesIfHit(this.rayMarchResult);
