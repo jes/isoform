@@ -355,8 +355,7 @@ const renderer = {
     },
 
     onCanvasClick(e) {
-        if (!this.nodeUnderCursor) return;
-        ui.selectNode(this.nodeUnderCursor);
+        ui.selectNode(this.nodeUnderCursor); // may be null
     },
     
     onCanvasContextMenu(e) {

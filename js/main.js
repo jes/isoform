@@ -1,7 +1,7 @@
 // Main application
 const app = {
     document: null,
-    lastSecondaryNode: null,
+    lastSelectedNode: null,
     lastAdjustmentTime: 0,
     adjustmentInterval: 1000, // ms
     wasFocused: true, // Track if window was previously focused
@@ -140,12 +140,14 @@ const app = {
             this.primaryShaderLayer.setUniforms(this.document.uniforms());
             const hoverId = renderer.nodeUnderCursor?.uniqueId ?? -1;
             this.primaryShaderLayer.setUniform('float', 'uObjectUnderCursor', hoverId);
+            this.primaryShaderLayer.setUniform('float', 'uSelectedObject', ui.selectedNode?.uniqueId ?? -1);
             shaderLayers.push(this.primaryShaderLayer);
         }
         if (this.secondaryShaderLayer) {
             this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.25);
             this.secondaryShaderLayer.setUniforms(this.document.uniforms());
             this.secondaryShaderLayer.setUniform('float', 'uObjectUnderCursor', -1);
+            this.secondaryShaderLayer.setUniform('float', 'uSelectedObject', -1);
             shaderLayers.push(this.secondaryShaderLayer);
         }
         for (let grabHandle of this.grabHandles) {
@@ -175,9 +177,9 @@ const app = {
 
     async rebuildShaders(force = false) {
         // Track the current secondary node
-        const currentSecondaryNode = ui.getSecondaryNode();
+        const currentSelectedNode = ui.selectedNode;
 
-        if (!this.document.dirty() && currentSecondaryNode === this.lastSecondaryNode && !force) {
+        if (!this.document.dirty() && currentSelectedNode === this.lastSelectedNode && !force) {
             return;
         }
 
@@ -216,7 +218,7 @@ const app = {
             this.document.markClean();
         }
 
-        if (currentSecondaryNode !== null && !currentSecondaryNode.aabb().isInfinite()) {
+        if (currentSelectedNode !== null && !currentSelectedNode.aabb().isInfinite()) {
             let expr;
             let node;
             
@@ -226,7 +228,7 @@ const app = {
                 // that takes the center and size as uniforms and renders a box
 
                 // Get the AABB of the secondary node
-                const nodeAABB = currentSecondaryNode.aabb();
+                const nodeAABB = currentSelectedNode.aabb();
                 const center = nodeAABB.getCenter();
                 const size = nodeAABB.getSize();
                 
@@ -243,35 +245,31 @@ const app = {
             } else {
                 // Use the normal secondary node
                 startTime = performance.now();
-                expr = currentSecondaryNode.peptide(P.vvar('p'));
+                expr = currentSelectedNode.peptide(P.vvar('p'));
             }
+        
+            console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
+            startTime = performance.now();
+            expr = P.struct({
+                distance: P.field(expr, 'distance'),
+                color: P.vconst(new Vec3(0.8, 0.2, 0.2))
+            });
+            const ssa = expr.ssa();
+            const peptide = P.field(expr, 'distance').derivative('p');
+            const peptideVec3 = P.vec3(peptide[0], peptide[1], peptide[2]);
+            const ssaNormal = peptideVec3.ssa();
+            console.log(`SSA took ${performance.now() - startTime} ms`);
             
-            if (expr) {
-                console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
-                startTime = performance.now();
-                expr = P.struct({
-                    distance: P.field(expr, 'distance'),
-                    color: P.vconst(new Vec3(0.8, 0.2, 0.2))
-                });
-                const ssa = expr.ssa();
-                const peptide = P.field(expr, 'distance').derivative('p');
-                const peptideVec3 = P.vec3(peptide[0], peptide[1], peptide[2]);
-                const ssaNormal = peptideVec3.ssa();
-                console.log(`SSA took ${performance.now() - startTime} ms`);
-                
-                this.secondaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.secondaryShaderLayer, node?.uniforms());
+            this.secondaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.secondaryShaderLayer, node?.uniforms());
 
-                if (this.showAABB) {
-                    this.secondaryShaderLayer.setUniforms(node.uniforms());
-                }
-            } else {
-                this.secondaryShaderLayer = null;
+            if (this.showAABB) {
+                this.secondaryShaderLayer.setUniforms(node.uniforms());
             }
         } else {
             this.secondaryShaderLayer = null;
         }
 
-        this.lastSecondaryNode = currentSecondaryNode;
+        this.lastSelectedNode = currentSelectedNode;
         this.lastAdjustmentTime = Date.now();
         
         this.hideLoadingIndicator();
