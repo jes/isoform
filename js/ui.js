@@ -6,6 +6,7 @@ const ui = {
     propertyEditorComponent: null,
     sketchEditor: null,
     selectedNode: null,
+    preselectedNode: null,
     secondaryNode: null,
     clipboard: null,
 

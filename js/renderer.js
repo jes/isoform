@@ -29,7 +29,6 @@ const renderer = {
     lastMousePosition: null,
 
     nodeUnderCursor: null,
-    preselectedNode: null,
     selectLevel: 0,
     rayMarchResult: null,
 
@@ -363,12 +362,12 @@ const renderer = {
     },
 
     onCanvasClick(e) {
-        ui.selectNode(this.preselectedNode); // may be null
+        ui.selectNode(ui.preselectedNode); // may be null
     },
     
     onCanvasContextMenu(e) {
         e.preventDefault();
-        ui.showContextMenu(e, this.preselectedNode || app.document);
+        ui.showContextMenu(e, ui.preselectedNode || app.document);
     },
     
     onCanvasWheel(e) {
@@ -377,14 +376,14 @@ const renderer = {
             console.log('Ctrl+mousewheel detected in renderer', e.deltaY > 0 ? 'down' : 'up');
 
             if (e.deltaY > 0) {
-                if (this.preselectedNode.parent) this.selectLevel++;
+                if (ui.preselectedNode.parent) this.selectLevel++;
             } else {
                 if (this.selectLevel > 0) this.selectLevel--;
             }
 
-            this.preselectedNode = this.nodeUnderCursor;
-            for (let i = 0; i < this.selectLevel && this.preselectedNode.parent; i++) {
-                this.preselectedNode = this.preselectedNode.parent;
+            ui.preselectedNode = this.nodeUnderCursor;
+            for (let i = 0; i < this.selectLevel && ui.preselectedNode.parent; i++) {
+                ui.preselectedNode = ui.preselectedNode.parent;
             }
             this.displayCoordinatesIfHit(this.rayMarchResult);
             
@@ -405,7 +404,7 @@ const renderer = {
         this.rayMarchResult = this.rayMarchFromPoint(ro, rd);
 
         this.nodeUnderCursor = app.document.findNodeById(this.rayMarchResult.uniqueId);
-        this.preselectedNode = this.nodeUnderCursor;
+        ui.preselectedNode = this.nodeUnderCursor;
         
         // Display coordinates if we hit something
         this.displayCoordinatesIfHit(this.rayMarchResult);
@@ -434,7 +433,7 @@ const renderer = {
     displayCoordinatesIfHit(result) {
         if (result.hit) {
             const coords = result.hitPosition || new Vec3(0, 0, 0);
-            const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}<br><i>(${this.preselectedNode.displayName})</i>`;
+            const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}<br><i>(${ui.preselectedNode.displayName})</i>`;
             
             this.coordDisplay.innerHTML = text;
             this.coordDisplay.style.display = 'block';
