@@ -29,7 +29,10 @@ const renderer = {
     lastMousePosition: null,
 
     nodeUnderCursor: null,
-    
+    preselectedNode: null,
+    selectLevel: 0,
+    rayMarchResult: null,
+
     async init() {
         this.canvas = document.getElementById('glCanvas');
         this.coordDisplay = document.getElementById('coord-display');
@@ -41,6 +44,9 @@ const renderer = {
         });
 
         this.canvas.addEventListener('click', (e) => this.onCanvasClick(e));
+        
+        // Add wheel event handler with capture phase to ensure it runs before camera handler (for zoom)
+        this.canvas.addEventListener('wheel', (e) => this.onCanvasWheel(e), { capture: true });
         
         // Add context menu handler for right-click on canvas
         this.canvas.addEventListener('contextmenu', (e) => this.onCanvasContextMenu(e));
@@ -332,6 +338,8 @@ const renderer = {
     onCanvasMouseMove(e) {
         if (!this.coordDisplay) return;
 
+        this.selectLevel = 0;
+
         // Get canvas-relative coordinates
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -355,12 +363,35 @@ const renderer = {
     },
 
     onCanvasClick(e) {
-        ui.selectNode(this.nodeUnderCursor); // may be null
+        ui.selectNode(this.preselectedNode); // may be null
     },
     
     onCanvasContextMenu(e) {
         e.preventDefault();
-        ui.showContextMenu(e, this.nodeUnderCursor || app.document);
+        ui.showContextMenu(e, this.preselectedNode || app.document);
+    },
+    
+    onCanvasWheel(e) {
+        // If Ctrl key is pressed, handle the event here
+        if (e.ctrlKey) {
+            console.log('Ctrl+mousewheel detected in renderer', e.deltaY > 0 ? 'down' : 'up');
+
+            if (e.deltaY > 0) {
+                if (this.preselectedNode.parent) this.selectLevel++;
+            } else {
+                if (this.selectLevel > 0) this.selectLevel--;
+            }
+
+            this.preselectedNode = this.nodeUnderCursor;
+            for (let i = 0; i < this.selectLevel && this.preselectedNode.parent; i++) {
+                this.preselectedNode = this.preselectedNode.parent;
+            }
+            this.displayCoordinatesIfHit(this.rayMarchResult);
+            
+            e.preventDefault(); // Prevent default browser zoom
+            e.stopPropagation(); // Try to stop propagation
+            return false;
+        }
     },
     
     updateCoordinateDisplay() {
@@ -371,12 +402,13 @@ const renderer = {
         const { ro, rd } = this.calculateRayOriginAndDirection(p);
         
         // Raymarch from this point
-        const result = this.rayMarchFromPoint(ro, rd);
+        this.rayMarchResult = this.rayMarchFromPoint(ro, rd);
 
-        this.nodeUnderCursor = app.document.findNodeById(result.uniqueId);
+        this.nodeUnderCursor = app.document.findNodeById(this.rayMarchResult.uniqueId);
+        this.preselectedNode = this.nodeUnderCursor;
         
         // Display coordinates if we hit something
-        this.displayCoordinatesIfHit(result);
+        this.displayCoordinatesIfHit(this.rayMarchResult);
     },
     
     calculateRayFromMousePosition(mousePos) {
@@ -402,7 +434,7 @@ const renderer = {
     displayCoordinatesIfHit(result) {
         if (result.hit) {
             const coords = result.hitPosition || new Vec3(0, 0, 0);
-            const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}<br><i>(${this.nodeUnderCursor.displayName})</i>`;
+            const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}<br><i>(${this.preselectedNode.displayName})</i>`;
             
             this.coordDisplay.innerHTML = text;
             this.coordDisplay.style.display = 'block';
