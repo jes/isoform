@@ -363,6 +363,11 @@ const renderer = {
 
     onCanvasClick(e) {
         ui.selectNode(ui.preselectedNode); // may be null
+        
+        // Hide coordinate display when selecting a node
+        if (this.coordDisplay) {
+            this.coordDisplay.style.display = 'none';
+        }
     },
     
     onCanvasContextMenu(e) {
