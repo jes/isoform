@@ -116,12 +116,12 @@ input[type="checkbox"] {
     padding: 2px 3px;
     cursor: pointer;
     border-radius: 2px;
-    transition: background-color 0.2s;
     flex: 1;
 }
 
 .tree-node-label:hover {
     background-color: rgba(80, 80, 100, 0.8);
+    transition: background-color 0.2s;
 }
 
 .tree-node-label.selected {
