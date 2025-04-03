@@ -29,7 +29,7 @@ const renderer = {
     lastMousePosition: null,
 
     nodeUnderCursor: null,
-    selectLevel: 0,
+    preselectLevel: 0,
     rayMarchResult: null,
 
     async init() {
@@ -337,7 +337,7 @@ const renderer = {
     onCanvasMouseMove(e) {
         if (!this.coordDisplay) return;
 
-        this.selectLevel = 0;
+        this.preselectLevel = 0;
 
         // Get canvas-relative coordinates
         const rect = this.canvas.getBoundingClientRect();
@@ -376,13 +376,13 @@ const renderer = {
             console.log('Ctrl+mousewheel detected in renderer', e.deltaY > 0 ? 'down' : 'up');
 
             if (e.deltaY > 0) {
-                if (ui.preselectedNode.parent) this.selectLevel++;
+                if (ui.preselectedNode.parent) this.preselectLevel++;
             } else {
-                if (this.selectLevel > 0) this.selectLevel--;
+                if (this.preselectLevel > 0) this.preselectLevel--;
             }
 
             let node = this.nodeUnderCursor;
-            for (let i = 0; i < this.selectLevel && node.parent; i++) {
+            for (let i = 0; i < this.preselectLevel && node.parent; i++) {
                 node = node.parent;
             }
             ui.preselectNode(node);
