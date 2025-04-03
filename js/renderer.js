@@ -434,7 +434,7 @@ const renderer = {
     displayCoordinatesIfHit(result) {
         if (result.hit) {
             const coords = result.hitPosition || new Vec3(0, 0, 0);
-            const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}<br><i>(${ui.preselectedNode.displayName})</i>`;
+            const text = `X: ${coords.x.toFixed(3)}<br>Y: ${coords.y.toFixed(3)}<br>Z: ${coords.z.toFixed(3)}<br><i>(${ui.preselectedNode.displayName})</i><br>Ctrl-scroll to change preselect level. Click to select.`;
             
             this.coordDisplay.innerHTML = text;
             this.coordDisplay.style.display = 'block';
