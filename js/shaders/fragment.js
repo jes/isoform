@@ -43,6 +43,16 @@ vec3 mapNormal(vec3 p) {
 }
 // end scene
 
+float findEdge(vec3 p) {
+    p = uRotationMatrix * p;
+    float eps = 0.005 / uCameraZoom;
+    float id1 = peptide(p + vec3(eps, 0.0, 0.0)).uniqueId;
+    float id2 = peptide(p + vec3(-eps, 0.0, 0.0)).uniqueId;
+    float id3 = peptide(p + vec3(0.0, eps, 0.0)).uniqueId;
+    float id4 = peptide(p + vec3(0.0, -eps, 0.0)).uniqueId;
+    return float(id1 != id2 || id1 != id3 || id1 != id4);
+}
+
 // Calculate normal at a point
 vec4 calcNormalAndEdge(vec3 p, float d) {
     float distanceToCamera = length(p - uCameraPosition);
@@ -261,7 +271,7 @@ OrthoProjectionResult orthoProjection(vec3 ro, vec3 rd, vec3 right, vec3 up, flo
         vec3 normal = normalAndEdge.xyz;
         float edge = normalAndEdge.w;*/
         vec3 normal = mapNormal(pos);
-        float edge = 0.0;
+        float edge = findEdge(pos);
         
         // Improved lighting setup with multiple light sources
         vec3 lightDir1 = normalize(vec3(0.5, 0.8, 0.6)); // Main light
