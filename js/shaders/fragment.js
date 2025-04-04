@@ -119,9 +119,9 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
         if (d < 0.0) {
             result.hit = true;
             if (m.uniqueId == uObjectUnderCursor) {
-                result.color = mix(m.color, vec3(0.1, 0.7, 0.9), 0.5);
+                result.color = mix(m.color, vec3(0.1, 0.7, 0.9), 0.8);
             } else if (m.uniqueId == uSelectedObject) {
-                result.color = mix(m.color, vec3(0.1, 0.9, 0.1), 0.5);
+                result.color = mix(m.color, vec3(0.1, 0.9, 0.1), 0.8);
             } else {
                 result.color = m.color;
             }
