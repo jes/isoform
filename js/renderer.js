@@ -398,6 +398,10 @@ const renderer = {
     // when level is not null, preselect the ancestor at the given level
     preselect(level = null) {
         let node = this.nodeUnderCursor;
+        if (!node) {
+            ui.preselectNode(null);
+            return;
+        }
         let i = 0;
         while (node.parent) {
             if (level != null && i >= level) break;
