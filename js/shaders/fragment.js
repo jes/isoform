@@ -105,7 +105,7 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
     result.distance = 0.0;
     result.hit = false;
     result.steps = 0;
-    result.color = vec3(0.9, 0.1, 0.1);
+    result.color = vec3(0.1, 0.1, 0.1);
 
     vec3 p = ro;
     float lastD = 0.0;
