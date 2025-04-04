@@ -1,14 +1,12 @@
 class UnionNode extends TreeNode {
-    constructor(children = [], blendRadius = 0) {
+    constructor(children = []) {
       super("Union");
       this.maxChildren = null;
       this.addChild(children);
-      this.blendRadius = blendRadius;
-      this.chamfer = false;
     }
 
     properties() {
-      return {"blendRadius": "float", "chamfer": "bool"};
+      return {"blendRadius": "float", "chamfer": "float"};
     }
 
     makePeptide(p) {
@@ -40,16 +38,14 @@ class UnionNode extends TreeNode {
   }
 
 class IntersectionNode extends TreeNode {
-  constructor(children = [], blendRadius = 0) {
+  constructor(children = []) {
     super("Intersection");
     this.maxChildren = null;
     this.addChild(children);
-    this.blendRadius = blendRadius;
-    this.chamfer = false;
   }
 
   properties() {
-    return {"blendRadius": "float", "chamfer": "bool"};
+    return {"blendRadius": "float", "chamfer": "float"};
   }
 
   makePeptide(p) {
@@ -82,16 +78,14 @@ class IntersectionNode extends TreeNode {
 }
 
 class SubtractionNode extends TreeNode {
-  constructor(children = [], blendRadius = 0) {
+  constructor(children = []) {
     super("Subtraction");
     this.maxChildren = null;
     this.addChild(children);
-    this.blendRadius = blendRadius;
-    this.chamfer = false;
   }
 
   properties() {
-    return {"blendRadius": "float", "chamfer": "bool"};
+    return {"blendRadius": "float", "chamfer": "float"};
   }
   
   makePeptide(p) {

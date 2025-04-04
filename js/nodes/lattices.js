@@ -31,13 +31,10 @@ class CubicLatticeNode extends TreeNode {
     super("CubicLattice");
     this.scale = 1.0;
     this.thickness = 0.5;
-    this.blendRadius = 0.0;
-    this.chamfer = false;
   }
 
   properties() {
-    // XXX: don't expose chamfer because it seems broken?
-    return {"scale": "float", "thickness": "float", "blendRadius": "float"};
+    return {"scale": "float", "thickness": "float", "blendRadius": "float", "chamfer": "float"};
   }
 
   grabHandles() {

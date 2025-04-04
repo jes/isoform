@@ -301,7 +301,7 @@ class InfillNode extends TreeNode {
   }
 
   properties() {
-    return {"thickness": "float", "blendRadius": "float", "chamfer": "bool"};
+    return {"thickness": "float", "blendRadius": "float", "chamfer": "float"};
   }
 
   makePeptide(p) {
@@ -545,13 +545,11 @@ class MirrorNode extends TreeNode {
     this.maxChildren = 1;
     this.plane = "XY";
     this.keepOriginal = true;
-    this.blendRadius = 0.0;
-    this.chamfer = false;
     this.addChild(children);
   }
 
   properties() {
-    return {"plane": ["XY", "XZ", "YZ"], "keepOriginal": "bool", "blendRadius": "float", "chamfer": "bool"};
+    return {"plane": ["XY", "XZ", "YZ"], "keepOriginal": "bool", "blendRadius": "float", "chamfer": "float"};
   }
 
   makePeptide(p) {
@@ -627,13 +625,11 @@ class LinearPatternNode extends TreeNode {
     this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
     this.spacing = spacing;
     this.copies = copies;
-    this.blendRadius = 0.0;
-    this.chamfer = false;
     this.addChild(children);
   }
 
   properties() {
-    return {"axis": "vec3", "spacing": "float", "copies": "int", "blendRadius": "float", "chamfer": "bool"};
+    return {"axis": "vec3", "spacing": "float", "copies": "int", "blendRadius": "float", "chamfer": "float"};
   }
 
   grabHandles() {
@@ -705,13 +701,11 @@ class PolarPatternNode extends TreeNode {
     this.copies = copies;
     this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
     this.angle = angle;
-    this.blendRadius = 0.0;
-    this.chamfer = false;
     this.addChild(children);
   }
 
   properties() {
-    return {"copies": "int", "axis": "vec3", "angle": "float", "blendRadius": "float", "chamfer": "bool"};
+    return {"copies": "int", "axis": "vec3", "angle": "float", "blendRadius": "float", "chamfer": "float"};
   }
 
   makePeptide(p) {
@@ -786,15 +780,13 @@ class ExtrudeNode extends TreeNode {
     super("Extrude");
     this.height = 100.0;
     this.maxChildren = 1;
-    this.blendRadius = 0.0;
-    this.chamfer = false;
     this.draftAngle = 0.0;
     this.axis = new Vec3(0, 0, 1);
     this.addChild(children);
   }
 
   properties() {
-    return {"height": "float", "axis": "vec3", "blendRadius": "float", "chamfer": "bool", "draftAngle": "float"};
+    return {"height": "float", "axis": "vec3", "blendRadius": "float", "chamfer": "float", "draftAngle": "float"};
   }
 
   grabHandles() {
@@ -860,7 +852,7 @@ class DistanceDeformInsideNode extends TreeNode {
   }
 
   properties() {
-    return {"amplitude": "float", "blendRadius": "float", "chamfer": "bool"};
+    return {"amplitude": "float", "blendRadius": "float", "chamfer": "float"};
   }
 
   makePeptide(p) {
@@ -949,8 +941,6 @@ class HelixExtrudeNode extends TreeNode {
     this.pitch = 50.0;
     this.turns = 2.0;
     this.maxChildren = 1;
-    this.blendRadius = 0.0;
-    this.chamfer = false;
     this.addChild(children);
   }
 
@@ -961,7 +951,7 @@ class HelixExtrudeNode extends TreeNode {
       "pitch": "float", 
       "turns": "float",
       "blendRadius": "float", 
-      "chamfer": "bool"
+      "chamfer": "float"
     };
   }
 

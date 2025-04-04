@@ -22,7 +22,7 @@ class TreeNode {
     this.propertyUniforms = {}; // uniforms for the node - map uniform name to property name
 
     this.blendRadius = 0.0;
-    this.chamfer = false;
+    this.chamfer = 0.0;
   }
 
   // override this to return true if the node is 2d
@@ -132,11 +132,9 @@ class TreeNode {
     if (!a) return b;
     if (!b) return a;
     if (this.blendRadius > 0.0) {
-      if (this.chamfer) {
-        return P.chmin(a, b, this.uniform('blendRadius'));
-      } else {
-        return P.smin(a, b, this.uniform('blendRadius'));
-      }
+      const ch = P.chmin(a, b, this.uniform('blendRadius'));
+      const sm = P.smin(a, b, this.uniform('blendRadius'));
+      return P.mix(sm, ch, this.uniform('chamfer'));
     }
     return P.min(a, b);
   }
@@ -145,11 +143,9 @@ class TreeNode {
     if (!a) return b;
     if (!b) return a;
     if (this.blendRadius > 0.0) {
-      if (this.chamfer) {
-        return P.chmax(a, b, this.uniform('blendRadius'));
-      } else {
-        return P.smax(a, b, this.uniform('blendRadius'));
-      }
+      const ch = P.chmax(a, b, this.uniform('blendRadius'));
+      const sm = P.smax(a, b, this.uniform('blendRadius'));
+      return P.mix(sm, ch, this.uniform('chamfer'));
     }
     return P.max(a, b);
   }
