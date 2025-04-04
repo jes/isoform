@@ -188,7 +188,10 @@ class Mesher {
     // Generate mesh from a TreeNode
     static fromTreeNode(node, options = {}) {
         const sdf = node.getSDF();
-        return new Mesher(sdf, options);
+        return new Mesher(sdf, {
+            ...options,
+            bounds: node.aabb()
+        });
     }
 }
 
