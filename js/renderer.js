@@ -337,8 +337,6 @@ const renderer = {
     onCanvasMouseMove(e) {
         if (!this.coordDisplay) return;
 
-        this.preselectLevel = 0;
-
         // Get canvas-relative coordinates
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -409,8 +407,13 @@ const renderer = {
         // Raymarch from this point
         this.rayMarchResult = this.rayMarchFromPoint(ro, rd);
 
-        this.nodeUnderCursor = app.document.findNodeById(this.rayMarchResult.uniqueId);
-        ui.preselectNode(this.nodeUnderCursor);
+        const node = app.document.findNodeById(this.rayMarchResult.uniqueId);
+
+        if (node != this.nodeUnderCursor) {
+            this.nodeUnderCursor = node;
+            this.preselectLevel = 0;
+            ui.preselectNode(node);
+        }
         
         // Display coordinates if we hit something
         this.displayCoordinatesIfHit(this.rayMarchResult);
