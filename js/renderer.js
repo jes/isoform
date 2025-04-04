@@ -384,17 +384,29 @@ const renderer = {
                 if (this.preselectLevel > 0) this.preselectLevel--;
             }
 
-            let node = this.nodeUnderCursor;
-            for (let i = 0; i < this.preselectLevel && node.parent; i++) {
-                node = node.parent;
-            }
-            ui.preselectNode(node);
+            this.preselect(this.preselectLevel);
             this.displayCoordinatesIfHit(this.rayMarchResult);
             
             e.preventDefault(); // Prevent default browser zoom
             e.stopPropagation(); // Try to stop propagation
             return false;
         }
+    },
+
+    // when level is null, preselect the last ancestor of nodeUnderCursor that
+    // only has 1 child, and set preselectLevel to match;
+    // when level is not null, preselect the ancestor at the given level
+    preselect(level = null) {
+        let node = this.nodeUnderCursor;
+        let i = 0;
+        while (node.parent) {
+            if (level != null && i >= level) break;
+            if (level == null && node.parent.children.length > 1) break;
+            node = node.parent;
+            i++;
+        }
+        if (level == null) this.preselectLevel = i;
+        ui.preselectNode(node);
     },
     
     updateCoordinateDisplay() {
@@ -411,8 +423,7 @@ const renderer = {
 
         if (node != this.nodeUnderCursor) {
             this.nodeUnderCursor = node;
-            this.preselectLevel = 0;
-            ui.preselectNode(node);
+            this.preselect();
         }
         
         // Display coordinates if we hit something
