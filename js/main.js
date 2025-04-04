@@ -138,9 +138,8 @@ const app = {
         if (this.primaryShaderLayer) {
             this.primaryShaderLayer.setUniform('float', 'uOpacity', camera.opacity);
             this.primaryShaderLayer.setUniforms(this.document.uniforms());
-            const hoverId = ui.preselectedNode?.uniqueId ?? -1;
-            this.primaryShaderLayer.setUniform('float', 'uObjectUnderCursor', hoverId);
-            this.primaryShaderLayer.setUniform('float', 'uSelectedObject', ui.selectedNode?.uniqueId ?? -1);
+            this.primaryShaderLayer.setUniform('float', 'uObjectUnderCursor', ui.selectedNode?.uniqueId ?? -1);
+            this.primaryShaderLayer.setUniform('float', 'uSelectedObject', renderer.nodeUnderCursor?.uniqueId ?? -1);
             shaderLayers.push(this.primaryShaderLayer);
         }
         if (this.secondaryShaderLayer) {
