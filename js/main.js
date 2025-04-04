@@ -138,15 +138,15 @@ const app = {
         if (this.primaryShaderLayer) {
             this.primaryShaderLayer.setUniform('float', 'uOpacity', camera.opacity);
             this.primaryShaderLayer.setUniforms(this.document.uniforms());
-            this.primaryShaderLayer.setUniform('float', 'uObjectUnderCursor', ui.selectedNode?.uniqueId ?? -1);
-            this.primaryShaderLayer.setUniform('float', 'uSelectedObject', renderer.nodeUnderCursor?.uniqueId ?? -1);
+            this.primaryShaderLayer.setUniform('float', 'uSelectedObject', ui.selectedNode?.uniqueId ?? -1);
+            this.primaryShaderLayer.setUniform('float', 'uObjectUnderCursor', renderer.nodeUnderCursor?.uniqueId ?? -1);
             shaderLayers.push(this.primaryShaderLayer);
         }
         if (this.secondaryShaderLayer) {
-            this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.25);
+            this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.15);
             this.secondaryShaderLayer.setUniforms(this.document.uniforms());
-            this.secondaryShaderLayer.setUniform('float', 'uObjectUnderCursor', -1);
             this.secondaryShaderLayer.setUniform('float', 'uSelectedObject', -1);
+            this.secondaryShaderLayer.setUniform('float', 'uObjectUnderCursor', -1);
             shaderLayers.push(this.secondaryShaderLayer);
         }
         for (let grabHandle of this.grabHandles) {
