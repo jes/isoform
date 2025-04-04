@@ -740,7 +740,7 @@ class Peptide {
 
     static smoothabs(a) {
         a.assertType('float');
-        return P.sqrt(P.add(P.mul(a, a), P.const(1e-10)));
+        return P.sqrt(P.add(P.mul(a, a), P.const(1e-5)));
     }
 
     static min(a, b) {
@@ -940,6 +940,12 @@ class Peptide {
         a.assertType('float');
         b.assertType('float');
         return P.mul(a, b);
+    }
+
+    static or(a, b) {
+        a.assertType('float');
+        b.assertType('float');
+        return P.not(P.and(P.not(a), P.not(b)));
     }
 
     static gte(a, b) {
@@ -1503,6 +1509,11 @@ class Peptide {
                 }
                 return result;
             },
+            jsCode: (ssaOp) => { throw new Error('struct.jsCode not implemented'); },
+            jsIntervalCode: (ssaOp) => { throw new Error('struct.jsIntervalCode not implemented'); },
+            glslCode: (ssaOp) => { throw new Error('struct.glslCode not implemented'); },
+            glslIntervalCode: (ssaOp) => { throw new Error('struct.glslIntervalCode not implemented'); },
+            derivative: (varName) => { throw new Error('struct.derivative not implemented'); },
         });
     }
 

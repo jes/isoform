@@ -99,6 +99,8 @@ class SubtractionNode extends TreeNode {
       const negChild = P.struct({
         distance: P.neg(P.field(child, 'distance')),
         color: P.field(child, 'color'),
+        uniqueId: P.field(child, 'uniqueId'),
+        otherSurfaceDistance: P.field(child, 'otherSurfaceDistance'),
       });
       if (!child) continue;
       max = this.structmax(max, negChild);

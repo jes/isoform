@@ -23,6 +23,8 @@ class TreeNode {
 
     this.blendRadius = 0.0;
     this.chamfer = 0.0;
+
+    this.blends = []; // array of blends, only applicable on root node, will be propataged down
   }
 
   // override this to return true if the node is 2d
@@ -128,26 +130,64 @@ class TreeNode {
     return used;
   }
 
-  min(a, b){
-    if (!a) return b;
-    if (!b) return a;
-    if (this.blendRadius > 0.0) {
-      const ch = P.chmin(a, b, this.uniform('blendRadius'));
-      const sm = P.smin(a, b, this.uniform('blendRadius'));
-      return P.mix(sm, ch, this.uniform('chamfer'));
+  blendParams(blendSurfaces = null, thirdSurfaceDistance = null){
+    let blendRadius = this.uniform('blendRadius');
+    let chamfer = this.uniform('chamfer');
+
+    if (blendSurfaces) {
+      for (const blend of app.document.blends) {
+        const id0 = P.const(blend.nodes[0].uniqueId);
+        const id1 = P.const(blend.nodes[1].uniqueId);
+        const select = P.or(P.and(P.eq(id0, blendSurfaces[0]), P.eq(id1, blendSurfaces[1])),
+                            P.and(P.eq(id0, blendSurfaces[1]), P.eq(id1, blendSurfaces[0])));
+        blendRadius = P.cond(select, P.const(blend.blendRadius), blendRadius);
+        chamfer = P.cond(select, P.const(blend.chamfer), chamfer);
+      }
     }
-    return P.min(a, b);
+
+    // XXX: smooth blend of 0 radius breaks the derivative
+    blendRadius = P.smoothabs(blendRadius);
+
+    // Apply smooth falloff based on thirdSurfaceDistance if provided
+    if (thirdSurfaceDistance) {
+      // Create a normalized value between 0 and 1
+      // XXX: the 5.0 constant could be varied to change how fast the falloff is?
+      const t = P.div(P.smoothabs(thirdSurfaceDistance), P.mul(blendRadius, P.const(5.0)));
+      // Clamp t between 0 and 1
+      const clamped = P.clamp(t, P.const(0.0), P.const(1.0));
+      // Apply smoothstep formula: 3t² - 2t³ for smooth interpolation
+      const t2 = P.mul(clamped, clamped);
+      const t3 = P.mul(t2, clamped);
+      const falloffFactor = P.sub(P.mul(P.const(3.0), t2), P.mul(P.const(2.0), t3));
+      
+      // Apply the falloff to both blendRadius and chamfer
+      blendRadius = P.mul(blendRadius, falloffFactor);
+      chamfer = P.mul(chamfer, falloffFactor);
+    }
+
+    return {blendRadius, chamfer};
   }
 
-  max(a, b){
+  min(a, b, blendSurfaces = null, thirdSurfaceDistance = null){
     if (!a) return b;
     if (!b) return a;
-    if (this.blendRadius > 0.0) {
-      const ch = P.chmax(a, b, this.uniform('blendRadius'));
-      const sm = P.smax(a, b, this.uniform('blendRadius'));
-      return P.mix(sm, ch, this.uniform('chamfer'));
-    }
-    return P.max(a, b);
+
+    const {blendRadius, chamfer} = this.blendParams(blendSurfaces, thirdSurfaceDistance);
+
+    const ch = P.chmin(a, b, blendRadius);
+    const sm = P.smin(a, b, blendRadius);
+    return P.mix(sm, ch, chamfer);
+  }
+
+  max(a, b, blendSurfaces = null, thirdSurfaceDistance = null){
+    if (!a) return b;
+    if (!b) return a;
+
+    const {blendRadius, chamfer} = this.blendParams(blendSurfaces, thirdSurfaceDistance);
+
+    const ch = P.chmax(a, b, blendRadius);
+    const sm = P.smax(a, b, blendRadius);
+    return P.mix(sm, ch, chamfer);
   }
 
   structmin(a, b) {
@@ -160,8 +200,10 @@ class TreeNode {
     const colorB = P.field(b, 'color');
     const uniqueIdA = P.field(a, 'uniqueId');
     const uniqueIdB = P.field(b, 'uniqueId');
+
+    let thirdSurfaceDistance = P.min(P.field(a, 'otherSurfaceDistance'), P.field(b, 'otherSurfaceDistance'));
     
-    const distance = this.min(distA, distB);
+    const distance = this.min(distA, distB, [uniqueIdA, uniqueIdB], thirdSurfaceDistance);
     
     // work out how much each object contributes to the final distance,
     // and weight the color accordingly
@@ -183,6 +225,7 @@ class TreeNode {
       distance: distance,
       color: color,
       uniqueId: uniqueId,
+      otherSurfaceDistance: P.min(thirdSurfaceDistance, P.max(distA, distB)),
     });
   }
 
@@ -197,7 +240,9 @@ class TreeNode {
     const uniqueIdA = P.field(a, 'uniqueId');
     const uniqueIdB = P.field(b, 'uniqueId');
 
-    const distance = this.max(distA, distB);
+    let thirdSurfaceDistance = P.min(P.field(a, 'otherSurfaceDistance'), P.field(b, 'otherSurfaceDistance'));
+
+    const distance = this.max(distA, distB, [uniqueIdA, uniqueIdB], thirdSurfaceDistance);
     
     // work out how much each object contributes to the final distance,
     // and weight the color accordingly
@@ -219,6 +264,7 @@ class TreeNode {
       distance: distance,
       color: color,
       uniqueId: uniqueId,
+      otherSurfaceDistance: P.min(thirdSurfaceDistance, P.min(distA, distB)),
     });
   }
 
@@ -402,7 +448,8 @@ class TreeNode {
       return this.noop();
     }
     if (!pep.value.color) pep.value.color = app.defaultColor();
-    if (!pep.value.uniqueId) pep.value.uniqueId = P.const(this.uniqueId);
+    if (!pep.value.uniqueId) pep.value.uniqueId = P.const(this.uniqueId); // TODO: if we only have 1 child, recurse to find the leaf id
+    if (!pep.value.otherSurfaceDistance) pep.value.otherSurfaceDistance = P.const(1000.0);
     return pep;
   }
 

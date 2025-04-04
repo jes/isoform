@@ -86,8 +86,13 @@ const app = {
         const sphere = new SphereNode();
         const gyroid = new GyroidNode();
         const intersection = new IntersectionNode([sphere, gyroid]);
-        intersection.setProperty('blendRadius', 0.1);
         doc.addChild(intersection);
+
+        doc.blends.push({
+            nodes: [sphere, gyroid],
+            blendRadius: 0.5,
+            chamfer: 1.0,
+        });
 
         // set unique names for all nodes
         let dfs = (node) => {
@@ -247,22 +252,26 @@ const app = {
                 expr = currentSelectedNode.peptide(P.vvar('p'));
             }
         
-            console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
-            startTime = performance.now();
-            expr = P.struct({
-                distance: P.field(expr, 'distance'),
-                color: P.vconst(new Vec3(0.8, 0.2, 0.2))
-            });
-            const ssa = expr.ssa();
-            const peptide = P.field(expr, 'distance').derivative('p');
-            const peptideVec3 = P.vec3(peptide[0], peptide[1], peptide[2]);
-            const ssaNormal = peptideVec3.ssa();
-            console.log(`SSA took ${performance.now() - startTime} ms`);
-            
-            this.secondaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.secondaryShaderLayer, node?.uniforms());
+            if (expr) {
+                console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
+                startTime = performance.now();
+                expr = P.struct({
+                    distance: P.field(expr, 'distance'),
+                    color: P.vconst(new Vec3(0.8, 0.2, 0.2))
+                });
+                const ssa = expr.ssa();
+                const peptide = P.field(expr, 'distance').derivative('p');
+                const peptideVec3 = P.vec3(peptide[0], peptide[1], peptide[2]);
+                const ssaNormal = peptideVec3.ssa();
+                console.log(`SSA took ${performance.now() - startTime} ms`);
+                
+                this.secondaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.secondaryShaderLayer, node?.uniforms());
 
-            if (this.showAABB) {
-                this.secondaryShaderLayer.setUniforms(node.uniforms());
+                if (this.showAABB) {
+                    this.secondaryShaderLayer.setUniforms(node.uniforms());
+                }
+            } else {
+                this.secondaryShaderLayer = null;
             }
         } else {
             this.secondaryShaderLayer = null;
