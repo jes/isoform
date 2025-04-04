@@ -337,6 +337,12 @@ const renderer = {
     onCanvasMouseMove(e) {
         if (!this.coordDisplay) return;
 
+        // Hide coordinates while moving
+        this.coordDisplay.style.display = 'none';
+
+        // don't flash up coordinates when rotating view
+        if (e.altKey) return;
+
         // Get canvas-relative coordinates
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -349,9 +355,6 @@ const renderer = {
         if (this.mouseDebounceTimeout) {
             clearTimeout(this.mouseDebounceTimeout);
         }
-
-        // Hide coordinates while moving
-        this.coordDisplay.style.display = 'none';
 
         // Set new timeout
         this.mouseDebounceTimeout = setTimeout(() => {
