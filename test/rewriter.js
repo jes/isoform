@@ -445,7 +445,6 @@ const RewriterTests = {
     },
 
 
-    // TODO: more complex tests that includes modifier chains
     // TODO: very complex test that includes distinct blends between every pair of primitives
 };
 

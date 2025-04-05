@@ -129,11 +129,12 @@ const TreeRewriter = {
 
   // rewrite the intermediate tree using the distributivity rule to fix blend parameters
   rewriteTree(t) {
+    const blends = t.treeNode.blends;
     // only the root node contains the blends list, so we need to pass it down
-    const r = TreeRewriter._rewriteTree(t, t.treeNode.blends);
+    const r = TreeRewriter._rewriteTree(t, blends);
 
     // now apply the blends to the rewritten tree
-    TreeRewriter.applyBlends(r, t.treeNode.blends);
+    TreeRewriter.applyBlends(r, blends);
 
     return r;
   },

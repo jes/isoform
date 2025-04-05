@@ -184,18 +184,18 @@ class TreeNode {
     if (!a) return b;
     if (!b) return a;
 
-    const ch = P.chmin(a, b, P.smoothabs(this.uniform('blendRadius')));
-    const sm = P.smin(a, b, P.smoothabs(this.uniform('blendRadius')));
-    return P.mix(sm, ch, this.uniform('chamfer'));
+    const ch = P.chmin(a, b, P.smoothabs(P.const(this.blendRadius)));
+    const sm = P.smin(a, b, P.smoothabs(P.const(this.blendRadius)));
+    return P.mix(sm, ch, P.const(this.chamfer));
   }
 
   max(a, b) {
     if (!a) return b;
     if (!b) return a;
 
-    const ch = P.chmax(a, b, P.smoothabs(this.uniform('blendRadius')));
-    const sm = P.smax(a, b, P.smoothabs(this.uniform('blendRadius')));
-    return P.mix(sm, ch, this.uniform('chamfer'));
+    const ch = P.chmax(a, b, P.smoothabs(P.const(this.blendRadius)));
+    const sm = P.smax(a, b, P.smoothabs(P.const(this.blendRadius)));
+    return P.mix(sm, ch, P.const(this.chamfer));
   }
 
   structmin(a, b) {
