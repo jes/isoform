@@ -75,12 +75,43 @@ const TreeRewriter = {
     } else {
       throw new Error('Unknown node type: ' + t.type);
     }
-    t.treeNode.markDirty();
     return t.treeNode;
   },
 
-  // rewrite the intermediate tree to fix blend parameters
+  satisfiesBlends(t) {
+    return false;
+  },
+
+  // rewrite the intermediate tree using the distributivity rule to fix blend parameters
   rewriteTree(t) {
+    if (t.type == 'combinator') {
+      t.left = TreeRewriter.rewriteTree(t.left);
+      if (t.left.type == 'combinator' && !TreeRewriter.satisfiesBlends(t.left)) {
+        const left = t.left;
+        t.left = {
+          type: 'combinator',
+          left: left.left,
+          right: t.right,
+          treeNode: t.treeNode,
+        };
+        t.right = {
+          type: 'combinator',
+          left: left.right,
+          right: t.right,
+          treeNode: t.treeNode.clone(),
+        };
+        t.treeNode = left.treeNode;
+      }
+
+      t.right = TreeRewriter.rewriteTree(t.right);
+      // TODO: check if we need to apply the distributivity rule on t.right
+    } else if (t.type == 'modifier') {
+      t.child = TreeRewriter.rewriteTree(t.child);
+    } else if (t.type == 'primitive') {
+      // nothing
+    } else {
+      throw new Error('Unknown node type: ' + t.type);
+    }
     return t;
   },
 };
