@@ -17,20 +17,15 @@ const TreeNodeTests = {
         let passCount = 0;
         let results = [];
         
-        console.log("Running TreeNode Tests...");
-        
         for (const test of tests) {
             try {
                 await test.call(this);
-                console.log(`✅ ${test.name} passed.`);
                 passCount++;
                 results.push({
                     passed: true,
                     name: test.name
                 });
             } catch (error) {
-                console.error(`❌ ${test.name} failed: ${error.message}`);
-                console.error(error);
                 results.push({
                     passed: false,
                     name: test.name,
@@ -40,7 +35,6 @@ const TreeNodeTests = {
             }
         }
         
-        console.log(`TreeNode Tests completed: ${passCount} passed, ${results.length - passCount} failed.`);
         return results;
     },
     

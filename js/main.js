@@ -1,6 +1,7 @@
 // Main application
 const app = {
     document: null,
+    processedDocument: null,
     lastSelectedNode: null,
     lastAdjustmentTime: 0,
     adjustmentInterval: 1000, // ms
@@ -61,28 +62,6 @@ const app = {
     
     createDocument() {
         const doc = new UnionNode([]);
-        /*const sphere = new SphereNode(11);
-        const box = new TransformNode([0, 0, 0], [1, 0, 0], 45, 
-                     new DistanceDeformNode(0.1, 2.0, new BoxNode([20, 20, 20], 1.0)));
-        const torus = new TorusNode(10, 3);
-        doc.setProperty('blendRadius', 1);
-
-        doc.addChild(torus);
-        doc.addChild(new SubtractionNode([box, new TransformNode([0, 10, 0], [0, 1, 0], 0, sphere)], 0.5));
-        const extr = new ExtrudeNode(new SketchNode([ {x:0, y:0}, {x:20, y:0}, {x:20, y:20} ]));
-        extr.setProperty('blendRadius', 1);
-        extr.setProperty('chamfer', 1.0);
-        doc.addChild(new ShellNode(1, false, extr));*/
-
-        /*const mesh = new Mesh([
-            // Base triangle (counter-clockwise when viewed from outside/below)
-            [new Vec3(-10, -10, 0), new Vec3(10, 10, 0), new Vec3(10, -10, 0)],
-            // Three faces connecting to apex (all counter-clockwise when viewed from outside)
-            [new Vec3(-10, -10, 0), new Vec3(10, -10, 0), new Vec3(0, 0, 10)],
-            [new Vec3(10, -10, 0), new Vec3(10, 10, 0), new Vec3(0, 0, 10)],
-            [new Vec3(10, 10, 0), new Vec3(-10, -10, 0), new Vec3(0, 0, 10)]
-        ]);
-        doc.addChild(VoxelNode.fromMesh(mesh));*/
         const sphere = new SphereNode();
         const gyroid = new GyroidNode();
         const intersection = new IntersectionNode([sphere, gyroid]);
@@ -200,17 +179,19 @@ const app = {
                 ui.propertyEditorComponent?.refresh();
             }
 
+            this.processedDocument = TreeRewriter.rewrite(this.document);
+
             let startTime = performance.now();
-            const expr = P.field(this.document.peptide(P.vvar('p')), 'distance');
+            const expr = P.field(this.processedDocument.peptide(P.vvar('p')), 'distance');
             if (expr) {
                 console.log(`Peptide expression took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
                 let ssa;
-                [this.sdf, ssa] = this.document.getSDFAndSSA(true);
+                [this.sdf, ssa] = this.processedDocument.getSDFAndSSA(true);
                 console.log(`SSA took ${performance.now() - startTime} ms`);
 
 
-                const peptide = P.field(this.document.peptide(P.vvar('p')), 'distance').derivative('p');
+                const peptide = P.field(this.processedDocument.peptide(P.vvar('p')), 'distance').derivative('p');
                 const ssaNormal = P.vec3(peptide[0], peptide[1], peptide[2]).ssa();
                 
                 this.primaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.primaryShaderLayer);
@@ -284,7 +265,7 @@ const app = {
     },
 
     async createShaderLayer(ssa, ssaNormal, lastShaderLayer, uniforms = null) {
-        uniforms ||= this.document.uniforms();
+        uniforms ||= this.processedDocument.uniforms();
         const src = scene.generateShaderCode(ssa, ssaNormal, uniforms);
         if (lastShaderLayer && lastShaderLayer.src == src) {
             return lastShaderLayer;

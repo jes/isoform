@@ -25,7 +25,6 @@ struct SDFResult {
     float distance;
     vec3 color;
     float uniqueId;
-    float otherSurfaceDistance;
 };
 
 // begin scene

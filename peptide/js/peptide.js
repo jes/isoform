@@ -936,6 +936,13 @@ class Peptide {
         });
     }
 
+    static smoothstep(edge0, edge1, x) {
+        x.assertType('float');
+        edge0.assertType('float');
+        edge1.assertType('float');
+        return P.mix(P.const(0.0), P.const(1.0), P.clamp(P.div(P.sub(x, edge0), P.sub(edge1, edge0)), P.const(0.0), P.const(1.0)));
+    }
+
     static and(a, b) {
         a.assertType('float');
         b.assertType('float');

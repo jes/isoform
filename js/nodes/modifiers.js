@@ -1,9 +1,9 @@
 class TransformNode extends TreeNode {
-  constructor(translation = [0, 0, 0], rotationAxis = [0, 1, 0], rotationAngle = 0, children = []) {
+  constructor(children = []) {
     super("Transform");
-    this.translation = translation instanceof Vec3 ? translation : new Vec3(translation[0], translation[1], translation[2]);
-    this.rotationAxis = rotationAxis instanceof Vec3 ? rotationAxis : new Vec3(rotationAxis[0], rotationAxis[1], rotationAxis[2]);
-    this.rotationAngle = rotationAngle; // Angle in degrees
+    this.translation = new Vec3(0, 0, 0);
+    this.rotationAxis = new Vec3(0, 1, 0);
+    this.rotationAngle = 0; // Angle in degrees
     this.maxChildren = 1;
     this.addChild(children);
   }
@@ -99,10 +99,10 @@ class TransformNode extends TreeNode {
 }
 
 class DomainDeformNode extends TreeNode {
-  constructor(amplitude = 0.1, frequency = 1.0, children = []) {
+  constructor(children = []) {
     super("DomainDeform");
-    this.amplitude = amplitude; // Controls the height of the roughness
-    this.frequency = frequency; // Controls how dense the roughness pattern is
+    this.amplitude = 0.1; // Controls the height of the roughness
+    this.frequency = 1.0; // Controls how dense the roughness pattern is
     this.maxChildren = 1;
     this.addChild(children);
   }
@@ -151,10 +151,10 @@ class DomainDeformNode extends TreeNode {
 }
 
 class DistanceDeformNode extends TreeNode {
-  constructor(amplitude = 0.1, frequency = 1.0, children = []) {
+  constructor(children = []) {
     super("DistanceDeform");
-    this.amplitude = amplitude; // Controls the height of the roughness
-    this.frequency = frequency; // Controls how dense the roughness pattern is
+    this.amplitude = 0.1; // Controls the height of the roughness
+    this.frequency = 1.0; // Controls how dense the roughness pattern is
     this.maxChildren = 1;
     this.addChild(children);
   }
@@ -209,10 +209,10 @@ class DistanceDeformNode extends TreeNode {
 }
 
 class ShellNode extends TreeNode {
-  constructor(thickness = 1.0, shellType = "outside", children = []) {
+  constructor(children = []) {
     super("Shell");
-    this.thickness = thickness;
-    this.shellType = shellType; // "inside", "outside", or "centered"
+    this.thickness = 1.0;
+    this.shellType = "outside"; // "inside", "outside", or "centered"
     this.maxChildren = 1;
     this.addChild(children);
   }
@@ -293,9 +293,9 @@ class ShellNode extends TreeNode {
 }
 
 class InfillNode extends TreeNode {
-  constructor(thickness = 1.0, children = []) {
+  constructor(children = []) {
     super("Infill");
-    this.thickness = thickness;
+    this.thickness = 1.0;
     this.maxChildren = 2;
     this.addChild(children);
   }
@@ -346,9 +346,9 @@ class InfillNode extends TreeNode {
 }
 
 class OffsetNode extends TreeNode {
-  constructor(distance = 1.0, children = []) {
+  constructor(children = []) {
     super("Offset");
-    this.distance = distance;
+    this.distance = 1.0;
     this.maxChildren = 1;
     this.addChild(children);
   }
@@ -390,11 +390,11 @@ class OffsetNode extends TreeNode {
 }
 
 class ScaleNode extends TreeNode {
-  constructor(k = 2.0, alongAxis = false, axis = new Vec3(0, 0, 1), children = []) {
+  constructor(children = []) {
     super("Scale");
-    this.k = k;
-    this.alongAxis = alongAxis;
-    this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
+    this.k = 2.0;
+    this.alongAxis = false;
+    this.axis = new Vec3(0, 0, 1);
     this.maxChildren = 1;
     this.addChild(children);
   }
@@ -474,10 +474,10 @@ class ScaleNode extends TreeNode {
 }
 
 class TwistNode extends TreeNode {
-  constructor(height = 100.0, axis = new Vec3(0, 0, 1), children = []) {
+  constructor(children = []) {
     super("Twist");
-    this.height = height;
-    this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
+    this.height = 100.0;
+    this.axis = new Vec3(0, 0, 1);
     this.maxChildren = 1;
     this.addChild(children);
   }
@@ -619,12 +619,12 @@ class MirrorNode extends TreeNode {
 }
 
 class LinearPatternNode extends TreeNode {
-  constructor(axis = new Vec3(0, 0, 1), spacing = 100.0, copies = 2, children = []) {
+  constructor(children = []) {
     super("LinearPattern");
     this.maxChildren = 1;
-    this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
-    this.spacing = spacing;
-    this.copies = copies;
+    this.axis = new Vec3(0, 0, 1);
+    this.spacing = 100.0;
+    this.copies = 2;
     this.addChild(children);
   }
 
@@ -695,12 +695,12 @@ class LinearPatternNode extends TreeNode {
 }
 
 class PolarPatternNode extends TreeNode {
-  constructor(copies = 2, axis = new Vec3(0, 0, 1), angle = 360.0, children = []) {
+  constructor(children = []) {
     super("PolarPattern");
     this.maxChildren = 1;
-    this.copies = copies;
-    this.axis = axis instanceof Vec3 ? axis : new Vec3(axis[0], axis[1], axis[2]);
-    this.angle = angle;
+    this.copies = 2;
+    this.axis = new Vec3(0, 0, 1);
+    this.angle = 360.0;
     this.addChild(children);
   }
 
@@ -844,9 +844,9 @@ class ExtrudeNode extends TreeNode {
 }
 
 class DistanceDeformInsideNode extends TreeNode {
-  constructor(amplitude = 1.0, children = []) {
+  constructor(children = []) {
     super("DistanceDeformInside");
-    this.amplitude = amplitude;
+    this.amplitude = 1.0;
     this.maxChildren = 2;
     this.addChild(children);
   }
@@ -1026,11 +1026,40 @@ class HelixExtrudeNode extends TreeNode {
   }
 }
 
+// NegateNode is not exposed in the UI (should it be?), it is just used to
+// implement SubtractionNode
+class NegateNode extends TreeNode {
+  constructor(children = []) {
+    super("Negate");
+    this.maxChildren = 1;
+    this.addChild(children);
+  }
+
+  makePeptide(p) {
+    if (this.children.length < 1) {
+      this.warn("Negate node has no child to transform");
+      return this.noop();
+    }
+    const child = this.children[0].peptide(p);
+    if (!child) return null;
+    return P.struct({
+      distance: P.neg(P.field(child, 'distance')),
+      color: P.field(child, 'color'),
+      uniqueId: P.field(child, 'uniqueId'),
+    });
+  }
+
+  getIcon() {
+    return "🔄";
+  }
+}
+
 // Detect environment and export accordingly
 (function() {
   const nodes = { TransformNode, DomainDeformNode, DistanceDeformNode, ShellNode,
     InfillNode, OffsetNode, ScaleNode, TwistNode, MirrorNode, LinearPatternNode,
-    PolarPatternNode, ExtrudeNode, RevolveNode, DistanceDeformInsideNode, HelixExtrudeNode };
+    PolarPatternNode, ExtrudeNode, RevolveNode, DistanceDeformInsideNode, HelixExtrudeNode,
+    NegateNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {

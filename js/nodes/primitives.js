@@ -1,7 +1,7 @@
 class SphereNode extends TreeNode {
-  constructor(radius = 5.0) {
+  constructor() {
     super("Sphere");
-    this.radius = radius;
+    this.radius = 5.0;
   }
 
   properties() {
@@ -32,11 +32,11 @@ class SphereNode extends TreeNode {
 }
 
 class CylinderNode extends TreeNode {
-  constructor(diameter = 10.0, height = 10.0, roundRadius = 0.0) {
+  constructor() {
     super("Cylinder");
-    this.diameter = diameter;
-    this.height = height;
-    this.roundRadius = roundRadius;
+    this.diameter = 10.0;
+    this.height = 10.0;
+    this.roundRadius = 0.0;
   }
 
   properties() {
@@ -81,10 +81,10 @@ class CylinderNode extends TreeNode {
 }
 
 class BoxNode extends TreeNode {
-  constructor(size = [10, 10, 10], radius = 0.0) {
+  constructor() {
     super("Box");
-    this.size = size instanceof Vec3 ? size : new Vec3(size[0], size[1], size[2]);
-    this.radius = radius;
+    this.size = new Vec3(10, 10, 10);
+    this.radius = 0.0;
   }
 
   properties() {
@@ -153,10 +153,10 @@ class BoxNode extends TreeNode {
 }
 
 class TorusNode extends TreeNode {
-  constructor(majorDiameter = 10.0, minorDiameter = 3.0) {
+  constructor() {
     super("Torus");
-    this.majorDiameter = majorDiameter;
-    this.minorDiameter = minorDiameter;
+    this.majorDiameter = 10.0;
+    this.minorDiameter = 3.0;
   }
 
   properties() {

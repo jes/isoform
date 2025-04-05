@@ -21,6 +21,7 @@ class TreeNode {
     this.isDisabled = false; // whether the node is disabled (i.e. hidden)
     this.propertyUniforms = {}; // uniforms for the node - map uniform name to property name
 
+    this.isCombinator = false; // whether the node is a combinator
     this.blendRadius = 0.0;
     this.chamfer = 0.0;
 
@@ -58,7 +59,55 @@ class TreeNode {
     return AABB.infinite();
   }
 
+  // Combinators override this to return a normalised version of the node;
+  // it is allowed (but not required) to edit the tree in-place;
+  // this is used to rewrite the tree to have the same blend parameters
+  // for all the children of a Combinator;
+  // properties of the normalised tree include:
+  //  * combinators only have 2 children
+  //  * anything that can't eventually yield a surface becomes null
+  makeNormalised() {
+    if (this.isDisabled) return null;
+    if (this.isCombinator) {
+      throw new Error("Combinator nodes must implement makeNormalised()");
+    }
+    if (this.children.length > 0) {
+      this.children[0] = this.children[0].normalised();
+    }
+    return this;
+  }
+
   /// the rest of this class should not generally be overridden
+
+  // return a Set() of possible surface ids that can come out of this node,
+  // added to `set` if given;
+  // this function could in principle be overridden by specific nodes, but I
+  // think shouldn't have to be
+  possibleSurfaceIds(set = new Set()) {
+    if (this.children.length === 0) {
+      // for primitives (no children), this is that node's id
+      set.add(this.uniqueId);
+      return set;
+    }
+    if (this.isCombinator) {
+      // for combinators, it is the union of the possible surface ids of the children
+      for (const child of this.children) {
+        child.possibleSurfaceIds(set);
+      }
+      return set;
+    }
+    // for modifiers, it is the set of ids that can come out of the first child (2nd child
+    // if just for permuting space or whatever, doesn't yield surfaces)
+    return this.children[0].possibleSurfaceIds(set);
+  }
+
+  normalised() {
+    const node = this.makeNormalised();
+    if (node.children.length > 2) {
+      throw new Error(`Normalised ${this.name} has more than 2 children`);
+    }
+    return node;
+  }
 
   findNodeById(id) {
     if (this.uniqueId === id) return this;
@@ -130,7 +179,7 @@ class TreeNode {
     return used;
   }
 
-  blendParams(blendSurfaces = null, thirdSurfaceDistance = null){
+  blendParams(blendSurfaces = null) {
     let blendRadius = this.uniform('blendRadius');
     let chamfer = this.uniform('chamfer');
 
@@ -148,42 +197,25 @@ class TreeNode {
     // XXX: smooth blend of 0 radius breaks the derivative
     blendRadius = P.smoothabs(blendRadius);
 
-    // Apply smooth falloff based on thirdSurfaceDistance if provided
-    if (thirdSurfaceDistance) {
-      // Create a normalized value between 0 and 1
-      // XXX: the 5.0 constant could be varied to change how fast the falloff is?
-      const t = P.div(P.smoothabs(thirdSurfaceDistance), P.mul(blendRadius, P.const(5.0)));
-      // Clamp t between 0 and 1
-      const clamped = P.clamp(t, P.const(0.0), P.const(1.0));
-      // Apply smoothstep formula: 3t² - 2t³ for smooth interpolation
-      const t2 = P.mul(clamped, clamped);
-      const t3 = P.mul(t2, clamped);
-      const falloffFactor = P.sub(P.mul(P.const(3.0), t2), P.mul(P.const(2.0), t3));
-      
-      // Apply the falloff to both blendRadius and chamfer
-      blendRadius = P.mul(blendRadius, falloffFactor);
-      chamfer = P.mul(chamfer, falloffFactor);
-    }
-
     return {blendRadius, chamfer};
   }
 
-  min(a, b, blendSurfaces = null, thirdSurfaceDistance = null){
+  min(a, b, blendSurfaces = null){
     if (!a) return b;
     if (!b) return a;
 
-    const {blendRadius, chamfer} = this.blendParams(blendSurfaces, thirdSurfaceDistance);
+    const {blendRadius, chamfer} = this.blendParams(blendSurfaces);
 
     const ch = P.chmin(a, b, blendRadius);
     const sm = P.smin(a, b, blendRadius);
     return P.mix(sm, ch, chamfer);
   }
 
-  max(a, b, blendSurfaces = null, thirdSurfaceDistance = null){
+  max(a, b, blendSurfaces = null){
     if (!a) return b;
     if (!b) return a;
 
-    const {blendRadius, chamfer} = this.blendParams(blendSurfaces, thirdSurfaceDistance);
+    const {blendRadius, chamfer} = this.blendParams(blendSurfaces);
 
     const ch = P.chmax(a, b, blendRadius);
     const sm = P.smax(a, b, blendRadius);
@@ -200,10 +232,8 @@ class TreeNode {
     const colorB = P.field(b, 'color');
     const uniqueIdA = P.field(a, 'uniqueId');
     const uniqueIdB = P.field(b, 'uniqueId');
-
-    let thirdSurfaceDistance = P.min(P.field(a, 'otherSurfaceDistance'), P.field(b, 'otherSurfaceDistance'));
     
-    const distance = this.min(distA, distB, [uniqueIdA, uniqueIdB], thirdSurfaceDistance);
+    const distance = this.min(distA, distB, [uniqueIdA, uniqueIdB]);
     
     // work out how much each object contributes to the final distance,
     // and weight the color accordingly
@@ -225,7 +255,6 @@ class TreeNode {
       distance: distance,
       color: color,
       uniqueId: uniqueId,
-      otherSurfaceDistance: P.min(thirdSurfaceDistance, P.max(distA, distB)),
     });
   }
 
@@ -240,9 +269,7 @@ class TreeNode {
     const uniqueIdA = P.field(a, 'uniqueId');
     const uniqueIdB = P.field(b, 'uniqueId');
 
-    let thirdSurfaceDistance = P.min(P.field(a, 'otherSurfaceDistance'), P.field(b, 'otherSurfaceDistance'));
-
-    const distance = this.max(distA, distB, [uniqueIdA, uniqueIdB], thirdSurfaceDistance);
+    const distance = this.max(distA, distB, [uniqueIdA, uniqueIdB]);
     
     // work out how much each object contributes to the final distance,
     // and weight the color accordingly
@@ -264,7 +291,6 @@ class TreeNode {
       distance: distance,
       color: color,
       uniqueId: uniqueId,
-      otherSurfaceDistance: P.min(thirdSurfaceDistance, P.min(distA, distB)),
     });
   }
 
@@ -448,8 +474,17 @@ class TreeNode {
       return this.noop();
     }
     if (!pep.value.color) pep.value.color = app.defaultColor();
-    if (!pep.value.uniqueId) pep.value.uniqueId = P.const(this.uniqueId); // TODO: if we only have 1 child, recurse to find the leaf id
-    if (!pep.value.otherSurfaceDistance) pep.value.otherSurfaceDistance = P.const(1000.0);
+    if (!pep.value.uniqueId) {
+      // find the leaf node and propagate its uniqueId
+      let node = this;
+      while (node.children.length > 0) {
+        if (node.isCombinator) {
+          this.warn(`Node "${this.name}" doesn't propagate uniqueId but has a combinator in the left child tree`);
+        }
+        node = node.children[0];
+      }
+      pep.value.uniqueId = P.const(node.uniqueId);
+    }
     return pep;
   }
 
@@ -567,6 +602,10 @@ class TreeNode {
     }
   }
 
+  cloneWithSameIds() {
+    return TreeNode.fromSerialized(this.serialize());
+  }
+
   // Serialize with support for circular references
   serialize() {
     const startTime = performance.now();
@@ -630,7 +669,10 @@ class TreeNode {
     };
     
     const result = serializeNode(this);
-    console.log(`Serialize took ${performance.now() - startTime} ms`);
+    const duration = performance.now() - startTime;
+    if (duration > 10) {
+      console.log(`Serialize took ${duration} ms`);
+    }
     return result;
   }
 
@@ -716,9 +758,6 @@ class TreeNode {
     };
     
     resolveReferences(rootNode);
-    
-    // Update the next ID to be higher than any existing ID
-    TreeNode.nextId = Math.max(...Array.from(nodesById.keys())) + 1;
     
     return rootNode;
   }

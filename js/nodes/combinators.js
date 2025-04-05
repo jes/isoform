@@ -1,46 +1,8 @@
 class UnionNode extends TreeNode {
-    constructor(children = []) {
-      super("Union");
-      this.maxChildren = null;
-      this.addChild(children);
-    }
-
-    properties() {
-      return {"blendRadius": "float", "chamfer": "float"};
-    }
-
-    makePeptide(p) {
-      if (this.children.length === 0) {
-        return this.noop();
-      }
-
-      let min = this.children[0].peptide(p);
-      for (let i = 1; i < this.children.length; i++) {
-        min = this.structmin(min, this.children[i].peptide(p));
-      }
-      return min;
-    }
-
-    getIcon() {
-      return "🔀";
-    }
-
-    aabb() {
-      if (this.children.length === 0) {
-        return AABB.empty();
-      }
-      let aabb = this.children[0].aabb();
-      for (let i = 1; i < this.children.length; i++) {
-        aabb = aabb.getUnion(this.children[i].aabb());
-      }
-      return aabb;
-    }
-  }
-
-class IntersectionNode extends TreeNode {
   constructor(children = []) {
-    super("Intersection");
+    super("Union");
     this.maxChildren = null;
+    this.isCombinator = true;
     this.addChild(children);
   }
 
@@ -49,15 +11,93 @@ class IntersectionNode extends TreeNode {
   }
 
   makePeptide(p) {
-    if (this.children.length === 0) {
-      return this.noop();
+    if (this.children.length !== 2) {
+      throw new Error("UnionNode must have exactly 2 children after normalisation");
     }
 
-    let max = this.children[0].peptide(p);
-    for (let i = 1; i < this.children.length; i++) {
-      max = this.structmax(max, this.children[i].peptide(p));
+    return this.structmin(this.children[0].peptide(p), this.children[1].peptide(p));
+  }
+
+  makeNormalised() {
+    if (this.children.length === 0) return null;
+    if (this.children.length === 1) return this.children[0].normalised();
+
+    // Make a copy of the children array to prevent modification during iteration
+    const childrenCopy = [...this.children];
+    let tree = null;
+
+    for (let i = 0; i < childrenCopy.length; i++) {
+      let child = childrenCopy[i].normalised();
+      if (!child) continue;
+      if (!tree) {
+        tree = child;
+      } else {
+        tree = new UnionNode([tree, child]);
+        tree.blendRadius = this.blendRadius;
+        tree.chamfer = this.chamfer;
+      }
     }
-    return max;
+
+    return tree;
+  }
+
+  getIcon() {
+    return "🔀";
+  }
+
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.empty();
+    }
+    let aabb = this.children[0].aabb();
+    for (let i = 1; i < this.children.length; i++) {
+      aabb = aabb.getUnion(this.children[i].aabb());
+    }
+    return aabb;
+  }
+}
+
+class IntersectionNode extends TreeNode {
+  constructor(children = []) {
+    super("Intersection");
+    this.maxChildren = null;
+    this.isCombinator = true;
+    this.addChild(children);
+  }
+
+  properties() {
+    return {"blendRadius": "float", "chamfer": "float"};
+  }
+
+  makePeptide(p) {
+    if (this.children.length !== 2) {
+      throw new Error("IntersectionNode must have exactly 2 children after normalisation");
+    }
+
+    return this.structmax(this.children[0].peptide(p), this.children[1].peptide(p));
+  }
+
+  makeNormalised() {
+    if (this.children.length === 0) return null;
+    if (this.children.length === 1) return this.children[0].normalised();
+    
+    // Make a copy of the children array to prevent modification during iteration
+    const childrenCopy = [...this.children];
+    let tree = null;
+    
+    for (let i = 0; i < childrenCopy.length; i++) {
+      let child = childrenCopy[i].normalised();
+      if (!child) continue;
+      if (!tree) {
+        tree = child;
+      } else {
+        tree = new IntersectionNode([tree, child]);
+        tree.blendRadius = this.blendRadius;
+        tree.chamfer = this.chamfer;
+      }
+    }
+    
+    return tree;
   }
 
   getIcon() {
@@ -81,6 +121,7 @@ class SubtractionNode extends TreeNode {
   constructor(children = []) {
     super("Subtraction");
     this.maxChildren = null;
+    this.isCombinator = true;
     this.addChild(children);
   }
 
@@ -89,23 +130,30 @@ class SubtractionNode extends TreeNode {
   }
   
   makePeptide(p) {
-    if (this.children.length === 0) {
-      return this.noop();
+    throw new Error("SubtractionNode.makePeptide not implemented (should have been normalised to Intersections of Negations)");
+  }
+
+  makeNormalised() {
+    if (this.children.length === 0) return null;
+    if (this.children.length === 1) return this.children[0].normalised();
+
+    // Make a copy of the children array to prevent modification during iteration
+    const childrenCopy = [...this.children];
+    let tree = null;
+
+    for (let i = 0; i < childrenCopy.length; i++) {
+      let child = childrenCopy[i].normalised();
+      if (!child) continue;
+      if (!tree) {
+        tree = child;
+      } else {
+        tree = new IntersectionNode([tree, new NegateNode([child])]);
+        tree.blendRadius = this.blendRadius;
+        tree.chamfer = this.chamfer;
+      }
     }
 
-    let max = this.children[0].peptide(p);
-    for (let i = 1; i < this.children.length; i++) {
-      const child = this.children[i].peptide(p);
-      const negChild = P.struct({
-        distance: P.neg(P.field(child, 'distance')),
-        color: P.field(child, 'color'),
-        uniqueId: P.field(child, 'uniqueId'),
-        otherSurfaceDistance: P.field(child, 'otherSurfaceDistance'),
-      });
-      if (!child) continue;
-      max = this.structmax(max, negChild);
-    }
-    return max;
+    return tree;
   }
 
   getIcon() {

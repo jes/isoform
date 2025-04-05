@@ -126,6 +126,11 @@
             <h2>TreeNode Tests</h2>
             <div id="treenode-test-output"></div>
         </div>
+        
+        <div class="test-suite">
+            <h2>Rewriter Tests</h2>
+            <div id="rewriter-test-output"></div>
+        </div>
     </div>
 
     <!-- Load dependencies -->
@@ -133,25 +138,34 @@
     <script src="peptide/js/mat3.js"></script>
     <script src="js/aabb.js"></script>
     <script src="js/nodes/treenode.js"></script>
+    <script src="js/nodes/primitives.js"></script>
+    <script src="js/nodes/lattices.js"></script>
+    <script src="js/nodes/modifiers.js"></script>
+    <script src="js/nodes/combinators.js"></script>
+    <script src="js/nodes/rewriter.js"></script>
+
+    <!-- Load tests after all dependencies -->
     <script src="test/aabb.js"></script>
     <script src="test/treenode.js"></script>
+    <script src="test/rewriter.js"></script>
     
     <script>
         (async () => {
             const startTime = performance.now();
             const aabbOutput = document.getElementById('aabb-test-output');
             const treenodeOutput = document.getElementById('treenode-test-output');
+            const rewriterOutput = document.getElementById('rewriter-test-output');
             const overallStatus = document.getElementById('overall-status');
             const testStats = document.getElementById('test-stats');
             
             aabbOutput.innerHTML = '<p>Running AABB tests...</p>';
             treenodeOutput.innerHTML = '<p>Running TreeNode tests...</p>';
+            rewriterOutput.innerHTML = '<p>Running Rewriter tests...</p>';
             
             // Run all test suites
             const aabbResults = await AABBTests.run();
-            
-            // Run TreeNode tests with the new format
             const treenodeResults = await TreeNodeTests.run();
+            const rewriterResults = await RewriterTests.run();
             
             const formatResults = (results) => results.map(result => `
                 <div class="${result.passed ? 'test-pass' : 'test-fail'}">
@@ -163,9 +177,14 @@
             
             aabbOutput.innerHTML = formatResults(aabbResults);
             treenodeOutput.innerHTML = formatResults(treenodeResults);
+            rewriterOutput.innerHTML = formatResults(rewriterResults);
             
             // After running all tests, collect and display failures
-            const failedTests = [...aabbResults.filter(r => !r.passed), ...treenodeResults.filter(r => !r.passed)];
+            const failedTests = [
+                ...aabbResults.filter(r => !r.passed), 
+                ...treenodeResults.filter(r => !r.passed),
+                ...rewriterResults.filter(r => !r.passed)
+            ];
             
             if (failedTests.length > 0) {
                 const failedTestsSection = document.getElementById('failed-tests-section');
@@ -175,8 +194,10 @@
             }
 
             // Calculate overall statistics
-            const totalTests = aabbResults.length + treenodeResults.length;
-            const passedTests = aabbResults.filter(r => r.passed).length + treenodeResults.filter(r => r.passed).length;
+            const totalTests = aabbResults.length + treenodeResults.length + rewriterResults.length;
+            const passedTests = aabbResults.filter(r => r.passed).length + 
+                               treenodeResults.filter(r => r.passed).length +
+                               rewriterResults.filter(r => r.passed).length;
             const failedTestCount = totalTests - passedTests;
             const testTime = (performance.now() - startTime).toFixed(0);
             
