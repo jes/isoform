@@ -395,6 +395,7 @@ const RewriterTests = {
     // we have:
     //   Transform(Twist(Union(DomainDeform(Shell(Intersection(Sphere, Transform(Gyroid)))), Scale(Box)))
     // with a blend between Sphere and Box, so we need to rewrite to:
+    //   Transform(Twist(Intersection(Union(DomainDeform(Shell(Sphere)),Scale(Box)),Union(DomainDeform(Shell(Transform(Gyroid))),Scale(Box)))))
     testRewriteSimpleBlendWithModifiers: async function() {
         console.log("testRewriteSimpleBlendWithModifiers");
         TreeNode.nextId = 1;
@@ -421,8 +422,8 @@ const RewriterTests = {
         this.checkParents(newTree);
         const newTreeString = this.stringTree(newTree);
         this.assertEquals(origTreeString, "Transform(Twist(Union(DomainDeform(Shell(Intersection(Sphere1,Transform(Gyroid3)))),Scale(Box2))))");
-        this.assertEquals(newTreeString, "fixme");
-        this.assertEquals(this.stringIntermediateTree(intermediateTree), "fixme");
+        this.assertEquals(newTreeString, "Transform(Twist(Intersection(Union(DomainDeform(Shell(Sphere1)),Scale(Box2)),Union(DomainDeform(Shell(Transform(Gyroid3))),Scale(Box2)))))");
+        this.assertEquals(this.stringIntermediateTree(intermediateTree), "modifier(TransformTwist,combinator(Intersection,combinator(Union,modifier(DomainDeformShellTransform,primitive(Sphere1)),modifier(Scale,primitive(Box2))),combinator(Union,modifier(DomainDeformShellTransform,modifier(Transform,primitive(Gyroid3))),modifier(Scale,primitive(Box2)))))");
     },
 
 
