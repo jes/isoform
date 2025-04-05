@@ -78,14 +78,28 @@ const TreeRewriter = {
     return t.treeNode.cloneWithSameIds();
   },
 
+  possibleSurfaceIds(t, set = new Set()) {
+    if (t.type == 'combinator') {
+      TreeRewriter.possibleSurfaceIds(t.left, set);
+      TreeRewriter.possibleSurfaceIds(t.right, set);
+    } else if (t.type == 'modifier') {
+      TreeRewriter.possibleSurfaceIds(t.child, set);
+    } else if (t.type == 'primitive') {
+      set.add(t.treeNode.uniqueId);
+    } else {
+      throw new Error('Unknown node type: ' + t.type);
+    }
+    return set;
+  },
+
   satisfiesBlends(t, blends) {
     if (t.type != 'combinator') return true;
 
     // get the set of possible surface ids that can come into the node
-    const idsLeft = t.left.treeNode.possibleSurfaceIds();
-    const idsRight = t.right.treeNode.possibleSurfaceIds();
+    const idsLeft = TreeRewriter.possibleSurfaceIds(t.left);
+    const idsRight = TreeRewriter.possibleSurfaceIds(t.right);
 
-    // now check that each blend that affects one chil
+    // now check that we have both arguments for any blend that affects either child
     for (const blend of blends) {
       if (idsLeft.has(blend.nodes[0].uniqueId) && !idsRight.has(blend.nodes[1].uniqueId)) return false;
       if (idsLeft.has(blend.nodes[1].uniqueId) && !idsRight.has(blend.nodes[0].uniqueId)) return false;
@@ -115,7 +129,7 @@ const TreeRewriter = {
           type: 'combinator',
           left: left.right,
           right: t.right,
-          treeNode: t.treeNode.clone(),
+          treeNode: t.treeNode,
         };
         t.treeNode = left.treeNode;
       }
@@ -133,7 +147,7 @@ const TreeRewriter = {
           type: 'combinator',
           left: t.left,
           right: right.right,
-          treeNode: t.treeNode.clone(),
+          treeNode: t.treeNode,
         };
         t.treeNode = right.treeNode;
       }

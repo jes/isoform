@@ -14,6 +14,7 @@ const RewriterTests = {
             this.testRewriteNoBlends,
             this.testRewriteNoopBlend,
             this.testRewriteSimpleBlend,
+            this.testRewriteSimpleBlendWithModifiers,
         ];
 
         const results = [];
@@ -379,10 +380,44 @@ const RewriterTests = {
         const newTree = TreeRewriter.toTreeNode(intermediateTree);
         this.checkParents(newTree);
         const newTreeString = this.stringTree(newTree);
-        this.assertEquals(newTreeString, "Intersection(Union(Sphere,Box),Union(Gyroid,Box))");
         this.assertEquals(origTreeString, "Union(Intersection(Sphere,Gyroid),Box)");
+        this.assertEquals(newTreeString, "Intersection(Union(Sphere,Box),Union(Gyroid,Box))");
         this.assertEquals(this.stringIntermediateTree(intermediateTree), "combinator(Intersection,combinator(Union,primitive(Sphere1),primitive(Box2)),combinator(Union,primitive(Gyroid3),primitive(Box2)))");
     },
+
+    // same as testRewriteSimpleBlend, but with modifier chains
+    // we have:
+    //   Transform(Twist(Union(DomainDeform(Shell(Intersection(Sphere, Transform(Gyroid)))), Scale(Box)))
+    // with a blend between Sphere and Box, so we need to rewrite to:
+    testRewriteSimpleBlendWithModifiers: async function() {
+        TreeNode.nextId = 1;
+        const sphere = new SphereNode();
+        this.assertEquals(sphere.uniqueId, 1);
+        const box = new BoxNode();
+        this.assertEquals(box.uniqueId, 2);
+        const tree = new TransformNode(new TwistNode(new UnionNode([
+            new DomainDeformNode(new ShellNode(new IntersectionNode([sphere, new TransformNode(new GyroidNode())]))),
+            new ScaleNode(box),
+        ])));
+        tree.blends = [
+            {
+                nodes: [sphere, box],
+                blendRadius: 0.5,
+                chamfer: 1.0,
+            },
+        ];
+        this.checkParents(tree);
+        const treeNormalised = tree.cloneWithSameIds().normalised();
+        const origTreeString = this.stringTree(treeNormalised);
+        const intermediateTree = TreeRewriter.rewriteTree(TreeRewriter.fromTreeNode(treeNormalised));
+        const newTree = TreeRewriter.toTreeNode(intermediateTree);
+        this.checkParents(newTree);
+        const newTreeString = this.stringTree(newTree);
+        this.assertEquals(origTreeString, "Transform(Twist(Union(DomainDeform(Shell(Intersection(Sphere,Transform(Gyroid)))),Scale(Box))))");
+        this.assertEquals(newTreeString, "Intersection(Union(Sphere,Box),Union(Gyroid,Box))");
+        this.assertEquals(this.stringIntermediateTree(intermediateTree), "combinator(Intersection,combinator(Union,primitive(Sphere1),primitive(Box2)),combinator(Union,primitive(Gyroid3),primitive(Box2)))");
+    },
+
 
     // TODO: more complex tests that includes modifier chains
     // TODO: very complex test that includes distinct blends between every pair of primitives
