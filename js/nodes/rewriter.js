@@ -75,18 +75,35 @@ const TreeRewriter = {
     } else {
       throw new Error('Unknown node type: ' + t.type);
     }
-    return t.treeNode;
+    return t.treeNode.cloneWithSameIds();
   },
 
-  satisfiesBlends(t) {
-    return false;
+  satisfiesBlends(t, blends) {
+    if (t.type != 'combinator') return true;
+
+    // get the set of possible surface ids that can come into the node
+    const idsLeft = t.left.treeNode.possibleSurfaceIds();
+    const idsRight = t.right.treeNode.possibleSurfaceIds();
+
+    // now check that each blend that affects one chil
+    for (const blend of blends) {
+      if (idsLeft.has(blend.nodes[0].uniqueId) && !idsRight.has(blend.nodes[1].uniqueId)) return false;
+      if (idsLeft.has(blend.nodes[1].uniqueId) && !idsRight.has(blend.nodes[0].uniqueId)) return false;
+    }
+
+    return true;
   },
 
   // rewrite the intermediate tree using the distributivity rule to fix blend parameters
   rewriteTree(t) {
+    // only the root node contains the blends list, so we need to pass it down
+    return TreeRewriter._rewriteTree(t, t.treeNode.blends);
+  },
+
+  _rewriteTree(t, blends) {
     if (t.type == 'combinator') {
       t.left = TreeRewriter.rewriteTree(t.left);
-      if (t.left.type == 'combinator' && !TreeRewriter.satisfiesBlends(t.left)) {
+      if (t.left.type == 'combinator' && !TreeRewriter.satisfiesBlends(t.left, blends)) {
         const left = t.left;
         t.left = {
           type: 'combinator',
@@ -104,7 +121,22 @@ const TreeRewriter = {
       }
 
       t.right = TreeRewriter.rewriteTree(t.right);
-      // TODO: check if we need to apply the distributivity rule on t.right
+      if (t.right.type == 'combinator' && !TreeRewriter.satisfiesBlends(t.right, blends)) {
+        const right = t.right;
+        t.left = {
+          type: 'combinator',
+          left: t.left,
+          right: right.left,
+          treeNode: t.treeNode,
+        };
+        t.right = {
+          type: 'combinator',
+          left: t.left,
+          right: right.right,
+          treeNode: t.treeNode.clone(),
+        };
+        t.treeNode = right.treeNode;
+      }
     } else if (t.type == 'modifier') {
       t.child = TreeRewriter.rewriteTree(t.child);
     } else if (t.type == 'primitive') {
