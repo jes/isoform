@@ -3,7 +3,7 @@ const TreeRewriter = {
     // turn the normalised tree into our intermediate representation
     const t = TreeRewriter.fromTreeNode(treeNode.cloneWithSameIds().normalised());
 
-    // then rewrite to fix blend parameters
+    // then rewrite to fix blend arguments
     const tRewritten = TreeRewriter.rewriteTree(t);
 
     // then convert back to TreeNode form
@@ -93,14 +93,6 @@ const TreeRewriter = {
   },
 
   satisfiesBlends(t, blends) {
-    const r = TreeRewriter._satisfiesBlends(t, blends);
-    if (!r) {
-      console.log("failed satisfiesBlends", t);
-    }
-    return r;
-  },
-
-  _satisfiesBlends(t, blends) {
     if (t.type == 'modifier') return TreeRewriter.satisfiesBlends(t.child, blends);
     if (t.type == 'primitive') return true;
     if (t.type !== 'combinator') throw new Error('Unknown node type: ' + t.type);
@@ -138,7 +130,12 @@ const TreeRewriter = {
   // rewrite the intermediate tree using the distributivity rule to fix blend parameters
   rewriteTree(t) {
     // only the root node contains the blends list, so we need to pass it down
-    return TreeRewriter._rewriteTree(t, t.treeNode.blends);
+    const r = TreeRewriter._rewriteTree(t, t.treeNode.blends);
+
+    // now apply the blends to the rewritten tree
+    TreeRewriter.applyBlends(r, t.treeNode.blends);
+
+    return r;
   },
 
   _rewriteTree(t, blends) {
@@ -227,7 +224,40 @@ const TreeRewriter = {
     } else {
       throw new Error('Unknown node type: ' + t.type);
     }
+
     return t;
+  },
+
+  applyBlends(t, blends) {
+    if (t.type == 'modifier') return TreeRewriter.applyBlends(t.child, blends);
+    if (t.type == 'primitive') return;
+    if (t.type != 'combinator') throw new Error('Unknown node type: ' + t.type);
+
+    // get the set of possible surface ids that can come into the node
+    const idsLeft = TreeRewriter.possibleSurfaceIds(t.left);
+    const idsRight = TreeRewriter.possibleSurfaceIds(t.right);
+
+    // apply blend parameters on this node if we have a single id on each side
+    if (idsLeft.size == 1 && idsRight.size == 1) {
+      const idLeft = Array.from(idsLeft)[0];
+      const idRight = Array.from(idsRight)[0];
+
+      // now if there is a blend that applies to our ids, then we need to apply it
+      for (const blend of blends) {
+        const id0 = blend.nodes[0].uniqueId;
+        const id1 = blend.nodes[1].uniqueId;
+
+        if (idLeft == id0 && idRight == id1 || idLeft == id1 && idRight == id0) {
+          t.treeNode = t.treeNode.cloneWithSameIds();
+          t.treeNode.setProperty('blendRadius', blend.blendRadius);
+          t.treeNode.setProperty('chamfer', blend.chamfer);
+          break;
+        }
+      }
+    }
+
+    TreeRewriter.applyBlends(t.left, blends);
+    TreeRewriter.applyBlends(t.right, blends);
   },
 };
 

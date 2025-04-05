@@ -344,7 +344,6 @@ const RewriterTests = {
         this.checkParents(tree);
         const treeNormalised = tree.cloneWithSameIds().normalised();
         const origTreeString = this.stringTree(treeNormalised);
-        console.log(origTreeString);
         const intermediateTree = TreeRewriter.rewriteTree(TreeRewriter.fromTreeNode(treeNormalised));
         const newTree = TreeRewriter.toTreeNode(intermediateTree);
         this.checkParents(newTree);
@@ -352,6 +351,27 @@ const RewriterTests = {
         this.assertEquals(newTreeString, origTreeString);
         this.assertEquals(origTreeString, "Union(Twist(Transform(Intersection(Intersection(DomainDeform(Sphere3),Negate(Sphere5)),Negate(Box6)))),DistanceDeform(Intersection(Intersection(Sphere1,Box2),Gyroid10)))");
         this.assertEquals(this.stringIntermediateTree(intermediateTree), "combinator(Union,modifier(TwistTransform,combinator(Intersection,combinator(Intersection,modifier(DomainDeform,primitive(Sphere3)),modifier(Negate,primitive(Sphere5))),modifier(Negate,primitive(Box6)))),modifier(DistanceDeform,combinator(Intersection,combinator(Intersection,primitive(Sphere1),primitive(Box2)),primitive(Gyroid10))))");
+
+        // see if we can find the requested blend in the new tree
+        let hasBlend = false;
+        const dfs = (node) => {
+            if (node.isCombinator
+                && node.children[0].displayName == 'Sphere1'
+                && node.children[1].displayName == 'Box2') {
+                if (node.blendRadius == 0.5 && node.chamfer == 1.0) {
+                    hasBlend = true;
+                } else {
+                    console.log("Bad blend:", node);
+                }
+            }
+            for (const child of node.children) {
+                dfs(child);
+            }
+        };
+        dfs(newTree);
+        if (!hasBlend) {
+            throw new Error("Blend parameters weren't applied to the new tree");
+        }
     },
 
     // simple blend case: we ask for a blend, and it requires one application
@@ -362,7 +382,6 @@ const RewriterTests = {
     // with a blend between Sphere and Box, so we need to rewrite to:
     //   Intersection(Union(Sphere, Box), Union(Gyroid, Box))
     testRewriteSimpleBlend: async function() {
-        console.log("testRewriteSimpleBlend");
         TreeNode.nextId = 1;
         const sphere = new SphereNode();
         this.assertEquals(sphere.uniqueId, 1);
@@ -397,7 +416,6 @@ const RewriterTests = {
     // with a blend between Sphere and Box, so we need to rewrite to:
     //   Transform(Twist(Intersection(Union(DomainDeform(Shell(Sphere)),Scale(Box)),Union(DomainDeform(Shell(Transform(Gyroid))),Scale(Box)))))
     testRewriteSimpleBlendWithModifiers: async function() {
-        console.log("testRewriteSimpleBlendWithModifiers");
         TreeNode.nextId = 1;
         const sphere = new SphereNode();
         this.assertEquals(sphere.uniqueId, 1);

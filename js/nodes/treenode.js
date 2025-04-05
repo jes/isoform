@@ -180,47 +180,22 @@ class TreeNode {
     return used;
   }
 
-  blendParams(blendSurfaces = null) {
-    let blendRadius = this.uniform('blendRadius');
-    let chamfer = this.uniform('chamfer');
-
-    if (blendSurfaces) {
-      for (const blend of app.document.blends) {
-        const id0 = P.const(blend.nodes[0].uniqueId);
-        const id1 = P.const(blend.nodes[1].uniqueId);
-        const select = P.or(P.and(P.eq(id0, blendSurfaces[0]), P.eq(id1, blendSurfaces[1])),
-                            P.and(P.eq(id0, blendSurfaces[1]), P.eq(id1, blendSurfaces[0])));
-        blendRadius = P.cond(select, P.const(blend.blendRadius), blendRadius);
-        chamfer = P.cond(select, P.const(blend.chamfer), chamfer);
-      }
-    }
-
-    // XXX: smooth blend of 0 radius breaks the derivative
-    blendRadius = P.smoothabs(blendRadius);
-
-    return {blendRadius, chamfer};
-  }
-
-  min(a, b, blendSurfaces = null){
+  min(a, b) {
     if (!a) return b;
     if (!b) return a;
 
-    const {blendRadius, chamfer} = this.blendParams(blendSurfaces);
-
-    const ch = P.chmin(a, b, blendRadius);
-    const sm = P.smin(a, b, blendRadius);
-    return P.mix(sm, ch, chamfer);
+    const ch = P.chmin(a, b, P.smoothabs(this.uniform('blendRadius')));
+    const sm = P.smin(a, b, P.smoothabs(this.uniform('blendRadius')));
+    return P.mix(sm, ch, this.uniform('chamfer'));
   }
 
-  max(a, b, blendSurfaces = null){
+  max(a, b) {
     if (!a) return b;
     if (!b) return a;
 
-    const {blendRadius, chamfer} = this.blendParams(blendSurfaces);
-
-    const ch = P.chmax(a, b, blendRadius);
-    const sm = P.smax(a, b, blendRadius);
-    return P.mix(sm, ch, chamfer);
+    const ch = P.chmax(a, b, P.smoothabs(this.uniform('blendRadius')));
+    const sm = P.smax(a, b, P.smoothabs(this.uniform('blendRadius')));
+    return P.mix(sm, ch, this.uniform('chamfer'));
   }
 
   structmin(a, b) {
@@ -234,7 +209,7 @@ class TreeNode {
     const uniqueIdA = P.field(a, 'uniqueId');
     const uniqueIdB = P.field(b, 'uniqueId');
     
-    const distance = this.min(distA, distB, [uniqueIdA, uniqueIdB]);
+    const distance = this.min(distA, distB);
     
     // work out how much each object contributes to the final distance,
     // and weight the color accordingly
@@ -270,7 +245,7 @@ class TreeNode {
     const uniqueIdA = P.field(a, 'uniqueId');
     const uniqueIdB = P.field(b, 'uniqueId');
 
-    const distance = this.max(distA, distB, [uniqueIdA, uniqueIdB]);
+    const distance = this.max(distA, distB);
     
     // work out how much each object contributes to the final distance,
     // and weight the color accordingly

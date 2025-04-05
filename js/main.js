@@ -63,8 +63,10 @@ const app = {
     createDocument() {
         const doc = new UnionNode([]);
         const sphere = new SphereNode();
+        const box = new BoxNode();
         const gyroid = new GyroidNode();
-        const intersection = new IntersectionNode([sphere, gyroid]);
+        const intersection = new IntersectionNode([new UnionNode([sphere, box]), gyroid]);
+        box.size.x = 5;
         doc.addChild(intersection);
 
         doc.blends.push({
@@ -121,14 +123,14 @@ const app = {
         const shaderLayers = [];
         if (this.primaryShaderLayer) {
             this.primaryShaderLayer.setUniform('float', 'uOpacity', camera.opacity);
-            this.primaryShaderLayer.setUniforms(this.document.uniforms());
+            this.primaryShaderLayer.setUniforms(this.processedDocument.uniforms());
             this.primaryShaderLayer.setUniform('float', 'uSelectedObject', ui.selectedNode?.uniqueId ?? -1);
             this.primaryShaderLayer.setUniform('float', 'uObjectUnderCursor', renderer.nodeUnderCursor?.uniqueId ?? -1);
             shaderLayers.push(this.primaryShaderLayer);
         }
         if (this.secondaryShaderLayer) {
             this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.15);
-            this.secondaryShaderLayer.setUniforms(this.document.uniforms());
+            this.secondaryShaderLayer.setUniforms(this.processedDocument.uniforms());
             this.secondaryShaderLayer.setUniform('float', 'uSelectedObject', -1);
             this.secondaryShaderLayer.setUniform('float', 'uObjectUnderCursor', -1);
             shaderLayers.push(this.secondaryShaderLayer);
@@ -180,6 +182,7 @@ const app = {
             }
 
             this.processedDocument = TreeRewriter.rewrite(this.document);
+            console.log("processedDocument", this.processedDocument);
 
             let startTime = performance.now();
             const expr = P.field(this.processedDocument.peptide(P.vvar('p')), 'distance');
@@ -203,7 +206,7 @@ const app = {
             this.document.markClean();
         }
 
-        if (currentSelectedNode !== null && !currentSelectedNode.aabb().isInfinite()) {
+        if (false && currentSelectedNode !== null && !currentSelectedNode.aabb().isInfinite()) {
             let expr;
             let node;
             
