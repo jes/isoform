@@ -37,7 +37,6 @@ class UnionNode extends TreeNode {
         tree.chamfer = this.chamfer;
       }
     }
-    tree.blends = this.blends;
 
     return tree;
   }
@@ -97,7 +96,6 @@ class IntersectionNode extends TreeNode {
         tree.chamfer = this.chamfer;
       }
     }
-    tree.blends = this.blends;
     
     return tree;
   }
@@ -154,7 +152,6 @@ class SubtractionNode extends TreeNode {
         tree.chamfer = this.chamfer;
       }
     }
-    tree.blends = this.blends;
 
     return tree;
   }

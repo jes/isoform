@@ -106,6 +106,7 @@ class TreeNode {
     if (node.children.length > 2) {
       throw new Error(`Normalised ${this.name} has more than 2 children`);
     }
+    node.blends = this.blends;
     return node;
   }
 
