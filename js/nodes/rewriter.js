@@ -101,8 +101,24 @@ const TreeRewriter = {
 
     // now check that we have both arguments for any blend that affects either child
     for (const blend of blends) {
-      if (idsLeft.has(blend.nodes[0].uniqueId) && !idsRight.has(blend.nodes[1].uniqueId)) return false;
-      if (idsLeft.has(blend.nodes[1].uniqueId) && !idsRight.has(blend.nodes[0].uniqueId)) return false;
+      const id0 = blend.nodes[0].uniqueId;
+      const id1 = blend.nodes[1].uniqueId;
+
+      // we can handle this blend if one child has one id and the other has the other id
+      if (idsLeft.has(id0) && idsLeft.size == 1 && idsRight.has(id1) && idsRight.size == 1) return true;
+      if (idsLeft.has(id1) && idsLeft.size == 1 && idsRight.has(id0) && idsRight.size == 1) return true;
+
+      // if one child has both ids, then we know the blend is satisfied deeper
+      if (idsLeft.has(id0) && idsLeft.has(id1)) continue;
+      if (idsRight.has(id0) && idsRight.has(id1)) continue;
+
+      // otherwise, we can't satisfy our blends if we see an id coming out of one child and the
+      // other id not coming out of the same child, but more than one id coming out of
+      // either child
+      if (idsLeft.has(id0) && (idsLeft.size > 1 || idsRight.size > 1)) return false;
+      if (idsLeft.has(id1) && (idsLeft.size > 1 || idsRight.size > 1)) return false;
+      if (idsRight.has(id0) && (idsRight.size > 1 || idsLeft.size > 1)) return false;
+      if (idsRight.has(id1) && (idsRight.size > 1 || idsLeft.size > 1)) return false;
     }
 
     return true;
@@ -117,7 +133,30 @@ const TreeRewriter = {
   _rewriteTree(t, blends) {
     if (t.type == 'combinator') {
       t.left = TreeRewriter.rewriteTree(t.left);
-      if (t.left.type == 'combinator' && !TreeRewriter.satisfiesBlends(t.left, blends)) {
+      // if the left child is a modifier of a combinator that can't satisfy the
+      // blends, we need to rewrite it according to:
+      //   Modifier(Combinator(a,b)) == Combinator(Modifier(a),Modifier(b))
+      if (t.left.type == 'modifier' && t.left.child.type == 'combinator' && !TreeRewriter.satisfiesBlends(t.left.child, blends)) {
+        const modifier = t.left;
+        const combinator = modifier.child;
+        t.left = {
+          type: 'combinator',
+          left: {
+            type: 'modifier',
+            child: combinator.left,
+            treeNode: modifier.treeNode,
+          },
+          right: {
+            type: 'modifier',
+            child: combinator.right,
+            treeNode: modifier.treeNode,
+          },
+          treeNode: combinator.treeNode,
+        };
+      }
+
+      // if we can't satisfy our blends, or the left child is a combinator that can't satisfy the blends, we need to rewrite it
+      if (!TreeRewriter.satisfiesBlends(t, blends) || (t.left.type == 'combinator' && !TreeRewriter.satisfiesBlends(t.left, blends))) {
         const left = t.left;
         t.left = {
           type: 'combinator',
@@ -135,7 +174,26 @@ const TreeRewriter = {
       }
 
       t.right = TreeRewriter.rewriteTree(t.right);
-      if (t.right.type == 'combinator' && !TreeRewriter.satisfiesBlends(t.right, blends)) {
+      if (t.right.type == 'modifier' && t.right.child.type == 'combinator' && !TreeRewriter.satisfiesBlends(t.right.child, blends)) {
+        const modifier = t.right;
+        const combinator = modifier.child;
+        t.right = {
+          type: 'combinator',
+          left: {
+            type: 'modifier',
+            child: combinator.left,
+            treeNode: modifier.treeNode,
+          },
+          right: {
+            type: 'modifier',
+            child: combinator.right,
+            treeNode: modifier.treeNode,
+          },
+          treeNode: combinator.treeNode,
+        };
+      }
+
+      if (!TreeRewriter.satisfiesBlends(t, blends) || (t.right.type == 'combinator' && !TreeRewriter.satisfiesBlends(t.right, blends))) {
         const right = t.right;
         t.left = {
           type: 'combinator',

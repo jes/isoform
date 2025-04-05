@@ -61,11 +61,14 @@ const RewriterTests = {
     },
 
     stringTree: function(tree) {
-        let txt = tree.name;
+        let txt;
         if (tree.children.length > 0) {
+            txt = tree.name;
             txt += "(";
             txt += tree.children.map(child => this.stringTree(child)).join(",");
             txt += ")";
+        } else {
+            txt = tree.displayName;
         }
         return txt;
     },
@@ -109,6 +112,7 @@ const RewriterTests = {
     },
 
     testNormalised: async function() {
+        TreeNode.nextId = 1;
         const tree = new UnionNode([
             new SubtractionNode([
                 new SphereNode(),
@@ -140,7 +144,7 @@ const RewriterTests = {
         }
 
         // check that the starting tree is of the right form when stringified
-        this.assertEquals(this.stringTree(tree), "Union(Subtraction(Sphere,Sphere,Box),Intersection(Sphere,Box,Gyroid),Union(Sphere,Gyroid,Box))");
+        this.assertEquals(this.stringTree(tree), "Union(Subtraction(Sphere1,Sphere2,Box3),Intersection(Sphere5,Box6,Gyroid7),Union(Sphere9,Gyroid10,Box11))");
 
         const treeNormalised = tree.cloneWithSameIds().normalised();
 
@@ -170,7 +174,7 @@ const RewriterTests = {
         this.assertEquals(count, 19);
 
         // check that the normalised tree is of the right form when stringified
-        this.assertEquals(this.stringTree(treeNormalised), "Union(Union(Intersection(Intersection(Sphere,Negate(Sphere)),Negate(Box)),Intersection(Intersection(Sphere,Box),Gyroid)),Union(Union(Sphere,Gyroid),Box))");
+        this.assertEquals(this.stringTree(treeNormalised), "Union(Union(Intersection(Intersection(Sphere1,Negate(Sphere2)),Negate(Box3)),Intersection(Intersection(Sphere5,Box6),Gyroid7)),Union(Union(Sphere9,Gyroid10),Box11))");
 
         this.checkParents(treeNormalised);
 
@@ -179,7 +183,7 @@ const RewriterTests = {
         for (const child of tree.children) {
             this.assertEquals(child.children.length, 3, "Original child should have 3 children");
         }
-        this.assertEquals(this.stringTree(tree), "Union(Subtraction(Sphere,Sphere,Box),Intersection(Sphere,Box,Gyroid),Union(Sphere,Gyroid,Box))");
+        this.assertEquals(this.stringTree(tree), "Union(Subtraction(Sphere1,Sphere2,Box3),Intersection(Sphere5,Box6,Gyroid7),Union(Sphere9,Gyroid10,Box11))");
     },
 
     testFromTreeNode: async function() {
@@ -278,7 +282,7 @@ const RewriterTests = {
         this.checkParents(newTree);
         const newTreeString = this.stringTree(newTree);
         this.assertEquals(newTreeString, origTreeString);
-        this.assertEquals(origTreeString, "Union(Twist(Transform(Intersection(Intersection(DomainDeform(Sphere),Negate(Sphere)),Negate(Box)))),Intersection(Intersection(Sphere,Box),Gyroid))");
+        this.assertEquals(origTreeString, "Union(Twist(Transform(Intersection(Intersection(DomainDeform(Sphere1),Negate(Sphere3)),Negate(Box4)))),Intersection(Intersection(Sphere8,Box9),Gyroid10))");
         this.assertEquals(this.stringIntermediateTree(intermediateTree), "combinator(Union,modifier(TwistTransform,combinator(Intersection,combinator(Intersection,modifier(DomainDeform,primitive(Sphere1)),modifier(Negate,primitive(Sphere3))),modifier(Negate,primitive(Box4)))),combinator(Intersection,combinator(Intersection,primitive(Sphere8),primitive(Box9)),primitive(Gyroid10)))");
     },
 
@@ -306,7 +310,7 @@ const RewriterTests = {
         this.checkParents(newTree);
         const newTreeString = this.stringTree(newTree);
         this.assertEquals(newTreeString, origTreeString);
-        this.assertEquals(origTreeString, "Union(Twist(Transform(Intersection(Intersection(DomainDeform(Sphere),Negate(Sphere)),Negate(Box)))),Intersection(Intersection(Sphere,Box),Gyroid))");
+        this.assertEquals(origTreeString, "Union(Twist(Transform(Intersection(Intersection(DomainDeform(Sphere1),Negate(Sphere3)),Negate(Box4)))),Intersection(Intersection(Sphere8,Box9),Gyroid10))");
         this.assertEquals(this.stringIntermediateTree(intermediateTree), "combinator(Union,modifier(TwistTransform,combinator(Intersection,combinator(Intersection,modifier(DomainDeform,primitive(Sphere1)),modifier(Negate,primitive(Sphere3))),modifier(Negate,primitive(Box4)))),combinator(Intersection,combinator(Intersection,primitive(Sphere8),primitive(Box9)),primitive(Gyroid10)))");
     },
 
@@ -340,12 +344,13 @@ const RewriterTests = {
         this.checkParents(tree);
         const treeNormalised = tree.cloneWithSameIds().normalised();
         const origTreeString = this.stringTree(treeNormalised);
+        console.log(origTreeString);
         const intermediateTree = TreeRewriter.rewriteTree(TreeRewriter.fromTreeNode(treeNormalised));
         const newTree = TreeRewriter.toTreeNode(intermediateTree);
         this.checkParents(newTree);
         const newTreeString = this.stringTree(newTree);
         this.assertEquals(newTreeString, origTreeString);
-        this.assertEquals(origTreeString, "Union(Twist(Transform(Intersection(Intersection(DomainDeform(Sphere),Negate(Sphere)),Negate(Box)))),DistanceDeform(Intersection(Intersection(Sphere,Box),Gyroid)))");
+        this.assertEquals(origTreeString, "Union(Twist(Transform(Intersection(Intersection(DomainDeform(Sphere3),Negate(Sphere5)),Negate(Box6)))),DistanceDeform(Intersection(Intersection(Sphere1,Box2),Gyroid10)))");
         this.assertEquals(this.stringIntermediateTree(intermediateTree), "combinator(Union,modifier(TwistTransform,combinator(Intersection,combinator(Intersection,modifier(DomainDeform,primitive(Sphere3)),modifier(Negate,primitive(Sphere5))),modifier(Negate,primitive(Box6)))),modifier(DistanceDeform,combinator(Intersection,combinator(Intersection,primitive(Sphere1),primitive(Box2)),primitive(Gyroid10))))");
     },
 
@@ -380,8 +385,8 @@ const RewriterTests = {
         const newTree = TreeRewriter.toTreeNode(intermediateTree);
         this.checkParents(newTree);
         const newTreeString = this.stringTree(newTree);
-        this.assertEquals(origTreeString, "Union(Intersection(Sphere,Gyroid),Box)");
-        this.assertEquals(newTreeString, "Intersection(Union(Sphere,Box),Union(Gyroid,Box))");
+        this.assertEquals(origTreeString, "Union(Intersection(Sphere1,Gyroid3),Box2)");
+        this.assertEquals(newTreeString, "Intersection(Union(Sphere1,Box2),Union(Gyroid3,Box2))");
         this.assertEquals(this.stringIntermediateTree(intermediateTree), "combinator(Intersection,combinator(Union,primitive(Sphere1),primitive(Box2)),combinator(Union,primitive(Gyroid3),primitive(Box2)))");
     },
 
@@ -413,8 +418,8 @@ const RewriterTests = {
         const newTree = TreeRewriter.toTreeNode(intermediateTree);
         this.checkParents(newTree);
         const newTreeString = this.stringTree(newTree);
-        this.assertEquals(origTreeString, "Transform(Twist(Union(DomainDeform(Shell(Intersection(Sphere,Transform(Gyroid)))),Scale(Box))))");
-        this.assertEquals(newTreeString, "Intersection(Union(Sphere,Box),Union(Gyroid,Box))");
+        this.assertEquals(origTreeString, "Transform(Twist(Union(DomainDeform(Shell(Intersection(Sphere1,Transform(Gyroid3)))),Scale(Box2))))");
+        this.assertEquals(newTreeString, "Intersection(Union(Sphere1,Box2),Union(Gyroid3,Box2))");
         this.assertEquals(this.stringIntermediateTree(intermediateTree), "combinator(Intersection,combinator(Union,primitive(Sphere1),primitive(Box2)),combinator(Union,primitive(Gyroid3),primitive(Box2)))");
     },
 
