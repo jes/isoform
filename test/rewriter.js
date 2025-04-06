@@ -17,6 +17,7 @@ const RewriterTests = {
             this.testRewriteSimpleBlend,
             this.testRewriteSimpleBlendWithModifiers,
             this.testRewriteAllPairsBlends,
+            this.testNoRewriteForLikeBlends,
         ];
 
         const results = [];
@@ -564,6 +565,64 @@ const RewriterTests = {
         dfs(newTree);
         const checkedString = Array.from(checked).map(blend => `(${blend.nodes[0].displayName},${blend.nodes[1].displayName})`).join(',');
         this.assertEquals(checked.size, 6, "Combinators should all have been checked, only saw: " + checkedString);
+    },
+
+    testNoRewriteForLikeBlends: async function() {
+        TreeNode.nextId = 1;
+        const sphere = new SphereNode();
+        this.assertEquals(sphere.uniqueId, 1);
+        const box = new BoxNode();
+        this.assertEquals(box.uniqueId, 2);
+        const gyroid = new GyroidNode();
+        this.assertEquals(gyroid.uniqueId, 3);
+        const tree = new UnionNode([
+            new IntersectionNode([sphere, box]),
+            gyroid,
+        ]);
+        tree.blends = new Set([
+            {
+                nodes: [sphere, gyroid],
+                blendRadius: 0.5,
+                chamfer: 1.0,
+            },
+            {
+                nodes: [box, gyroid],
+                blendRadius: 0.5,
+                chamfer: 1.0,
+            },
+        ]);
+        this.checkParents(tree);
+        const newTree = TreeRewriter.rewrite(tree);
+        this.checkParents(newTree);
+        let checked = new Set();
+        const dfs = (node) => {
+            if (node.isCombinator) {
+                const left = node.children[0];
+                const right = node.children[1];
+                const leftIds = left.possibleSurfaceIds();
+                const rightIds = right.possibleSurfaceIds();
+                if (leftIds.size == 1 && rightIds.size == 1) {
+                    const idLeft = Array.from(leftIds)[0];
+                    const idRight = Array.from(rightIds)[0];
+                    for (const blend of tree.blends) {
+                        if ((blend.nodes[0].uniqueId == idLeft && blend.nodes[1].uniqueId == idRight) ||
+                            (blend.nodes[0].uniqueId == idRight && blend.nodes[1].uniqueId == idLeft)) {
+                            if (node.blendRadius !== blend.blendRadius || node.chamfer !== blend.chamfer) {
+                                throw new Error(`Blend parameters mismatch for ${idLeft},${idRight}: expected radius=${blend.blendRadius}, chamfer=${blend.chamfer} but got radius=${node.blendRadius}, chamfer=${node.chamfer}`);
+                            }
+                            checked.add(blend);
+                        }
+                    }
+                }
+            }
+            for (const child of node.children) {
+                dfs(child);
+            }
+        };
+        dfs(newTree);
+        const checkedString = Array.from(checked).map(blend => `(${blend.nodes[0].displayName},${blend.nodes[1].displayName})`).join(',');
+        this.assertEquals(checked.size, 2, "Combinators should all have been checked, only saw: " + checkedString);
+        this.assertEquals(this.stringTree(newTree), "Union(Intersection(Sphere1,Box2),Gyroid3)");
     },
 };
 
