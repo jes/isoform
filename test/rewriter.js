@@ -334,13 +334,13 @@ const RewriterTests = {
                 new GyroidNode(),
             ]),
         ]);
-        tree.blends = [
+        tree.blends = new Set([
             {
                 nodes: [sphere, new BoxNode()],
                 blendRadius: 0.5,
                 chamfer: 1.0,
             },
-        ];
+        ]);
         this.checkParents(tree);
         const treeNormalised = tree.cloneWithSameIds().normalised();
         const origTreeString = this.stringTree(treeNormalised);
@@ -373,13 +373,13 @@ const RewriterTests = {
                 new GyroidNode(),
             ])),
         ]);
-        tree.blends = [
+        tree.blends = new Set([
             {
                 nodes: [sphere, box],
                 blendRadius: 0.5,
                 chamfer: 1.0,
             },
-        ];
+        ]);
         this.checkParents(tree);
         const treeNormalised = tree.cloneWithSameIds().normalised();
         const origTreeString = this.stringTree(treeNormalised);
@@ -430,13 +430,13 @@ const RewriterTests = {
             new IntersectionNode([sphere, new GyroidNode()]),
             box,
         ]);
-        tree.blends = [
+        tree.blends = new Set([
             {
                 nodes: [sphere, box],
                 blendRadius: 0.5,
                 chamfer: 1.0,
             },
-        ];
+        ]);
         this.checkParents(tree);
         const treeNormalised = tree.cloneWithSameIds().normalised();
         const origTreeString = this.stringTree(treeNormalised);
@@ -464,13 +464,13 @@ const RewriterTests = {
             new DomainDeformNode(new ShellNode(new IntersectionNode([sphere, new TransformNode(new GyroidNode())]))),
             new ScaleNode(box),
         ])));
-        tree.blends = [
+        tree.blends = new Set([
             {
                 nodes: [sphere, box],
                 blendRadius: 0.5,
                 chamfer: 1.0,
             },
-        ];
+        ]);
         this.checkParents(tree);
         const treeNormalised = tree.cloneWithSameIds().normalised();
         const origTreeString = this.stringTree(treeNormalised);
@@ -500,7 +500,7 @@ const RewriterTests = {
             new IntersectionNode([sphere, gyroid]),
             new SubtractionNode([box, cylinder]),
         ]);
-        tree.blends = [
+        tree.blends = new Set([
             {
                 nodes: [sphere, box],
                 blendRadius: 0.1,
@@ -531,7 +531,7 @@ const RewriterTests = {
                 blendRadius: 0.6,
                 chamfer: 1.0,
             },
-        ];
+        ]);
         this.checkParents(tree);
         const newTree = TreeRewriter.rewrite(tree);
         this.checkParents(newTree);

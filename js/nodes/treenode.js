@@ -25,7 +25,7 @@ class TreeNode {
     this.blendRadius = 0.0;
     this.chamfer = 0.0;
 
-    this.blends = []; // array of blends, only applicable on root node, will be propataged down
+    this.blends = null; // Set of blends, only applicable on root node, will be propataged down
   }
 
   // override this to return true if the node is 2d

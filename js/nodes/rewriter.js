@@ -160,7 +160,7 @@ const TreeRewriter = {
   // rewrite the intermediate tree using the distributivity rule to fix blend parameters
   rewriteTree(t) {
     // take the blends from the root node
-    const blends = t.treeNode.blends;
+    const blends = t.treeNode.blends || new Set();
 
     // rewrite the tree so that all blends can be satisfied
     let r = TreeRewriter._rewriteTree(t, blends);
