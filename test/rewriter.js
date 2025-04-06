@@ -11,6 +11,7 @@ const RewriterTests = {
             this.testNormalised,
             this.testFromTreeNode,
             this.testToTreeNode,
+            this.testSatisfiesBlends,
             this.testRewriteNoBlends,
             this.testRewriteNoBlends2,
             this.testRewriteNoopBlend,
@@ -60,6 +61,13 @@ const RewriterTests = {
             throw new Error(`${message}:\n` + 
                 `  Expected: ${JSON.stringify(expected)}\n` +
                 `  Actual:   ${JSON.stringify(actual)}`);
+        }
+    },
+
+    assertTrue: function(condition, message = "Truth check failed") {
+        if (!condition) {
+            throw new Error(`${message}:\n` + 
+                `  Condition: ${condition}`);
         }
     },
 
@@ -287,6 +295,50 @@ const RewriterTests = {
         this.assertEquals(newTreeString, origTreeString);
         this.assertEquals(origTreeString, "Union(Twist(Transform(Intersection(Intersection(DomainDeform(Sphere1),Negate(Sphere3)),Negate(Box4)))),Intersection(Intersection(Sphere8,Box9),Gyroid10))");
         this.assertEquals(this.stringIntermediateTree(intermediateTree), "combinator(Union,modifier(TwistTransform,combinator(Intersection,combinator(Intersection,modifier(DomainDeform,primitive(Sphere1)),modifier(Negate,primitive(Sphere3))),modifier(Negate,primitive(Box4)))),combinator(Intersection,combinator(Intersection,primitive(Sphere8),primitive(Box9)),primitive(Gyroid10)))");
+    },
+
+    // check that satisfiesBlends() correctly discriminates between nodes that can
+    // satisfy their required blends and those that can't
+    testSatisfiesBlends: async function() {
+        TreeNode.nextId = 1;
+        const sphere = new SphereNode();
+        this.assertEquals(sphere.uniqueId, 1);
+        const box = new BoxNode();
+        this.assertEquals(box.uniqueId, 2);
+        const gyroid = new GyroidNode();
+        this.assertEquals(gyroid.uniqueId, 3);
+        const cylinder = new CylinderNode();
+        this.assertEquals(cylinder.uniqueId, 4);
+
+        let spherebox = { nodes: [sphere, box], blendRadius: 0.1, chamfer: 1.0 };
+        let spheregyroid = { nodes: [sphere, gyroid], blendRadius: 0.2, chamfer: 1.0 };
+        let boxgyroid = { nodes: [box, gyroid], blendRadius: 0.3, chamfer: 1.0 };
+        let boxcylinder = { nodes: [box, cylinder], blendRadius: 0.4, chamfer: 1.0 };
+        let gyroidcylinder = { nodes: [gyroid, cylinder], blendRadius: 0.5, chamfer: 1.0 };
+        let spherecylinder = { nodes: [sphere, cylinder], blendRadius: 0.6, chamfer: 1.0 };
+
+        let boxgyroid1 = { nodes: [box, gyroid], blendRadius: 1.0, chamfer: 1.0 };
+        let spheregyroid1 = { nodes: [sphere, gyroid], blendRadius: 1.0, chamfer: 1.0 };
+
+        let t = TreeRewriter.fromTreeNode(sphere);
+        this.assertTrue(TreeRewriter.satisfiesBlends(t, new Set()), "Single primitive satisfies blends if there are none");
+        this.assertTrue(TreeRewriter.satisfiesBlends(t, new Set([spherebox])), "Single primitive satisfies any single blend");
+        this.assertTrue(TreeRewriter.satisfiesBlends(t, new Set([spheregyroid, boxcylinder, spherecylinder])), "Single primitive satisfies multiple blends");
+        this.assertTrue(TreeRewriter.satisfiesBlends(t, new Set([boxgyroid])), "Single primitive satisfies blend that does not involve it");
+
+        t = TreeRewriter.fromTreeNode(new UnionNode([sphere, box]));
+        this.assertTrue(TreeRewriter.satisfiesBlends(t, new Set([spherebox])), "Combinator satisfies blend of its 2 children");
+        this.assertTrue(TreeRewriter.satisfiesBlends(t, new Set([boxgyroid])), "Combinator satisfies blend that only involves one of its children");
+        this.assertTrue(TreeRewriter.satisfiesBlends(t, new Set([gyroidcylinder])), "Combinator satisfies blend that does not involve one of its children");
+        this.assertTrue(TreeRewriter.satisfiesBlends(t, new Set([gyroidcylinder, boxgyroid])), "Combinator does not need to satisfy a blend that involves only one of its children");
+
+        t = TreeRewriter.fromTreeNode(new UnionNode([new IntersectionNode([sphere, box]), gyroid]));
+        this.assertTrue(TreeRewriter.satisfiesBlends(t, new Set([spherebox])), "Combinator satisfies blend when both arguments come from the same child");
+        this.assertTrue(!TreeRewriter.satisfiesBlends(t, new Set([boxgyroid])), "Combinator does not satisfy blend when arguments come from different children");
+        this.assertTrue(!TreeRewriter.satisfiesBlends(t, new Set([boxgyroid, spheregyroid])), "Combinator does not satisfy blend when 2 blends have different radii");
+        this.assertTrue(TreeRewriter.satisfiesBlends(t, new Set([boxgyroid1, spheregyroid1])), "Combinator satisfies blend when 2 blends have same radii");
+        this.assertTrue(!TreeRewriter.satisfiesBlends(t, new Set([boxgyroid, spheregyroid, boxcylinder])), "Combinator does not satisfy blend when 2 blends have different radii, with extraneous blend");
+        this.assertTrue(TreeRewriter.satisfiesBlends(t, new Set([boxgyroid1, spheregyroid1, boxcylinder])), "Combinator satisfies blend when 2 blends have same radii, with extraneous blend");
     },
 
     // basic case: we don't ask for any blends, so produce a tree that is identical
