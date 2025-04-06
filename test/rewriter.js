@@ -16,6 +16,7 @@ const RewriterTests = {
             this.testRewriteNoopBlend,
             this.testRewriteSimpleBlend,
             this.testRewriteSimpleBlendWithModifiers,
+            this.testRewriteAllPairsBlends,
         ];
 
         const results = [];
@@ -482,6 +483,88 @@ const RewriterTests = {
         this.assertEquals(this.stringIntermediateTree(intermediateTree), "modifier(TransformTwist,combinator(Intersection,combinator(Union,modifier(DomainDeformShellTransform,primitive(Sphere1)),modifier(Scale,primitive(Box2))),combinator(Union,modifier(DomainDeformShellTransform,modifier(Transform,primitive(Gyroid3))),modifier(Scale,primitive(Box2)))))");
     },
 
+    // this test applies blends between every pair of primitives in the tree and checks
+    // that each pair of primitives appears as siblings of exactly one combinator, and
+    // that combinator has the correct blend parameters
+    testRewriteAllPairsBlends: async function() {
+        TreeNode.nextId = 1;
+        const box = new BoxNode();
+        this.assertEquals(box.uniqueId, 1);
+        const sphere = new SphereNode();
+        this.assertEquals(sphere.uniqueId, 2);
+        const gyroid = new GyroidNode();
+        this.assertEquals(gyroid.uniqueId, 3);
+        const cylinder = new CylinderNode();
+        this.assertEquals(cylinder.uniqueId, 4);
+        const tree = new UnionNode([
+            new IntersectionNode([sphere, gyroid]),
+            new SubtractionNode([box, cylinder]),
+        ]);
+        tree.blends = [
+            {
+                nodes: [sphere, box],
+                blendRadius: 0.1,
+                chamfer: 1.0,
+            },
+            {
+                nodes: [box, cylinder],
+                blendRadius: 0.2,
+                chamfer: 1.0,
+            },
+            {
+                nodes: [sphere, cylinder],
+                blendRadius: 0.3,
+                chamfer: 1.0,
+            },
+            {
+                nodes: [gyroid, box],
+                blendRadius: 0.4,
+                chamfer: 1.0,
+            },
+            {
+                nodes: [gyroid, cylinder],
+                blendRadius: 0.5,
+                chamfer: 1.0,
+            },
+            {
+                nodes: [sphere, gyroid],
+                blendRadius: 0.6,
+                chamfer: 1.0,
+            },
+        ];
+        this.checkParents(tree);
+        const newTree = TreeRewriter.rewrite(tree);
+        this.checkParents(newTree);
+        let checked = new Set();
+        console.log(this.stringTree(newTree));
+        const dfs = (node) => {
+            if (node.isCombinator) {
+                const left = node.children[0];
+                const right = node.children[1];
+                const leftIds = left.possibleSurfaceIds();
+                const rightIds = right.possibleSurfaceIds();
+                if (leftIds.size == 1 && rightIds.size == 1) {
+                    const idLeft = Array.from(leftIds)[0];
+                    const idRight = Array.from(rightIds)[0];
+                    for (const blend of tree.blends) {
+                        if ((blend.nodes[0].uniqueId == idLeft && blend.nodes[1].uniqueId == idRight) ||
+                            (blend.nodes[0].uniqueId == idRight && blend.nodes[1].uniqueId == idLeft)) {
+                            if (node.blendRadius !== blend.blendRadius || node.chamfer !== blend.chamfer) {
+                                throw new Error(`Blend parameters mismatch for ${idLeft},${idRight}: expected radius=${blend.blendRadius}, chamfer=${blend.chamfer} but got radius=${node.blendRadius}, chamfer=${node.chamfer}`);
+                            }
+                            checked.add(blend);
+                        }
+                    }
+                }
+            }
+            for (const child of node.children) {
+                dfs(child);
+            }
+        };
+        dfs(newTree);
+        const checkedString = Array.from(checked).map(blend => `(${blend.nodes[0].displayName},${blend.nodes[1].displayName})`).join(',');
+        this.assertEquals(checked.size, 6, "Combinators should all have been checked, only saw: " + checkedString);
+    },
 
     // TODO: very complex test that includes distinct blends between every pair of primitives
 };
