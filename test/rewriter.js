@@ -343,9 +343,7 @@ const RewriterTests = {
         this.checkParents(tree);
         const treeNormalised = tree.cloneWithSameIds().normalised();
         const origTreeString = this.stringTree(treeNormalised);
-        console.log("origTreeString", origTreeString);
         const intermediateTree = TreeRewriter.rewriteTree(TreeRewriter.fromTreeNode(treeNormalised));
-        console.log("intermediateTree", this.stringIntermediateTree(intermediateTree));
         const newTree = TreeRewriter.toTreeNode(intermediateTree);
         this.checkParents(newTree);
         const newTreeString = this.stringTree(newTree);

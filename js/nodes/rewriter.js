@@ -129,7 +129,9 @@ const TreeRewriter = {
 
   // rewrite the intermediate tree using the distributivity rule to fix blend parameters
   rewriteTree(t) {
-    const blends = t.treeNode.blends;
+    // only take blends where both arguments are present in the tree
+    const blends = TreeRewriter.validBlends(t);
+
     // only the root node contains the blends list, so we need to pass it down
     const r = TreeRewriter._rewriteTree(t, blends);
 
@@ -229,6 +231,14 @@ const TreeRewriter = {
     }
 
     return t;
+  },
+
+  validBlends(t) {
+    const blends = t.treeNode.blends;
+    const ids = TreeRewriter.possibleSurfaceIds(t);
+    return blends.filter(blend => {
+      return ids.has(blend.nodes[0].uniqueId) && ids.has(blend.nodes[1].uniqueId);
+    });
   },
 
   applyBlends(t, blends) {
