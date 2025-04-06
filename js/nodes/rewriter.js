@@ -146,7 +146,7 @@ const TreeRewriter = {
       t.left = TreeRewriter._rewriteTree(t.left, blends);
       // if the left child is a modifier of a combinator, and we can't satisfy our blends,
       // we need to rewrite according to:
-      //   Modifier(Combinator(a,b)) == Combinator(Modifier(a),Modifier(b))
+      //   Modifier(Combinator(a,b)) => Combinator(Modifier(a),Modifier(b))
       if (t.left.type == 'modifier' && t.left.child.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends)) {
         const modifier = t.left;
         const combinator = modifier.child;
@@ -166,7 +166,8 @@ const TreeRewriter = {
         };
       }
 
-      // if we can't satisfy our blends, we need to rewrite
+      // if we can't satisfy our blends, we need to rewrite according to:
+      //   Combinator1(Combinator2(a,b), c) => Combinator2(Combinator1(a,c),Combinator1(b,c))
       if (t.left.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends)) {
         const left = t.left;
         const right = t.right;
