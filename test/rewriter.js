@@ -620,7 +620,6 @@ const RewriterTests = {
     },
 
     testNoRewriteForLikeBlends: async function() {
-        console.log("testNoRewriteForLikeBlends");
         TreeNode.nextId = 1;
         const sphere = new SphereNode();
         this.assertEquals(sphere.uniqueId, 1);
