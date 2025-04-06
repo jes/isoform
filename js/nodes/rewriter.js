@@ -99,7 +99,9 @@ const TreeRewriter = {
     const idsLeft = TreeRewriter.possibleSurfaceIds(t.left);
     const idsRight = TreeRewriter.possibleSurfaceIds(t.right);
 
-    // check that we have both arguments for any blend that affects either child
+    const needToHandle = new Set();
+
+    // collect up the set of blends that we need to handle
     for (const blend of blends) {
       const id0 = blend.nodes[0].uniqueId;
       const id1 = blend.nodes[1].uniqueId;
@@ -108,21 +110,44 @@ const TreeRewriter = {
       if (!idsLeft.has(id0) && !idsRight.has(id0)) continue;
       if (!idsLeft.has(id1) && !idsRight.has(id1)) continue;
 
-      // we can handle this blend if one child has one id and the other has the other id
-      if (idsLeft.has(id0) && idsLeft.size == 1 && idsRight.has(id1) && idsRight.size == 1) continue;
-      if (idsLeft.has(id1) && idsLeft.size == 1 && idsRight.has(id0) && idsRight.size == 1) continue;
+      // we need to handle this blend if one child has one id and the other has the other id
+      if ((idsLeft.has(id0) && idsRight.has(id1)) ||
+          (idsLeft.has(id1) && idsRight.has(id0))) {
+        needToHandle.add(blend);
+        continue;
+      }
+    }
 
-      // if one child has both ids, then we know the blend is satisfied deeper
-      if (idsLeft.has(id0) && idsLeft.has(id1)) continue;
-      if (idsRight.has(id0) && idsRight.has(id1)) continue;
-
-      // otherwise, we can't satisfy our blends if we see an id coming out of one child and the
-      // other id not coming out of the same child, but more than one id coming out of
-      // either child
-      if (idsLeft.has(id0) && (idsLeft.size > 1 || idsRight.size > 1)) return false;
-      if (idsLeft.has(id1) && (idsLeft.size > 1 || idsRight.size > 1)) return false;
-      if (idsRight.has(id0) && (idsRight.size > 1 || idsLeft.size > 1)) return false;
-      if (idsRight.has(id1) && (idsRight.size > 1 || idsLeft.size > 1)) return false;
+    // check that every surface combination has the same blend parameters
+    let overallBlendRadius = null;
+    let overallChamfer = null;
+    // for each pair of surface ids
+    for (const idLeft of idsLeft) {
+      if (idsRight.has(idLeft)) continue;
+      for (const idRight of idsRight) {
+        if (idsLeft.has(idRight)) continue;
+        let blendRadius = 0.0;
+        let chamfer = 0.0;
+        // find out the blend parameters
+        for (const blend of needToHandle) {
+          const id0 = blend.nodes[0].uniqueId;
+          const id1 = blend.nodes[1].uniqueId;
+          if ((id0 == idLeft && id1 == idRight) ||
+              (id0 == idRight && id1 == idLeft)) {
+            blendRadius = blend.blendRadius;
+            chamfer = blend.chamfer;
+            break;
+          }
+        }
+        if (overallBlendRadius == null) {
+          overallBlendRadius = blendRadius;
+          overallChamfer = chamfer;
+        } else if (overallBlendRadius != blendRadius || overallChamfer != chamfer) {
+          // if this pair of surface ids has different blend parameters to what we think
+          // we're going to use, then we can't satisfy our blends
+          return false;
+        }
+      }
     }
 
     // this node looks happy
@@ -172,6 +197,7 @@ const TreeRewriter = {
     const check = (node, blends) => {
       if (!TreeRewriter.satisfiesBlends(node, blends)) {
         console.log("Blends not satisfied for node: ", node);
+        console.log("Blends: ", blends);
       }
       if (node.type == 'combinator') {
         check(node.left, TreeRewriter.removeHandledBlends(node.right, blends));
