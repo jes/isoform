@@ -180,7 +180,7 @@ const TreeRewriter = {
         t.right = {
           type: 'combinator',
           left: left.right,
-          right: right,
+          right: TreeRewriter.cloneIntermediateTree(right),
           treeNode: t.treeNode,
         };
         t.treeNode = left.treeNode;
@@ -217,7 +217,7 @@ const TreeRewriter = {
         };
         t.right = {
           type: 'combinator',
-          left: left,
+          left: TreeRewriter.cloneIntermediateTree(left),
           right: right.right,
           treeNode: t.treeNode,
         };
@@ -272,6 +272,30 @@ const TreeRewriter = {
 
     TreeRewriter.applyBlends(t.left, blends);
     TreeRewriter.applyBlends(t.right, blends);
+  },
+
+  cloneIntermediateTree(t) {
+    if (t.type == 'combinator') {
+      return {
+        type: 'combinator',
+        left: TreeRewriter.cloneIntermediateTree(t.left),
+        right: TreeRewriter.cloneIntermediateTree(t.right),
+        treeNode: t.treeNode,
+      };
+    } else if (t.type == 'modifier') {
+      return {
+        type: 'modifier',
+        child: TreeRewriter.cloneIntermediateTree(t.child),
+        treeNode: t.treeNode,
+      };
+    } else if (t.type == 'primitive') {
+      return {
+        type: 'primitive',
+        treeNode: t.treeNode,
+      };
+    } else {
+      throw new Error('Unknown node type: ' + t.type);
+    }
   },
 };
 
