@@ -235,9 +235,6 @@ const TreeRewriter = {
         t.treeNode = left.treeNode;
       }
 
-      t.left = TreeRewriter._rewriteTree(t.left, blends, TreeRewriter.handledBlends(t.right, blends, skipBlends));
-      t.right = TreeRewriter._rewriteTree(t.right, blends, TreeRewriter.handledBlends(t.left, blends, skipBlends));
-
       if (t.right.type == 'modifier' && t.right.child.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends, skipBlends)) {
         const modifier = t.right;
         const combinator = modifier.child;
@@ -274,6 +271,10 @@ const TreeRewriter = {
         };
         t.treeNode = right.treeNode;
       }
+
+      // recurse into children
+      t.left = TreeRewriter._rewriteTree(t.left, blends, TreeRewriter.handledBlends(t.right, blends, skipBlends));
+      t.right = TreeRewriter._rewriteTree(t.right, blends, TreeRewriter.handledBlends(t.left, blends, skipBlends));
     } else if (t.type == 'modifier') {
       t.child = TreeRewriter._rewriteTree(t.child, blends, skipBlends);
     } else if (t.type == 'primitive') {
