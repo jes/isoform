@@ -151,6 +151,7 @@ const TreeRewriter = {
     }
 
     // now set the blend parameters to actually satisfy the blends
+    t.treeNode = t.treeNode.cloneWithSameIds();
     t.treeNode.blendRadius = overallBlendRadius;
     t.treeNode.chamfer = overallChamfer;
 
