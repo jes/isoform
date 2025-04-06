@@ -536,7 +536,6 @@ const RewriterTests = {
         const newTree = TreeRewriter.rewrite(tree);
         this.checkParents(newTree);
         let checked = new Set();
-        console.log(this.stringTree(newTree));
         const dfs = (node) => {
             if (node.isCombinator) {
                 const left = node.children[0];
