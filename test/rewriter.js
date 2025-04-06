@@ -12,6 +12,7 @@ const RewriterTests = {
             this.testFromTreeNode,
             this.testToTreeNode,
             this.testRewriteNoBlends,
+            this.testRewriteNoBlends2,
             this.testRewriteNoopBlend,
             this.testRewriteSimpleBlend,
             this.testRewriteSimpleBlendWithModifiers,
@@ -312,6 +313,45 @@ const RewriterTests = {
         this.assertEquals(newTreeString, origTreeString);
         this.assertEquals(origTreeString, "Union(Twist(Transform(Intersection(Intersection(DomainDeform(Sphere1),Negate(Sphere3)),Negate(Box4)))),Intersection(Intersection(Sphere8,Box9),Gyroid10))");
         this.assertEquals(this.stringIntermediateTree(intermediateTree), "combinator(Union,modifier(TwistTransform,combinator(Intersection,combinator(Intersection,modifier(DomainDeform,primitive(Sphere1)),modifier(Negate,primitive(Sphere3))),modifier(Negate,primitive(Box4)))),combinator(Intersection,combinator(Intersection,primitive(Sphere8),primitive(Box9)),primitive(Gyroid10)))");
+    },
+
+    // basic case 2: we ask for a blend with an id that is not present in the tree,
+    // so we don't apply any blends
+    testRewriteNoBlends2: async function() {
+        TreeNode.nextId = 1;
+        const sphere = new SphereNode();
+        this.assertEquals(sphere.uniqueId, 1);
+        const tree = new UnionNode([
+            new TwistNode(new TransformNode(new SubtractionNode([
+                new DomainDeformNode(new SphereNode()),
+                sphere,
+                new BoxNode(),
+            ]))),
+            new IntersectionNode([
+                new SphereNode(),
+                new BoxNode(),
+                new GyroidNode(),
+            ]),
+        ]);
+        tree.blends = [
+            {
+                nodes: [sphere, new BoxNode()],
+                blendRadius: 0.5,
+                chamfer: 1.0,
+            },
+        ];
+        this.checkParents(tree);
+        const treeNormalised = tree.cloneWithSameIds().normalised();
+        const origTreeString = this.stringTree(treeNormalised);
+        console.log("origTreeString", origTreeString);
+        const intermediateTree = TreeRewriter.rewriteTree(TreeRewriter.fromTreeNode(treeNormalised));
+        console.log("intermediateTree", this.stringIntermediateTree(intermediateTree));
+        const newTree = TreeRewriter.toTreeNode(intermediateTree);
+        this.checkParents(newTree);
+        const newTreeString = this.stringTree(newTree);
+        this.assertEquals(newTreeString, origTreeString);
+        this.assertEquals(origTreeString, "Union(Twist(Transform(Intersection(Intersection(DomainDeform(Sphere2),Negate(Sphere1)),Negate(Box4)))),Intersection(Intersection(Sphere8,Box9),Gyroid10))");
+        this.assertEquals(this.stringIntermediateTree(intermediateTree), "combinator(Union,modifier(TwistTransform,combinator(Intersection,combinator(Intersection,modifier(DomainDeform,primitive(Sphere2)),modifier(Negate,primitive(Sphere1))),modifier(Negate,primitive(Box4)))),combinator(Intersection,combinator(Intersection,primitive(Sphere8),primitive(Box9)),primitive(Gyroid10)))");
     },
 
     // easy case: we *do* ask for a blend, but it doesn't require any rewriting
