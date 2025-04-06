@@ -92,7 +92,7 @@ const TreeRewriter = {
     return set;
   },
 
-  satisfiesBlends(t, blends, skipBlends = new Set()) {
+  satisfiesBlends(t, blends) {
     if (t.type !== 'combinator') return true;
 
     // get the set of possible surface ids that can come into the node
@@ -101,9 +101,6 @@ const TreeRewriter = {
 
     // check that we have both arguments for any blend that affects either child
     for (const blend of blends) {
-      // we can skip blends that are handled by other subtrees
-      if (skipBlends.has(blend)) continue;
-
       const id0 = blend.nodes[0].uniqueId;
       const id1 = blend.nodes[1].uniqueId;
 
@@ -132,13 +129,17 @@ const TreeRewriter = {
     return true;
   },
 
-  handledBlends(t, blends, handled = new Set()) {
-    if (t.type !== 'combinator') return handled;
+  removeHandledBlends(t, blends) {
+    if (t.type !== 'combinator') return blends;
 
     const idsLeft = TreeRewriter.possibleSurfaceIds(t.left);
     const idsRight = TreeRewriter.possibleSurfaceIds(t.right);
 
+    let r = blends;
+
     if (idsLeft.size == 1 && idsRight.size == 1) {
+      r = new Set(blends);
+
       const idLeft = Array.from(idsLeft)[0];
       const idRight = Array.from(idsRight)[0];
 
@@ -146,15 +147,15 @@ const TreeRewriter = {
         const id0 = blend.nodes[0].uniqueId;
         const id1 = blend.nodes[1].uniqueId;
         if (idLeft == id0 && idRight == id1 || idLeft == id1 && idRight == id0) {
-          handled.add(blend);
+          r.delete(blend);
         }
       }
     }
 
-    TreeRewriter.handledBlends(t.left, blends, handled);
-    TreeRewriter.handledBlends(t.right, blends, handled);
+    r = TreeRewriter.removeHandledBlends(t.left, r);
+    r = TreeRewriter.removeHandledBlends(t.right, r);
 
-    return handled;
+    return r;
   },
 
   // rewrite the intermediate tree using the distributivity rule to fix blend parameters
@@ -168,22 +169,22 @@ const TreeRewriter = {
       r = TreeRewriter._rewriteTree(t, blends);
     }
 
-    const check = (node, handled = new Set()) => {
-      if (!TreeRewriter.satisfiesBlends(node, blends, handled)) {
+    const check = (node, blends) => {
+      if (!TreeRewriter.satisfiesBlends(node, blends)) {
         console.log("Blends not satisfied for node: ", node);
       }
       if (node.type == 'combinator') {
-        check(node.left, TreeRewriter.handledBlends(node.right, blends, handled));
-        check(node.right, TreeRewriter.handledBlends(node.left, blends, handled));
+        check(node.left, TreeRewriter.removeHandledBlends(node.right, blends));
+        check(node.right, TreeRewriter.removeHandledBlends(node.left, blends));
       } else if (node.type == 'modifier') {
-        check(node.child, handled);
+        check(node.child, blends);
       } else if (node.type == 'primitive') {
         // nothing
       } else {
         throw new Error('Unknown node type: ' + node.type);
       }
     }
-    check(r);
+    check(r, blends);
 
     // now apply the blends to the rewritten tree
     TreeRewriter.applyBlends(r, blends);
@@ -191,12 +192,12 @@ const TreeRewriter = {
     return r;
   },
 
-  _rewriteTree(t, blends, skipBlends = new Set()) {
+  _rewriteTree(t, blends) {
     if (t.type == 'combinator') {
       // if the left child is a modifier of a combinator, and we can't satisfy our blends,
       // we need to rewrite according to:
       //   Modifier(Combinator(a,b)) => Combinator(Modifier(a),Modifier(b))
-      if (t.left.type == 'modifier' && t.left.child.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends, skipBlends)) {
+      if (t.left.type == 'modifier' && t.left.child.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends)) {
         const modifier = t.left;
         const combinator = modifier.child;
         t.left = {
@@ -217,7 +218,7 @@ const TreeRewriter = {
 
       // if we can't satisfy our blends, we need to rewrite according to:
       //   Combinator1(Combinator2(a,b), c) => Combinator2(Combinator1(a,c),Combinator1(b,c))
-      if (t.left.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends, skipBlends)) {
+      if (t.left.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends)) {
         const left = t.left;
         const right = t.right;
         t.left = {
@@ -235,7 +236,7 @@ const TreeRewriter = {
         t.treeNode = left.treeNode;
       }
 
-      if (t.right.type == 'modifier' && t.right.child.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends, skipBlends)) {
+      if (t.right.type == 'modifier' && t.right.child.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends)) {
         const modifier = t.right;
         const combinator = modifier.child;
         t.right = {
@@ -254,7 +255,7 @@ const TreeRewriter = {
         };
       }
 
-      if (t.right.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends, skipBlends)) {
+      if (t.right.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends)) {
         const left = t.left;
         const right = t.right;
         t.left = {
@@ -273,10 +274,10 @@ const TreeRewriter = {
       }
 
       // recurse into children
-      t.left = TreeRewriter._rewriteTree(t.left, blends, TreeRewriter.handledBlends(t.right, blends, skipBlends));
-      t.right = TreeRewriter._rewriteTree(t.right, blends, TreeRewriter.handledBlends(t.left, blends, skipBlends));
+      t.left = TreeRewriter._rewriteTree(t.left, TreeRewriter.removeHandledBlends(t.right, blends));
+      t.right = TreeRewriter._rewriteTree(t.right, TreeRewriter.removeHandledBlends(t.left, blends));
     } else if (t.type == 'modifier') {
-      t.child = TreeRewriter._rewriteTree(t.child, blends, skipBlends);
+      t.child = TreeRewriter._rewriteTree(t.child, blends);
     } else if (t.type == 'primitive') {
       // nothing
     } else {
