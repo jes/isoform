@@ -167,16 +167,17 @@ const TreeRewriter = {
       // if we can't satisfy our blends, we need to rewrite
       if (t.left.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends)) {
         const left = t.left;
+        const right = t.right;
         t.left = {
           type: 'combinator',
           left: left.left,
-          right: t.right,
+          right: right,
           treeNode: t.treeNode,
         };
         t.right = {
           type: 'combinator',
           left: left.right,
-          right: t.right,
+          right: right,
           treeNode: t.treeNode,
         };
         t.treeNode = left.treeNode;
@@ -203,16 +204,17 @@ const TreeRewriter = {
       }
 
       if (t.right.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends)) {
+        const left = t.left;
         const right = t.right;
         t.left = {
           type: 'combinator',
-          left: t.left,
+          left: left,
           right: right.left,
           treeNode: t.treeNode,
         };
         t.right = {
           type: 'combinator',
-          left: t.left,
+          left: left,
           right: right.right,
           treeNode: t.treeNode,
         };
