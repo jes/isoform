@@ -565,8 +565,6 @@ const RewriterTests = {
         const checkedString = Array.from(checked).map(blend => `(${blend.nodes[0].displayName},${blend.nodes[1].displayName})`).join(',');
         this.assertEquals(checked.size, 6, "Combinators should all have been checked, only saw: " + checkedString);
     },
-
-    // TODO: very complex test that includes distinct blends between every pair of primitives
 };
 
 // Detect environment and export accordingly

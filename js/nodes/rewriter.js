@@ -197,7 +197,8 @@ const TreeRewriter = {
       // if the left child is a modifier of a combinator, and we can't satisfy our blends,
       // we need to rewrite according to:
       //   Modifier(Combinator(a,b)) => Combinator(Modifier(a),Modifier(b))
-      if (t.left.type == 'modifier' && t.left.child.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends)) {
+      let satisfies = TreeRewriter.satisfiesBlends(t, blends);
+      if (t.left.type == 'modifier' && t.left.child.type == 'combinator' && !satisfies) {
         const modifier = t.left;
         const combinator = modifier.child;
         t.left = {
@@ -218,7 +219,7 @@ const TreeRewriter = {
 
       // if we can't satisfy our blends, we need to rewrite according to:
       //   Combinator1(Combinator2(a,b), c) => Combinator2(Combinator1(a,c),Combinator1(b,c))
-      if (t.left.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends)) {
+      if (t.left.type == 'combinator' && !satisfies) {
         const left = t.left;
         const right = t.right;
         t.left = {
@@ -234,9 +235,10 @@ const TreeRewriter = {
           treeNode: t.treeNode,
         };
         t.treeNode = left.treeNode;
+        satisfies = TreeRewriter.satisfiesBlends(t, blends);
       }
 
-      if (t.right.type == 'modifier' && t.right.child.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends)) {
+      if (t.right.type == 'modifier' && t.right.child.type == 'combinator' && !satisfies) {
         const modifier = t.right;
         const combinator = modifier.child;
         t.right = {
@@ -255,7 +257,7 @@ const TreeRewriter = {
         };
       }
 
-      if (t.right.type == 'combinator' && !TreeRewriter.satisfiesBlends(t, blends)) {
+      if (t.right.type == 'combinator' && !satisfies) {
         const left = t.left;
         const right = t.right;
         t.left = {
