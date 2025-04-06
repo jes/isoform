@@ -104,6 +104,10 @@ const TreeRewriter = {
       const id0 = blend.nodes[0].uniqueId;
       const id1 = blend.nodes[1].uniqueId;
 
+      // we don't need to satisfy blends if one of the children doesn't exist in this subtree
+      if (!idsLeft.has(id0) && !idsRight.has(id0)) continue;
+      if (!idsLeft.has(id1) && !idsRight.has(id1)) continue;
+
       // we can handle this blend if one child has one id and the other has the other id
       if (idsLeft.has(id0) && idsLeft.size == 1 && idsRight.has(id1) && idsRight.size == 1) continue;
       if (idsLeft.has(id1) && idsLeft.size == 1 && idsRight.has(id0) && idsRight.size == 1) continue;
@@ -127,8 +131,8 @@ const TreeRewriter = {
 
   // rewrite the intermediate tree using the distributivity rule to fix blend parameters
   rewriteTree(t) {
-    // only take blends where both arguments are present in the tree
-    const blends = TreeRewriter.validBlends(t);
+    // take the blends from the root node
+    const blends = t.treeNode.blends;
 
     // rewrite the tree so that all blends can be satisfied
     let r = TreeRewriter._rewriteTree(t, blends);
@@ -234,14 +238,6 @@ const TreeRewriter = {
     }
 
     return t;
-  },
-
-  validBlends(t) {
-    const blends = t.treeNode.blends;
-    const ids = TreeRewriter.possibleSurfaceIds(t);
-    return blends.filter(blend => {
-      return ids.has(blend.nodes[0].uniqueId) && ids.has(blend.nodes[1].uniqueId);
-    });
   },
 
   applyBlends(t, blends) {
