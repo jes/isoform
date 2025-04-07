@@ -110,11 +110,6 @@ const TreeRewriter = {
     // check that every surface combination has the same blend parameters
     let overallBlendRadius = null;
     let overallChamfer = null;
-    if (TreeRewriter.logs) {
-      console.log("idsLeft: ", idsLeft);
-      console.log("idsRight: ", idsRight);
-      console.log("blends: ", blends);
-    }
     // for each pair of surface ids
     for (const idLeft of idsLeft) {
       // if both ids come out of this child, then the blend is applied deeper
@@ -131,9 +126,6 @@ const TreeRewriter = {
           const id1 = blend.nodes[1].uniqueId;
           if ((id0 == idLeft && id1 == idRight) ||
               (id0 == idRight && id1 == idLeft)) {
-            if (TreeRewriter.logs) {
-              console.log("Found blend parameters for ", idLeft, idRight, blend);
-            }
             blendRadius = blend.blendRadius;
             chamfer = blend.chamfer;
             break;
@@ -155,9 +147,6 @@ const TreeRewriter = {
       t.treeNode = t.treeNode.cloneWithSameIds();
       t.treeNode.blendRadius = overallBlendRadius;
       t.treeNode.chamfer = overallChamfer;
-      if (TreeRewriter.logs) {
-        console.log("t.treeNode: ", t.treeNode);
-      }
     }
 
     // this node looks happy
@@ -212,7 +201,6 @@ const TreeRewriter = {
 
   // rewrite the intermediate tree using the distributivity rule to fix blend parameters
   rewriteTree(t, logs = false) {
-    TreeRewriter.logs = logs;
     // take the blends from the root node
     const blends = TreeRewriter.validBlends(t);
 
