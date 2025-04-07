@@ -12,3 +12,5 @@ You can run it locally:
     $ xdg-open isoform/index.html
 
 Or try out a hosted version: https://incoherency.co.uk/isoform/
+
+![screenshot](img/screenshot.png)
