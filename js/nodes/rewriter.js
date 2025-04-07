@@ -150,7 +150,7 @@ const TreeRewriter = {
       }
     }
 
-    if (applyBlends) {
+    if (applyBlends && overallBlendRadius != null && overallBlendRadius != 0.0) {
       // now set the blend parameters to actually satisfy the blends
       t.treeNode = t.treeNode.cloneWithSameIds();
       t.treeNode.blendRadius = overallBlendRadius;
@@ -168,6 +168,8 @@ const TreeRewriter = {
     if (t.type == 'modifier') return TreeRewriter.removeHandledBlends(t.child, blends);
     if (t.type == 'primitive') return blends;
     if (t.type !== 'combinator') throw new Error('Unknown node type: ' + t.type);
+
+    if (blends.size == 0) return blends;
 
     blends = TreeRewriter.removeHandledBlends(t.left, blends);
     blends = TreeRewriter.removeHandledBlends(t.right, blends);
