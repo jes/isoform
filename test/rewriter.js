@@ -626,7 +626,7 @@ const RewriterTests = {
             },
         ]);
         this.checkParents(tree);
-        const newTree = TreeRewriter.rewrite(tree);
+        const newTree = TreeRewriter.rewrite(tree, true);
         this.checkParents(newTree);
         this.assertEquals(this.stringTree(newTree), "Union(Intersection(Intersection(Intersection(Union(Sphere2,Box1),Union(Sphere2,Negate(Cylinder4))),Intersection(Union(Gyroid3,Box1),Union(Gyroid3,Negate(Cylinder4)))),Union(Intersection(Sphere2,Gyroid3),Gyroid3)),Intersection(Union(Sphere2,Intersection(Box1,Negate(Cylinder4))),Intersection(Box1,Negate(Cylinder4))))");
         let checked = new Set();

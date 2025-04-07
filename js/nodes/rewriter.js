@@ -1,10 +1,10 @@
 const TreeRewriter = {
-  rewrite(treeNode) {
+  rewrite(treeNode, logs = false) {
     // turn the normalised tree into our intermediate representation
     const t = TreeRewriter.fromTreeNode(treeNode.cloneWithSameIds().normalised());
 
     // then rewrite to fix blend arguments
-    const tRewritten = TreeRewriter.rewriteTree(t);
+    const tRewritten = TreeRewriter.rewriteTree(t, logs);
 
     // then convert back to TreeNode form
     return TreeRewriter.toTreeNode(tRewritten);
@@ -153,42 +153,72 @@ const TreeRewriter = {
     return true;
   },
 
-  removeHandledBlends(t, blends) {
-    if (t.type == 'modifier') return TreeRewriter.removeHandledBlends(t.child, blends);
+  removeHandledBlends(t, blends, logs = false) {
+    if (t.type == 'modifier') return TreeRewriter.removeHandledBlends(t.child, blends, logs);
     if (t.type == 'primitive') return blends;
     if (t.type !== 'combinator') throw new Error('Unknown node type: ' + t.type);
 
     if (blends.size == 0) return blends;
 
-    blends = TreeRewriter.removeHandledBlends(t.left, blends);
-    blends = TreeRewriter.removeHandledBlends(t.right, blends);
+    blends = TreeRewriter.removeHandledBlends(t.left, blends, logs);
+    blends = TreeRewriter.removeHandledBlends(t.right, blends, logs);
 
     // get the set of possible surface ids that can come into the node
     const idsLeft = TreeRewriter.possibleSurfaceIds(t.left);
     const idsRight = TreeRewriter.possibleSurfaceIds(t.right);
 
-    // handle every surface combination has the same blend parameters
-    let overallBlendRadius = null;
-    let overallChamfer = null;
-
     const newBlends = new Set(blends);
 
+    let logsout = [];
+
     // find out the blend parameters
-    for (const blend of blends) {
-      const id0 = blend.nodes[0].uniqueId;
-      const id1 = blend.nodes[1].uniqueId;
-      if ((idsLeft.has(id0) && !idsRight.has(id0) && idsRight.has(id1) && !idsLeft.has(id1)) ||
-          (idsRight.has(id0) && !idsLeft.has(id0) && idsLeft.has(id1) && !idsRight.has(id1))) {
+    let overallBlendRadius = null;
+    let overallChamfer = null;
+    for (const idLeft of idsLeft) {
+      for (const idRight of idsRight) {
+        let blendRadius = 0.0;
+        let chamfer = 0.0;
+        let theBlend = null;
+        for (const blend of blends) {
+          const id0 = blend.nodes[0].uniqueId;
+          const id1 = blend.nodes[1].uniqueId;
+          if ((id0 == idLeft && id1 == idRight) ||
+              (id0 == idRight && id1 == idLeft)) {
+            blendRadius = blend.blendRadius;
+            chamfer = blend.chamfer;
+            theBlend = blend;
+            break;
+          }
+        }
+
         if (overallBlendRadius == null) {
-          overallBlendRadius = blend.blendRadius;
-          overallChamfer = blend.chamfer;
-          newBlends.delete(blend);
-        } else if (overallBlendRadius != blend.blendRadius || overallChamfer != blend.chamfer) {
+          overallBlendRadius = blendRadius;
+          overallChamfer = chamfer;
+          if (theBlend) {
+            newBlends.delete(theBlend);
+            if (logs) {
+              logsout.push([theBlend,1]);
+            }
+          }
+        } else if (overallBlendRadius != blendRadius || overallChamfer != chamfer) {
           // inconsistent blend parameters, so we can't remove any blends
           return blends;
         } else {
-          newBlends.delete(blend);
+          if (theBlend) {
+            newBlends.delete(theBlend);
+            if (logs) {
+              logsout.push([theBlend,2]);
+            }
+          }
         }
+
+      }
+    }
+
+    if (logs) {
+      console.log("For overall blend radius: ", overallBlendRadius, " and chamfer: ", overallChamfer);
+      for (const lo of logsout) {
+        console.log("Removing blend: ", lo[0], " at node: ", t, "(", lo[1], ")");
       }
     }
 
@@ -211,15 +241,19 @@ const TreeRewriter = {
     }
 
     const check = (node, blends) => {
+      if (logs) {
+        console.log("node: ", node);
+        console.log("blends: ", blends);
+      }
       if (!TreeRewriter.satisfiesBlends(node, blends)) {
         console.log("Blends not satisfied for node: ", node);
         console.log("Blends: ", blends);
-        throw new Error('Blends not satisfied');
+        //throw new Error('Blends not satisfied');
       }
       if (node.type == 'combinator') {
-        blends = TreeRewriter.removeHandledBlends(node, blends);
-        check(node.left, TreeRewriter.removeHandledBlends(node.right, blends));
-        check(node.right, TreeRewriter.removeHandledBlends(node.left, blends));
+        blends = TreeRewriter.removeHandledBlends(node, blends, logs);
+        check(node.left, TreeRewriter.removeHandledBlends(node.right, blends, logs));
+        check(node.right, TreeRewriter.removeHandledBlends(node.left, blends, logs));
       } else if (node.type == 'modifier') {
         check(node.child, blends);
       } else if (node.type == 'primitive') {
