@@ -489,6 +489,13 @@ const ui = {
                 this.replaceNode(node, newNode, true);
             }, combinator.icon);
         });
+
+        this.addMenuSeparator(contextMenu);
+        
+        // Add the "Add Blend" option
+        this.addMenuItem(contextMenu, 'Add Blend', () => {
+            this.startBlendMode(node);
+        }, '🔄'); // Using a circular arrows emoji as an icon
     },
 
     buildModifierOptions(contextMenu, node) {
@@ -1176,6 +1183,123 @@ const ui = {
         }
         
         return false;
+    },
+
+    // Add these new properties and methods for blend mode
+    blendMode: {
+        active: false,
+        firstNode: null
+    },
+
+    startBlendMode(firstNode) {
+        // Set up blend mode
+        this.blendMode.active = true;
+        this.blendMode.firstNode = firstNode;
+        
+        // Show a message to the user
+        this.showBlendModeMessage(true);
+        
+        // Add a temporary click handler that will be removed once blend is complete
+        this.blendClickHandler = (e, node, level) => {
+            if (node) {
+                // If a valid node was clicked, create the blend
+                this.addBlend(this.blendMode.firstNode, node);
+            }
+            
+            // Exit blend mode regardless of whether a node was clicked
+            this.exitBlendMode();
+        };
+        
+        // Store the original click handler
+        this.originalClickHandler = renderer.surfaceClickHandlers.pop();
+        
+        // Add our temporary handler
+        renderer.addSurfaceClickHandler(this.blendClickHandler);
+        
+        // Add escape key handler to exit blend mode
+        this.blendEscapeHandler = (e) => {
+            if (e.key === 'Escape' && this.blendMode.active) {
+                this.exitBlendMode();
+            }
+        };
+        
+        document.addEventListener('keydown', this.blendEscapeHandler);
+    },
+
+    exitBlendMode() {
+        // Clean up blend mode
+        this.blendMode.active = false;
+        this.blendMode.firstNode = null;
+        
+        // Remove the message
+        this.showBlendModeMessage(false);
+        
+        // Remove our temporary click handler
+        renderer.surfaceClickHandlers.pop();
+        
+        // Restore the original click handler
+        if (this.originalClickHandler) {
+            renderer.addSurfaceClickHandler(this.originalClickHandler);
+            this.originalClickHandler = null;
+        }
+        
+        // Remove escape key handler
+        if (this.blendEscapeHandler) {
+            document.removeEventListener('keydown', this.blendEscapeHandler);
+            this.blendEscapeHandler = null;
+        }
+    },
+
+    showBlendModeMessage(show) {
+        // Remove any existing message
+        const existingMessage = document.getElementById('blend-mode-message');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+        
+        if (show) {
+            // Create and show a message
+            const message = document.createElement('div');
+            message.id = 'blend-mode-message';
+            message.className = 'floating-message';
+            message.innerHTML = `
+                <div>Blend Mode: Click on another object to create a blend, or press Esc to cancel</div>
+                <div class="small-text">First object: ${this.blendMode.firstNode.displayName}</div>
+            `;
+            document.body.appendChild(message);
+            
+            // Style the message
+            message.style.position = 'absolute';
+            message.style.top = '10px';
+            message.style.left = '50%';
+            message.style.transform = 'translateX(-50%)';
+            message.style.padding = '10px 15px';
+            message.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            message.style.color = 'white';
+            message.style.borderRadius = '5px';
+            message.style.zIndex = '1000';
+            message.style.pointerEvents = 'none'; // Allow clicks to pass through
+            
+            // Style for the smaller text
+            const smallText = message.querySelector('.small-text');
+            if (smallText) {
+                smallText.style.fontSize = '0.8em';
+                smallText.style.opacity = '0.8';
+                smallText.style.marginTop = '5px';
+            }
+        }
+    },
+
+    // Empty implementation of addBlend for now
+    addBlend(node1, node2) {
+        // This will be implemented later
+        console.log(`Creating blend between ${node1.displayName} and ${node2.displayName}`);
+        if (!app.document.blends) app.document.blends = new Set();
+        app.document.blends.add({
+            nodes: [node1, node2],
+            blendRadius: 0.5,
+            chamfer: 1.0,
+        });
     },
 };
 

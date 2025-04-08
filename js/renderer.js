@@ -450,13 +450,9 @@ const renderer = {
         // Raymarch from this point
         this.rayMarchResult = this.rayMarchFromPoint(ro, rd);
 
-        console.log("unique id", this.rayMarchResult.uniqueId);
-
         const node = app.document.findNodeById(this.rayMarchResult.uniqueId);
-        console.log(app.document);
 
         if (node != this.nodeUnderCursor) {
-            console.log("preselecting", node);
             this.nodeUnderCursor = node;
             this.preselect();
             

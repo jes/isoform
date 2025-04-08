@@ -69,12 +69,6 @@ const app = {
         box.size.x = 5;
         doc.addChild(intersection);
 
-        doc.blends = new Set([{
-            nodes: [sphere, gyroid],
-            blendRadius: 0.5,
-            chamfer: 1.0,
-        }]);
-
         // set unique names for all nodes
         let dfs = (node) => {
             node.setUniqueName(doc);
