@@ -583,13 +583,12 @@ class TreeNode {
   }
 
   cloneJustThisOne() {
-    const serialized = this.serialize();
-    serialized.children = [];
+    const serialized = this.serialize(false);
     return TreeNode.fromSerialized(serialized);
   }
 
   // Serialize with support for circular references
-  serialize() {
+  serialize(includeChildren = true) {
     const startTime = performance.now();
     // Create a map to track visited nodes and their IDs
     const visited = new Map();
@@ -624,7 +623,7 @@ class TreeNode {
         isDisabled: node.isDisabled,
         blendRadius: node.blendRadius,
         chamfer: node.chamfer,
-        children: node.children.map(child => {
+        children: includeChildren ? node.children.map(child => {
           // For each child, either serialize it or reference it
           if (nodeMap.get(child).path.length > nodeMap.get(node).path.length) {
             // This is a forward reference, serialize normally
@@ -633,7 +632,7 @@ class TreeNode {
             // This is a circular reference, just store the ID
             return { circularRef: child.uniqueId };
           }
-        })
+        }) : []
       };
       
       // Add all properties defined in the properties() method

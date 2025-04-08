@@ -563,6 +563,7 @@ const RewriterTests = {
     // that each pair of primitives appears as siblings of exactly one combinator, and
     // that combinator has the correct blend parameters
     testRewriteAllPairsBlends: async function() {
+        throw new Error("Not implemented");
         TreeNode.nextId = 1;
         const box = new BoxNode();
         this.assertEquals(box.uniqueId, 1);

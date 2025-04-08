@@ -4,7 +4,7 @@ const TreeRewriter = {
     const t = TreeRewriter.fromTreeNode(treeNode.cloneWithSameIds().normalised());
 
     // then rewrite to fix blend arguments
-    const tRewritten = TreeRewriter.newRewriteTree(t, logs);
+    const tRewritten = TreeRewriter.rewriteTree(t, logs);
 
     // then convert back to TreeNode form
     return TreeRewriter.toTreeNode(tRewritten);
@@ -43,6 +43,8 @@ const TreeRewriter = {
   // this may edit the TreeNodes in place, we're assuming a clone was created for
   // TreeRewriter in the first place, e.g. by rewrite()
   toTreeNode(t) {
+    t.treeNode = t.treeNode.cloneJustThisOne();
+
     if (t.type == 'combinator') {
       const left = TreeRewriter.toTreeNode(t.left);
       const right = TreeRewriter.toTreeNode(t.right);
@@ -362,17 +364,13 @@ const TreeRewriter = {
         left: TreeRewriter.cloneIntermediateTree(t.left),
         right: TreeRewriter.cloneIntermediateTree(t.right),
         treeNode: t.treeNode,
-      };
-    } else if (t.type == 'modifier') {
-      return {
-        type: 'modifier',
-        child: TreeRewriter.cloneIntermediateTree(t.child),
-        treeNode: t.treeNode,
+        modifiers: t.modifiers,
       };
     } else if (t.type == 'primitive') {
       return {
         type: 'primitive',
         treeNode: t.treeNode,
+        modifiers: t.modifiers,
       };
     } else {
       throw new Error('Unknown node type: ' + t.type);
@@ -397,17 +395,16 @@ const TreeRewriter = {
   },
 
   rewriteTree(t, logs = false) {
-    return t;
     const blends = TreeRewriter.validBlends(t);
 
-    let changed = true;
-    for (let i = 0; i < 10 && changed; i++) {
-      changed = false;
+    for (let i = 0; i < 1; i++) {
+      let allSatisfied = true;
       for (const blend of blends) {
         if (TreeRewriter.Satisfy(t, blend)) continue;
-        changed = true;
+        allSatisfied = false;
         TreeRewriter.Rewrite(t, blend);
       }
+      if (allSatisfied) break;
     }
 
     return t;
@@ -418,30 +415,86 @@ const TreeRewriter = {
     const id1 = blend.nodes[1].uniqueId;
     if (TreeRewriter.IdIsUnder(t.left, id0) && TreeRewriter.IdIsUnder(t.left, id1)) {
       // both ids are in the left child
-      t.left = TreeRewriter.Rewrite(t.left, blend);
-      return true;
+      if (TreeRewriter.Rewrite(t.left, blend)) return true;
     }
     if (TreeRewriter.IdIsUnder(t.right, id0) && TreeRewriter.IdIsUnder(t.right, id1)) {
       // both ids are in the right child
-      t.right = TreeRewriter.Rewrite(t.right, blend);
-      return true;
+      if (TreeRewriter.Rewrite(t.right, blend)) return true;
     }
     if (t.left.type == 'combinator') {
       // distribute left
+      const left = t.left;
+      const right = t.right;
+      t.left = {
+        type: 'combinator',
+        left: left.left,
+        right: right,
+        treeNode: t.treeNode,
+        modifiers: t.modifiers,
+      };
+      t.right = {
+        type: 'combinator',
+        left: left.right,
+        right: TreeRewriter.cloneIntermediateTree(right),
+        treeNode: t.treeNode,
+        modifiers: t.modifiers,
+      };
+      t.modifiers = [];
+      t.treeNode = left.treeNode;
 
       if (TreeRewriter.Satisfy(t, blend)) return true;
     }
     if (t.right.type == 'combinator') {
       // distribute right
+      const left = t.left;
+      const right = t.right;
+      t.left = {
+        type: 'combinator',
+        left: left,
+        right: right.left,
+        treeNode: t.treeNode,
+        modifiers: t.modifiers,
+      };
+      t.right = {
+        type: 'combinator',
+        left: TreeRewriter.cloneIntermediateTree(left),
+        right: right.right,
+        treeNode: t.treeNode,
+        modifiers: t.modifiers,
+      };
+      t.modifiers = [];
+      t.treeNode = left.treeNode;
     }
     return TreeRewriter.Satisfy(t, blend);
   },
 
+  Satisfy(t, blend) {
+    if (t.type == 'primitive') return false;
+    const id0 = blend.nodes[0].uniqueId;
+    const id1 = blend.nodes[1].uniqueId;
+    if (!TreeRewriter.IdIsUnder(t.left, id0) && !TreeRewriter.IdIsUnder(t.right, id0)) return false;
+    if (!TreeRewriter.IdIsUnder(t.left, id1) && !TreeRewriter.IdIsUnder(t.right, id1)) return false;
+    if (TreeRewriter.Satisfy(t.left, blend) || TreeRewriter.Satisfy(t.right, blend)) return true;
+    if (t.left.type == 'primitive' && t.right.type == 'primitive') {
+      const idLeft = t.left.treeNode.uniqueId;
+      const idRight = t.right.treeNode.uniqueId;
+      if ((idLeft == id0 && idRight == id1) || (idLeft == id1 && idRight == id0)) {
+        t.treeNode = t.treeNode.cloneJustThisOne();
+        t.treeNode.blendRadius = blend.blendRadius;
+        t.treeNode.chamfer = blend.chamfer;
+        return true;
+      }
+    }
+    // TODO: if all possible surface pairs want the same params globally, assign here and
+    // return true: and at that point do we even need to iterate over the blends? can we just
+    // do a pass with all blends?
+    return false;
+  },
+
   IdIsUnder(t, id) {
+    if (t == undefined) throw new Error('IdIsUnder: t is undefined');
     if (t.type == 'combinator') {
       return TreeRewriter.IdIsUnder(t.left, id) || TreeRewriter.IdIsUnder(t.right, id);
-    } else if (t.type == 'modifier') {
-      return TreeRewriter.IdIsUnder(t.child, id);
     } else if (t.type == 'primitive') {
       return t.treeNode.uniqueId == id;
     } else {
