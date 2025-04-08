@@ -1294,13 +1294,10 @@ const ui = {
     addBlend(node1, node2) {
         // This will be implemented later
         console.log(`Creating blend between ${node1.displayName} and ${node2.displayName}`);
-        if (!app.document.blends) app.document.blends = new Set();
-        app.document.blends.add({
-            nodes: [node1, node2],
-            blendRadius: 1.0,
-            chamfer: 0.0,
-        });
-        app.document.markDirty();
+        const parent = node1.parent;
+        const blend = new BlendNode([node1]);
+        blend.otherNode = node2;
+        parent.addChild(blend);
     },
 };
 

@@ -24,8 +24,6 @@ class TreeNode {
     this.isCombinator = false; // whether the node is a combinator
     this.blendRadius = 0.0;
     this.chamfer = 0.0;
-
-    this.blends = null; // Set of blends, only applicable on root node, will be propataged down
   }
 
   // override this to return true if the node is 2d
@@ -107,7 +105,6 @@ class TreeNode {
     if (node.children.length > 2) {
       throw new Error(`Normalised ${this.name} has more than 2 children`);
     }
-    node.blends = this.blends;
     return node;
   }
 
@@ -226,7 +223,12 @@ class TreeNode {
     );
     
     const color = P.vmix(colorA, colorB, t);
-    const uniqueId = P.cond(P.lte(distA, distB), uniqueIdA, uniqueIdB);
+    let uniqueId = P.cond(P.lte(distA, distB), uniqueIdA, uniqueIdB);
+
+    if (this.uniqueId != null && this.uniqueId > 0) {
+      const nearBoth = P.lte(P.max(diffA, diffB), this.uniform('blendRadius'));
+      uniqueId = P.cond(nearBoth, P.const(this.uniqueId), uniqueId);
+    }
 
     return P.struct({
       distance: distance,
@@ -262,7 +264,12 @@ class TreeNode {
     );
     
     const color = P.vmix(colorA, colorB, t);
-    const uniqueId = P.cond(P.gte(distA, distB), uniqueIdA, uniqueIdB);
+    let uniqueId = P.cond(P.gte(distA, distB), uniqueIdA, uniqueIdB);
+
+    if (this.uniqueId != null && this.uniqueId > 0) {
+      const nearBoth = P.lte(P.max(diffA, diffB), this.uniform('blendRadius'));
+      uniqueId = P.cond(nearBoth, P.const(this.uniqueId), uniqueId);
+    }
 
     return P.struct({
       distance: distance,

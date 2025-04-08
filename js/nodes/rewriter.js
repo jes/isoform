@@ -5,11 +5,13 @@ const TreeRewriter = {
     const tNormalised = treeNode.cloneWithSameIds().normalised();
     if (!tNormalised) return null;
 
+    const blends = TreeRewriter.collectBlends(treeNode);
+
     // turn the normalised tree into our intermediate representation
     const t = TreeRewriter.fromTreeNode(tNormalised);
 
     // then rewrite to fix blend arguments
-    const tRewritten = TreeRewriter.rewriteTree(t);
+    const tRewritten = TreeRewriter.rewriteTree(t, blends);
 
     // then convert back to TreeNode form
     return TreeRewriter.toTreeNode(tRewritten);
@@ -108,14 +110,28 @@ const TreeRewriter = {
     }
   },
 
-  // return the set of blends from t.treeNode.blends for which all arguments
+  collectBlends(t, blends = new Set()) {
+    if (t instanceof BlendNode) {
+      console.log("collectBlends", t, t.otherNode);
+      blends.add({
+        nodes: [t.children[0], t.otherNode],
+        blendRadius: t.blendRadius,
+        chamfer: t.chamfer,
+        blendId: t.uniqueId,
+      });
+    }
+    for (const child of t.children) {
+      TreeRewriter.collectBlends(child, blends);
+    }
+    return blends;
+  },
+
+  // return the set of blends from blends for which all arguments
   // are present in the tree
   validBlends(t, blends = new Set()) {
     const ids = TreeRewriter.possibleSurfaceIds(t);
 
-    if (!t.treeNode.blends) return blends;
-
-    for (const blend of t.treeNode.blends) {
+    for (const blend of blends) {
       const id0 = blend.nodes[0].uniqueId;
       const id1 = blend.nodes[1].uniqueId;
       if (ids.has(id0) && ids.has(id1)) {
@@ -125,8 +141,10 @@ const TreeRewriter = {
     return blends;
   },
 
-  rewriteTree(t) {
-    const blends = TreeRewriter.validBlends(t);
+  rewriteTree(t, blends) {
+    console.log("blends all:", blends);
+    blends = TreeRewriter.validBlends(t, blends);
+    console.log("blends valid:", blends);
 
     for (let i = 0; i < 10; i++) {
       let allSatisfied = true;
@@ -247,6 +265,7 @@ const TreeRewriter = {
         t.treeNode = t.treeNode.cloneJustThisOne();
         t.treeNode.blendRadius = blend.blendRadius;
         t.treeNode.chamfer = blend.chamfer;
+        t.treeNode.uniqueId = blend.blendId;
         return true;
       }
     }

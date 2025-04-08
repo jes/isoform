@@ -450,7 +450,7 @@ const renderer = {
         // Raymarch from this point
         this.rayMarchResult = this.rayMarchFromPoint(ro, rd);
 
-        const node = app.document.findNodeById(this.rayMarchResult.uniqueId);
+        let node = app.document.findNodeById(this.rayMarchResult.uniqueId);
 
         if (node != this.nodeUnderCursor) {
             this.nodeUnderCursor = node;

@@ -325,10 +325,12 @@ class InfillNode extends TreeNode {
     const shellStruct = P.struct({
       distance: dShell,
       color: P.field(child1, 'color'),
+      uniqueId: P.field(child1, 'uniqueId'),
     });
     const innerStruct = P.struct({
       distance: P.add(P.field(child1, 'distance'), this.uniform('thickness')),
       color: P.field(child1, 'color'),
+      uniqueId: P.field(child1, 'uniqueId'),
     });
     return this.structmin(shellStruct, this.structmax(innerStruct, child2));
   }
@@ -1054,12 +1056,48 @@ class NegateNode extends TreeNode {
   }
 }
 
+// a BlendNode doesn't actually apply a blend itself, it is just a convenient
+// object to store in the document tree; the BlendNodes are collected up in
+// the TreeRewriter to apply the blends
+class BlendNode extends TreeNode {
+  constructor(children = []) {
+    super("Blend");
+    this.maxChildren = 1;
+    this.otherNode = null;
+    this.blendRadius = 0.5;
+    this.chamfer = 1.0;
+    this.addChild(children);
+  }
+
+  properties() {
+    return {
+      "blendRadius": "float",
+      "chamfer": "float",
+    };
+  }
+
+  aabb() {
+    if (this.children.length === 0) {
+      return AABB.empty();
+    }
+    return this.children[0].aabb();
+  }
+
+  makePeptide(p) {
+    if (this.children.length === 0) {
+      this.warn("Blend node has no child to transform");
+      return this.noop();
+    }
+    return this.children[0].peptide(p);
+  }
+}
+
 // Detect environment and export accordingly
 (function() {
   const nodes = { TransformNode, DomainDeformNode, DistanceDeformNode, ShellNode,
     InfillNode, OffsetNode, ScaleNode, TwistNode, MirrorNode, LinearPatternNode,
     PolarPatternNode, ExtrudeNode, RevolveNode, DistanceDeformInsideNode, HelixExtrudeNode,
-    NegateNode };
+    NegateNode, BlendNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {
