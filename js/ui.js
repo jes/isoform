@@ -1310,6 +1310,7 @@ const ui = {
         const blend = new BlendNode([node1]);
         blend.otherNode = node2;
         parent.addChild(blend);
+        ui.selectNode(blend);
     },
 };
 
