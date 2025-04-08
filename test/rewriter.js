@@ -556,7 +556,7 @@ const RewriterTests = {
         const newTreeString = this.stringTree(newTree);
         this.assertEquals(origTreeString, "Transform(Twist(Union(DomainDeform(Shell(Intersection(Sphere1,Transform(Gyroid3)))),Scale(Box2))))");
         this.assertEquals(newTreeString, "Transform(Twist(Intersection(Union(DomainDeform(Shell(Sphere1)),Scale(Box2)),Union(DomainDeform(Shell(Transform(Gyroid3))),Scale(Box2)))))");
-        this.assertEquals(this.stringIntermediateTree(intermediateTree), "modifier(TransformTwist,combinator(Intersection,combinator(Union,modifier(DomainDeformShellTransform,primitive(Sphere1)),modifier(Scale,primitive(Box2))),combinator(Union,modifier(DomainDeformShellTransform,modifier(Transform,primitive(Gyroid3))),modifier(Scale,primitive(Box2)))))");
+        this.assertEquals(this.stringIntermediateTree(intermediateTree), "modifier(TransformTwist,combinator(Intersection,combinator(Union,modifier(DomainDeformShell,primitive(Sphere1)),modifier(Scale,primitive(Box2))),combinator(Union,modifier(DomainDeformShellTransform,primitive(Gyroid3)),modifier(Scale,primitive(Box2)))))");
     },
 
     // this test applies blends between every pair of primitives in the tree and checks
