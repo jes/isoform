@@ -52,24 +52,19 @@ const TreeRewriter = {
         left,
         right,
       ];
-    } else if(t.type == 'modifier') {
-      // update the child of a stack of modifiers
-      const child = TreeRewriter.toTreeNode(t.child);
-      // find the bottom modifier of the chain
-      let node = t.treeNode;
-      while (node.children.length > 0 && node.children[0].children.length > 0 && !node.children[0].isCombinator) {
-        node = node.children[0];
-      }
-      node.children = [
-        child,
-      ];
-      child.parent = node;
     } else if(t.type == 'primitive') {
       // nothing
     } else {
       throw new Error('Unknown node type: ' + t.type);
     }
-    return t.treeNode.cloneWithSameIds();
+    // now add the modifier stack on top
+    let node = t.treeNode;
+    for (const modifier of [...t.modifiers].reverse()) {
+      const m = modifier.cloneJustThisOne();
+      m.addChild(node);
+      node = m;
+    }
+    return node;
   },
 
   possibleSurfaceIds(t, set = new Set()) {
