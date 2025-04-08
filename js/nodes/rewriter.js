@@ -1,7 +1,12 @@
 const TreeRewriter = {
   rewrite(treeNode, logs = false) {
+    if (!treeNode) return null;
+
+    const tNormalised = treeNode.cloneWithSameIds().normalised();
+    if (!tNormalised) return null;
+
     // turn the normalised tree into our intermediate representation
-    const t = TreeRewriter.fromTreeNode(treeNode.cloneWithSameIds().normalised());
+    const t = TreeRewriter.fromTreeNode(tNormalised);
 
     // then rewrite to fix blend arguments
     const tRewritten = TreeRewriter.rewriteTree(t, logs);

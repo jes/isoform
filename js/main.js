@@ -179,8 +179,8 @@ const app = {
             console.log("processedDocument", this.processedDocument);
 
             let startTime = performance.now();
-            const expr = P.field(this.processedDocument.peptide(P.vvar('p')), 'distance');
-            if (expr) {
+            if (this.processedDocument) {
+                const expr = P.field(this.processedDocument.peptide(P.vvar('p')), 'distance');
                 console.log(`Peptide expression took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
                 let ssa;

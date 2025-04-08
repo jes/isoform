@@ -103,6 +103,7 @@ class TreeNode {
 
   normalised() {
     const node = this.makeNormalised();
+    if (!node) return null;
     if (node.children.length > 2) {
       throw new Error(`Normalised ${this.name} has more than 2 children`);
     }
@@ -227,7 +228,6 @@ class TreeNode {
     const color = P.vmix(colorA, colorB, t);
     const uniqueId = P.cond(P.lte(distA, distB), uniqueIdA, uniqueIdB);
 
-
     return P.struct({
       distance: distance,
       color: color,
@@ -262,10 +262,7 @@ class TreeNode {
     );
     
     const color = P.vmix(colorA, colorB, t);
-    let uniqueId = P.cond(P.gte(distA, distB), uniqueIdA, uniqueIdB);
-
-    const bothNear = P.lte(P.max(diffA, diffB), this.uniform('blendRadius'));
-    uniqueId = P.cond(bothNear, P.const(this.uniqueId), uniqueId);
+    const uniqueId = P.cond(P.gte(distA, distB), uniqueIdA, uniqueIdB);
 
     return P.struct({
       distance: distance,
