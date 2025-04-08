@@ -4,14 +4,14 @@ const TreeRewriter = {
     const t = TreeRewriter.fromTreeNode(treeNode.cloneWithSameIds().normalised());
 
     // then rewrite to fix blend arguments
-    const tRewritten = TreeRewriter.rewriteTree(t, logs);
+    const tRewritten = TreeRewriter.newRewriteTree(t, logs);
 
     // then convert back to TreeNode form
     return TreeRewriter.toTreeNode(tRewritten);
   },
 
   // take a TreeNode and return the intermediate tree
-  fromTreeNode(treeNode) {
+  fromTreeNode(treeNode, modifiers = []) {
     // combinators
     if (treeNode.isCombinator) {
       if (treeNode.children.length != 2) {
@@ -19,9 +19,10 @@ const TreeRewriter = {
       }
       return {
         type: 'combinator',
-        left: TreeRewriter.fromTreeNode(treeNode.children[0]),
-        right: TreeRewriter.fromTreeNode(treeNode.children[1]),
-        treeNode: treeNode,
+        left: TreeRewriter.fromTreeNode(treeNode.children[0], []),
+        right: TreeRewriter.fromTreeNode(treeNode.children[1], []),
+        treeNode: treeNode.cloneJustThisOne(),
+        modifiers: modifiers,
       };
     }
 
@@ -29,20 +30,13 @@ const TreeRewriter = {
     if (treeNode.children.length == 0) {
       return {
         type: 'primitive',
-        treeNode: treeNode,
+        treeNode: treeNode.cloneJustThisOne(),
+        modifiers: modifiers,
       };
     }
 
-    // modifiers - collapse a chain of modifiers into a single node
-    let child = treeNode.children[0];
-    while (child.children.length > 0 && !child.isCombinator) {
-      child = child.children[0];
-    }
-    return {
-      type: 'modifier',
-      child: TreeRewriter.fromTreeNode(child),
-      treeNode: treeNode,
-    };
+    // modifiers - add to modifier chain and recurse
+    return TreeRewriter.fromTreeNode(treeNode.children[0], [...modifiers, treeNode.cloneJustThisOne()]);
   },
 
   // take an intermediate tree and return a TreeNode;
@@ -230,7 +224,7 @@ const TreeRewriter = {
   },
 
   // rewrite the intermediate tree using the distributivity rule to fix blend parameters
-  rewriteTree(t, logs = false) {
+  oldRewriteTree(t, logs = false) {
     // take the blends from the root node
     const blends = TreeRewriter.validBlends(t);
 
@@ -405,6 +399,59 @@ const TreeRewriter = {
       }
     }
     return blends;
+  },
+
+  rewriteTree(t, logs = false) {
+    return t;
+    const blends = TreeRewriter.validBlends(t);
+
+    let changed = true;
+    for (let i = 0; i < 10 && changed; i++) {
+      changed = false;
+      for (const blend of blends) {
+        if (TreeRewriter.Satisfy(t, blend)) continue;
+        changed = true;
+        TreeRewriter.Rewrite(t, blend);
+      }
+    }
+
+    return t;
+  },
+
+  Rewrite(t, blend) {
+    const id0 = blend.nodes[0].uniqueId;
+    const id1 = blend.nodes[1].uniqueId;
+    if (TreeRewriter.IdIsUnder(t.left, id0) && TreeRewriter.IdIsUnder(t.left, id1)) {
+      // both ids are in the left child
+      t.left = TreeRewriter.Rewrite(t.left, blend);
+      return true;
+    }
+    if (TreeRewriter.IdIsUnder(t.right, id0) && TreeRewriter.IdIsUnder(t.right, id1)) {
+      // both ids are in the right child
+      t.right = TreeRewriter.Rewrite(t.right, blend);
+      return true;
+    }
+    if (t.left.type == 'combinator') {
+      // distribute left
+
+      if (TreeRewriter.Satisfy(t, blend)) return true;
+    }
+    if (t.right.type == 'combinator') {
+      // distribute right
+    }
+    return TreeRewriter.Satisfy(t, blend);
+  },
+
+  IdIsUnder(t, id) {
+    if (t.type == 'combinator') {
+      return TreeRewriter.IdIsUnder(t.left, id) || TreeRewriter.IdIsUnder(t.right, id);
+    } else if (t.type == 'modifier') {
+      return TreeRewriter.IdIsUnder(t.child, id);
+    } else if (t.type == 'primitive') {
+      return t.treeNode.uniqueId == id;
+    } else {
+      throw new Error('Unknown node type: ' + t.type);
+    }
   },
 };
 

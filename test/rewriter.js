@@ -96,7 +96,13 @@ const RewriterTests = {
     },
 
     stringIntermediateTree: function(tree) {
-        let txt = tree.type;
+        let txt = '';
+        if (tree.modifiers.length > 0) {
+            txt += "modifier(";
+            txt += tree.modifiers.map(modifier => modifier.name).join("");
+            txt += ",";
+        }
+        txt += tree.type;
         if (tree.type == 'combinator') {
             txt += "(";
             txt += tree.treeNode.name + ",";
@@ -104,21 +110,13 @@ const RewriterTests = {
             txt += ",";
             txt += this.stringIntermediateTree(tree.right);
             txt += ")";
-        } else if (tree.type == 'modifier') {
-            let node = tree.treeNode;
-            let modifierChain = '';
-            while (node.children.length == 1) {
-                modifierChain += node.name;
-                node = node.children[0];
-            }
-            txt += "(";
-            txt += modifierChain + ",";
-            txt += this.stringIntermediateTree(tree.child);
-            txt += ")";
         } else if (tree.type == 'primitive') {
             txt += '(' + tree.treeNode.displayName + ')';
         } else {
             throw new Error('Unknown node type: ' + tree.type);
+        }
+        if (tree.modifiers.length > 0) {
+            txt += ")";
         }
         return txt;
     },
@@ -219,11 +217,6 @@ const RewriterTests = {
             'Subtraction': 'combinator',
             'Intersection': 'combinator',
 
-            'DomainDeform': 'modifier',
-            'Negate': 'modifier',
-            'Transform': 'modifier',
-            'Twist': 'modifier',
-
             'Sphere': 'primitive',
             'Box': 'primitive',
             'Gyroid': 'primitive',
@@ -235,17 +228,7 @@ const RewriterTests = {
 
         const dfs = (node) => {
             count++;
-            if (node.type == 'modifier') {
-                this.assertEquals(typeMap[node.treeNode.name], 'modifier', "Modifier should have a modifier treeNode");
-                this.assertNotEquals(node.child.type, 'modifier', "Modifier chain should be collapsed into one node");
-                if (node.left || node.right) {
-                    throw new Error("Modifier should not have boolean children");
-                }
-                if (!node.child) {
-                    throw new Error("Modifier should have a child");
-                }
-                dfs(node.child);
-            } else if (node.type == 'combinator') {
+            if (node.type == 'combinator') {
                 this.assertEquals(typeMap[node.treeNode.name], 'combinator', "Combinator should have a combinator treeNode");
                 if (!node.left || !node.right) {
                     throw new Error("Combinator should have two children");
@@ -267,7 +250,7 @@ const RewriterTests = {
         }
         dfs(t);
 
-        this.assertEquals(count, 15);
+        this.assertEquals(count, 11);
 
         this.assertEquals(this.stringIntermediateTree(t), "combinator(Union,modifier(TwistTransform,combinator(Intersection,combinator(Intersection,modifier(DomainDeform,primitive(Sphere1)),modifier(Negate,primitive(Sphere3))),modifier(Negate,primitive(Box4)))),combinator(Intersection,combinator(Intersection,primitive(Sphere8),primitive(Box9)),primitive(Gyroid10)))");
     },

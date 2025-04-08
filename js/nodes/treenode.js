@@ -582,6 +582,12 @@ class TreeNode {
     return TreeNode.fromSerialized(this.serialize());
   }
 
+  cloneJustThisOne() {
+    const serialized = this.serialize();
+    serialized.children = [];
+    return TreeNode.fromSerialized(serialized);
+  }
+
   // Serialize with support for circular references
   serialize() {
     const startTime = performance.now();
