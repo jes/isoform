@@ -69,11 +69,6 @@ class PropertyEditor {
             }
         }
         
-        // Add blends section if this is the document root and it has blends
-        if (node === app.document && app.document.blends && app.document.blends.size > 0) {
-            this.addBlendSection(node);
-        }
-        
         // Focus the first input element if one exists
         if (firstInput) {
             setTimeout(() => firstInput.focus(), 0);
@@ -394,13 +389,6 @@ class PropertyEditor {
                 });
             }
         });
-        
-        // Refresh blend inputs if this is the document root
-        if (this.selectedNode === app.document && app.document.blends) {
-            // Re-render the entire property editor to refresh blends
-            // This is simpler than trying to match blend inputs to blend objects
-            this.render(this.selectedNode);
-        }
     }
     
     // Evaluate arithmetic expressions
@@ -427,142 +415,6 @@ class PropertyEditor {
     
     getSelectedNode() {
         return this.selectedNode;
-    }
-    
-    // Add this new method to handle blend editing
-    addBlendSection(node) {
-        // Add a separator
-        const separator = document.createElement('hr');
-        separator.className = 'property-separator';
-        this.container.appendChild(separator);
-        
-        // Add a heading for the blends section
-        const blendsHeading = document.createElement('h3');
-        blendsHeading.className = 'blends-heading';
-        blendsHeading.textContent = 'Blends';
-        this.container.appendChild(blendsHeading);
-        
-        // Create a container for all blends
-        const blendsContainer = document.createElement('div');
-        blendsContainer.className = 'blends-container';
-        this.container.appendChild(blendsContainer);
-        
-        // Convert the Set to an Array for easier iteration
-        const blends = Array.from(node.blends);
-        
-        // Create UI for each blend
-        blends.forEach((blend, index) => {
-            const blendContainer = document.createElement('div');
-            blendContainer.className = 'blend-item';
-            
-            // Create a header with node names and delete button
-            const blendHeader = document.createElement('div');
-            blendHeader.className = 'blend-header';
-            
-            // Show the names of the nodes being blended
-            const nodesInfo = document.createElement('div');
-            nodesInfo.className = 'blend-nodes-info';
-            
-            // Get display names of the nodes
-            const node1Name = blend.nodes[0]?.displayName || 'Unknown';
-            const node2Name = blend.nodes[1]?.displayName || 'Unknown';
-            nodesInfo.textContent = `${node1Name} ↔ ${node2Name}`;
-            
-            // Create delete button
-            const deleteButton = document.createElement('button');
-            deleteButton.className = 'blend-delete-button';
-            deleteButton.innerHTML = '&times;'; // × symbol
-            deleteButton.title = 'Delete blend';
-            
-            // Add event listener for delete button
-            deleteButton.addEventListener('click', () => {
-                // Remove this blend from the set
-                node.blends.delete(blend);
-                
-                // Mark the document as dirty
-                node.markDirty();
-                
-                // Re-render the property editor
-                this.render(node);
-                
-                // Notify that a property has changed
-                this.notifyPropertyChanged('blends');
-            });
-            
-            blendHeader.appendChild(nodesInfo);
-            blendHeader.appendChild(deleteButton);
-            blendContainer.appendChild(blendHeader);
-            
-            // Create inputs for blend radius and chamfer
-            const createBlendProperty = (propName, propValue) => {
-                const propContainer = document.createElement('div');
-                propContainer.className = 'property-item';
-                
-                const propLabel = document.createElement('label');
-                propLabel.textContent = propName.charAt(0).toUpperCase() + propName.slice(1);
-                propContainer.appendChild(propLabel);
-                
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.value = propValue;
-                input.className = 'blend-property-input';
-                
-                // Handle both blur and Enter key for evaluation
-                const evaluateAndUpdate = () => {
-                    try {
-                        const result = this.evaluateExpression(input.value);
-                        if (!isNaN(result)) {
-                            input.value = result;
-                            
-                            // Update the blend property
-                            blend[propName] = result;
-                            
-                            // Mark the document as dirty
-                            node.markDirty();
-                            
-                            // Notify that a property has changed
-                            this.notifyPropertyChanged('blends');
-                        }
-                    } catch (e) {
-                        console.warn('Error evaluating expression:', e);
-                    }
-                };
-                
-                input.addEventListener('blur', evaluateAndUpdate);
-                input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        evaluateAndUpdate();
-                    }
-                });
-                
-                // Add focus/blur event handlers
-                input.addEventListener('focus', () => {
-                    if (this.options.onInputFocused) {
-                        this.options.onInputFocused(this.selectedNode);
-                    }
-                });
-                
-                input.addEventListener('blur', () => {
-                    if (this.options.onInputBlurred) {
-                        this.options.onInputBlurred();
-                    }
-                });
-                
-                propContainer.appendChild(input);
-                return propContainer;
-            };
-            
-            // Add radius input
-            const radiusContainer = createBlendProperty('blendRadius', blend.blendRadius);
-            blendContainer.appendChild(radiusContainer);
-            
-            // Add chamfer input
-            const chamferContainer = createBlendProperty('chamfer', blend.chamfer);
-            blendContainer.appendChild(chamferContainer);
-            
-            // Add the blend container to the blends section
-            blendsContainer.appendChild(blendContainer);
-        });
     }
 }
 
