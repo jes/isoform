@@ -740,7 +740,7 @@ class Peptide {
 
     static smoothabs(a) {
         a.assertType('float');
-        return P.sqrt(P.add(P.mul(a, a), P.const(1e-5)));
+        return P.sqrt(P.add(P.mul(a, a), P.const(1e-10)));
     }
 
     static min(a, b) {
