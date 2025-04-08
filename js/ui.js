@@ -1297,9 +1297,10 @@ const ui = {
         if (!app.document.blends) app.document.blends = new Set();
         app.document.blends.add({
             nodes: [node1, node2],
-            blendRadius: 0.5,
-            chamfer: 1.0,
+            blendRadius: 1.0,
+            chamfer: 0.0,
         });
+        app.document.markDirty();
     },
 };
 
