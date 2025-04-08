@@ -819,3 +819,92 @@ input[type="range"]::-moz-range-thumb {
 #app-title:hover .dropdown-arrow {
     color: #ccc;
 }
+
+/* Update Blend section styling */
+.blends-heading {
+    margin-top: 15px;
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #ddd;
+    border-bottom: 1px solid #555;
+    padding-bottom: 8px;
+}
+
+.blends-container {
+    margin-top: 10px;
+}
+
+.blend-item {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background-color: rgba(50, 50, 60, 0.8);
+}
+
+.blend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.blend-nodes-info {
+    font-weight: bold;
+    color: #aad;
+}
+
+.blend-delete-button {
+    border: none;
+    background: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #d9534f;
+    padding: 0;
+    margin: 0;
+    line-height: 1;
+}
+
+.blend-delete-button:hover {
+    color: #ff6b6b;
+}
+
+.property-separator {
+    border: 0;
+    height: 1px;
+    background-color: #555;
+    margin: 15px 0;
+}
+
+/* Ensure blend property inputs match other inputs */
+.blend-property-input {
+    width: calc(100% - 12px);
+    background-color: rgba(60, 60, 70, 0.8);
+    border: 1px solid #555;
+    color: white;
+    padding: 3px 5px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+/* Make sure all property items in blends have consistent styling */
+.blend-item .property-item {
+    margin-bottom: 8px;
+}
+
+.blend-item .property-item label {
+    display: block;
+    margin-bottom: 3px;
+    font-size: 0.9em;
+    color: #ccc;
+}
+
+.blend-item .property-item input {
+    width: calc(100% - 12px);
+    background-color: rgba(60, 60, 70, 0.8);
+    border: 1px solid #555;
+    color: white;
+    padding: 3px 5px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
