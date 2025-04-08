@@ -499,7 +499,7 @@ class PropertyEditor {
                 propContainer.className = 'property-item';
                 
                 const propLabel = document.createElement('label');
-                propLabel.textContent = propName.charAt(0).toUpperCase() + propName.slice(1);
+                propLabel.textContent = propName;
                 propContainer.appendChild(propLabel);
                 
                 const input = document.createElement('input');
