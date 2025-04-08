@@ -69,9 +69,12 @@ class PropertyEditor {
             }
         }
         
-        // Add blends section if this is the document root and it has blends
-        if (node === app.document && app.document.blends && app.document.blends.size > 0) {
-            this.addBlendSection(node);
+        // Check for blends that involve this node
+        const relevantBlends = this.findRelevantBlends(node);
+        
+        // Add blends section if there are any relevant blends
+        if (relevantBlends.length > 0) {
+            this.addBlendSection(node, relevantBlends);
         }
         
         // Focus the first input element if one exists
@@ -395,12 +398,9 @@ class PropertyEditor {
             }
         });
         
-        // Refresh blend inputs if this is the document root
-        if (this.selectedNode === app.document && app.document.blends) {
-            // Re-render the entire property editor to refresh blends
-            // This is simpler than trying to match blend inputs to blend objects
-            this.render(this.selectedNode);
-        }
+        // Re-render the entire property editor to refresh blends
+        // This is simpler than trying to match blend inputs to blend objects
+        this.render(this.selectedNode);
     }
     
     // Evaluate arithmetic expressions
@@ -429,8 +429,56 @@ class PropertyEditor {
         return this.selectedNode;
     }
     
-    // Add this new method to handle blend editing
-    addBlendSection(node) {
+    // New method to find all blends that involve the current node
+    findRelevantBlends(node) {
+        const relevantBlends = [];
+        
+        // First, check if the current node has blends
+        if (node.blends && node.blends.size > 0) {
+            relevantBlends.push(...Array.from(node.blends).map(blend => ({
+                blend,
+                owner: node
+            })));
+        }
+        
+        // Find the document root by traversing up the parent chain
+        let root = node;
+        while (root.parent) {
+            root = root.parent;
+        }
+        
+        // If the root has blends, check if any involve the current node
+        if (root.blends && root.blends.size > 0) {
+            for (const blend of root.blends) {
+                // Check if this node is part of the blend
+                if (blend.nodes.includes(node) || 
+                    blend.nodes.some(blendNode => this.isNodeDescendant(blendNode, node) || 
+                                               this.isNodeDescendant(node, blendNode))) {
+                    relevantBlends.push({
+                        blend,
+                        owner: root
+                    });
+                }
+            }
+        }
+        
+        return relevantBlends;
+    }
+    
+    // Helper method to check if one node is a descendant of another
+    isNodeDescendant(potentialDescendant, potentialAncestor) {
+        let current = potentialDescendant.parent;
+        while (current) {
+            if (current === potentialAncestor) {
+                return true;
+            }
+            current = current.parent;
+        }
+        return false;
+    }
+    
+    // Update the addBlendSection method to accept the list of relevant blends
+    addBlendSection(node, relevantBlends) {
         // Add a separator
         const separator = document.createElement('hr');
         separator.className = 'property-separator';
@@ -447,11 +495,8 @@ class PropertyEditor {
         blendsContainer.className = 'blends-container';
         this.container.appendChild(blendsContainer);
         
-        // Convert the Set to an Array for easier iteration
-        const blends = Array.from(node.blends);
-        
         // Create UI for each blend
-        blends.forEach((blend, index) => {
+        relevantBlends.forEach(({blend, owner}) => {
             const blendContainer = document.createElement('div');
             blendContainer.className = 'blend-item';
             
@@ -476,11 +521,11 @@ class PropertyEditor {
             
             // Add event listener for delete button
             deleteButton.addEventListener('click', () => {
-                // Remove this blend from the set
-                node.blends.delete(blend);
+                // Remove this blend from the owner's set
+                owner.blends.delete(blend);
                 
-                // Mark the document as dirty
-                node.markDirty();
+                // Mark the owner as dirty
+                owner.markDirty();
                 
                 // Re-render the property editor
                 this.render(node);
@@ -517,8 +562,8 @@ class PropertyEditor {
                             // Update the blend property
                             blend[propName] = result;
                             
-                            // Mark the document as dirty
-                            node.markDirty();
+                            // Mark the owner as dirty
+                            owner.markDirty();
                             
                             // Notify that a property has changed
                             this.notifyPropertyChanged('blends');
