@@ -395,9 +395,13 @@ const TreeRewriter = {
   },
 
   rewriteTree(t, logs = false) {
+    TreeRewriter.logs = logs;
     const blends = TreeRewriter.validBlends(t);
+    if (TreeRewriter.logs) {
+      console.log("Blends: ", blends);
+    }
 
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < 10; i++) {
       let allSatisfied = true;
       for (const blend of blends) {
         if (TreeRewriter.Satisfy(t, blend)) continue;
@@ -411,16 +415,45 @@ const TreeRewriter = {
   },
 
   Rewrite(t, blend) {
+    if (t.type == 'primitive') return false;
+    if (TreeRewriter.logs) {
+      console.log("Rewrite: ", t, " with blend: ", blend);
+    }
     const id0 = blend.nodes[0].uniqueId;
     const id1 = blend.nodes[1].uniqueId;
-    if (TreeRewriter.IdIsUnder(t.left, id0) && TreeRewriter.IdIsUnder(t.left, id1)) {
-      // both ids are in the left child
-      if (TreeRewriter.Rewrite(t.left, blend)) return true;
+    let skip = false;
+    const leftHasId0 = TreeRewriter.IdIsUnder(t.left, id0);
+    const leftHasId1 = TreeRewriter.IdIsUnder(t.left, id1);
+    const leftHasBoth = leftHasId0 && leftHasId1;
+    const rightHasId0 = TreeRewriter.IdIsUnder(t.right, id0);
+    const rightHasId1 = TreeRewriter.IdIsUnder(t.right, id1);
+    const rightHasBoth = rightHasId0 && rightHasId1;
+    const bothHaveBoth = leftHasBoth && rightHasBoth;
+
+    // if some id doesn't exist under our subtree, we can't rewrite
+    if (!leftHasId0 && !rightHasId0) return false;
+    if (!leftHasId1 && !rightHasId1) return false;
+
+    // if both children have both ids, rewrite the one that
+    // is closest to making them siblings
+    if (bothHaveBoth) {
+      const leftDist = TreeRewriter.DistanceBetween(t.left, id0, id1);
+      const rightDist = TreeRewriter.DistanceBetween(t.right, id0, id1);
+      if (leftDist < rightDist) {
+        return TreeRewriter.Rewrite(t.left, blend);
+      } else {
+        return TreeRewriter.Rewrite(t.right, blend);
+      }
     }
-    if (TreeRewriter.IdIsUnder(t.right, id0) && TreeRewriter.IdIsUnder(t.right, id1)) {
-      // both ids are in the right child
-      if (TreeRewriter.Rewrite(t.right, blend)) return true;
+
+    // if one child has both ids, rewrite that one
+    if (leftHasBoth) {
+      return TreeRewriter.Rewrite(t.left, blend);
     }
+    if (rightHasBoth) {
+      return TreeRewriter.Rewrite(t.right, blend);
+    }
+
     if (t.left.type == 'combinator') {
       // distribute left
       const left = t.left;
@@ -444,6 +477,8 @@ const TreeRewriter = {
       t.treeNode = left.treeNode;
 
       if (TreeRewriter.Satisfy(t, blend)) return true;
+      if (TreeRewriter.Rewrite(t.left, blend)) return true;
+      if (TreeRewriter.Rewrite(t.right, blend)) return true;
     }
     if (t.right.type == 'combinator') {
       // distribute right
@@ -466,11 +501,18 @@ const TreeRewriter = {
         modifiers: [],
       };
       t.treeNode = right.treeNode;
+
+      if (TreeRewriter.Satisfy(t, blend)) return true;
+      if (TreeRewriter.Rewrite(t.left, blend)) return true;
+      if (TreeRewriter.Rewrite(t.right, blend)) return true;
     }
     return TreeRewriter.Satisfy(t, blend);
   },
 
   Satisfy(t, blend) {
+    if (TreeRewriter.logs) {
+      console.log("Satisfy: ", t, " with blend: ", blend);
+    }
     if (t.type == 'primitive') return false;
     const id0 = blend.nodes[0].uniqueId;
     const id1 = blend.nodes[1].uniqueId;
@@ -499,6 +541,31 @@ const TreeRewriter = {
       return TreeRewriter.IdIsUnder(t.left, id) || TreeRewriter.IdIsUnder(t.right, id);
     } else if (t.type == 'primitive') {
       return t.treeNode.uniqueId == id;
+    } else {
+      throw new Error('Unknown node type: ' + t.type);
+    }
+  },
+
+  DistanceTo(t, id) {
+    if (t.type == 'combinator') {
+      const leftDist = TreeRewriter.DistanceTo(t.left, id);
+      const rightDist = TreeRewriter.DistanceTo(t.right, id);
+      return Math.min(leftDist, rightDist);
+    } else if (t.type == 'primitive') {
+      return t.treeNode.uniqueId == id ? 0 : Infinity;
+    } else {
+      throw new Error('Unknown node type: ' + t.type);
+    }
+  },
+
+  DistanceBetween(t, id0, id1) {
+    if (t.type == 'combinator') {
+      const distLeft = TreeRewriter.DistanceBetween(t.left, id0, id1);
+      const distRight = TreeRewriter.DistanceBetween(t.right, id0, id1);
+      const distMe = TreeRewriter.DistanceTo(t, id0) + TreeRewriter.DistanceTo(t, id1);
+      return Math.min(distLeft, distRight, distMe);
+    } else if (t.type == 'primitive') {
+      return t.treeNode.uniqueId == id0 ? 0 : t.treeNode.uniqueId == id1 ? 1 : Infinity;
     } else {
       throw new Error('Unknown node type: ' + t.type);
     }

@@ -215,17 +215,18 @@ class TreeNode {
     // and weight the color accordingly
     const diffA = P.abs(P.sub(distance, distA));
     const diffB = P.abs(P.sub(distance, distB));
-    const sum = P.smoothabs(P.add(diffA, diffB));
+    const sumDiff = P.smoothabs(P.add(diffA, diffB));
     
     // Use colorA when sum is zero (when distances are equal)
     const t = P.cond(
-      P.eq(sum, P.const(0.0)),
+      P.eq(sumDiff, P.const(0.0)),
       P.const(0.0),  // t = 0 means use colorA in vmix
-      P.div(diffA, sum)
+      P.div(diffA, sumDiff)
     );
     
     const color = P.vmix(colorA, colorB, t);
     const uniqueId = P.cond(P.lte(distA, distB), uniqueIdA, uniqueIdB);
+
 
     return P.struct({
       distance: distance,
@@ -261,7 +262,10 @@ class TreeNode {
     );
     
     const color = P.vmix(colorA, colorB, t);
-    const uniqueId = P.cond(P.gte(distA, distB), uniqueIdA, uniqueIdB);
+    let uniqueId = P.cond(P.gte(distA, distB), uniqueIdA, uniqueIdB);
+
+    const bothNear = P.lte(P.max(diffA, diffB), this.uniform('blendRadius'));
+    uniqueId = P.cond(bothNear, P.const(this.uniqueId), uniqueId);
 
     return P.struct({
       distance: distance,
