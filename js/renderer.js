@@ -32,6 +32,23 @@ const renderer = {
     preselectLevel: 0,
     rayMarchResult: null,
 
+    // Add event handler registration methods
+    surfaceHoverHandlers: [],
+    surfaceClickHandlers: [],
+    surfaceContextMenuHandlers: [],
+    
+    addSurfaceHoverHandler(handler) {
+        this.surfaceHoverHandlers.push(handler);
+    },
+    
+    addSurfaceClickHandler(handler) {
+        this.surfaceClickHandlers.push(handler);
+    },
+    
+    addSurfaceContextMenuHandler(handler) {
+        this.surfaceContextMenuHandlers.push(handler);
+    },
+
     async init() {
         this.canvas = document.getElementById('glCanvas');
         this.coordDisplay = document.getElementById('coord-display');
@@ -363,9 +380,12 @@ const renderer = {
     },
 
     onCanvasClick(e) {
-        ui.selectNode(ui.preselectedNode); // may be null
+        // Call registered click handlers instead of directly selecting the node
+        for (const handler of this.surfaceClickHandlers) {
+            handler(e, this.nodeUnderCursor, this.preselectLevel);
+        }
         
-        // Hide coordinate display when selecting a node
+        // Hide coordinate display when clicking
         if (this.coordDisplay) {
             this.coordDisplay.style.display = 'none';
         }
@@ -373,7 +393,11 @@ const renderer = {
     
     onCanvasContextMenu(e) {
         e.preventDefault();
-        ui.showContextMenu(e, ui.preselectedNode || app.document);
+        
+        // Call registered context menu handlers
+        for (const handler of this.surfaceContextMenuHandlers) {
+            handler(e, this.nodeUnderCursor, this.preselectLevel);
+        }
     },
     
     onCanvasWheel(e) {
@@ -435,6 +459,11 @@ const renderer = {
             console.log("preselecting", node);
             this.nodeUnderCursor = node;
             this.preselect();
+            
+            // Call registered hover handlers
+            for (const handler of this.surfaceHoverHandlers) {
+                handler(this.lastMousePosition, node, this.preselectLevel);
+            }
         }
         
         // Display coordinates if we hit something

@@ -115,6 +115,19 @@ const ui = {
             app.redo();
             fileDropdown.classList.remove('show');
         });
+
+        // Register handlers for surface interactions
+        renderer.addSurfaceHoverHandler((mousePos, node, level) => {
+            this.preselectNode(node);
+        });
+        
+        renderer.addSurfaceClickHandler((e, node, level) => {
+            this.selectNode(this.preselectedNode); // may be null
+        });
+        
+        renderer.addSurfaceContextMenuHandler((e, node, level) => {
+            this.showContextMenu(e, this.preselectedNode || app.document);
+        });
     },
 
     initResizeHandle() {
