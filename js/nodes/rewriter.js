@@ -425,21 +425,22 @@ const TreeRewriter = {
       // distribute left
       const left = t.left;
       const right = t.right;
+      left.left.modifiers = [...left.modifiers, ...left.left.modifiers];
+      left.right.modifiers = [...left.modifiers, ...left.right.modifiers]; 
       t.left = {
         type: 'combinator',
         left: left.left,
         right: right,
         treeNode: t.treeNode,
-        modifiers: t.modifiers,
+        modifiers: [],
       };
       t.right = {
         type: 'combinator',
         left: left.right,
         right: TreeRewriter.cloneIntermediateTree(right),
         treeNode: t.treeNode,
-        modifiers: t.modifiers,
+        modifiers: [],
       };
-      t.modifiers = [];
       t.treeNode = left.treeNode;
 
       if (TreeRewriter.Satisfy(t, blend)) return true;
@@ -448,22 +449,23 @@ const TreeRewriter = {
       // distribute right
       const left = t.left;
       const right = t.right;
+      right.left.modifiers = [...right.modifiers, ...right.left.modifiers];
+      right.right.modifiers = [...right.modifiers, ...right.right.modifiers];
       t.left = {
         type: 'combinator',
         left: left,
         right: right.left,
         treeNode: t.treeNode,
-        modifiers: t.modifiers,
+        modifiers: [],
       };
       t.right = {
         type: 'combinator',
         left: TreeRewriter.cloneIntermediateTree(left),
         right: right.right,
         treeNode: t.treeNode,
-        modifiers: t.modifiers,
+        modifiers: [],
       };
-      t.modifiers = [];
-      t.treeNode = left.treeNode;
+      t.treeNode = right.treeNode;
     }
     return TreeRewriter.Satisfy(t, blend);
   },
