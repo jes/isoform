@@ -259,20 +259,32 @@ const ui = {
         if (node) {
             this.treeViewComponent.setSelectedNode(node);
             this.propertyEditorComponent.render(node);
-            Object.entries(node.grabHandles()).forEach(([name, { origin, axis, ratio, get, set, color }]) => {
+            Object.entries(node.grabHandles()).forEach(([name, handle]) => {
+                let { axis, ratio, get, set, color } = handle;
                 get ||= (() => node.getProperty(name));
                 set ||= ((value) => node.setProperty(name, value));
-                ratio ||= 1;
-                app.addGrabHandle(new GrabHandle({
-                    position: origin.add(axis.mul(get()*ratio)),
+                axis = () => (handle.axis || new Vec3(1, 0, 0));
+                color = () => (handle.color || new Vec3(1, 0.5, 0));
+                ratio ||= 1.0;
+
+                const origin = handle.getOrigin || (() => (handle.origin || new Vec3(0, 0, 0)));
+                const position = handle.position || (() => origin().add(axis().mul(get() * ratio)));
+                
+                const grabHandle = new GrabHandle({
+                    position: position,
                     origin: origin,
                     axis: axis,
                     color: color,
                     onChange: (pos) => {
-                        const length = pos.sub(origin).length();
+                        // Calculate length based on current origin
+                        const length = pos.sub(origin()).length();
+                        
+                        // Update the value
                         set(length/ratio);
                     },
-                }));
+                });
+                
+                app.addGrabHandle(grabHandle);
             });
         }
         if (node instanceof SketchNode) {

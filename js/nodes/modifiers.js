@@ -21,28 +21,45 @@ class TransformNode extends TreeNode {
   }
 
   grabHandles() {
+    // Define a fixed length for the handles (5 units as suggested)
+    const handleLength = 5;
+    
     return {
-      "translation.x": {
-        origin: new Vec3(0, 0, 0),
-        axis: new Vec3(1, 0, 0),
-        color: new Vec3(1, 0, 0),
-        get: () => this.translation.x,  
-        set: (value) => this.setProperty('translation', new Vec3(value, this.translation.y, this.translation.z))
-      },
-      "translation.y": {
-        origin: new Vec3(0, 0, 0),
-        axis: new Vec3(0, 1, 0),
-        color: new Vec3(0, 1, 0),
-        get: () => this.translation.y,
-        set: (value) => this.setProperty('translation', new Vec3(this.translation.x, value, this.translation.z))
-      },
-      "translation.z": {
-        origin: new Vec3(0, 0, 0),
-        axis: new Vec3(0, 0, 1),
-        color: new Vec3(0, 0, 1),
-        get: () => this.translation.z,
-        set: (value) => this.setProperty('translation', new Vec3(this.translation.x, this.translation.y, value))
-      },
+        "translation.x": {
+            // Use getOrigin instead of origin for dynamic updates
+            getOrigin: () => this.translation,
+            axis: new Vec3(1, 0, 0),
+            color: new Vec3(1, 0, 0),
+            position: () => this.translation.add(new Vec3(handleLength, 0, 0)),
+            get: () => handleLength,  // Fixed length
+            set: (value) => {
+                // Calculate new translation based on drag position
+                const newX = this.translation.x + (value - handleLength);
+                this.setProperty('translation', new Vec3(newX, this.translation.y, this.translation.z));
+            }
+        },
+        "translation.y": {
+            getOrigin: () => this.translation,
+            axis: new Vec3(0, 1, 0),
+            color: new Vec3(0, 1, 0),
+            position: () => this.translation.add(new Vec3(0, handleLength, 0)),
+            get: () => handleLength,
+            set: (value) => {
+                const newY = this.translation.y + (value - handleLength);
+                this.setProperty('translation', new Vec3(this.translation.x, newY, this.translation.z));
+            }
+        },
+        "translation.z": {
+            getOrigin: () => this.translation,
+            axis: new Vec3(0, 0, 1),
+            color: new Vec3(0, 0, 1),
+            position: () => this.translation.add(new Vec3(0, 0, handleLength)),
+            get: () => handleLength,
+            set: (value) => {
+                const newZ = this.translation.z + (value - handleLength);
+                this.setProperty('translation', new Vec3(this.translation.x, this.translation.y, newZ));
+            }
+        },
     };
   }
 

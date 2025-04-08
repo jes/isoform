@@ -1,17 +1,27 @@
 class GrabHandle {
     constructor(options = {}) {
-        // Store handle properties
-        this.position = options.position || new Vec3(0, 0, 0);
-        this.origin = options.origin || new Vec3(0, 0, 0);
-        this.axis = options.axis || new Vec3(1, 0, 0); // Default to X axis
-        this.axis = this.axis.normalize(); // Ensure axis is normalized
-        this.color = options.color || new Vec3(1, 0.5, 0);  // Default orange
-        this.radius = options.radius || 0.005;  // Handle size as percentage of minimum canvas dimension
+        this.position = options.position || (() => new Vec3(0, 0, 0));
+        this.origin = options.origin || (() => new Vec3(0, 0, 0));
+        this.axis = options.axis || (() => new Vec3(1, 0, 0)); // Default to X axis
+        this.color = options.color || (() => new Vec3(1, 0.5, 0));  // Default orange
+        this.radius = options.radius || (() => 0.005);  // Handle size as percentage of minimum canvas dimension
         this.canvas = options.canvas || document.getElementById('glCanvas');
         this.onChange = options.onChange || null;
         this.onComplete = options.onComplete || null;
         this.renderer = options.renderer || renderer; // Accept renderer reference or use global
-        
+
+        // sanity check function properties
+        const functionProps = ['position', 'origin', 'axis', 'color', 'radius'];
+        for (const prop of functionProps) {
+            if (typeof this[prop] !== 'function') {
+                throw new Error(`GrabHandle: ${prop} must be a function, found ${typeof this[prop]}`);
+            }
+            const val = this[prop]();
+            if (typeof val == undefined || val == null) {
+                throw new Error(`GrabHandle: ${prop}() must return a value, found ${typeof val}`);
+            }
+        }
+
         // Internal state
         this.isDragging = false;
         this.isHovering = false;
@@ -33,23 +43,6 @@ class GrabHandle {
             this._createShaderLayer();
         } else {
             console.error('GrabHandle: No renderer or GL context provided');
-        }
-    }
-    
-    // Set or update position
-    setPosition(pos) {
-        this.position = pos instanceof Vec3 ? pos : new Vec3(pos[0], pos[1], pos[2]);
-        // Notify onChange callback if provided
-        if (this.onChange) {
-            this.onChange(this.position);
-        }
-    }
-    
-    // Reset the handle to its initial position
-    reset() {
-        this.position = this.initialPosition.clone();
-        if (this.onChange) {
-            this.onChange(this.position);
         }
     }
     
@@ -212,17 +205,17 @@ class GrabHandle {
         
         // Set uniforms for the shader
         camera.setUniforms(this.shaderLayer);
-        this.shaderLayer.setUniform('vec3', 'uHandlePosition', this.position)
-                     .setUniform('vec3', 'uHandleOrigin', this.origin)
-                     .setUniform('vec3', 'uHandleColor', this.color)
-                     .setUniform('float', 'uHandleRadius', this.radius)
+        this.shaderLayer.setUniform('vec3', 'uHandlePosition', this.position())
+                     .setUniform('vec3', 'uHandleOrigin', this.origin())
+                     .setUniform('vec3', 'uHandleColor', this.color())
+                     .setUniform('float', 'uHandleRadius', this.radius())
                      .setUniform('bool', 'uIsHovering', this.isHovering||this.isDragging);
     }
     
     // Convert percentage radius to actual pixels
     _getPixelRadius() {
         const minDimension = Math.min(this.canvas.width, this.canvas.height);
-        return this.radius * minDimension;
+        return this.radius() * minDimension;
     }
     
     // Handle mouse events
@@ -234,7 +227,7 @@ class GrabHandle {
         const mousePos = this._getMousePosition(e);
         
         // Check if the click is on the handle
-        const screenPos = camera.worldToScreen(this.position);
+        const screenPos = camera.worldToScreen(this.position());
         const distance = Math.sqrt(
             Math.pow(mousePos.x - screenPos.x, 2) + 
             Math.pow(mousePos.y - screenPos.y, 2)
@@ -292,7 +285,7 @@ class GrabHandle {
             
             // Notify completion callback if provided
             if (this.onComplete) {
-                this.onComplete(this.position);
+                this.onComplete(this.position());
             }
             
             // Prevent the mouseup from triggering other events
@@ -315,10 +308,10 @@ class GrabHandle {
         
         // 1. Calculate how the handle would appear on screen if moved a small amount along the axis
         const testOffset = 0.1; // Small test offset along the axis
-        const testPos = this.position.add(this.axis.mul(testOffset));
+        const testPos = this.position().add(this.axis().mul(testOffset));
         
         // 2. Project both current and test positions to screen space
-        const currentScreenPos = camera.worldToScreen(this.position);
+        const currentScreenPos = camera.worldToScreen(this.position());
         const testScreenPos = camera.worldToScreen(testPos);
         
         // 3. Calculate the screen-space movement vector for our test offset
@@ -345,11 +338,11 @@ class GrabHandle {
         const axisMovement = mouseProjection / screenDistPerUnit;
         
         // 7. Update the position
-        this.position = this.position.add(this.axis.mul(axisMovement));
+        const newPosition = this.position().add(this.axis().mul(axisMovement));
         
         // Notify onChange callback if provided
         if (this.onChange) {
-            this.onChange(this.position);
+            this.onChange(newPosition);
         }
     }
     
@@ -362,7 +355,7 @@ class GrabHandle {
         const mousePos = this._getMousePosition(e);
         
         // Check if the mouse is over the handle
-        const screenPos = camera.worldToScreen(this.position);
+        const screenPos = camera.worldToScreen(this.position());
         const distance = Math.sqrt(
             Math.pow(mousePos.x - screenPos.x, 2) + 
             Math.pow(mousePos.y - screenPos.y, 2)
