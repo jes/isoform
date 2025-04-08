@@ -36,7 +36,9 @@ const TreeRewriter = {
     }
 
     // modifiers - add to modifier chain and recurse
-    return TreeRewriter.fromTreeNode(treeNode.children[0], [...modifiers, treeNode.cloneJustThisOne()]);
+    const node = TreeRewriter.fromTreeNode(treeNode.children[0], [...modifiers, treeNode.cloneJustThisOne()]);
+    node.treeNode.blends = treeNode.blends;
+    return node;
   },
 
   // take an intermediate tree and return a TreeNode;
@@ -73,8 +75,6 @@ const TreeRewriter = {
     if (t.type == 'combinator') {
       TreeRewriter.possibleSurfaceIds(t.left, set);
       TreeRewriter.possibleSurfaceIds(t.right, set);
-    } else if (t.type == 'modifier') {
-      TreeRewriter.possibleSurfaceIds(t.child, set);
     } else if (t.type == 'primitive') {
       set.add(t.treeNode.uniqueId);
     } else {

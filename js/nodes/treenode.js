@@ -579,12 +579,11 @@ class TreeNode {
   }
 
   cloneWithSameIds() {
-    return TreeNode.fromSerialized(this.serialize());
+    return TreeNode.fromSerialized(this.serialize(true));
   }
 
   cloneJustThisOne() {
-    const serialized = this.serialize(false);
-    return TreeNode.fromSerialized(serialized);
+    return TreeNode.fromSerialized(this.serialize(false));
   }
 
   // Serialize with support for circular references
