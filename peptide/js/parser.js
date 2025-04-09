@@ -10,7 +10,7 @@ class PeptideParser {
         const parser = new PeptideParser(str);
         const expr = parser._p(parser.Expression);
         if (parser.peekc() !== undefined) {
-            throw new Error(`${str}: Unexpected character ${parser.peekc()} at line ${parser.line}, column ${parser.col}`);
+            throw new Error(`${str}: Unexpected character '${parser.peekc()}' at line ${parser.line}, column ${parser.col}`);
         }
         return expr;
     }
@@ -30,6 +30,10 @@ class PeptideParser {
         return ch;
     }
 
+    skip() {
+        while (this.peekc() === ' ' || this.peekc() === '\t' || this.peekc() === '\n') this.getc();
+    }
+
     _p(rule) {
         const startPos = this.pos;
         const startLine = this.line;
@@ -46,10 +50,14 @@ class PeptideParser {
     }
 
     Expression() {
-        return this._p(this.Number);
+        this.skip();
+        const expr = this._p(this.Number);
+        this.skip();
+        return expr;
     }
 
     Number() {
+        this.skip();
         let s = '';
         while (true) {
             const ch = this.peekc();
@@ -65,6 +73,7 @@ class PeptideParser {
                 break;
             }
         }
+        this.skip();
         return P.const(parseFloat(s));
     }
 }

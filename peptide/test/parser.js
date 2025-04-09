@@ -39,6 +39,12 @@ addParserTest('parse integer', '42', 42);
 addParserTest('parse negative integer', '-42', -42);
 addParserTest('parse decimal', '3.14', 3.14);
 addParserTest('parse negative decimal', '-3.14', -3.14);
+addParserTest('parse numbers with leading spaces', '  42', 42);
+addParserTest('parse numbers with leading tabs', '\t42', 42);
+addParserTest('parse numbers with leading newlines', '\n42', 42);
+addParserTest('parse numbers with trailing spaces', '42 ', 42);
+addParserTest('parse numbers with trailing tabs', '42\t', 42);
+addParserTest('parse numbers with trailing newlines', '42\n', 42);
 
 // Invalid number format tests
 addParserFailTest('invalid number - multiple decimal points', '3.14.15');
@@ -48,6 +54,12 @@ addParserFailTest('invalid number - negative sign at start', '- 42');
 addParserFailTest('invalid number - negative sign at end', '42 -');
 addParserFailTest('invalid number - commas', '42,000');
 addParserFailTest('invalid number - letters', '3.14a');
+
+// Infix operator tests
+addParserTest('parse addition', '5 + 3', 8);
+addParserTest('parse subtraction', '5 - 3', 2);
+addParserTest('parse multiplication', '5 * 3', 15);
+addParserTest('parse division', '6 / 3', 2);
 
 // Export for browser
 if (typeof window !== 'undefined') {
