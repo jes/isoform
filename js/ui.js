@@ -678,7 +678,7 @@ const ui = {
                 await imageProcessor.load(file);
                 
                 // Extract grayscale channel
-                const channelData = imageProcessor.extractChannel('grayscale');
+                const channelData = imageProcessor.toSDF().extractChannel('grayscale', false);
                 const dimensions = imageProcessor.getDimensions();
                 
                 // Create a unique name based on the file name

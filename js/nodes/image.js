@@ -6,6 +6,11 @@ class ImageNode extends TreeNode {
         this.dimensions = dimensions;
         this.interpolation = interpolation;
         this.texture2d = new Texture2D(data, dimensions, interpolation);
+        this.invert = false;
+    }
+
+    properties() {
+        return {"invert": "bool"};
     }
 
     is2d() {
@@ -17,9 +22,15 @@ class ImageNode extends TreeNode {
     }
 
     makePeptide(p) {
-        return P.struct({
-            distance: P.texture2d(this.uniformTexture2d("texture2d"), P.vec3(P.mod(P.vecX(p), P.one()), P.mod(P.vecY(p), P.one()), P.zero())),
-        });
+        if (this.invert) {
+            return P.struct({
+                distance: P.neg(P.texture2d(this.uniformTexture2d("texture2d"), P.vec3(P.mod(P.vecX(p), P.one()), P.mod(P.vecY(p), P.one()), P.zero()))),
+            });
+        } else {
+            return P.struct({
+                distance: P.texture2d(this.uniformTexture2d("texture2d"), P.vec3(P.mod(P.vecX(p), P.one()), P.mod(P.vecY(p), P.one()), P.zero())),
+            });
+        }
     }
 }
 

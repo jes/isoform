@@ -901,7 +901,7 @@ class DistanceDeformInsideNode extends TreeNode {
     const d1 = child1.peptide(p);
     if (!d1) return d0;
     return P.struct({
-      distance: P.add(P.field(d0, 'distance'), this.min(P.mul(P.field(d1, 'distance'), this.uniform('amplitude')), P.zero())),
+      distance: P.add(P.field(d0, 'distance'), P.mul(this.uniform('amplitude'), this.min(P.field(d1, 'distance'), P.zero()))),
       color: P.field(d0, 'color'),
       uniqueId: P.field(d0, 'uniqueId'),
     });
