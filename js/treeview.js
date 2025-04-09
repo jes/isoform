@@ -205,7 +205,7 @@ class TreeView {
                 // Set parent reference for connection lines
                 child.parent = node;
                 child.isLastChild = index === node.children.length - 1;
-                const childNode = this.createTreeNode(child, level + 1, disabledParent || node.isDisabled);
+                const childNode = this.createTreeNode(child, level + 1, disabledParent || (node.isDisabled && node.children.length > 1));
                 childrenContainer.appendChild(childNode);
             });
             
