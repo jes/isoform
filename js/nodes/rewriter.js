@@ -24,11 +24,13 @@ const TreeRewriter = {
       if (treeNode.children.length != 2) {
         throw new Error('Combinator must have 2 children');
       }
+      const t = treeNode.cloneJustThisOne();
+      t.uniqueId = 0; // don't recompile shader every time we rewrite
       return {
         type: 'combinator',
         left: TreeRewriter.fromTreeNode(treeNode.children[0], []),
         right: TreeRewriter.fromTreeNode(treeNode.children[1], []),
-        treeNode: treeNode.cloneJustThisOne(),
+        treeNode: t,
         modifiers: modifiers,
       };
     }
