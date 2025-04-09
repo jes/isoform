@@ -65,7 +65,10 @@ class TreeNode {
   //  * combinators only have 2 children
   //  * anything that can't eventually yield a surface becomes null
   makeNormalised() {
-    if (this.isDisabled) return null;
+    if (this.isDisabled) {
+      if (this.children.length == 1) return this.children[0].normalised();
+      else return null;
+    }
     if (this.isCombinator) {
       throw new Error("Combinator nodes must implement makeNormalised()");
     }
@@ -445,7 +448,8 @@ class TreeNode {
 
   peptide(p) {
     if (this.isDisabled) {
-      return this.noop();
+      if (this.children.length == 1) return this.children[0].peptide(p);
+      else return this.noop();
     }
     const pep = this.makePeptide(p);
     if (!pep) return null;

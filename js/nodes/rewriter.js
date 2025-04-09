@@ -111,8 +111,7 @@ const TreeRewriter = {
   },
 
   collectBlends(t, blends = new Set()) {
-    if (t instanceof BlendNode) {
-      console.log("collectBlends", t, t.otherNode);
+    if (t instanceof BlendNode && !t.isDisabled) {
       blends.add({
         nodes: [t.children[0], t.otherNode],
         blendRadius: t.blendRadius,
