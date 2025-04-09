@@ -1090,6 +1090,24 @@ class BlendNode extends TreeNode {
       "chamfer": "float",
     };
   }
+
+  markDirty() {
+    this.nodes.forEach(node => node.markDirty());
+  }
+
+  delete() {
+    this.markDirty();
+
+    // Remove this blend from each node's blends array
+    this.nodes.forEach(node => {
+      // Find the index of this blend in the node's blends array
+      const index = node.blends.indexOf(this);
+      // If found, remove it from the array
+      if (index !== -1) {
+        node.blends.splice(index, 1);
+      }
+    });
+  }
 }
 
 // Detect environment and export accordingly

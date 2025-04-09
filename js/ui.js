@@ -326,12 +326,10 @@ const ui = {
             }, isDisabled ? '👁️' : '👁️‍🗨️');
             
             // Add delete option
-            if (node.parent) {
-                this.addMenuItem(contextMenu, 'Delete this', () => {
-                    node.delete();
-                    this.renderTree();
-                }, '🗑️');
-            }
+            this.addMenuItem(contextMenu, 'Delete this', () => {
+                node.delete();
+                this.renderTree();
+            }, '🗑️');
         } else {
             // Regular context menu for other node types
             
