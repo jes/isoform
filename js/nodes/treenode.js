@@ -644,6 +644,7 @@ class TreeNode {
         isDisabled: node.isDisabled,
         blendRadius: node.blendRadius,
         chamfer: node.chamfer,
+        propertyUniforms: {...node.propertyUniforms}, // Copy propertyUniforms
         children: includeChildren ? node.children.map(child => {
           // For each child, either serialize it or reference it
           if (nodeMap.get(child).path.length > nodeMap.get(node).path.length) {
@@ -710,13 +711,19 @@ class TreeNode {
       node.blendRadius = data.blendRadius;
       node.chamfer = data.chamfer;
       
+      // Restore propertyUniforms if present
+      if (data.propertyUniforms) {
+        node.propertyUniforms = {...data.propertyUniforms};
+      }
+      
       // Store in map for circular reference resolution
       nodesById.set(node.uniqueId, node);
       
       // Restore all other properties
       for (const propName in data) {
         if (!['type', 'uniqueId', 'name', 'displayName', 'maxChildren', 
-              'isDirty', 'isDisabled', 'children', 'blendRadius', 'chamfer'].includes(propName)) {
+              'isDirty', 'isDisabled', 'children', 'blendRadius', 'chamfer',
+              'propertyUniforms'].includes(propName)) {
           const value = data[propName];
           
           // Handle Vec3 properties
