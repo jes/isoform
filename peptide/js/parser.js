@@ -4,6 +4,7 @@ class PeptideParser {
         this.pos = 0;
         this.line = 0;
         this.col = 0;
+        this.throwing = false;
     }
 
     static parse(str) {
@@ -60,8 +61,14 @@ class PeptideParser {
         const startLine = this.line;
         const startCol = this.col;
         
-        const result = rule.call(this, ...args);
-        if (result) return result;
+        try {
+            const result = rule.call(this, ...args);
+            if (result) return result;
+        } catch (e) {
+            if (this.throwing) throw e;
+            this.throwing = true;
+            throw new Error(`${e.message} at line ${startLine}, column ${startCol}`);
+        }
 
         // Reset position on failure
         this.pos = startPos;
@@ -71,17 +78,21 @@ class PeptideParser {
     }
 
     Expression() {
-        let expr = this._p(this.Number);
+        let expr = this._p(this.Term);
         while (true) {
             this.skip();
-            if (this.char('+')) expr = P.add(expr, this._p(this.Number));
-            else if (this.char('-')) expr = P.sub(expr, this._p(this.Number));
-            else if (this.char('*')) expr = P.mul(expr, this._p(this.Number));
-            else if (this.char('/')) expr = P.div(expr, this._p(this.Number));
-            else if (this.char('%')) expr = P.mod(expr, this._p(this.Number));
+            if (this.char('+')) expr = P.add(expr, this._p(this.Term));
+            else if (this.char('-')) expr = P.sub(expr, this._p(this.Term));
+            else if (this.char('*')) expr = P.mul(expr, this._p(this.Term));
+            else if (this.char('/')) expr = P.div(expr, this._p(this.Term));
+            else if (this.char('%')) expr = P.mod(expr, this._p(this.Term));
             else break;
         }
         return expr;
+    }
+
+    Term() {
+        return this._p(this.Number) || this._p(this.Variable);
     }
 
     Number() {
@@ -96,10 +107,26 @@ class PeptideParser {
             else break;
         }
 
+        if (s.length === 0) return null;
+
         this.skip();
         const f = parseFloat(s);
         if (isNaN(f)) throw new Error(`${s}: Invalid number`);
         return P.const(f);
+    }
+
+    Variable() {
+        const name = this._p(this.Identifier);
+        if (!name) return null;
+        return P.var(name);
+    }
+
+    Identifier() {
+        this.skip();
+        let s = '';
+        while (this.peekanychar('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_')) s += this.getc();
+        if (s[0] >= '0' && s[0] <= '9') throw new Error(`${s}: Invalid identifier`);
+        return P.var(s);
     }
 }
 

@@ -62,6 +62,20 @@ addParserTest('parse multiplication', '5 * 3', 15);
 addParserTest('parse division', '6 / 3', 2);
 addParserTest('parse modulo', '7 % 3', 1);
 
+// Invalid infix operator tests
+addParserFailTest('invalid infix operator - leading multiply', '*5');
+addParserFailTest('invalid infix operator - leading divide', '/5');
+addParserFailTest('invalid infix operator - leading modulo', '%5');
+
+// Variable tests
+addParserTest('parse variable', 'x', 1, {x: 1});
+addParserTest('parse variable with spaces', ' x ', 1, {x: 1});
+addParserTest('parse variable with tabs', '\tx', 1, {x: 1});
+addParserTest('parse variable with newlines', '\nx', 1, {x: 1});
+addParserTest('parse variable with trailing spaces', 'x ', 1, {x: 1});
+addParserTest('use variable in expression', 'x + 1', 2, {x: 1});
+addParserTest('use variable in expression 2', ' 1 + x',  2, {x: 1});
+
 // Export for browser
 if (typeof window !== 'undefined') {
     if (!window.PeptideTests) {
