@@ -23,14 +23,15 @@ function addParserTest(name, input, expectedResult, vars = {}) {
 // Helper to test parsing failures
 function addParserFailTest(name, input) {
     ParserT.test(name, () => {
-        // Parse the input string
+        let result;
         try {
             const expr = PeptideParser.parse(input);
+            result = expr.evaluate({});
         } catch (e) {
             // Check that parsing failed
             return;
         }
-        throw new Error(`Expected parsing to fail for: ${input}`);
+        throw new Error(`Expected parsing to fail for: ${input}, evaluated to: ${result}`);
     });
 }
 
@@ -49,7 +50,6 @@ addParserTest('parse numbers with trailing newlines', '42\n', 42);
 // Invalid number format tests
 addParserFailTest('invalid number - multiple decimal points', '3.14.15');
 addParserFailTest('invalid number - multiple negative signs', '--42');
-addParserFailTest('invalid number - negative sign in middle', '3-14');
 addParserFailTest('invalid number - negative sign at start', '- 42');
 addParserFailTest('invalid number - negative sign at end', '42 -');
 addParserFailTest('invalid number - commas', '42,000');
@@ -60,6 +60,7 @@ addParserTest('parse addition', '5 + 3', 8);
 addParserTest('parse subtraction', '5 - 3', 2);
 addParserTest('parse multiplication', '5 * 3', 15);
 addParserTest('parse division', '6 / 3', 2);
+addParserTest('parse modulo', '7 % 3', 1);
 
 // Export for browser
 if (typeof window !== 'undefined') {

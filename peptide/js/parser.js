@@ -30,16 +30,37 @@ class PeptideParser {
         return ch;
     }
 
-    skip() {
-        while (this.peekc() === ' ' || this.peekc() === '\t' || this.peekc() === '\n') this.getc();
+    char(c) {
+        if (this.peekc() === c) {
+            this.getc();
+            return true;
+        }
+        return false;
     }
 
-    _p(rule) {
+    anychar(str) {
+        if (str.includes(this.peekc())) {
+            this.getc();
+            return true;
+        }
+        return false;
+    }
+
+    peekanychar(str) {
+        if (str.includes(this.peekc())) return true;
+        return false;
+    }
+
+    skip() {
+        while (this.anychar(' \t\n')) {}
+    }
+
+    _p(rule, ...args) {
         const startPos = this.pos;
         const startLine = this.line;
         const startCol = this.col;
         
-        const result = rule.call(this);
+        const result = rule.call(this, ...args);
         if (result) return result;
 
         // Reset position on failure
@@ -50,31 +71,35 @@ class PeptideParser {
     }
 
     Expression() {
-        this.skip();
-        const expr = this._p(this.Number);
-        this.skip();
+        let expr = this._p(this.Number);
+        while (true) {
+            this.skip();
+            if (this.char('+')) expr = P.add(expr, this._p(this.Number));
+            else if (this.char('-')) expr = P.sub(expr, this._p(this.Number));
+            else if (this.char('*')) expr = P.mul(expr, this._p(this.Number));
+            else if (this.char('/')) expr = P.div(expr, this._p(this.Number));
+            else if (this.char('%')) expr = P.mod(expr, this._p(this.Number));
+            else break;
+        }
         return expr;
     }
 
     Number() {
         this.skip();
         let s = '';
+
+        if (this.char('-')) s = '-';
+
         while (true) {
-            const ch = this.peekc();
-            if (ch == '-') {
-                if (s == '') s = this.getc();
-                else break;
-            } else if (ch == '.') {
-                if (s.includes('.')) break;
-                s += this.getc();
-            } else if (ch >= '0' && ch <= '9') {
-                s += this.getc();
-            } else {
-                break;
-            }
+            if (!s.includes('.') && this.char('.')) s += '.';
+            else if (this.peekanychar('0123456789')) s += this.getc();
+            else break;
         }
+
         this.skip();
-        return P.const(parseFloat(s));
+        const f = parseFloat(s);
+        if (isNaN(f)) throw new Error(`${s}: Invalid number`);
+        return P.const(f);
     }
 }
 
