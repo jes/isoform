@@ -277,7 +277,7 @@ const app = {
         
         const timeSinceLastAdjustment = Date.now() - this.lastAdjustmentTime;
         if (timeSinceLastAdjustment > this.adjustmentInterval) {
-            const fpsRatio = renderer.currentFps / 30;
+            const fpsRatio = renderer.currentFps / 45;
             if (fpsRatio > 1.1 || fpsRatio < 0.9) {
                 renderer.setResolutionScale(renderer.resolutionScale * Math.sqrt(fpsRatio));
                 document.getElementById('resolution-scale').textContent = renderer.resolutionScale.toFixed(3);

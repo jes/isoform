@@ -678,9 +678,8 @@ const ui = {
                 await imageProcessor.load(file);
                 
                 // Extract grayscale channel
-                const sdfImage = imageProcessor.toSDF(4.0);
-                const channelData = sdfImage.extractChannel('grayscale', false);
-                const dimensions = sdfImage.getDimensions();
+                const channelData = imageProcessor.toSDF().extractChannel('grayscale', false);
+                const dimensions = imageProcessor.getDimensions();
                 
                 // Create a unique name based on the file name
                 const fileName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
