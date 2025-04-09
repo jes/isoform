@@ -119,13 +119,10 @@ const TreeRewriter = {
   },
 
   collectBlends(t, blends = new Set()) {
-    if (t instanceof BlendNode && !t.isDisabled) {
-      blends.add({
-        nodes: [t.children[0], t.otherNode],
-        blendRadius: t.blendRadius,
-        chamfer: t.chamfer,
-        blendId: t.uniqueId,
-      });
+    if (t.blends) {
+      for (const blend of t.blends) {
+        blends.add(blend);
+      }
     }
     for (const child of t.children) {
       TreeRewriter.collectBlends(child, blends);
@@ -272,7 +269,7 @@ const TreeRewriter = {
         t.treeNode = t.treeNode.cloneJustThisOne();
         t.treeNode.blendRadius = blend.blendRadius;
         t.treeNode.chamfer = blend.chamfer;
-        t.treeNode.uniqueId = blend.blendId;
+        t.treeNode.uniqueId = blend.uniqueId;
         return true;
       }
     }

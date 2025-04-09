@@ -1331,10 +1331,9 @@ const ui = {
     addBlend(node1, node2) {
         // This will be implemented later
         console.log(`Creating blend between ${node1.displayName} and ${node2.displayName}`);
-        const parent = node1.parent;
-        const blend = new BlendNode([node1]);
-        blend.otherNode = node2;
-        parent.addChild(blend);
+        const blend = new BlendNode(node1,node2);
+        node1.addBlend(blend);
+        node2.addBlend(blend);
         ui.selectNode(blend);
     },
 };

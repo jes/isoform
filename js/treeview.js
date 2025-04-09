@@ -38,11 +38,11 @@ class TreeView {
             
             // Restore selection if the selected node still exists
             if (this.selectedNode) {
-                const nodeLabel = this.container.querySelector(`.tree-node-label[data-node-id="${this.selectedNode.uniqueId}"]`);
-                if (nodeLabel) {
+                const nodeLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${this.selectedNode.uniqueId}"]`);
+                nodeLabels.forEach(nodeLabel => {
                     nodeLabel.classList.add('selected');
-                    this.highlightChildNodes(this.selectedNode, true);
-                }
+                });
+                this.highlightChildNodes(this.selectedNode, true);
             }
         }, 0);
         
@@ -71,8 +71,11 @@ class TreeView {
             labelContainer.classList.add('dragging');
         }
         
-        // Create toggle button for collapsing/expanding if node has children
-        const hasChildren = node.children && node.children.length > 0;
+        // Check if node has children or blends
+        const hasChildren = (node.children && node.children.length > 0) || 
+                            (node.blends && node.blends.length > 0);
+        
+        // Create toggle button for collapsing/expanding if node has children or blends
         const toggleBtn = document.createElement('div');
         toggleBtn.className = 'tree-toggle';
         // Check if this node was previously collapsed
@@ -129,8 +132,11 @@ class TreeView {
             const childHighlightLabels = this.container.querySelectorAll('.tree-node-label.child-of-selected');
             childHighlightLabels.forEach(el => el.classList.remove('child-of-selected'));
             
-            // Add selected class to this node
-            label.classList.add('selected');
+            // Add selected class to all instances of this node
+            const nodeLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${node.uniqueId}"]`);
+            nodeLabels.forEach(nodeLabel => {
+                nodeLabel.classList.add('selected');
+            });
             
             // Highlight all children of this node
             this.highlightChildNodes(node, true);
@@ -156,7 +162,12 @@ class TreeView {
             const childHighlightLabels = this.container.querySelectorAll('.tree-node-label.child-of-selected');
             childHighlightLabels.forEach(el => el.classList.remove('child-of-selected'));
             
-            label.classList.add('selected');
+            // Add selected class to all instances of this node
+            const nodeLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${node.uniqueId}"]`);
+            nodeLabels.forEach(nodeLabel => {
+                nodeLabel.classList.add('selected');
+            });
+            
             this.selectedNode = node;
             
             // Highlight all children of this node
@@ -193,21 +204,46 @@ class TreeView {
             });
         }
         
-        // Recursively add children
+        // Recursively add children and blends
         if (hasChildren) {
             const childrenContainer = document.createElement('div');
             childrenContainer.className = 'tree-children';
             
-            node.children.forEach((child, index) => {
-                // Skip if this is the dragging node
-                if (this.draggingNode === child) return;
-                
-                // Set parent reference for connection lines
-                child.parent = node;
-                child.isLastChild = index === node.children.length - 1;
-                const childNode = this.createTreeNode(child, level + 1, disabledParent || (node.isDisabled && node.children.length > 1));
-                childrenContainer.appendChild(childNode);
-            });
+            // Add regular children first
+            if (node.children && node.children.length > 0) {
+                node.children.forEach((child, index) => {
+                    // Skip if this is the dragging node
+                    if (this.draggingNode === child) return;
+                    
+                    // Set parent reference for connection lines (only for regular children)
+                    child.parent = node;
+                    // Only mark as last child if there are no blends
+                    child.isLastChild = (index === node.children.length - 1) && 
+                                       (!node.blends || node.blends.length === 0);
+                    const childNode = this.createTreeNode(child, level + 1, disabledParent || (node.isDisabled && node.children.length > 1));
+                    childrenContainer.appendChild(childNode);
+                });
+            }
+            
+            // Then add blends
+            if (node.blends && node.blends.length > 0) {
+                node.blends.forEach((blend, index) => {
+                    // Skip if this is the dragging node
+                    if (this.draggingNode === blend) return;
+                    
+                    // Don't set parent reference for blends since they can have multiple parents
+                    // Instead, pass a temporary isLastChild property without modifying the blend object
+                    const isLastChild = index === node.blends.length - 1;
+                    const blendNode = this.createTreeNode(blend, level + 1, disabledParent || node.isDisabled);
+                    
+                    // If this is the last blend, add a class to help with tree lines
+                    if (isLastChild) {
+                        blendNode.classList.add('last-child');
+                    }
+                    
+                    childrenContainer.appendChild(blendNode);
+                });
+            }
             
             container.appendChild(childrenContainer);
             
@@ -370,12 +406,20 @@ class TreeView {
     isChildOf(potentialChild, potentialParent) {
         // Check if potentialChild is a descendant of potentialParent
         let current = potentialChild;
-        while (current) {
-            if (current === potentialParent) {
+        
+        // First check direct parent relationship for regular nodes
+        while (current && current.parent) {
+            if (current.parent === potentialParent) {
                 return true;
             }
             current = current.parent;
         }
+        
+        // For blend nodes, check if they're in the blends array of the potential parent
+        if (potentialParent.blends && potentialParent.blends.includes(potentialChild)) {
+            return true;
+        }
+        
         return false;
     }
     
@@ -426,26 +470,53 @@ class TreeView {
     }
     
     highlightChildNodes(node, highlight = true) {
-        if (!node || !node.children || node.children.length === 0) return;
+        if (!node) return;
+        
+        const hasChildren = (node.children && node.children.length > 0) || 
+                            (node.blends && node.blends.length > 0);
+        if (!hasChildren) return;
         
         // Process each child recursively
         const processChildren = (currentNode) => {
-            if (!currentNode.children) return;
-            
-            currentNode.children.forEach(child => {
-                // Find the DOM element for this child
-                const childLabel = this.container.querySelector(`.tree-node-label[data-node-id="${child.uniqueId}"]`);
-                if (childLabel) {
-                    if (highlight) {
-                        childLabel.classList.add('child-of-selected');
-                    } else {
-                        childLabel.classList.remove('child-of-selected');
+            // Process regular children
+            if (currentNode.children) {
+                currentNode.children.forEach(child => {
+                    // Find the DOM element for this child
+                    const childLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${child.uniqueId}"]`);
+                    if (childLabels.length > 0) {
+                        childLabels.forEach(childLabel => {
+                            if (highlight) {
+                                childLabel.classList.add('child-of-selected');
+                            } else {
+                                childLabel.classList.remove('child-of-selected');
+                            }
+                        });
                     }
-                }
-                
-                // Process this child's children recursively
-                processChildren(child);
-            });
+                    
+                    // Process this child's children recursively
+                    processChildren(child);
+                });
+            }
+            
+            // Process blends
+            if (currentNode.blends) {
+                currentNode.blends.forEach(blend => {
+                    // Find all DOM elements for this blend
+                    const blendLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${blend.uniqueId}"]`);
+                    if (blendLabels.length > 0) {
+                        blendLabels.forEach(blendLabel => {
+                            if (highlight) {
+                                blendLabel.classList.add('child-of-selected');
+                            } else {
+                                blendLabel.classList.remove('child-of-selected');
+                            }
+                        });
+                    }
+                    
+                    // Don't recursively process blend's children to avoid circular references
+                    // If needed, we could add a check to prevent infinite recursion
+                });
+            }
         };
         
         processChildren(node);
@@ -481,8 +552,8 @@ class TreeView {
         if (!node) return;
         
         // Update the UI to reflect the selection
-        const nodeLabel = this.container.querySelector(`.tree-node-label[data-node-id="${node.uniqueId}"]`);
-        if (nodeLabel) {
+        const nodeLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${node.uniqueId}"]`);
+        if (nodeLabels.length > 0) {
             // Remove selected class from all nodes
             const selectedLabels = this.container.querySelectorAll('.tree-node-label.selected');
             selectedLabels.forEach(el => el.classList.remove('selected'));
@@ -491,8 +562,10 @@ class TreeView {
             const childHighlightLabels = this.container.querySelectorAll('.tree-node-label.child-of-selected');
             childHighlightLabels.forEach(el => el.classList.remove('child-of-selected'));
             
-            // Add selected class to this node
-            nodeLabel.classList.add('selected');
+            // Add selected class to all instances of this node
+            nodeLabels.forEach(nodeLabel => {
+                nodeLabel.classList.add('selected');
+            });
             
             // Highlight all children of this node
             this.highlightChildNodes(node, true);

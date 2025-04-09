@@ -14,6 +14,7 @@ class TreeNode {
     this.uniqueId = TreeNode.nextId++; // unique identifier per node
     this.displayName = `${this.name}${this.uniqueId}`; // user-visible name
     this.children = []; // child nodes
+    this.blends = []; // blend nodes
     this.parent = null; // parent node
     this.maxChildren = 0; // maximum number of children
     this.warnFunction = null; // function to call when a warning is issued
@@ -409,6 +410,12 @@ class TreeNode {
     node.parent = this;
     this.markDirty();
     return node;
+  }
+
+  addBlend(blend) {
+    this.blends.push(blend);
+    this.markDirty();
+    return blend;
   }
 
   removeChild(node) {

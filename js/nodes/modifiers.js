@@ -1077,13 +1077,12 @@ class NegateNode extends TreeNode {
 // object to store in the document tree; the BlendNodes are collected up in
 // the TreeRewriter to apply the blends
 class BlendNode extends TreeNode {
-  constructor(children = []) {
+  constructor(n1, n2) {
     super("Blend");
     this.maxChildren = 1;
-    this.otherNode = null;
+    this.nodes = [n1, n2];
     this.blendRadius = 0.5;
     this.chamfer = 1.0;
-    this.addChild(children);
   }
 
   properties() {
@@ -1091,21 +1090,6 @@ class BlendNode extends TreeNode {
       "blendRadius": "float",
       "chamfer": "float",
     };
-  }
-
-  aabb() {
-    if (this.children.length === 0) {
-      return AABB.empty();
-    }
-    return this.children[0].aabb();
-  }
-
-  makePeptide(p) {
-    if (this.children.length === 0) {
-      this.warn("Blend node has no child to transform");
-      return this.noop();
-    }
-    return this.children[0].peptide(p);
   }
 }
 
