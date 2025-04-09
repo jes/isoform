@@ -22,7 +22,7 @@ class ImageNode extends TreeNode {
     }
 
     makePeptide(p) {
-        let d = P.texture2d(this.uniformTexture2d("texture2d"), P.vec3(P.mod(P.vecX(p), P.one()), P.mod(P.vecY(p), P.one()), P.zero()));
+        let d = P.texture2d(this.uniformTexture2d("texture2d"), P.vec3(P.mod(P.vecX(p), P.one()), P.mod(P.neg(P.vecY(p)), P.one()), P.zero()));
 
         if (this.invert) d = P.neg(d);
 

@@ -866,6 +866,7 @@ class DistanceDeformInsideNode extends TreeNode {
   constructor(children = []) {
     super("DistanceDeformInside");
     this.amplitude = 1.0;
+    this.maxDisplacement = 1.0;
     this.maxChildren = 2;
     this.addChild(children);
   }
@@ -876,7 +877,7 @@ class DistanceDeformInsideNode extends TreeNode {
   }
 
   properties() {
-    return {"amplitude": "float", "blendRadius": "float", "chamfer": "float"};
+    return {"amplitude": "float", "maxDisplacement": "float", "blendRadius": "float", "chamfer": "float"};
   }
 
   makePeptide(p) {
@@ -900,8 +901,16 @@ class DistanceDeformInsideNode extends TreeNode {
     if (!d0) return null;
     const d1 = child1.peptide(p);
     if (!d1) return d0;
+
+    const dist0 = P.field(d0, 'distance');
+    const dist1 = P.field(d1, 'distance');
+    const distInside = P.min(dist1, P.zero());
+    const scaledDistInside = P.mul(distInside, this.uniform('amplitude'));
+    const clampedScaledDist = P.clamp(scaledDistInside, P.neg(this.uniform('maxDisplacement')), this.uniform('maxDisplacement'));
+    const distance = P.add(dist0, clampedScaledDist);
+
     return P.struct({
-      distance: P.add(P.field(d0, 'distance'), P.mul(this.uniform('amplitude'), this.min(P.field(d1, 'distance'), P.zero()))),
+      distance: distance,
       color: P.field(d0, 'color'),
       uniqueId: P.field(d0, 'uniqueId'),
     });
