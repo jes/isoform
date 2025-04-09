@@ -15,6 +15,7 @@ const RewriterTests = {
             this.testRewriteNoBlends2,
             this.testRewriteNoopBlend,
             this.testRewriteSimpleBlend,
+            this.testRewriteSimpleBlend2,
             this.testRewriteSimpleBlendWithModifiers,
             this.testRewriteAllPairsBlends,
             this.testNoRewriteForLikeBlends,
@@ -426,6 +427,30 @@ const RewriterTests = {
         this.assertEquals(origTreeString, "Union(Intersection(Sphere1,Gyroid3),Box2)");
         this.assertEquals(newTreeString, "Intersection(Union(Sphere1,Box2),Union(Gyroid3,Box2))");
         this.assertEquals(this.stringIntermediateTree(intermediateTree), "combinator(Intersection,combinator(Union,primitive(Sphere1),primitive(Box2)),combinator(Union,primitive(Gyroid3),primitive(Box2)))");
+    },
+
+    // same as previous test but using the other argument order
+    testRewriteSimpleBlend2: async function() {
+        TreeNode.nextId = 1;
+        const sphere = new SphereNode();
+        this.assertEquals(sphere.uniqueId, 1);
+        const box = new BoxNode();
+        this.assertEquals(box.uniqueId, 2);
+        const tree = new UnionNode([
+            new IntersectionNode([new GyroidNode(), sphere]),
+            box,
+        ]);
+        const blends = new Set([new BlendNode(box, sphere, 0.5, 1.0)]);
+        this.checkParents(tree);
+        const treeNormalised = tree.cloneWithSameIds().normalised();
+        const origTreeString = this.stringTree(treeNormalised);
+        const intermediateTree = TreeRewriter.rewriteTree(TreeRewriter.fromTreeNode(treeNormalised), blends);
+        const newTree = TreeRewriter.toTreeNode(intermediateTree);
+        this.checkParents(newTree);
+        const newTreeString = this.stringTree(newTree);
+        this.assertEquals(origTreeString, "Union(Intersection(Gyroid3,Sphere1),Box2)");
+        this.assertEquals(newTreeString, "Intersection(Union(Gyroid3,Box2),Union(Sphere1,Box2))");
+        this.assertEquals(this.stringIntermediateTree(intermediateTree), "combinator(Intersection,combinator(Union,primitive(Gyroid3),primitive(Box2)),combinator(Union,primitive(Sphere1),primitive(Box2)))");
     },
 
     // same as testRewriteSimpleBlend, but with modifier chains
