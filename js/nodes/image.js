@@ -22,15 +22,16 @@ class ImageNode extends TreeNode {
     }
 
     makePeptide(p) {
-        if (this.invert) {
-            return P.struct({
-                distance: P.neg(P.texture2d(this.uniformTexture2d("texture2d"), P.vec3(P.mod(P.vecX(p), P.one()), P.mod(P.vecY(p), P.one()), P.zero()))),
-            });
-        } else {
-            return P.struct({
-                distance: P.texture2d(this.uniformTexture2d("texture2d"), P.vec3(P.mod(P.vecX(p), P.one()), P.mod(P.vecY(p), P.one()), P.zero())),
-            });
-        }
+        let d = P.texture2d(this.uniformTexture2d("texture2d"), P.vec3(P.mod(P.vecX(p), P.one()), P.mod(P.vecY(p), P.one()), P.zero()));
+
+        if (this.invert) d = P.neg(d);
+
+        const zdist = P.sub(P.abs(P.vecZ(p)), P.const(0.005));
+        const dist3d = P.vlength(P.vec3(zdist, P.max(d, P.zero()), P.zero()));
+
+        return P.struct({
+            distance: P.mix(d, dist3d, P.step(P.zero(), zdist))
+        });
     }
 }
 
