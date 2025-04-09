@@ -1,5 +1,6 @@
 const TreeRewriter = {
   rewrite(treeNode) {
+    const startTime = performance.now();
     if (!treeNode) return null;
 
     const tNormalised = treeNode.cloneWithSameIds().normalised();
@@ -14,7 +15,12 @@ const TreeRewriter = {
     const tRewritten = TreeRewriter.rewriteTree(t, blends);
 
     // then convert back to TreeNode form
-    return TreeRewriter.toTreeNode(tRewritten);
+    const tNode = TreeRewriter.toTreeNode(tRewritten);
+
+    const endTime = performance.now();
+    console.log("TreeRewriter time:", endTime - startTime, "ms");
+
+    return tNode;
   },
 
   // take a TreeNode and return the intermediate tree
