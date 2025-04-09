@@ -311,62 +311,87 @@ const ui = {
         contextMenu.style.left = `${event.clientX}px`;
         contextMenu.style.top = `${event.clientY}px`;
 
-        // Add clipboard operations
-        this.buildClipboardOptions(contextMenu, node);
-        this.addMenuSeparator(contextMenu);
-
-        // Only show combinators and modifiers if not the root node
-        if (node.parent) {
-            // Combinators
-            this.buildCombinatorOptions(contextMenu, node);
-            this.addMenuSeparator(contextMenu);
+        // Special case for BlendNode - only show disable and delete options
+        if (node instanceof BlendNode) {
+            // Add display properties (just the disable/enable option)
+            const isDisabled = node.isDisabled === true;
             
-            // Modifiers
-            this.buildModifierOptions(contextMenu, node);
-            this.addMenuSeparator(contextMenu);
-        }
-        
-        // Display properties
-        this.buildDisplayOptions(contextMenu, node);
-        this.addMenuSeparator(contextMenu);
-        
-        // Add separator if node can add children
-        if (node.canAddMoreChildren()) {
-            this.buildPrimitiveOptions(contextMenu, node);
-            this.addMenuSeparator(contextMenu);
-        }
-
-        // Only show delete options for non-root nodes or nodes with children
-        if (node.parent) {
-            const infiniteChildren = node.parent.maxChildren == null;
-            const canAddChildren = infiniteChildren || (node.parent.maxChildren - node.parent.children.length) >= node.children.length;
-            if (node.children.length == 1 || (node.children.length > 1 && canAddChildren)) {
+            this.addMenuItem(contextMenu, isDisabled ? 'Enable' : 'Disable', () => {
+                if (isDisabled) {
+                    node.enable();
+                } else {
+                    node.disable();
+                }
+                this.renderTree();
+            }, isDisabled ? '👁️' : '👁️‍🗨️');
+            
+            // Add delete option
+            if (node.parent) {
                 this.addMenuItem(contextMenu, 'Delete this', () => {
-                    this.replaceNode(node, [...node.children]);
+                    node.delete();
                     this.renderTree();
                 }, '🗑️');
             }
-        }
-        
-        if (node.children.length > 0) {
-            this.addMenuItem(contextMenu, 'Delete children', () => {
-                // Create a copy of the children array to avoid modification issues during iteration
-                const childrenToDelete = [...node.children];
-                childrenToDelete.forEach(child => child.delete());
-                this.renderTree();
-            }, '🗑️');
-        } else if (node.parent) { // Only allow deleting non-root nodes
-            this.addMenuItem(contextMenu, 'Delete this', () => {
-                node.delete();
-                this.renderTree();
-            }, '🗑️');
-        }
+        } else {
+            // Regular context menu for other node types
+            
+            // Add clipboard operations
+            this.buildClipboardOptions(contextMenu, node);
+            this.addMenuSeparator(contextMenu);
 
-        if (node.parent && node.children.length > 0) {
-            this.addMenuItem(contextMenu, 'Delete with children', () => {
-                node.delete();
-                this.renderTree();
-            }, '🗑️');
+            // Only show combinators and modifiers if not the root node
+            if (node.parent) {
+                // Combinators
+                this.buildCombinatorOptions(contextMenu, node);
+                this.addMenuSeparator(contextMenu);
+                
+                // Modifiers
+                this.buildModifierOptions(contextMenu, node);
+                this.addMenuSeparator(contextMenu);
+            }
+            
+            // Display properties
+            this.buildDisplayOptions(contextMenu, node);
+            this.addMenuSeparator(contextMenu);
+            
+            // Add separator if node can add children
+            if (node.canAddMoreChildren()) {
+                this.buildPrimitiveOptions(contextMenu, node);
+                this.addMenuSeparator(contextMenu);
+            }
+
+            // Only show delete options for non-root nodes or nodes with children
+            if (node.parent) {
+                const infiniteChildren = node.parent.maxChildren == null;
+                const canAddChildren = infiniteChildren || (node.parent.maxChildren - node.parent.children.length) >= node.children.length;
+                if (node.children.length == 1 || (node.children.length > 1 && canAddChildren)) {
+                    this.addMenuItem(contextMenu, 'Delete this', () => {
+                        this.replaceNode(node, [...node.children]);
+                        this.renderTree();
+                    }, '🗑️');
+                }
+            }
+            
+            if (node.children.length > 0) {
+                this.addMenuItem(contextMenu, 'Delete children', () => {
+                    // Create a copy of the children array to avoid modification issues during iteration
+                    const childrenToDelete = [...node.children];
+                    childrenToDelete.forEach(child => child.delete());
+                    this.renderTree();
+                }, '🗑️');
+            } else if (node.parent) { // Only allow deleting non-root nodes
+                this.addMenuItem(contextMenu, 'Delete this', () => {
+                    node.delete();
+                    this.renderTree();
+                }, '🗑️');
+            }
+
+            if (node.parent && node.children.length > 0) {
+                this.addMenuItem(contextMenu, 'Delete with children', () => {
+                    node.delete();
+                    this.renderTree();
+                }, '🗑️');
+            }
         }
         
         // Add the menu to the document
