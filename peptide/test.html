@@ -166,6 +166,11 @@
             <h2>GLSL Evaluation Tests</h2>
             <div id="glsl-test-output"></div>
         </div>
+        <!-- Add Parser Tests section -->
+        <div class="test-suite">
+            <h2>Parser Tests</h2>
+            <div id="parser-test-output"></div>
+        </div>
     </div>
     
     <!-- GLSL Debug Dialog -->
@@ -188,8 +193,10 @@
     <script src="js/glsl_interval.js"></script>
     <script src="js/peptide.js"></script>
     <script src="js/ssa.js"></script>
+    <script src="js/parser.js"></script>
     <script src="test/test.js"></script>
     <script src="test/glsl.js"></script>
+    <script src="test/parser.js"></script>
     <script>
         (async () => {
             const startTime = performance.now();
@@ -198,6 +205,7 @@
             const intervalOutput = document.getElementById('interval-test-output');
             const compiledIntervalOutput = document.getElementById('compiled-interval-test-output');
             const glslOutput = document.getElementById('glsl-test-output');
+            const parserOutput = document.getElementById('parser-test-output');
             const overallStatus = document.getElementById('overall-status');
             const testStats = document.getElementById('test-stats');
             
@@ -206,12 +214,14 @@
             intervalOutput.innerHTML = '<p>Running interval tests...</p>';
             compiledIntervalOutput.innerHTML = '<p>Running compiled interval tests...</p>';
             glslOutput.innerHTML = '<p>Running GLSL tests...</p>';
+            parserOutput.innerHTML = '<p>Running parser tests...</p>';
             
             const directResults = await PeptideTests.direct.run();
             const compiledResults = await PeptideTests.compiled.run();
             const intervalResults = await PeptideTests.interval.run();
             const compiledIntervalResults = await PeptideTests.compiledInterval.run();
             const glslResults = await PeptideGLSLTests.run();
+            const parserResults = await PeptideTests.parser.run();
             
             const formatResults = (results) => results.map(result => `
                 <div class="${result.passed ? 'test-pass' : 'test-fail'}">
@@ -226,9 +236,10 @@
             intervalOutput.innerHTML = formatResults(intervalResults);
             compiledIntervalOutput.innerHTML = formatResults(compiledIntervalResults);
             glslOutput.innerHTML = formatResults(glslResults);
+            parserOutput.innerHTML = formatResults(parserResults);
             
             // After running all tests, collect and display failures
-            const allResults = [...directResults, ...compiledResults, ...intervalResults, ...compiledIntervalResults, ...glslResults];
+            const allResults = [...directResults, ...compiledResults, ...intervalResults, ...compiledIntervalResults, ...glslResults, ...parserResults];
             const failedTests = allResults.filter(r => !r.passed);
             
             if (failedTests.length > 0) {
