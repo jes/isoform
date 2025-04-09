@@ -415,17 +415,11 @@ const RewriterTests = {
             new IntersectionNode([sphere, new GyroidNode()]),
             box,
         ]);
-        tree.blends = new Set([
-            {
-                nodes: [sphere, box],
-                blendRadius: 0.5,
-                chamfer: 1.0,
-            },
-        ]);
+        const blends = new Set([new BlendNode(box, sphere, 0.5, 1.0)]);
         this.checkParents(tree);
         const treeNormalised = tree.cloneWithSameIds().normalised();
         const origTreeString = this.stringTree(treeNormalised);
-        const intermediateTree = TreeRewriter.rewriteTree(TreeRewriter.fromTreeNode(treeNormalised));
+        const intermediateTree = TreeRewriter.rewriteTree(TreeRewriter.fromTreeNode(treeNormalised), blends);
         const newTree = TreeRewriter.toTreeNode(intermediateTree);
         this.checkParents(newTree);
         const newTreeString = this.stringTree(newTree);
