@@ -11,7 +11,7 @@ class PeptideParser {
         const parser = new PeptideParser(str);
         const expr = parser._p(parser.Expression);
         if (parser.peekc() !== undefined) {
-            throw new Error(`${str}: Unexpected character '${parser.peekc()}' at line ${parser.line}, column ${parser.col}`);
+            throw new Error(`${str}: unexpected character '${parser.peekc()}' at line ${parser.line}, column ${parser.col}`);
         }
         return expr;
     }
@@ -67,7 +67,7 @@ class PeptideParser {
         } catch (e) {
             if (this.throwing) throw e;
             this.throwing = true;
-            throw new Error(`${e.message} at line ${startLine}, column ${startCol}`);
+            throw new Error(`${e.message} at line ${this.line}, column ${this.col}`);
         }
 
         // Reset position on failure
@@ -92,7 +92,7 @@ class PeptideParser {
     }
 
     Term() {
-        return this._p(this.Number) || this._p(this.Variable);
+        return this._p(this.Number) || this._p(this.FunctionCall) || this._p(this.Variable);
     }
 
     Number() {
@@ -111,8 +111,36 @@ class PeptideParser {
 
         this.skip();
         const f = parseFloat(s);
-        if (isNaN(f)) throw new Error(`${s}: Invalid number`);
+        if (isNaN(f)) throw new Error(`${s}: invalid number`);
         return P.const(f);
+    }
+
+    FunctionCall() {
+        const name = this._p(this.Identifier);
+        if (!name) return null;
+        if (!this.char('(')) return null;
+        const args = this._p(this.Arguments);
+        if (!this.char(')')) throw new Error(`${name}: expected ')'`);
+        
+        // for now we allow calling any function in Peptide - potentially want a hard-coded list later
+        if (typeof P[name] === 'function') {
+            return P[name](...args);
+        } else {
+            throw new Error(`Unknown function: ${name}`);
+        }
+    }
+
+    Arguments() {
+        const args = [];
+        while (true) {
+            this.skip();
+            if (this.char(')')) break;
+            args.push(this._p(this.Expression));
+            if (this.char(',')) continue;
+            if (this.peekc() == ')') break;
+            throw new Error(`expected ',' or ')'`);
+        }
+        return args;
     }
 
     Variable() {
@@ -125,8 +153,9 @@ class PeptideParser {
         this.skip();
         let s = '';
         while (this.peekanychar('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_')) s += this.getc();
-        if (s[0] >= '0' && s[0] <= '9') throw new Error(`${s}: Invalid identifier`);
-        return P.var(s);
+        if (s[0] >= '0' && s[0] <= '9') throw new Error(`${s}: invalid identifier`);
+        this.skip();
+        return s;
     }
 }
 

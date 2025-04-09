@@ -79,6 +79,13 @@ addParserTest('long variable name', 'long_variable_name', 1, {long_variable_name
 addParserTest('multiple variables', 'x + y', 3, {x: 1, y: 2});
 addParserTest('multiple variables 2', 'x + y + z', 6, {x: 1, y: 2, z: 3});
 
+// Function call tests
+addParserTest('sqrt', 'sqrt(4)', 2);
+addParserTest('sin', 'sin(0)', 0);
+addParserTest('cos', 'cos(0)', 1);
+addParserTest('tan', 'tan(0)', 0);
+addParserTest('abs', 'abs(-1)', 1);
+
 // Export for browser
 if (typeof window !== 'undefined') {
     if (!window.PeptideTests) {
