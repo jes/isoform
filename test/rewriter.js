@@ -507,7 +507,7 @@ const RewriterTests = {
             },
         ]);
         this.checkParents(tree);
-        const newTree = TreeRewriter.rewrite(tree, true);
+        const newTree = TreeRewriter.rewrite(tree);
         this.checkParents(newTree);
         //this.assertEquals(this.stringTree(newTree), "Union(Intersection(Intersection(Intersection(Union(Sphere2,Box1),Union(Sphere2,Negate(Cylinder4))),Intersection(Union(Gyroid3,Box1),Union(Gyroid3,Negate(Cylinder4)))),Union(Intersection(Sphere2,Gyroid3),Gyroid3)),Intersection(Union(Sphere2,Intersection(Box1,Negate(Cylinder4))),Intersection(Box1,Negate(Cylinder4))))");
         let checked = new Set();
@@ -524,7 +524,7 @@ const RewriterTests = {
                         if ((blend.nodes[0].uniqueId == idLeft && blend.nodes[1].uniqueId == idRight) ||
                             (blend.nodes[0].uniqueId == idRight && blend.nodes[1].uniqueId == idLeft)) {
                             if (node.blendRadius !== blend.blendRadius || node.chamfer !== blend.chamfer) {
-                                console.log(`Blend parameters mismatch for ${idLeft},${idRight}: expected radius=${blend.blendRadius}, chamfer=${blend.chamfer} but got radius=${node.blendRadius}, chamfer=${node.chamfer}`);
+                                throw new Error(`Blend parameters mismatch for ${idLeft},${idRight}: expected radius=${blend.blendRadius}, chamfer=${blend.chamfer} but got radius=${node.blendRadius}, chamfer=${node.chamfer}`);
                             }
                             checked.add(blend);
                         }
