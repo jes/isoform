@@ -75,6 +75,9 @@ addParserTest('parse variable with newlines', '\nx', 1, {x: 1});
 addParserTest('parse variable with trailing spaces', 'x ', 1, {x: 1});
 addParserTest('use variable in expression', 'x + 1', 2, {x: 1});
 addParserTest('use variable in expression 2', ' 1 + x',  2, {x: 1});
+addParserTest('long variable name', 'long_variable_name', 1, {long_variable_name: 1});
+addParserTest('multiple variables', 'x + y', 3, {x: 1, y: 2});
+addParserTest('multiple variables 2', 'x + y + z', 6, {x: 1, y: 2, z: 3});
 
 // Export for browser
 if (typeof window !== 'undefined') {
