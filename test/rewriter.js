@@ -444,17 +444,11 @@ const RewriterTests = {
             new DomainDeformNode(new ShellNode(new IntersectionNode([sphere, new TransformNode(new GyroidNode())]))),
             new ScaleNode(box),
         ])));
-        tree.blends = new Set([
-            {
-                nodes: [sphere, box],
-                blendRadius: 0.5,
-                chamfer: 1.0,
-            },
-        ]);
+        const blends = new Set([new BlendNode(sphere, box, 0.5, 1.0)]);
         this.checkParents(tree);
         const treeNormalised = tree.cloneWithSameIds().normalised();
         const origTreeString = this.stringTree(treeNormalised);
-        const intermediateTree = TreeRewriter.rewriteTree(TreeRewriter.fromTreeNode(treeNormalised), true);
+        const intermediateTree = TreeRewriter.rewriteTree(TreeRewriter.fromTreeNode(treeNormalised), blends);
         const newTree = TreeRewriter.toTreeNode(intermediateTree);
         this.checkParents(newTree);
         const newTreeString = this.stringTree(newTree);
