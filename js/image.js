@@ -1,6 +1,5 @@
 class ImageProcessor {
     constructor() {
-        this.imageElement = null;
         this.width = 0;
         this.height = 0;
         this.imageData = null;
@@ -13,11 +12,11 @@ class ImageProcessor {
      */
     load(source) {
         return new Promise((resolve, reject) => {
-            this.imageElement = new window.Image();
+            const imageElement = new window.Image();
             
-            this.imageElement.onload = () => {
-                this.width = this.imageElement.width;
-                this.height = this.imageElement.height;
+            imageElement.onload = () => {
+                this.width = imageElement.width;
+                this.height = imageElement.height;
                 
                 // Create a canvas to extract pixel data
                 const canvas = document.createElement('canvas');
@@ -25,7 +24,7 @@ class ImageProcessor {
                 canvas.height = this.height;
                 
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(this.imageElement, 0, 0);
+                ctx.drawImage(imageElement, 0, 0);
                 
                 // Get the image data (RGBA values for each pixel)
                 this.imageData = this.normalizeImageData(ctx.getImageData(0, 0, this.width, this.height).data);
@@ -33,7 +32,7 @@ class ImageProcessor {
                 resolve(this);
             };
             
-            this.imageElement.onerror = () => {
+            imageElement.onerror = () => {
                 reject(new Error('Failed to load image'));
             };
             
@@ -42,7 +41,7 @@ class ImageProcessor {
                 // Handle File object from file picker
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    this.imageElement.src = e.target.result;
+                    imageElement.src = e.target.result;
                 };
                 reader.onerror = () => {
                     reject(new Error('Failed to read file'));
@@ -50,7 +49,7 @@ class ImageProcessor {
                 reader.readAsDataURL(source);
             } else if (typeof source === 'string') {
                 // Handle URL or base64 string
-                this.imageElement.src = source;
+                imageElement.src = source;
             } else {
                 reject(new Error('Unsupported source type'));
             }
@@ -155,38 +154,53 @@ class ImageProcessor {
      * Creates a new ImageProcessor containing a signed distance field (SDF) of the original image
      * Negative values are inside, positive values are outside
      * A pixel is considered "inside" if its grayscale value is < 0.5, "outside" otherwise
+     * @param {number} [upscale=1.0] - Upscale factor for the SDF
      * @param {number} [maxDistance=Infinity] - Maximum distance to compute (for performance)
      * @returns {ImageProcessor} - A new ImageProcessor with the SDF data
      */
-    toSDF(maxDistance = Infinity) {
+    toSDF(upscale = 1.0, maxDistance = Infinity) {
         if (!this.imageData) {
             throw new Error('No image data available. Load an image first.');
         }
         
-        const pixelCount = this.width * this.height;
+        // Calculate new dimensions based on upscale factor
+        const newWidth = Math.floor(this.width * upscale);
+        const newHeight = Math.floor(this.height * upscale);
+        const newPixelCount = newWidth * newHeight;
+        
         const sdfProcessor = new ImageProcessor();
-        sdfProcessor.width = this.width;
-        sdfProcessor.height = this.height;
+        sdfProcessor.width = newWidth;
+        sdfProcessor.height = newHeight;
         
         // Create binary mask: true for inside (dark), false for outside (light)
-        const mask = new Array(pixelCount);
-        for (let i = 0; i < pixelCount; i++) {
-            const baseIndex = i * 4; // RGBA = 4 channels
-            const grayscale = (
-                this.imageData[baseIndex] + 
-                this.imageData[baseIndex + 1] + 
-                this.imageData[baseIndex + 2]
-            ) / 3;
-            mask[i] = grayscale < 0.5;
+        const mask = new Array(newPixelCount);
+        
+        // Fill the mask with upscaled image data
+        for (let ny = 0; ny < newHeight; ny++) {
+            for (let nx = 0; nx < newWidth; nx++) {
+                // Map new coordinates back to original image
+                const x = Math.min(Math.floor(nx / upscale), this.width - 1);
+                const y = Math.min(Math.floor(ny / upscale), this.height - 1);
+                const origIndex = y * this.width + x;
+                const newIndex = ny * newWidth + nx;
+                
+                const baseIndex = origIndex * 4; // RGBA = 4 channels
+                const grayscale = (
+                    this.imageData[baseIndex] + 
+                    this.imageData[baseIndex + 1] + 
+                    this.imageData[baseIndex + 2]
+                ) / 3;
+                mask[newIndex] = grayscale < 0.5;
+            }
         }
         
         // Compute the SDF
-        const sdfData = new Float32Array(pixelCount * 4); // RGBA format
+        const sdfData = new Float32Array(newPixelCount * 4); // RGBA format
         
         // For each pixel, find the distance to the nearest pixel of opposite type
-        for (let y = 0; y < this.height; y++) {
-            for (let x = 0; x < this.width; x++) {
-                const index = y * this.width + x;
+        for (let y = 0; y < newHeight; y++) {
+            for (let x = 0; x < newWidth; x++) {
+                const index = y * newWidth + x;
                 const isInside = mask[index];
                 
                 // Find minimum distance to a pixel of opposite type
@@ -195,25 +209,24 @@ class ImageProcessor {
                 // Search in a growing square until we find a pixel of opposite type
                 // or reach the maximum distance
                 for (let d = 0; d < maxDistance && minDist === maxDistance; d++) {
-                    // Check all pixels at distance d (Manhattan distance)
                     for (let dy = -d; dy <= d; dy++) {
                         for (let dx = -d; dx <= d; dx++) {
-                            // skip pixels that would have been handled on a previous pass
-                            if (Math.abs(dx) + Math.abs(dy) < 0.7*d) continue;
+                            // Skip pixels that are further than d from the center
+                            if (dx*dx + dy*dy > d*d) continue;
                             
                             const nx = x + dx;
                             const ny = y + dy;
                             
                             // Skip if out of bounds
-                            if (nx < 0 || nx >= this.width || ny < 0 || ny >= this.height) continue;
+                            if (nx < 0 || nx >= newWidth || ny < 0 || ny >= newHeight) continue;
                             
-                            const nIndex = ny * this.width + nx;
+                            const nIndex = ny * newWidth + nx;
                             
                             // If we found a pixel of opposite type
                             if (mask[nIndex] !== isInside) {
                                 // Calculate Euclidean distance
-                                const dx2 = dx / this.width;
-                                const dy2 = dy / this.height;
+                                const dx2 = dx / newWidth;
+                                const dy2 = dy / newHeight;
                                 const dist = Math.sqrt(dx2 * dx2 + dy2 * dy2);
                                 minDist = Math.min(minDist, dist);
                             }
@@ -230,23 +243,12 @@ class ImageProcessor {
                 sdfData[outIndex] = signedDist;     // R
                 sdfData[outIndex + 1] = signedDist; // G
                 sdfData[outIndex + 2] = signedDist; // B
-                sdfData[outIndex + 3] = 1;        // A (fully opaque)
+                sdfData[outIndex + 3] = 1;          // A (fully opaque)
             }
         }
         
-        // Create a canvas to store the SDF data
-        const canvas = document.createElement('canvas');
-        canvas.width = this.width;
-        canvas.height = this.height;
-        const ctx = canvas.getContext('2d');
-        const imageData = ctx.createImageData(this.width, this.height);
-        imageData.data.set(sdfData);
-        ctx.putImageData(imageData, 0, 0);
-        
         // Set up the new ImageProcessor with the SDF data
         sdfProcessor.imageData = sdfData;
-        sdfProcessor.imageElement = new window.Image();
-        sdfProcessor.imageElement.src = canvas.toDataURL();
         
         return sdfProcessor;
     }
