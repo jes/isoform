@@ -1208,18 +1208,7 @@ const ui = {
     // Helper function to check if a node exists in the tree
     nodeExistsInTree(node, rootNode) {
         if (!node || !rootNode) return false;
-        
-        // Check if the node is the root node
-        if (node === rootNode) return true;
-        
-        // Recursively check all children
-        for (const child of rootNode.children) {
-            if (this.nodeExistsInTree(node, child)) {
-                return true;
-            }
-        }
-        
-        return false;
+        return rootNode.findNodeById(node.uniqueId) ? true : false;
     },
 
     // Add these new properties and methods for blend mode
