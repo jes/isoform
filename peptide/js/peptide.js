@@ -1500,6 +1500,157 @@ class Peptide {
         });
     }
 
+    static texture2d(name, pos) {
+        pos.assertType('vec3');
+        return new Peptide('texture2d', 'float', name, pos, null, null, {
+            evaluate: (vars) => {
+                if (!(name in vars) || !vars[name].sample) {
+                    throw new Error(`Texture '${name}' not found or not a valid texture`);
+                }
+                return vars[name].sample(pos.evaluate(vars));
+            },
+            evaluateInterval: (vars) => {
+                if (!(name in vars) || !vars[name].sampleInterval) {
+                    throw new Error(`Texture '${name}' not found or not a valid texture for interval arithmetic`);
+                }
+                return vars[name].sampleInterval([
+                    pos.evaluateInterval(vars).x,
+                    pos.evaluateInterval(vars).y
+                ]);
+            },
+            jsCode: (ssaOp) => {
+                return `if (!('${name}' in vars) || !vars['${name}'].sample) throw new Error("Texture '${name}' not found or not a valid texture");\n`
+                    + `  ${ssaOp.result} = vars['${name}'].sample(${ssaOp.left});`;
+            },
+            jsIntervalCode: (ssaOp) => {
+                return `if (!('${name}' in vars) || !vars['${name}'].sampleInterval) throw new Error("Texture '${name}' not found or not a valid texture for interval arithmetic");\n`
+                    + `  ${ssaOp.result} = vars['${name}'].sampleInterval([${ssaOp.left}.x, ${ssaOp.left}.y]);`;
+            },
+            glslCode: (ssaOp) => `${ssaOp.result} = texture(${name}, ${ssaOp.left}.xy).r;`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = itexture2D(${name}, ${ssaOp.left});`,
+            derivative: (varName) => {
+                const posDerivative = pos.derivative(varName);
+                
+                // Using finite differences to approximate texture gradient
+                // We'll create a small expression that computes the gradient at runtime
+                
+                // Define a small step size for finite differences
+                const h = P.const(0.01); // Small step size
+                
+                // Create offset vectors for sampling in each direction
+                const stepX = P.vec3(h, P.zero(), P.zero());
+                const stepY = P.vec3(P.zero(), h, P.zero());
+                
+                // Sample the texture at the center point
+                const centerValue = P.texture2d(name, pos);
+                
+                // Sample the texture at offset points
+                const valueXPlus = P.texture2d(name, P.vadd(pos, stepX));
+                const valueYPlus = P.texture2d(name, P.vadd(pos, stepY));
+                
+                // Calculate finite differences (forward difference)
+                const gradientX = P.div(P.sub(valueXPlus, centerValue), h);
+                const gradientY = P.div(P.sub(valueYPlus, centerValue), h);
+                
+                // Create a gradient vector (z component is 0 since we're in 2D)
+                const gradient = P.vec3(gradientX, gradientY, P.zero());
+                
+                // The derivative is the dot product of the gradient with the position derivative
+                return [
+                    P.vdot(gradient, posDerivative[0]),
+                    P.vdot(gradient, posDerivative[1]),
+                    P.vdot(gradient, posDerivative[2])
+                ];
+            },
+        });
+    }
+
+    static vtexture2d(name, pos) {
+        pos.assertType('vec3');
+        return new Peptide('vtexture2d', 'vec3', name, pos, null, null, {
+            evaluate: (vars) => {
+                if (!(name in vars) || !vars[name].sampleVec) {
+                    throw new Error(`Texture '${name}' not found or not a valid vector texture`);
+                }
+                return vars[name].sampleVec(pos.evaluate(vars));
+            },
+            evaluateInterval: (vars) => {
+                if (!(name in vars) || !vars[name].sampleVecInterval) {
+                    throw new Error(`Texture '${name}' not found or not a valid vector texture for interval arithmetic`);
+                }
+                return vars[name].sampleVecInterval([
+                    pos.evaluateInterval(vars).x,
+                    pos.evaluateInterval(vars).y
+                ]);
+            },
+            jsCode: (ssaOp) => {
+                return `if (!('${name}' in vars) || !vars['${name}'].sampleVec) throw new Error("Texture '${name}' not found or not a valid vector texture");\n`
+                    + `  ${ssaOp.result} = vars['${name}'].sampleVec(${ssaOp.left});`;
+            },
+            jsIntervalCode: (ssaOp) => {
+                return `if (!('${name}' in vars) || !vars['${name}'].sampleVecInterval) throw new Error("Texture '${name}' not found or not a valid vector texture for interval arithmetic");\n`
+                    + `  ${ssaOp.result} = vars['${name}'].sampleVecInterval([${ssaOp.left}.x, ${ssaOp.left}.y]);`;
+            },
+            glslCode: (ssaOp) => `${ssaOp.result} = texture(${name}, ${ssaOp.left}.xy).rgb;`,
+            glslIntervalCode: (ssaOp) => `${ssaOp.result} = ivtexture2D(${name}, ${ssaOp.left});`,
+            derivative: (varName) => {
+                const posDerivative = pos.derivative(varName);
+                
+                // Using finite differences to approximate texture gradient
+                // For vector textures, we need to compute the Jacobian matrix
+                
+                // Define a small step size for finite differences
+                const h = P.const(0.01); // Small step size
+                
+                // Create offset vectors for sampling in each direction
+                const stepX = P.vec3(h, P.zero(), P.zero());
+                const stepY = P.vec3(P.zero(), h, P.zero());
+                
+                // Sample the texture at the center point
+                const centerValue = P.vtexture2d(name, pos);
+                
+                // Sample the texture at offset points
+                const valueXPlus = P.vtexture2d(name, P.vadd(pos, stepX));
+                const valueYPlus = P.vtexture2d(name, P.vadd(pos, stepY));
+                
+                // Calculate finite differences for each component
+                const gradientX = P.vdiv(P.vsub(valueXPlus, centerValue), h);
+                const gradientY = P.vdiv(P.vsub(valueYPlus, centerValue), h);
+                
+                // For each component of the derivative, we need to compute:
+                // dF/dx_i = (dF/dp_x * dp_x/dx_i) + (dF/dp_y * dp_y/dx_i)
+                // where p is the position and x_i is the variable we're differentiating with respect to
+                
+                // Extract components of the position derivatives
+                const dx_dx = P.vecX(posDerivative[0]);
+                const dy_dx = P.vecY(posDerivative[0]);
+                
+                const dx_dy = P.vecX(posDerivative[1]);
+                const dy_dy = P.vecY(posDerivative[1]);
+                
+                const dx_dz = P.vecX(posDerivative[2]);
+                const dy_dz = P.vecY(posDerivative[2]);
+                
+                // Compute the derivatives using the chain rule
+                return [
+                    P.vadd(
+                        P.vmul(gradientX, dx_dx),
+                        P.vmul(gradientY, dy_dx)
+                    ),
+                    P.vadd(
+                        P.vmul(gradientX, dx_dy),
+                        P.vmul(gradientY, dy_dy)
+                    ),
+                    P.vadd(
+                        P.vmul(gradientX, dx_dz),
+                        P.vmul(gradientY, dy_dz)
+                    )
+                ];
+            },
+        });
+    }
+
+
     static struct(data) {
         return new Peptide('struct', 'struct', data, null, null, null, {
             evaluate: (vars) => {

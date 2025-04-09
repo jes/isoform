@@ -870,22 +870,35 @@ class DistanceDeformInsideNode extends TreeNode {
     this.addChild(children);
   }
 
+  makeNormalised() {
+    this.secondChild = this.children[1];
+    return super.makeNormalised();
+  }
+
   properties() {
     return {"amplitude": "float", "blendRadius": "float", "chamfer": "float"};
   }
 
   makePeptide(p) {
-    if (this.children.length < 1) {
+    const child0 = this.children[0];
+    let child1 = this.children[1];
+    if (!child0) {
       this.warn("DistanceDeformInside node has no child to transform");
       return this.noop();
     }
-    if (this.children.length == 1) {
-      this.warn("DistanceDeformInside node needs a second child to specify the space to deform");
-      return this.children[0].peptide(p);
+    if (!child1) {
+      // Hack: the TreeRewriter loses out reference to our second child, so we stash it in makeNormalised() and put it back here
+      if (this.secondChild) {
+        this.children.push(this.secondChild);
+        child1 = this.secondChild;
+      } else {
+        this.warn("DistanceDeformInside node needs a second child to specify the space to deform");
+        return child0.peptide(p);
+      }
     }
-    const d0 = this.children[0].peptide(p);
+    const d0 = child0.peptide(p);
     if (!d0) return null;
-    const d1 = this.children[1].peptide(p);
+    const d1 = child1.peptide(p);
     if (!d1) return d0;
     return P.struct({
       distance: P.add(P.field(d0, 'distance'), this.min(P.mul(P.field(d1, 'distance'), this.uniform('amplitude')), P.zero())),

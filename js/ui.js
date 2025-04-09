@@ -590,6 +590,11 @@ const ui = {
         this.addMenuItem(contextMenu, 'Import STL', () => {
             this.importSTL(node);
         }, MeshNode.prototype.getIcon());
+        
+        // Add image import option
+        this.addMenuItem(contextMenu, 'Import Image', () => {
+            this.importImage(node);
+        }, '🖼️');
     },
 
     // Add this new method to handle STL import
@@ -636,6 +641,74 @@ const ui = {
             } catch (error) {
                 console.error('Error importing STL:', error);
                 alert(`Failed to import STL: ${error}`);
+            } finally {
+                // Remove the loading indicator
+                loadingIndicator.remove();
+            }
+        });
+        
+        // Trigger the file dialog
+        fileInput.click();
+    },
+
+    // Add this new method to handle image import
+    importImage(parentNode) {
+        // Create a file input element
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*'; // Accept all image types
+        
+        // Add event listener for file selection
+        fileInput.addEventListener('change', async (e) => {
+            if (e.target.files.length === 0) return;
+            
+            const file = e.target.files[0];
+            
+            // Show a loading indicator
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.className = 'loading-indicator';
+            loadingIndicator.innerHTML = '<div class="spinner"></div><div>Processing image...</div>';
+            document.body.appendChild(loadingIndicator);
+            
+            try {
+                // Create an ImageProcessor instance
+                const imageProcessor = new ImageProcessor();
+                
+                // Load the image
+                await imageProcessor.load(file);
+                
+                // Extract grayscale channel
+                const channelData = imageProcessor.extractChannel('grayscale');
+                const dimensions = imageProcessor.getDimensions();
+                
+                // Create a unique name based on the file name
+                const fileName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
+                
+                // Create an ImageNode with the grayscale data
+                const imageNode = new ImageNode(
+                    fileName,
+                    channelData,
+                    dimensions,
+                    'linear' // Default to linear interpolation
+                );
+                
+                // Set display name
+                imageNode.setProperty('displayName', fileName);
+                
+                // Make sure the node has a unique name
+                imageNode.setUniqueName(app.document);
+                
+                // Add the image node to the parent
+                parentNode.addChild(imageNode);
+                
+                // Select the new node and update the tree
+                this.selectNode(imageNode);
+                this.renderTree();
+                
+                console.log(`Imported image: ${fileName} (${dimensions[0]}x${dimensions[1]})`);
+            } catch (error) {
+                console.error('Error importing image:', error);
+                alert(`Failed to import image: ${error.message}`);
             } finally {
                 // Remove the loading indicator
                 loadingIndicator.remove();

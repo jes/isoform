@@ -73,8 +73,8 @@ class TreeNode {
     if (this.isCombinator) {
       throw new Error("Combinator nodes must implement makeNormalised()");
     }
-    if (this.children.length > 0) {
-      this.children[0] = this.children[0].normalised();
+    for (let i = 0; i < this.children.length; i++) {
+      this.children[i] = this.children[i].normalised();
     }
     return this;
   }
@@ -159,6 +159,12 @@ class TreeNode {
 
   // return a namefor a texture3d uniform
   uniformTexture3d(property) {
+    const uniformName = this.uniformName(property);
+    this.propertyUniforms[uniformName] = property;
+    return `u_${this.name}_${this.uniqueId}_${property}`;
+  }
+
+  uniformTexture2d(property) {
     const uniformName = this.uniformName(property);
     this.propertyUniforms[uniformName] = property;
     return `u_${this.name}_${this.uniqueId}_${property}`;
@@ -620,13 +626,15 @@ class TreeNode {
       if (visited.has(node)) return;
       
       visited.set(node, true);
-      nodeMap.set(node, {
-        id: node.uniqueId,
-        path: [...path]
-      });
-      
-      for (let i = 0; i < node.children.length; i++) {
-        assignIds(node.children[i], [...path, 'children', i]);
+      if (node) {
+        nodeMap.set(node, {
+          id: node.uniqueId,
+          path: [...path]
+        });
+        
+        for (let i = 0; i < node.children.length; i++) {
+          assignIds(node.children[i], [...path, 'children', i]);
+        }
       }
     };
     

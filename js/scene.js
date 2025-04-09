@@ -16,6 +16,8 @@ const scene = {
                 type = 'vec3';
             } else if (value instanceof Texture3D) {
                 type = 'sampler3D';
+            } else if (value instanceof Texture2D) {
+                type = 'sampler2D';
             } else {
                 throw new Error(`Unsupported uniform type for ${name}: ${value?.constructor?.name || typeof value}`);
             }

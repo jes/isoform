@@ -18,6 +18,8 @@ class ShaderLayer {
                 type = 'vec3';
             } else if (value instanceof Texture3D) {
                 type = 'sampler3D';
+            } else if (value instanceof Texture2D) {
+                type = 'sampler2D';
             } else {
                 throw new Error(`Unsupported uniform type for ${name}: ${value?.constructor?.name || typeof value}`);
             }
@@ -86,6 +88,62 @@ class ShaderLayer {
                     break;
                 case 'mat4':
                     gl.uniformMatrix4fv(location, false, uniform.value);
+                    break;
+                case 'sampler2D':
+                    // For 2D textures
+                    gl.activeTexture(gl.TEXTURE0 + textureUnit);
+                    
+                    // Create and configure the WebGL texture if it doesn't exist
+                    if (!uniform.value.glTexture) {
+                        uniform.value.glTexture = gl.createTexture();
+                        gl.bindTexture(gl.TEXTURE_2D, uniform.value.glTexture);
+                        
+                        // Set texture parameters
+                        const filterMode = uniform.value.interpolation === 'linear' ? gl.LINEAR : gl.NEAREST;
+                        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterMode);
+                        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterMode);
+                        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                        
+                        // Upload the texture data
+                        const [width, height] = uniform.value.dimensions;
+                        
+                        // Determine the appropriate format and type based on the data
+                        let format, internalFormat, type;
+                        
+                        if (uniform.value.data instanceof Float32Array) {
+                            // For float data, use floating point texture format
+                            format = uniform.value.format || gl.RED;
+                            internalFormat = uniform.value.internalFormat || gl.R16F;
+                            type = gl.FLOAT;
+                        } else {
+                            // Default for other data types (like Uint8Array)
+                            format = uniform.value.format || gl.RGBA;
+                            internalFormat = uniform.value.internalFormat || gl.RGBA;
+                            type = uniform.value.type || gl.UNSIGNED_BYTE;
+                        }
+                        
+                        gl.texImage2D(
+                            gl.TEXTURE_2D,
+                            0,                  // level
+                            internalFormat,     // internalformat
+                            width,
+                            height,
+                            0,                  // border
+                            format,             // format
+                            type,               // type
+                            uniform.value.data
+                        );
+                    } else {
+                        // Just bind the existing texture
+                        gl.bindTexture(gl.TEXTURE_2D, uniform.value.glTexture);
+                    }
+                    
+                    // Set the uniform to use this texture unit
+                    gl.uniform1i(location, textureUnit);
+                    
+                    // Increment texture unit for next texture
+                    textureUnit++;
                     break;
                 case 'sampler3D':
                     // For 3D textures, we need to:
