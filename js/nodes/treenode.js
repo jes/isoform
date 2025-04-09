@@ -118,6 +118,9 @@ class TreeNode {
       const result = child.findNodeById(id);
       if (result) return result;
     }
+    for (const blend of this.blends) {
+      if (blend.uniqueId === id) return blend;
+    }
     return null;
   }
 
