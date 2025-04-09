@@ -1077,12 +1077,11 @@ class NegateNode extends TreeNode {
 // object to store in the document tree; the BlendNodes are collected up in
 // the TreeRewriter to apply the blends
 class BlendNode extends TreeNode {
-  constructor(n1, n2) {
+  constructor(n1, n2, blendRadius = 0.5, chamfer = 1.0) {
     super("Blend");
-    this.maxChildren = 1;
     this.nodes = [n1, n2];
-    this.blendRadius = 0.5;
-    this.chamfer = 1.0;
+    this.blendRadius = blendRadius;
+    this.chamfer = chamfer;
   }
 
   properties() {

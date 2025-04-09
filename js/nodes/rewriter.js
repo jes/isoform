@@ -146,9 +146,7 @@ const TreeRewriter = {
   },
 
   rewriteTree(t, blends) {
-    console.log("blends all:", blends);
     blends = TreeRewriter.validBlends(t, blends);
-    console.log("blends valid:", blends);
 
     for (let i = 0; i < 10; i++) {
       let allSatisfied = true;
