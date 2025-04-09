@@ -86,6 +86,7 @@ addParserTest('cos', 'cos(0)', 1);
 addParserTest('tan', 'tan(0)', 0);
 addParserTest('abs', 'abs(-1)', 1);
 addParserTest('complex expression', 'sqrt(x+1)*abs(y-z)', 2, {x: 3, y: 2, z: 3});
+addParserTest('nested function call', 'sqrt(abs(x)*abs(x))', 3, {x: -3});
 
 // Export for browser
 if (typeof window !== 'undefined') {
