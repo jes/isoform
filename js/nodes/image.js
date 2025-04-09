@@ -7,10 +7,14 @@ class ImageNode extends TreeNode {
         this.interpolation = interpolation;
         this.texture2d = new Texture2D(data, dimensions, interpolation);
         this.invert = false;
+        this.tileX = false;
+        this.tileY = false;
+        this.mirrorX = false;
+        this.mirrorY = true;
     }
 
     properties() {
-        return {"invert": "bool"};
+        return {"invert": "bool", "tileX": "bool", "tileY": "bool", "mirrorX": "bool", "mirrorY": "bool"};
     }
 
     is2d() {
@@ -22,7 +26,13 @@ class ImageNode extends TreeNode {
     }
 
     makePeptide(p) {
-        let d = P.texture2d(this.uniformTexture2d("texture2d"), P.vec3(P.mod(P.vecX(p), P.one()), P.mod(P.neg(P.vecY(p)), P.one()), P.zero()));
+        let px = P.vecX(p);
+        let py = P.vecY(p);
+        if (this.tileX) px = P.mod(px, P.one());
+        if (this.tileY) py = P.mod(py, P.one());
+        if (this.mirrorX) px = P.sub(P.one(), px);
+        if (this.mirrorY) py = P.sub(P.one(), py);
+        let d = P.texture2d(this.uniformTexture2d("texture2d"), P.vec3(px, py, P.zero()));
 
         if (this.invert) d = P.neg(d);
 
