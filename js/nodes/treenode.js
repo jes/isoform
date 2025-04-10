@@ -219,6 +219,8 @@ class TreeNode {
     const colorB = P.field(b, 'color');
     const uniqueIdA = P.field(a, 'uniqueId');
     const uniqueIdB = P.field(b, 'uniqueId');
+    const lipschitzA = P.field(a, 'lipschitz');
+    const lipschitzB = P.field(b, 'lipschitz');
     
     const distance = this.min(distA, distB);
     
@@ -236,6 +238,7 @@ class TreeNode {
     );
     
     const color = P.vmix(colorA, colorB, t);
+    const lipschitz = P.mix(lipschitzA, lipschitzB, t);
     let uniqueId = P.cond(P.lte(distA, distB), uniqueIdA, uniqueIdB);
 
     if (this.uniqueId != null && this.uniqueId > 0) {
@@ -247,6 +250,7 @@ class TreeNode {
       distance: distance,
       color: color,
       uniqueId: uniqueId,
+      lipschitz: lipschitz,
     });
   }
 
@@ -260,6 +264,8 @@ class TreeNode {
     const colorB = P.field(b, 'color');
     const uniqueIdA = P.field(a, 'uniqueId');
     const uniqueIdB = P.field(b, 'uniqueId');
+    const lipschitzA = P.field(a, 'lipschitz');
+    const lipschitzB = P.field(b, 'lipschitz');
 
     const distance = this.max(distA, distB);
     
@@ -277,6 +283,7 @@ class TreeNode {
     );
     
     const color = P.vmix(colorA, colorB, t);
+    const lipschitz = P.mix(lipschitzA, lipschitzB, t);
     let uniqueId = P.cond(P.gte(distA, distB), uniqueIdA, uniqueIdB);
 
     if (this.uniqueId != null && this.uniqueId > 0) {
@@ -288,6 +295,7 @@ class TreeNode {
       distance: distance,
       color: color,
       uniqueId: uniqueId,
+      lipschitz: lipschitz,
     });
   }
 
@@ -488,6 +496,9 @@ class TreeNode {
         node = node.children[0];
       }
       pep.value.uniqueId = P.const(node.uniqueId);
+    }
+    if (!pep.value.lipschitz) {
+      pep.value.lipschitz = P.const(1.0);
     }
     return pep;
   }

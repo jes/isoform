@@ -25,6 +25,7 @@ struct SDFResult {
     float distance;
     vec3 color;
     float uniqueId;
+    float lipschitz;
 };
 
 // begin scene
@@ -107,7 +108,7 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
     for (int i = 0; i < MAX_STEPS; i++) {
         result.steps++; // Increment step counter
         SDFResult m = peptide(uRotationMatrix * p);
-        float d = m.distance * mapsign;
+        float d = (m.distance / m.lipschitz) * mapsign;
         result.sdf = d;
         result.hitPosition = p;
         
