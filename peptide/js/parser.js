@@ -82,17 +82,40 @@ class PeptideParser {
     }
 
     Expression() {
-        let expr = this._p(this.Term);
+        return this._p(this.AdditiveExpression);
+    }
+
+    AdditiveExpression() {
+        let expr = this._p(this.MultiplicativeExpression);
         while (true) {
             this.skip();
-            if (this.char('+')) expr = P.add(expr, this._p(this.Term));
-            else if (this.char('-')) expr = P.sub(expr, this._p(this.Term));
-            else if (this.char('*')) expr = P.mul(expr, this._p(this.Term));
-            else if (this.char('/')) expr = P.div(expr, this._p(this.Term));
-            else if (this.char('%')) expr = P.mod(expr, this._p(this.Term));
+            if (this.char('+')) expr = P.add(expr, this._p(this.MultiplicativeExpression));
+            else if (this.char('-')) expr = P.sub(expr, this._p(this.MultiplicativeExpression));
             else break;
         }
         return expr;
+    }
+
+    MultiplicativeExpression() {
+        let expr = this._p(this.PrimaryExpression);
+        while (true) {
+            this.skip();
+            if (this.char('*')) expr = P.mul(expr, this._p(this.PrimaryExpression));
+            else if (this.char('/')) expr = P.div(expr, this._p(this.PrimaryExpression));
+            else if (this.char('%')) expr = P.mod(expr, this._p(this.PrimaryExpression));
+            else break;
+        }
+        return expr;
+    }
+
+    PrimaryExpression() {
+        this.skip();
+        if (this.char('(')) {
+            const expr = this._p(this.Expression);
+            if (!this.char(')')) throw new Error("Expected closing parenthesis ')'");
+            return expr;
+        }
+        return this._p(this.Term);
     }
 
     Term() {

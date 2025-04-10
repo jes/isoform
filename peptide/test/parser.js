@@ -125,7 +125,7 @@ addParserFailTest("can't take vec3 of vec3", 'vec3(vec3(1,2,3),0,0)');
 // operator precedence tests
 addParserTest('operator precedence', '1+2*3', 7);
 addParserTest('operator precedence', '1+2*3+4', 11);
-addParserTest('operator precedence', '1+2*3+4*5', 23);
+addParserTest('operator precedence', '1+2*3+4*5', 27);
 
 // Export for browser
 if (typeof window !== 'undefined') {
