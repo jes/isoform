@@ -11,7 +11,7 @@ class CustomNode extends TreeNode {
 
     makePeptide(p) {
         try {
-            const node = PeptideParser.parse(this.code, {p: 'vec3'});
+            const node = PeptideParser.parse(this.code, {p: p});
             if (node.type == 'struct') return node;
             else return P.struct({distance: node});
         } catch (error) {

@@ -1,4 +1,7 @@
 class PeptideParser {
+    // vars is a map of variable names to either their types ('float', 'vec3')
+    // or their Peptide expressions; undeclared variables are assumed to be
+    // floats that will be available at runtime
     constructor(str, vars = {}) {
         this.str = str;
         this.pos = 0;
@@ -150,17 +153,26 @@ class PeptideParser {
     Variable() {
         const name = this._p(this.Identifier);
         if (!name) return null;
-        const type = this.vars[name];
-        if (!type) return P.var(name);
-        if (type === 'float') return P.var(name);
-        if (type === 'vec3') {
-            if (!this.char('.')) return P.vvar(name);
-            if (this.char('x')) return P.vecX(P.vvar(name));
-            if (this.char('y')) return P.vecY(P.vvar(name));
-            if (this.char('z')) return P.vecZ(P.vvar(name));
-            throw new Error(`${name}: expected x/y/z after dot`);
+        const varType = this.vars[name];
+        let variable;
+        if (varType instanceof Peptide) {
+            variable = varType;
+        } else {
+            if (varType === 'float') variable = P.var(name);
+            else if (varType === 'vec3') variable = P.vvar(name);
+            else throw new Error(`${name}: unknown variable type: ${varType}`);
         }
-        throw new Error(`${name}: unknown variable type: ${type}`);
+        if (variable.type === 'vec3') {
+            if (!this.char('.')) return variable;
+            if (this.char('x')) return P.vecX(variable);
+            if (this.char('y')) return P.vecY(variable);
+            if (this.char('z')) return P.vecZ(variable);
+            throw new Error(`${name}: expected x/y/z after dot`);
+        } else if (variable.type === 'float') {
+            return variable;
+        } else {
+            throw new Error(`${name}: unknown variable type: ${variable.type}`);
+        }
     }
 
     Identifier() {
