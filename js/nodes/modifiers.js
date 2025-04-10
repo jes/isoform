@@ -546,12 +546,11 @@ class TwistNode extends TreeNode {
     const child = this.children[0].peptide(p2);
     if (!child) return null;
     
-    // TODO: "maxScale" here should be propagated as a Lipschitz factor
-    // instead of dividing (maybe?)
     return P.struct({
-      distance: P.div(P.field(child, 'distance'), maxScale),
+      distance: P.field(child, 'distance'),
       color: P.field(child, 'color'),
       uniqueId: P.field(child, 'uniqueId'),
+      lipschitz: P.mul(P.field(child, 'lipschitz'), maxScale),
     });
   }
 

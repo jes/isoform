@@ -238,7 +238,7 @@ class TreeNode {
     );
     
     const color = P.vmix(colorA, colorB, t);
-    const lipschitz = P.mix(lipschitzA, lipschitzB, t);
+    const lipschitz = P.max(lipschitzA, lipschitzB);
     let uniqueId = P.cond(P.lte(distA, distB), uniqueIdA, uniqueIdB);
 
     if (this.uniqueId != null && this.uniqueId > 0) {
@@ -283,7 +283,7 @@ class TreeNode {
     );
     
     const color = P.vmix(colorA, colorB, t);
-    const lipschitz = P.mix(lipschitzA, lipschitzB, t);
+    const lipschitz = P.max(lipschitzA, lipschitzB);
     let uniqueId = P.cond(P.gte(distA, distB), uniqueIdA, uniqueIdB);
 
     if (this.uniqueId != null && this.uniqueId > 0) {
