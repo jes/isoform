@@ -692,9 +692,6 @@ const ui = {
                     'linear' // Default to linear interpolation
                 );
                 
-                // Set display name
-                imageNode.setProperty('displayName', fileName);
-                
                 // Make sure the node has a unique name
                 imageNode.setUniqueName(app.document);
                 
