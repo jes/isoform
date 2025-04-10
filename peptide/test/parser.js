@@ -12,6 +12,8 @@ function addParserTest(name, input, expectedResult, vars = {}) {
                 typeMap[key] = "vec3";
             } else if (typeof value === "number") {
                 typeMap[key] = "float";
+            } else if (value instanceof Peptide) {
+                typeMap[key] = value;
             } else {
                 typeMap[key] = typeof value;
             }
@@ -94,6 +96,7 @@ addParserTest('use variable in expression 2', ' 1 + x',  2, {x: 1});
 addParserTest('long variable name', 'long_variable_name', 1, {long_variable_name: 1});
 addParserTest('multiple variables', 'x + y', 3, {x: 1, y: 2});
 addParserTest('multiple variables 2', 'x + y + z', 6, {x: 1, y: 2, z: 3});
+addParserTest('compile time variables', 'x*2', 15, {x: P.const(7.5)});
 
 // Function call tests
 addParserTest('sqrt', 'sqrt(4)', 2);
