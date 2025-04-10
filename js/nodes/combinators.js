@@ -74,7 +74,40 @@ class IntersectionNode extends TreeNode {
       throw new Error("IntersectionNode must have exactly 2 children after normalisation");
     }
 
-    return this.structmax(this.children[0].peptide(p), this.children[1].peptide(p));
+    const p0 = p;
+
+    let d1 = P.field(this.children[0].peptide(p), 'distance');
+    let d2 = P.field(this.children[1].peptide(p), 'distance');
+    let g1 = d1.derivative('p');
+    let g2 = d2.derivative('p');
+
+    const sign = P.cond(P.and(P.lte(d1, P.zero()), P.lte(d2, P.zero())), P.const(-1.0), P.const(1.0));
+
+    let vg1 = P.vec3(g1[0], g1[1], g1[2]);
+    let vg2 = P.vec3(g2[0], g2[1], g2[2]);
+
+    p = P.vcond(P.gte(d1,d2), P.vsub(p, P.vmul(vg1,d1)), P.vsub(p, P.vmul(vg2,d2)));
+
+    d1 = P.field(this.children[0].peptide(p), 'distance');
+    d2 = P.field(this.children[1].peptide(p), 'distance');
+    /*g1 = d1.derivative('p');
+    g2 = d2.derivative('p');
+
+    vg1 = P.vec3(g1[0], g1[1], g1[2]);
+    vg2 = P.vec3(g2[0], g2[1], g2[2]);
+
+    p = P.vcond(P.gte(d1,d2), P.vsub(p, P.vmul(vg1,d1)), P.vsub(p, P.vmul(vg2,d2)));
+
+    d1 = P.field(this.children[0].peptide(p), 'distance');
+    d2 = P.field(this.children[1].peptide(p), 'distance');*/
+
+    const max = P.max(d1, d2);
+    const pdist = P.vlength(P.vsub(p0, p));
+    const dist = P.sqrt(P.add(P.mul(max, max), P.mul(pdist, pdist)));
+
+    return P.struct({
+      distance: P.mul(sign, dist),
+    });
   }
 
   makeNormalised() {

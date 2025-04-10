@@ -62,11 +62,17 @@ const app = {
     
     createDocument() {
         const doc = new UnionNode([]);
-        const sphere = new SphereNode();
+        /*const sphere = new SphereNode();
         const box = new BoxNode();
         const gyroid = new GyroidNode();
         const intersection = new IntersectionNode([new UnionNode([sphere, box]), gyroid]);
         box.size.x = 5;
+        doc.addChild(intersection);*/
+        const box1 = new BoxNode();
+        const box2 = new BoxNode();
+        box1.size.y = 1000;
+        box2.size.x = 1000;
+        const intersection = new IntersectionNode([box1, box2]);
         doc.addChild(intersection);
 
         // set unique names for all nodes
