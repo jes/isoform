@@ -21,7 +21,7 @@ function addParserTest(name, input, expectedResult, vars = {}) {
         return typeMap;
     };
     
-    ParserT.test(name, () => {
+    ParserT.test(`${name}: ${input}`, () => {
         // Parse the input string
         const expr = PeptideParser.parse(input, getTypeMap(vars));
         
@@ -121,6 +121,11 @@ addParserTest('parse vector variable with xyz', 'v.x + v.y + v.z', 6, {v: new Ve
 addParserTest('construct vector from components', 'vec3(1, 2, 3)', new Vec3(1, 2, 3), {});
 
 addParserFailTest("can't take vec3 of vec3", 'vec3(vec3(1,2,3),0,0)');
+
+// operator precedence tests
+addParserTest('operator precedence', '1+2*3', 7);
+addParserTest('operator precedence', '1+2*3+4', 11);
+addParserTest('operator precedence', '1+2*3+4*5', 23);
 
 // Export for browser
 if (typeof window !== 'undefined') {
