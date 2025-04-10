@@ -1,14 +1,15 @@
 class PeptideParser {
-    constructor(str) {
+    constructor(str, vars = {}) {
         this.str = str;
         this.pos = 0;
         this.line = 0;
         this.col = 0;
         this.throwing = false;
+        this.vars = vars;
     }
 
-    static parse(str) {
-        const parser = new PeptideParser(str);
+    static parse(str, vars = {}) {
+        const parser = new PeptideParser(str, vars);
         const expr = parser._p(parser.Expression);
         if (parser.peekc() !== undefined) {
             throw new Error(`${str}: unexpected character '${parser.peekc()}' at line ${parser.line}, column ${parser.col}`);
@@ -124,6 +125,9 @@ class PeptideParser {
         
         // for now we allow calling any function in Peptide - potentially want a hard-coded list later
         if (typeof P[name] === 'function') {
+            if (P[name].length !== args.length) {
+                throw new Error(`${name}: expected ${P[name].length} arguments, got ${args.length}`);
+            }
             return P[name](...args);
         } else {
             throw new Error(`Unknown function: ${name}`);
@@ -146,7 +150,17 @@ class PeptideParser {
     Variable() {
         const name = this._p(this.Identifier);
         if (!name) return null;
-        return P.var(name);
+        const type = this.vars[name];
+        if (!type) return P.var(name);
+        if (type === 'float') return P.var(name);
+        if (type === 'vec3') {
+            if (!this.char('.')) return P.vvar(name);
+            if (this.char('x')) return P.vecX(P.vvar(name));
+            if (this.char('y')) return P.vecY(P.vvar(name));
+            if (this.char('z')) return P.vecZ(P.vvar(name));
+            throw new Error(`${name}: expected x/y/z after dot`);
+        }
+        throw new Error(`${name}: unknown variable type: ${type}`);
     }
 
     Identifier() {

@@ -3,9 +3,25 @@ const ParserT = new TestSuite('PeptideParser');
 
 // Helper to add parser tests
 function addParserTest(name, input, expectedResult, vars = {}) {
+    // Create a map of variable types
+    const getTypeMap = (variables) => {
+        const typeMap = {};
+        for (const key in variables) {
+            const value = variables[key];
+            if (value instanceof Vec3) {
+                typeMap[key] = "vec3";
+            } else if (typeof value === "number") {
+                typeMap[key] = "float";
+            } else {
+                typeMap[key] = typeof value;
+            }
+        }
+        return typeMap;
+    };
+    
     ParserT.test(name, () => {
         // Parse the input string
-        const expr = PeptideParser.parse(input);
+        const expr = PeptideParser.parse(input, getTypeMap(vars));
         
         // Check that parsing succeeded
         if (expr === null) {
@@ -87,6 +103,21 @@ addParserTest('tan', 'tan(0)', 0);
 addParserTest('abs', 'abs(-1)', 1);
 addParserTest('complex expression', 'sqrt(x+1)*abs(y-z)', 2, {x: 3, y: 2, z: 3});
 addParserTest('nested function call', 'sqrt(abs(x)*abs(x))', 3, {x: -3});
+
+addParserFailTest("wrong number of arguments", "sqrt()");
+addParserFailTest("wrong number of arguments", "sin()");
+addParserFailTest("wrong number of arguments", "min(1)");
+addParserFailTest("wrong number of arguments", "min(1,2,3)");
+
+// Vector variables
+addParserTest('parse vector variable', 'v', new Vec3(0, 0, 0), {v: new Vec3(0, 0, 0)});
+addParserTest('parse vector variable with x', 'v.x', 1, {v: new Vec3(1, 0, 0)});
+addParserTest('parse vector variable with y', 'v.y', 2, {v: new Vec3(0, 2, 0)});
+addParserTest('parse vector variable with z', 'v.z', 3, {v: new Vec3(0, 0, 3)});
+addParserTest('parse vector variable with xyz', 'v.x + v.y + v.z', 6, {v: new Vec3(1, 2, 3)});
+addParserTest('construct vector from components', 'vec3(1, 2, 3)', new Vec3(1, 2, 3), {});
+
+addParserFailTest("can't take vec3 of vec3", 'vec3(vec3(1,2,3),0,0)');
 
 // Export for browser
 if (typeof window !== 'undefined') {
