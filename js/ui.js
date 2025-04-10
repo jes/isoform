@@ -573,7 +573,8 @@ const ui = {
             { name: 'Torus', constructor: TorusNode, icon: TorusNode.prototype.getIcon() },
             { name: 'Gyroid', constructor: GyroidNode, icon: GyroidNode.prototype.getIcon() },
             { name: 'Cubic Lattice', constructor: CubicLatticeNode, icon: CubicLatticeNode.prototype.getIcon() },
-            { name: 'Sketch', constructor: SketchNode, icon: SketchNode.prototype.getIcon() }
+            { name: 'Sketch', constructor: SketchNode, icon: SketchNode.prototype.getIcon() },
+            { name: 'Custom', constructor: CustomNode, icon: CustomNode.prototype.getIcon() }
         ];
         
         shapes.forEach(shape => {
