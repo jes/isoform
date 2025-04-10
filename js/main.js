@@ -180,16 +180,18 @@ const app = {
 
             let startTime = performance.now();
             if (this.processedDocument) {
-                const expr = P.field(this.processedDocument.peptide(P.vvar('p')), 'distance');
                 console.log(`Peptide expression took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
                 let ssa;
-                [this.sdf, ssa] = this.processedDocument.getSDFAndSSA(true);
+                [this.sdf, ssa, peptide] = this.processedDocument.getSDFAndSSAAndPeptide(true);
                 console.log(`SSA took ${performance.now() - startTime} ms`);
 
-
-                const peptide = P.field(this.processedDocument.peptide(P.vvar('p')), 'distance').derivative('p');
-                const ssaNormal = P.vec3(peptide[0], peptide[1], peptide[2]).ssa();
+                startTime = performance.now();
+                const peptideNormal = P.field(peptide, 'distance').derivative('p');
+                console.log(`Peptide for normal took ${performance.now() - startTime} ms`);
+                startTime = performance.now();
+                const ssaNormal = P.vec3(peptideNormal[0], peptideNormal[1], peptideNormal[2]).ssa();
+                console.log(`SSA normal took ${performance.now() - startTime} ms`);
                 
                 this.primaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.primaryShaderLayer);
 

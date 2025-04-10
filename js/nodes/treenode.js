@@ -506,12 +506,12 @@ class TreeNode {
   // return a JavaScript function that implements the SDF
   // function(vec3) => float
   getSDF() {
-    const [sdf, ssa] = this.getSDFAndSSA();
+    const [sdf, ssa, expr] = this.getSDFAndSSAAndPeptide();
     return sdf;
   }
 
   // return a pair of [sdf, ssa]
-  getSDFAndSSA(wantStruct = false) {
+  getSDFAndSSAAndPeptide(wantStruct = false) {
     if (this.isDisabled) {
       // ??? what else can we do?
       return (p) => 1000043.0;
@@ -533,7 +533,8 @@ class TreeNode {
         const result = fn(vars);
         return result;
       },
-      ssa
+      ssa,
+      expr
     ];
   }
 
