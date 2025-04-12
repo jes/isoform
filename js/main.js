@@ -321,10 +321,6 @@ const app = {
         this.undoStack = [];
         this.undoPointer = 0;
     },
-
-    defaultColor() {
-        return P.vconst(new Vec3(0.6, 0.6, 0.6));
-    },
 };
 
 // Start the application when the page loads

@@ -1747,6 +1747,81 @@ addTest('derivative - division', (evaluate) => {
     assertEquals(evaluate(derivative[2], vars), 0);
 });
 
+addTest('derivative - vector component-wise min', (evaluate) => {
+    const p = P.vvar('p');
+    const v = P.vconst(new Vec3(2, 3, 4));
+    
+    // Test vmin derivative
+    const vminExpr = P.vmin(p, v);
+    const vminDeriv = vminExpr.derivative('p');
+    
+    // Test at a point where p has some components smaller and some larger than v
+    const vars = { p: new Vec3(1, 5, 3) };
+    
+    // For p = (1,5,3) and v = (2,3,4):
+    // vmin(p,v) = (1,3,3)
+    
+    // d/dx(vmin(p,v))_x = (1,0,0) because p.x < v.x
+    // d/dy(vmin(p,v))_y = (0,0,0) because p.y > v.y
+    // d/dz(vmin(p,v))_z = (0,0,1) because p.z < v.z
+    const dx = evaluate(vminDeriv[0], vars);
+    assertEquals(dx.x, 1, 0.0001);
+    assertEquals(dx.y, 0, 0.0001);
+    assertEquals(dx.z, 0, 0.0001);
+    
+    const dy = evaluate(vminDeriv[1], vars);
+    assertEquals(dy.x, 0, 0.0001);
+    assertEquals(dy.y, 0, 0.0001);
+    assertEquals(dy.z, 0, 0.0001);
+    
+    const dz = evaluate(vminDeriv[2], vars);
+    assertEquals(dz.x, 0, 0.0001);
+    assertEquals(dz.y, 0, 0.0001);
+    assertEquals(dz.z, 1, 0.0001);
+    
+    // Test vmax derivative
+    const vmaxExpr = P.vmax(p, v);
+    const vmaxDeriv = vmaxExpr.derivative('p');
+    
+    // For p = (1,5,3) and v = (2,3,4):
+    // vmax(p,v) = (2,5,4)
+    
+    // d/dx(vmax(p,v))_x = (0,0,0) because p.x < v.x
+    // d/dy(vmax(p,v))_y = (0,1,0) because p.y > v.y
+    // d/dz(vmax(p,v))_z = (0,0,0) because p.z < v.z
+    const dxMax = evaluate(vmaxDeriv[0], vars);
+    assertEquals(dxMax.x, 0, 0.0001);
+    assertEquals(dxMax.y, 0, 0.0001);
+    assertEquals(dxMax.z, 0, 0.0001);
+    
+    const dyMax = evaluate(vmaxDeriv[1], vars);
+    assertEquals(dyMax.x, 0, 0.0001);
+    assertEquals(dyMax.y, 1, 0.0001);
+    assertEquals(dyMax.z, 0, 0.0001);
+    
+    const dzMax = evaluate(vmaxDeriv[2], vars);
+    assertEquals(dzMax.x, 0, 0.0001);
+    assertEquals(dzMax.y, 0, 0.0001);
+    assertEquals(dzMax.z, 0, 0.0001);
+    
+    // Test at a different point
+    const vars2 = { p: new Vec3(3, 2, 5) };
+    
+    // For p = (3,2,5) and v = (2,3,4):
+    // vmin(p,v) = (2,2,4)
+    // vmax(p,v) = (3,3,5)
+    
+    // Test vmax at the second point
+    const dxMax2 = evaluate(vmaxDeriv[0], vars2);
+    assertEquals(dxMax2.x, 1, 0.0001); // p.x > v.x
+    
+    const dyMax2 = evaluate(vmaxDeriv[1], vars2);
+    assertEquals(dyMax2.y, 0, 0.0001); // p.y < v.y
+    
+    const dzMax2 = evaluate(vmaxDeriv[2], vars2);
+    assertEquals(dzMax2.z, 1, 0.0001); // p.z > v.z
+});
+
 addTest('derivative - vector length', (evaluate) => {
     const p = P.vvar('p');
     const length = P.vlength(p);
