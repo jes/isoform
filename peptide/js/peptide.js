@@ -1104,7 +1104,7 @@ class Peptide {
         );
     }
 
-    static chmin(a, b, k, s = P.const(0.9)) {
+    static chmin(a, b, k, s = P.const(0.98)) {
         a.assertType('float');
         b.assertType('float');
         k.assertType('float');
@@ -1114,7 +1114,7 @@ class Peptide {
         return P.sub(a, P.rampBevelC2(diff, k, s));
     }
 
-    static chmax(a, b, k, s = P.const(0.9)) {
+    static chmax(a, b, k, s = P.const(0.98)) {
         a.assertType('float');
         b.assertType('float');
         k.assertType('float');
