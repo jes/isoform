@@ -8,6 +8,8 @@ class Peptide {
         this.third = third;    // third operand
         this.ops = ops;        // operation functions
 
+        this.cachedDerivative = {};
+
         for (const fn of ['evaluate', 'evaluateInterval', 'jsCode', 'jsIntervalCode', 'glslCode', 'glslIntervalCode']) {
             if (!this.ops[fn]) {
                 console.warn(`No ${fn} operation function provided for ${op}`, this);
@@ -1723,11 +1725,14 @@ class Peptide {
     // is assumed to be a vec3 variable, and the result is an array of three Peptide expressions,
     // corresponding to the three components of the derivative
     derivative(varName) {
-        const derivFn = this.ops.derivative;
-        if (!derivFn) {
-            throw new Error(`Operation '${this.op}' has no derivative function`);
+        if (!this.cachedDerivative[varName]) {
+            const derivFn = this.ops.derivative;
+            if (!derivFn) {
+                throw new Error(`Operation '${this.op}' has no derivative function`);
+            }
+            this.cachedDerivative[varName] = derivFn(varName);
         }
-        return derivFn(varName);
+        return this.cachedDerivative[varName];
     }
 
     // turn the tree into a DAG by eliminating common subexpressions
