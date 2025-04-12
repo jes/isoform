@@ -195,18 +195,22 @@ class TreeNode {
     if (!a) return b;
     if (!b) return a;
 
+    if (this.blendRadius == 0.0) return P.min(a, b);
+
     const ch = P.chmin(a, b, P.smoothabs(this.uniform('blendRadius')));
     const sm = P.smin(a, b, P.smoothabs(this.uniform('blendRadius')));
-    return P.mix(sm, ch, this.uniform('chamfer'));
+    return this.chamfer == 0.0 ? sm : this.chamfer == 1.0 ? ch : P.mix(sm, ch, this.uniform('chamfer'));
   }
 
   max(a, b) {
     if (!a) return b;
     if (!b) return a;
 
+    if (this.blendRadius == 0.0) return P.max(a, b);
+
     const ch = P.chmax(a, b, P.smoothabs(this.uniform('blendRadius')));
     const sm = P.smax(a, b, P.smoothabs(this.uniform('blendRadius')));
-    return P.mix(sm, ch, this.uniform('chamfer'));
+    return this.chamfer == 0.0 ? sm : this.chamfer == 1.0 ? ch : P.mix(sm, ch, this.uniform('chamfer'));
   }
 
   structmin(a, b) {
@@ -470,6 +474,10 @@ class TreeNode {
     return this.children.length > 0;
   }
 
+  defaultColor() {
+    return P.vconst(new Vec3(0.6, 0.6, 0.6));
+  }
+
   peptide(p) {
     if (this.isDisabled) {
       if (this.children.length == 1) return this.children[0].peptide(p);
@@ -485,7 +493,7 @@ class TreeNode {
       this.warn(`Node "${this.name}" returned a peptide with no distance field`);
       return this.noop();
     }
-    if (!pep.value.color) pep.value.color = app.defaultColor();
+    if (!pep.value.color) pep.value.color = this.defaultColor();
     if (!pep.value.uniqueId) {
       // find the leaf node and propagate its uniqueId
       let node = this;

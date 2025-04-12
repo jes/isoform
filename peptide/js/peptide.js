@@ -432,19 +432,19 @@ class Peptide {
                 // - undefined (we use average) where a = b
                 return [
                     P.vec3(
-                        P.mix(bDerivative[0].vecX, aDerivative[0].vecX, P.step(P.vecX(b), P.vecX(a))),
-                        P.mix(bDerivative[0].vecY, aDerivative[0].vecY, P.step(P.vecY(b), P.vecY(a))),
-                        P.mix(bDerivative[0].vecZ, aDerivative[0].vecZ, P.step(P.vecZ(b), P.vecZ(a)))
+                        P.mix(P.vecX(bDerivative[0]), P.vecX(aDerivative[0]), P.step(P.vecX(a), P.vecX(b))),
+                        P.mix(P.vecY(bDerivative[0]), P.vecY(aDerivative[0]), P.step(P.vecY(a), P.vecY(b))),
+                        P.mix(P.vecZ(bDerivative[0]), P.vecZ(aDerivative[0]), P.step(P.vecZ(a), P.vecZ(b)))
                     ),
                     P.vec3(
-                        P.mix(bDerivative[1].vecX, aDerivative[1].vecX, P.step(P.vecX(b), P.vecX(a))),
-                        P.mix(bDerivative[1].vecY, aDerivative[1].vecY, P.step(P.vecY(b), P.vecY(a))),
-                        P.mix(bDerivative[1].vecZ, aDerivative[1].vecZ, P.step(P.vecZ(b), P.vecZ(a)))
+                        P.mix(P.vecX(bDerivative[1]), P.vecX(aDerivative[1]), P.step(P.vecX(a), P.vecX(b))),
+                        P.mix(P.vecY(bDerivative[1]), P.vecY(aDerivative[1]), P.step(P.vecY(a), P.vecY(b))),
+                        P.mix(P.vecZ(bDerivative[1]), P.vecZ(aDerivative[1]), P.step(P.vecZ(a), P.vecZ(b)))
                     ),
                     P.vec3(
-                        P.mix(bDerivative[2].vecX, aDerivative[2].vecX, P.step(P.vecX(b), P.vecX(a))),
-                        P.mix(bDerivative[2].vecY, aDerivative[2].vecY, P.step(P.vecY(b), P.vecY(a))),
-                        P.mix(bDerivative[2].vecZ, aDerivative[2].vecZ, P.step(P.vecZ(b), P.vecZ(a)))
+                        P.mix(P.vecX(bDerivative[2]), P.vecX(aDerivative[2]), P.step(P.vecX(a), P.vecX(b))),
+                        P.mix(P.vecY(bDerivative[2]), P.vecY(aDerivative[2]), P.step(P.vecY(a), P.vecY(b))),
+                        P.mix(P.vecZ(bDerivative[2]), P.vecZ(aDerivative[2]), P.step(P.vecZ(a), P.vecZ(b)))
                     )
                 ];
             },
