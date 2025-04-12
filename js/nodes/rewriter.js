@@ -10,6 +10,7 @@ const TreeRewriter = {
 
     // turn the normalised tree into our intermediate representation
     const t = TreeRewriter.fromTreeNode(tNormalised);
+    if (!t) return null;
 
     // then rewrite to fix blend arguments
     const tRewritten = TreeRewriter.rewriteTree(t, blends);
@@ -25,6 +26,7 @@ const TreeRewriter = {
 
   // take a TreeNode and return the intermediate tree
   fromTreeNode(treeNode, modifiers = []) {
+    if (!treeNode) return null;
     // combinators
     if (treeNode.isCombinator) {
       if (treeNode.children.length != 2) {
@@ -52,6 +54,7 @@ const TreeRewriter = {
 
     // modifiers - add to modifier chain and recurse
     const node = TreeRewriter.fromTreeNode(treeNode.children[0], [...modifiers, treeNode.cloneJustThisOne()]);
+    if (!node) return null;
     node.treeNode.blends = treeNode.blends;
     return node;
   },
