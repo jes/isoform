@@ -450,6 +450,8 @@ const renderer = {
         // Raymarch from this point
         this.rayMarchResult = this.rayMarchFromPoint(ro, rd);
 
+        console.log("id under cursor", this.rayMarchResult.uniqueId);
+
         let node = app.document.findNodeById(this.rayMarchResult.uniqueId);
 
         if (node != this.nodeUnderCursor) {

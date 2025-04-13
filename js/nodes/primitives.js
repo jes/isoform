@@ -121,25 +121,18 @@ class BoxNode extends TreeNode {
     };
   }
 
-  makePeptide(p) {
-    let expr;
-    const halfSize = P.vdiv(this.vuniform('size'), P.const(2.0));
-    if (this.radius <= 0.0) {
-      // vec3 d = abs(p) - b/2.0;
-      // return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0);
-      let d = P.vsub(P.vabs(p), halfSize);
-      expr = P.add(P.vlength(P.vmax(d, P.vconst(new Vec3(0.0)))),
-                   P.min(P.max(P.vecX(d), P.max(P.vecY(d), P.vecZ(d))), P.zero()));
-    } else {
-      // vec3 q = abs(p) - b/2.0 + r;
-      // return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
-      const radiusVec3 = P.vec3(this.uniform('radius'), this.uniform('radius'), this.uniform('radius'));
-      let d = P.vadd(P.vsub(P.vabs(p), halfSize), radiusVec3);
-      expr = P.sub(P.add(P.vlength(P.vmax(d, P.vconst(new Vec3(0.0)))),
-                         P.min(P.max(P.vecX(d), P.max(P.vecY(d), P.vecZ(d))), P.zero())),
-                   this.uniform('radius'));
-    }
-    return P.struct({distance: expr});
+  uniqueIds() {
+    return [this.uniqueId*1000, this.uniqueId*1000+1, this.uniqueId*1000+2, this.uniqueId*1000+3, this.uniqueId*1000+4, this.uniqueId*1000+5 ];
+  }
+
+  makeNormalised() {
+    const x1 = new HalfSpaceNode("x", this.size.x/2, false);
+    const x2 = new HalfSpaceNode("x", this.size.x/2, true);
+    const y1 = new HalfSpaceNode("y", this.size.y/2, false);
+    const y2 = new HalfSpaceNode("y", this.size.y/2, true);
+    const z1 = new HalfSpaceNode("z", this.size.z/2, false);
+    const z2 = new HalfSpaceNode("z", this.size.z/2, true);
+    return new IntersectionNode([x1, x2, y1, y2, z1, z2]).normalised();
   }
 
   getIcon() {
@@ -149,6 +142,35 @@ class BoxNode extends TreeNode {
   aabb() {
     return new AABB(new Vec3(-this.size.x/2, -this.size.y/2, -this.size.z/2),
                    new Vec3(this.size.x/2, this.size.y/2, this.size.z/2));
+  }
+}
+
+class HalfSpaceNode extends TreeNode {
+  constructor(axis, size, negative) {
+    super("HalfSpace");
+    this.axis = axis;
+    this.size = size;
+    this.negative = negative;
+  }
+
+  properties() {
+    return {"axis": ["x", "y", "z"], "negative": "boolean", "size": "float"};
+  }
+  
+  makePeptide(p) {
+    let pos;
+    if (this.axis == "x") {
+      pos = P.vecX(p);
+    } else if (this.axis == "y") {
+      pos = P.vecY(p);
+    } else {
+      pos = P.vecZ(p);
+    }
+    if (this.negative) {
+      pos = P.neg(pos);
+    }
+    const dist = P.sub(pos, this.uniform('size'));
+    return P.struct({distance: dist});
   }
 }
 
@@ -194,7 +216,7 @@ class TorusNode extends TreeNode {
 
 // Detect environment and export accordingly
 (function() {
-  const nodes = { SphereNode, CylinderNode, BoxNode, TorusNode };
+  const nodes = { SphereNode, CylinderNode, BoxNode, TorusNode, HalfSpaceNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {

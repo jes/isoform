@@ -67,7 +67,18 @@ const app = {
         const gyroid = new GyroidNode();
         const intersection = new IntersectionNode([new UnionNode([sphere, box]), gyroid]);
         box.size.x = 5;
-        doc.addChild(intersection);
+        //doc.addChild(intersection);
+
+        const box1 = new BoxNode();
+        const box2 = new BoxNode();
+        const transform = new TransformNode(box1);
+        transform.translation.x = 5;
+        transform.translation.y = 5;
+        const union = new UnionNode([transform, box2]);
+        const transform2 = new TransformNode(intersection);
+        transform2.translation.x = 25;
+        doc.addChild(transform2);
+        doc.addChild(union);
 
         // set unique names for all nodes
         let dfs = (node) => {

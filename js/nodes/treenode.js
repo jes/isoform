@@ -79,6 +79,11 @@ class TreeNode {
     return this;
   }
 
+  // optionally return an array of multiple surface ids
+  uniqueIds() {
+    return [this.uniqueId];
+  }
+
   /// the rest of this class should not generally be overridden
 
   // return a Set() of possible surface ids that can come out of this node,

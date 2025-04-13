@@ -8,6 +8,35 @@ const TreeRewriter = {
 
     const blends = TreeRewriter.collectBlends(treeNode);
 
+    blends.add({
+      nodes: [
+        {
+          uniqueId: 51,
+        },
+        {
+          uniqueId: 38,
+        },
+      ],
+      blendRadius: 3,
+      chamfer: 0.0,
+      uniqueId: 9000,
+    });
+
+    blends.add({
+      nodes: [
+        {
+          uniqueId: 49,
+        },
+        {
+          uniqueId: 40,
+        },
+      ],
+      blendRadius: 3,
+      chamfer: 0.0,
+      uniqueId: 9000,
+    });
+
+
     // turn the normalised tree into our intermediate representation
     const t = TreeRewriter.fromTreeNode(tNormalised);
     if (!t) return null;
@@ -94,7 +123,10 @@ const TreeRewriter = {
       TreeRewriter.possibleSurfaceIds(t.left, set);
       TreeRewriter.possibleSurfaceIds(t.right, set);
     } else if (t.type == 'primitive') {
-      set.add(t.treeNode.uniqueId);
+      const ids = t.treeNode.uniqueIds();
+      for (const id of ids) {
+        set.add(id);
+      }
     } else {
       throw new Error('Unknown node type: ' + t.type);
     }
@@ -151,6 +183,9 @@ const TreeRewriter = {
   rewriteTree(t, blends) {
     blends = TreeRewriter.validBlends(t, blends);
 
+    console.log("valid blends", blends);
+    console.log("t", t);
+
     for (let i = 0; i < 10; i++) {
       let allSatisfied = true;
       for (const blend of blends) {
@@ -158,7 +193,10 @@ const TreeRewriter = {
         allSatisfied = false;
         TreeRewriter.Rewrite(t, blend);
       }
-      if (allSatisfied) break;
+      if (allSatisfied) {
+        console.log("all blends satisfied");
+        break;
+      }
     }
 
     return t;
