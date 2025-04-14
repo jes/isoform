@@ -33,7 +33,7 @@ const TreeRewriter = {
         throw new Error('Combinator must have 2 children');
       }
       const t = treeNode.cloneJustThisOne();
-      t.uniqueId = 0; // don't recompile shader every time we rewrite
+      t.surfaceId = 0; // don't recompile shader every time we rewrite
       return {
         type: 'combinator',
         left: TreeRewriter.fromTreeNode(treeNode.children[0], []),
@@ -95,7 +95,7 @@ const TreeRewriter = {
       TreeRewriter.possibleSurfaceIds(t.left, set);
       TreeRewriter.possibleSurfaceIds(t.right, set);
     } else if (t.type == 'primitive') {
-      const ids = t.treeNode.uniqueIds();
+      const ids = t.treeNode.surfaceIds();
       for (const id of ids) {
         set.add(id);
       }
@@ -273,13 +273,13 @@ const TreeRewriter = {
     if (!TreeRewriter.IdIsUnder(t.left, id1) && !TreeRewriter.IdIsUnder(t.right, id1)) return false;
     if (TreeRewriter.Satisfy(t.left, blend) || TreeRewriter.Satisfy(t.right, blend)) return true;
     if (t.left.type == 'primitive' && t.right.type == 'primitive') {
-      const idLeft = t.left.treeNode.uniqueId;
-      const idRight = t.right.treeNode.uniqueId;
+      const idLeft = t.left.treeNode.surfaceId;
+      const idRight = t.right.treeNode.surfaceId;
       if ((idLeft == id0 && idRight == id1) || (idLeft == id1 && idRight == id0)) {
         t.treeNode = t.treeNode.cloneJustThisOne();
         t.treeNode.blendRadius = blend.blendRadius;
         t.treeNode.chamfer = blend.chamfer;
-        t.treeNode.uniqueId = blend.uniqueId;
+        t.treeNode.surfaceId = blend.surfaceId;
         return true;
       }
     }
@@ -301,7 +301,7 @@ const TreeRewriter = {
       const rightDist = TreeRewriter.DistanceTo(t.right, id);
       return Math.min(leftDist, rightDist);
     } else if (t.type == 'primitive') {
-      return t.treeNode.uniqueId == id ? 0 : Infinity;
+      return t.treeNode.surfaceId == id ? 0 : Infinity;
     } else {
       throw new Error('Unknown node type: ' + t.type);
     }
@@ -314,7 +314,7 @@ const TreeRewriter = {
       const distMe = TreeRewriter.DistanceTo(t, id0) + TreeRewriter.DistanceTo(t, id1);
       return Math.min(distLeft, distRight, distMe);
     } else if (t.type == 'primitive') {
-      return t.treeNode.uniqueId == id0 ? 0 : t.treeNode.uniqueId == id1 ? 1 : Infinity;
+      return t.treeNode.surfaceId == id0 ? 0 : t.treeNode.surfaceId == id1 ? 1 : Infinity;
     } else {
       throw new Error('Unknown node type: ' + t.type);
     }

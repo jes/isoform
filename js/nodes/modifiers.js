@@ -147,8 +147,8 @@ class DomainDeformNode extends TreeNode {
     const distance = P.field(child, 'distance');
     const lipschitz = P.mul(P.field(child, 'lipschitz'), P.max(P.one(), P.mul(P.const(2.0), P.mul(P.abs(this.uniform('frequency')), P.abs(this.uniform('amplitude'))))));
     const color = P.field(child, 'color');
-    const uniqueId = P.field(child, 'uniqueId');
-    return P.struct({distance, color, uniqueId, lipschitz});
+    const surfaceId = P.field(child, 'surfaceId');
+    return P.struct({distance, color, surfaceId, lipschitz});
   }
 
   getIcon() {
@@ -205,9 +205,9 @@ class DistanceDeformNode extends TreeNode {
     const noise2 = P.mul(P.const(0.5), P.mul(noise2X, P.mul(noise2Y, noise2Z)));
     const distance = P.add(P.field(child, 'distance'), P.mul(ampl, P.add(noise1, noise2)));
     const color = P.field(child, 'color');
-    const uniqueId = P.field(child, 'uniqueId');
+    const surfaceId = P.field(child, 'surfaceId');
     const lipschitz = P.mul(P.field(child, 'lipschitz'), P.add(P.one(), P.mul(P.abs(this.uniform('frequency')), P.abs(this.uniform('amplitude')))));
-    return P.struct({distance, color, uniqueId, lipschitz});
+    return P.struct({distance, color, surfaceId, lipschitz});
   }
 
   getIcon() {
@@ -258,7 +258,7 @@ class ShellNode extends TreeNode {
       return P.struct({
         distance: P.max(d, P.sub(negD, this.uniform('thickness'))),
         color: P.field(child, 'color'),
-        uniqueId: P.field(child, 'uniqueId'),
+        surfaceId: P.field(child, 'surfaceId'),
         lipschitz: P.field(child, 'lipschitz'),
       });
     } else if (this.shellType === "centered") {
@@ -269,14 +269,14 @@ class ShellNode extends TreeNode {
           P.sub(negD, halfThickness)
         ),
         color: P.field(child, 'color'),
-        uniqueId: P.field(child, 'uniqueId'),
+        surfaceId: P.field(child, 'surfaceId'),
         lipschitz: P.field(child, 'lipschitz'),
       });
     } else { // "outside" (default)
       return P.struct({
         distance: P.max(P.sub(d, this.uniform('thickness')), negD),
         color: P.field(child, 'color'),
-        uniqueId: P.field(child, 'uniqueId'),
+        surfaceId: P.field(child, 'surfaceId'),
         lipschitz: P.field(child, 'lipschitz'),
       });
     }
@@ -347,13 +347,13 @@ class InfillNode extends TreeNode {
     const shellStruct = P.struct({
       distance: dShell,
       color: P.field(child1, 'color'),
-      uniqueId: P.field(child1, 'uniqueId'),
+      surfaceId: P.field(child1, 'surfaceId'),
       lipschitz: P.field(child1, 'lipschitz'),
     });
     const innerStruct = P.struct({
       distance: P.add(P.field(child1, 'distance'), this.uniform('thickness')),
       color: P.field(child1, 'color'),
-      uniqueId: P.field(child1, 'uniqueId'),
+      surfaceId: P.field(child1, 'surfaceId'),
       lipschitz: P.field(child1, 'lipschitz'),
     });
     return this.structmin(shellStruct, this.structmax(innerStruct, child2));
@@ -394,7 +394,7 @@ class OffsetNode extends TreeNode {
     return P.struct({
       distance: P.add(P.field(child, 'distance'), this.uniform('distance')),
       color: P.field(child, 'color'),
-      uniqueId: P.field(child, 'uniqueId'),
+      surfaceId: P.field(child, 'surfaceId'),
       lipschitz: P.field(child, 'lipschitz'),
     });
   }
@@ -450,7 +450,7 @@ class ScaleNode extends TreeNode {
       return P.struct({
         distance: P.mul(P.field(child, 'distance'), this.uniform('k')),
         color: P.field(child, 'color'),
-        uniqueId: P.field(child, 'uniqueId'),
+        surfaceId: P.field(child, 'surfaceId'),
         lipschitz: P.field(child, 'lipschitz'),
       });
     }
@@ -470,7 +470,7 @@ class ScaleNode extends TreeNode {
       return P.struct({
         distance: P.mul(P.field(child, 'distance'), this.uniform('k')),
         color: P.field(child, 'color'),
-        uniqueId: P.field(child, 'uniqueId'),
+        surfaceId: P.field(child, 'surfaceId'),
         lipschitz: P.field(child, 'lipschitz'),
       });
     }
@@ -557,7 +557,7 @@ class TwistNode extends TreeNode {
     return P.struct({
       distance: P.field(child, 'distance'),
       color: P.field(child, 'color'),
-      uniqueId: P.field(child, 'uniqueId'),
+      surfaceId: P.field(child, 'surfaceId'),
       lipschitz: P.mul(P.field(child, 'lipschitz'), maxScale),
     });
   }
@@ -851,7 +851,7 @@ class ExtrudeNode extends TreeNode {
     return P.struct({
       distance: this.max(d, dz),
       color: P.field(child, 'color'),
-      uniqueId: P.field(child, 'uniqueId'),
+      surfaceId: P.field(child, 'surfaceId'),
       lipschitz: P.field(child, 'lipschitz'),
     });
   }
@@ -922,7 +922,7 @@ class DistanceDeformInsideNode extends TreeNode {
     return P.struct({
       distance: distance,
       color: P.field(d0, 'color'),
-      uniqueId: P.field(d0, 'uniqueId'),
+      surfaceId: P.field(d0, 'surfaceId'),
       lipschitz: P.add(P.field(d0, 'lipschitz'), P.field(d1, 'lipschitz')),
     });
   }
@@ -1069,7 +1069,7 @@ class HelixExtrudeNode extends TreeNode {
     return P.struct({
       distance: this.max(P.field(child, 'distance'), heightLimit),
       color: P.field(child, 'color'),
-      uniqueId: P.field(child, 'uniqueId'),
+      surfaceId: P.field(child, 'surfaceId'),
       lipschitz: P.field(child, 'lipschitz'),
     });
   }
@@ -1098,7 +1098,7 @@ class NegateNode extends TreeNode {
     return P.struct({
       distance: P.neg(P.field(child, 'distance')),
       color: P.field(child, 'color'),
-      uniqueId: P.field(child, 'uniqueId'),
+      surfaceId: P.field(child, 'surfaceId'),
       lipschitz: P.field(child, 'lipschitz'),
     });
   }

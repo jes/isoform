@@ -72,12 +72,12 @@ const TreeNodeTests = {
         this.assertEquals(node.isDirty, true, "New node should be dirty");
         this.assertEquals(node.isDisabled, false, "New node should not be disabled");
         
-        // Test uniqueId increment
+        // Test surfaceId increment
         const prevId = TreeNode.nextId - 1;
-        this.assertEquals(node.uniqueId, prevId, "Node should have correct unique ID");
+        this.assertEquals(node.surfaceId, prevId, "Node should have correct unique ID");
         
         // Test displayName
-        this.assertEquals(node.displayName, `TestNode${prevId}`, "DisplayName should combine name and uniqueId");
+        this.assertEquals(node.displayName, `TestNode${prevId}`, "DisplayName should combine name and surfaceId");
     },
     
     testParentChildRelationship: function() {
@@ -224,7 +224,7 @@ const TreeNodeTests = {
         
         // We don't have a built-in findNode method, so we'll create one for testing
         function findNodeById(node, id) {
-            if (node.uniqueId === id) return node;
+            if (node.surfaceId === id) return node;
             for (const child of node.children) {
                 const found = findNodeById(child, id);
                 if (found) return found;
@@ -233,7 +233,7 @@ const TreeNodeTests = {
         }
         
         // Test finding by ID
-        const found = findNodeById(root, grandchild1.uniqueId);
+        const found = findNodeById(root, grandchild1.surfaceId);
         this.assertEquals(found, grandchild1, "Should find node by ID");
         
         // Test with non-existent ID
@@ -284,7 +284,7 @@ const TreeNodeTests = {
         const cloned = root.clone();
         
         // Test basic properties
-        this.assertNotEquals(cloned.uniqueId, root.uniqueId, "Cloned node should have different ID");
+        this.assertNotEquals(cloned.surfaceId, root.surfaceId, "Cloned node should have different ID");
         this.assertEquals(cloned.name, root.name, "Cloned node should have same name");
         this.assertNotEquals(cloned.displayName, root.displayName, "Cloned node should have different display name");
         this.assertEquals(cloned.maxChildren, root.maxChildren, "Cloned node should have same maxChildren");
@@ -293,7 +293,7 @@ const TreeNodeTests = {
         
         // Test cloned structure
         this.assertEquals(cloned.children.length, 1, "Cloned node should have one child");
-        this.assertNotEquals(cloned.children[0].uniqueId, child1.uniqueId, "Cloned child should have different ID");
+        this.assertNotEquals(cloned.children[0].surfaceId, child1.surfaceId, "Cloned child should have different ID");
         this.assertEquals(cloned.children[0].name, child1.name, "Cloned child should have same name");
         this.assertEquals(cloned.children[0].parent, cloned, "Cloned child should reference cloned parent");
     },

@@ -11,8 +11,8 @@ class TreeNode {
 
   constructor(name = "Node") {
     this.name = name; // internal node type name
-    this.uniqueId = TreeNode.nextId++; // unique identifier per node
-    this.displayName = `${this.name}${this.uniqueId}`; // user-visible name
+    this.surfaceId = TreeNode.nextId++; // unique identifier per node
+    this.displayName = `${this.name}${this.surfaceId}`; // user-visible name
     this.children = []; // child nodes
     this.blends = []; // blend nodes
     this.parent = null; // parent node
@@ -80,8 +80,8 @@ class TreeNode {
   }
 
   // optionally return an array of multiple surface ids
-  uniqueIds() {
-    return [this.uniqueId];
+  surfaceIds() {
+    return [this.surfaceId];
   }
 
   /// the rest of this class should not generally be overridden
@@ -96,13 +96,13 @@ class TreeNode {
   }
 
   findNodeById(id) {
-    if (this.uniqueIds().includes(id)) return this;
+    if (this.surfaceIds().includes(id)) return this;
     for (const child of this.children) {
       const result = child.findNodeById(id);
       if (result) return result;
     }
     for (const blend of this.blends) {
-      if (blend.uniqueIds().includes(id)) return blend;
+      if (blend.surfaceIds().includes(id)) return blend;
     }
     return null;
   }
@@ -123,7 +123,7 @@ class TreeNode {
   }
 
   uniformName(property) {
-    return `u_${this.name}_${this.uniqueId}_${property}`;
+    return `u_${this.name}_${this.surfaceId}_${property}`;
   }
 
   // return a Peptide node for a float uniform mapped to a named property
@@ -144,13 +144,13 @@ class TreeNode {
   uniformTexture3d(property) {
     const uniformName = this.uniformName(property);
     this.propertyUniforms[uniformName] = property;
-    return `u_${this.name}_${this.uniqueId}_${property}`;
+    return `u_${this.name}_${this.surfaceId}_${property}`;
   }
 
   uniformTexture2d(property) {
     const uniformName = this.uniformName(property);
     this.propertyUniforms[uniformName] = property;
-    return `u_${this.name}_${this.uniqueId}_${property}`;
+    return `u_${this.name}_${this.surfaceId}_${property}`;
   }
 
   // set a name for this node that doesn't already exist in the document
@@ -204,8 +204,8 @@ class TreeNode {
     const distB = P.field(b, 'distance');
     const colorA = P.field(a, 'color');
     const colorB = P.field(b, 'color');
-    const uniqueIdA = P.field(a, 'uniqueId');
-    const uniqueIdB = P.field(b, 'uniqueId');
+    const surfaceIdA = P.field(a, 'surfaceId');
+    const surfaceIdB = P.field(b, 'surfaceId');
     const lipschitzA = P.field(a, 'lipschitz');
     const lipschitzB = P.field(b, 'lipschitz');
     
@@ -226,17 +226,17 @@ class TreeNode {
     
     const color = P.vmix(colorA, colorB, t);
     const lipschitz = P.max(lipschitzA, lipschitzB);
-    let uniqueId = P.cond(P.lte(distA, distB), uniqueIdA, uniqueIdB);
+    let surfaceId = P.cond(P.lte(distA, distB), surfaceIdA, surfaceIdB);
 
-    if (this.uniqueId != null && this.uniqueId > 0) {
+    if (this.surfaceId != null && this.surfaceId > 0) {
       const nearBoth = P.lte(P.max(diffA, diffB), this.uniform('blendRadius'));
-      uniqueId = P.cond(nearBoth, P.const(this.uniqueId), uniqueId);
+      surfaceId = P.cond(nearBoth, P.const(this.surfaceId), surfaceId);
     }
 
     return P.struct({
       distance: distance,
       color: color,
-      uniqueId: uniqueId,
+      surfaceId: surfaceId,
       lipschitz: lipschitz,
     });
   }
@@ -249,8 +249,8 @@ class TreeNode {
     const distB = P.field(b, 'distance');
     const colorA = P.field(a, 'color');
     const colorB = P.field(b, 'color');
-    const uniqueIdA = P.field(a, 'uniqueId');
-    const uniqueIdB = P.field(b, 'uniqueId');
+    const surfaceIdA = P.field(a, 'surfaceId');
+    const surfaceIdB = P.field(b, 'surfaceId');
     const lipschitzA = P.field(a, 'lipschitz');
     const lipschitzB = P.field(b, 'lipschitz');
 
@@ -271,17 +271,17 @@ class TreeNode {
     
     const color = P.vmix(colorA, colorB, t);
     const lipschitz = P.max(lipschitzA, lipschitzB);
-    let uniqueId = P.cond(P.gte(distA, distB), uniqueIdA, uniqueIdB);
+    let surfaceId = P.cond(P.gte(distA, distB), surfaceIdA, surfaceIdB);
 
-    if (this.uniqueId != null && this.uniqueId > 0) {
+    if (this.surfaceId != null && this.surfaceId > 0) {
       const nearBoth = P.lte(P.max(diffA, diffB), this.uniform('blendRadius'));
-      uniqueId = P.cond(nearBoth, P.const(this.uniqueId), uniqueId);
+      surfaceId = P.cond(nearBoth, P.const(this.surfaceId), surfaceId);
     }
 
     return P.struct({
       distance: distance,
       color: color,
-      uniqueId: uniqueId,
+      surfaceId: surfaceId,
       lipschitz: lipschitz,
     });
   }
@@ -477,16 +477,16 @@ class TreeNode {
       return this.noop();
     }
     if (!pep.value.color) pep.value.color = this.defaultColor();
-    if (!pep.value.uniqueId) {
-      // find the leaf node and propagate its uniqueId
+    if (!pep.value.surfaceId) {
+      // find the leaf node and propagate its surfaceId
       let node = this;
       while (node.children.length > 0) {
         if (node.isCombinator) {
-          this.warn(`Node "${this.name}" doesn't propagate uniqueId but has a combinator in the left child tree`);
+          this.warn(`Node "${this.name}" doesn't propagate surfaceId but has a combinator in the left child tree`);
         }
         node = node.children[0];
       }
-      pep.value.uniqueId = P.const(node.uniqueId);
+      pep.value.surfaceId = P.const(node.surfaceId);
     }
     if (!pep.value.lipschitz) {
       pep.value.lipschitz = P.const(1.0);
@@ -630,7 +630,7 @@ class TreeNode {
       visited.set(node, true);
       if (node) {
         nodeMap.set(node, {
-          id: node.uniqueId,
+          id: node.surfaceId,
           path: [...path]
         });
         
@@ -646,7 +646,7 @@ class TreeNode {
     const serializeNode = (node) => {
       const result = {
         type: node.constructor.name,
-        uniqueId: node.uniqueId,
+        surfaceId: node.surfaceId,
         name: node.name,
         displayName: node.displayName,
         maxChildren: node.maxChildren,
@@ -662,7 +662,7 @@ class TreeNode {
             return serializeNode(child);
           } else {
             // This is a circular reference, just store the ID
-            return { circularRef: child.uniqueId };
+            return { circularRef: child.surfaceId };
           }
         }) : []
       };
@@ -691,7 +691,7 @@ class TreeNode {
 
   // Static deserialization method
   static fromSerialized(serialized) {
-    // Map to store nodes by their uniqueId for resolving circular references
+    // Map to store nodes by their surfaceId for resolving circular references
     const nodesById = new Map();
     
     // Function to create a node of the correct type
@@ -712,7 +712,7 @@ class TreeNode {
       }
       
       // Restore basic properties
-      node.uniqueId = data.uniqueId;
+      node.surfaceId = data.surfaceId;
       node.name = data.name;
       node.displayName = data.displayName;
       node.maxChildren = data.maxChildren;
@@ -727,11 +727,11 @@ class TreeNode {
       }
       
       // Store in map for circular reference resolution
-      nodesById.set(node.uniqueId, node);
+      nodesById.set(node.surfaceId, node);
       
       // Restore all other properties
       for (const propName in data) {
-        if (!['type', 'uniqueId', 'name', 'displayName', 'maxChildren', 
+        if (!['type', 'surfaceId', 'name', 'displayName', 'maxChildren', 
               'isDirty', 'isDisabled', 'children', 'blendRadius', 'chamfer',
               'propertyUniforms'].includes(propName)) {
           const value = data[propName];
@@ -794,7 +794,7 @@ class TreeNode {
     // Generate new unique IDs for all nodes in the cloned tree
     const regenerateIds = (node) => {
       // Assign a new unique ID
-      node.uniqueId = TreeNode.nextId++;
+      node.surfaceId = TreeNode.nextId++;
 
       // assign a unique name
       node.setUniqueName(document);

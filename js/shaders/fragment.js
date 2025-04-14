@@ -24,7 +24,7 @@ float mapsign = 1.0;
 struct SDFResult {
     float distance;
     vec3 color;
-    float uniqueId;
+    float surfaceId;
     float lipschitz;
 };
 
@@ -42,10 +42,10 @@ vec3 mapNormal(vec3 p) {
 float findEdge(vec3 p) {
     p = uRotationMatrix * p;
     float eps = 0.005 / uCameraZoom;
-    float id1 = peptide(p + vec3(eps, 0.0, 0.0)).uniqueId;
-    float id2 = peptide(p + vec3(-eps, 0.0, 0.0)).uniqueId;
-    float id3 = peptide(p + vec3(0.0, eps, 0.0)).uniqueId;
-    float id4 = peptide(p + vec3(0.0, -eps, 0.0)).uniqueId;
+    float id1 = peptide(p + vec3(eps, 0.0, 0.0)).surfaceId;
+    float id2 = peptide(p + vec3(-eps, 0.0, 0.0)).surfaceId;
+    float id3 = peptide(p + vec3(0.0, eps, 0.0)).surfaceId;
+    float id4 = peptide(p + vec3(0.0, -eps, 0.0)).surfaceId;
     return float(id1 != id2 || id1 != id3 || id1 != id4);
 }
 
@@ -114,9 +114,9 @@ MarchResult rayMarch(vec3 ro, vec3 rd) {
         
         if (d < 0.0) {
             result.hit = true;
-            if (m.uniqueId == uObjectUnderCursor) {
+            if (m.surfaceId == uObjectUnderCursor) {
                 result.color = mix(m.color, vec3(0.1, 0.7, 0.9), 0.8);
-            } else if (m.uniqueId == uSelectedObject) {
+            } else if (m.surfaceId == uSelectedObject) {
                 result.color = mix(m.color, vec3(0.1, 0.9, 0.1), 0.8);
             } else {
                 result.color = m.color;

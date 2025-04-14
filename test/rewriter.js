@@ -313,7 +313,7 @@ const RewriterTests = {
     testRewriteNoBlends2: async function() {
         TreeNode.nextId = 1;
         const sphere = new SphereNode();
-        this.assertEquals(sphere.uniqueId, 1);
+        this.assertEquals(sphere.surfaceId, 1);
         const tree = new UnionNode([
             new TwistNode(new TransformNode(new SubtractionNode([
                 new DomainDeformNode(new SphereNode()),
@@ -350,9 +350,9 @@ const RewriterTests = {
     testRewriteNoopBlend: async function() {
         TreeNode.nextId = 1;
         const sphere = new SphereNode();
-        this.assertEquals(sphere.uniqueId, 1);
+        this.assertEquals(sphere.surfaceId, 1);
         const box = new BoxNode();
-        this.assertEquals(box.uniqueId, 2);
+        this.assertEquals(box.surfaceId, 2);
         const tree = new UnionNode([
             new TwistNode(new TransformNode(new SubtractionNode([
                 new DomainDeformNode(new SphereNode()),
@@ -409,9 +409,9 @@ const RewriterTests = {
     testRewriteSimpleBlend: async function() {
         TreeNode.nextId = 1;
         const sphere = new SphereNode();
-        this.assertEquals(sphere.uniqueId, 1);
+        this.assertEquals(sphere.surfaceId, 1);
         const box = new BoxNode();
-        this.assertEquals(box.uniqueId, 2);
+        this.assertEquals(box.surfaceId, 2);
         const tree = new UnionNode([
             new IntersectionNode([sphere, new GyroidNode()]),
             box,
@@ -436,9 +436,9 @@ const RewriterTests = {
     testRewriteSimpleBlend2: async function() {
         TreeNode.nextId = 1;
         const sphere = new SphereNode();
-        this.assertEquals(sphere.uniqueId, 1);
+        this.assertEquals(sphere.surfaceId, 1);
         const box = new BoxNode();
-        this.assertEquals(box.uniqueId, 2);
+        this.assertEquals(box.surfaceId, 2);
         const tree = new UnionNode([
             new IntersectionNode([new GyroidNode(), sphere]),
             box,
@@ -468,9 +468,9 @@ const RewriterTests = {
         console.log("testRewriteSimpleBlendWithModifiers");
         TreeNode.nextId = 1;
         const sphere = new SphereNode();
-        this.assertEquals(sphere.uniqueId, 1);
+        this.assertEquals(sphere.surfaceId, 1);
         const box = new BoxNode();
-        this.assertEquals(box.uniqueId, 2);
+        this.assertEquals(box.surfaceId, 2);
         const tree = new TransformNode(new TwistNode(new UnionNode([
             new DomainDeformNode(new ShellNode(new IntersectionNode([sphere, new TransformNode(new GyroidNode())]))),
             new ScaleNode(box),
@@ -494,13 +494,13 @@ const RewriterTests = {
     testRewriteAllPairsBlends: async function() {
         TreeNode.nextId = 1;
         const box = new BoxNode();
-        this.assertEquals(box.uniqueId, 1);
+        this.assertEquals(box.surfaceId, 1);
         const sphere = new SphereNode();
-        this.assertEquals(sphere.uniqueId, 2);
+        this.assertEquals(sphere.surfaceId, 2);
         const gyroid = new GyroidNode();
-        this.assertEquals(gyroid.uniqueId, 3);
+        this.assertEquals(gyroid.surfaceId, 3);
         const cylinder = new CylinderNode();
-        this.assertEquals(cylinder.uniqueId, 4);
+        this.assertEquals(cylinder.surfaceId, 4);
         const tree = new UnionNode([
             new IntersectionNode([sphere, gyroid]),
             new SubtractionNode([box, cylinder]),
@@ -552,8 +552,8 @@ const RewriterTests = {
                     const idLeft = Array.from(leftIds)[0];
                     const idRight = Array.from(rightIds)[0];
                     for (const blend of tree.blends) {
-                        if ((blend.nodes[0].uniqueId == idLeft && blend.nodes[1].uniqueId == idRight) ||
-                            (blend.nodes[0].uniqueId == idRight && blend.nodes[1].uniqueId == idLeft)) {
+                        if ((blend.nodes[0].surfaceId == idLeft && blend.nodes[1].surfaceId == idRight) ||
+                            (blend.nodes[0].surfaceId == idRight && blend.nodes[1].surfaceId == idLeft)) {
                             if (node.blendRadius !== blend.blendRadius || node.chamfer !== blend.chamfer) {
                                 throw new Error(`Blend parameters mismatch for ${idLeft},${idRight}: expected radius=${blend.blendRadius}, chamfer=${blend.chamfer} but got radius=${node.blendRadius}, chamfer=${node.chamfer}`);
                             }
@@ -574,11 +574,11 @@ const RewriterTests = {
     testNoRewriteForLikeBlends: async function() {
         TreeNode.nextId = 1;
         const sphere = new SphereNode();
-        this.assertEquals(sphere.uniqueId, 1);
+        this.assertEquals(sphere.surfaceId, 1);
         const box = new BoxNode();
-        this.assertEquals(box.uniqueId, 2);
+        this.assertEquals(box.surfaceId, 2);
         const gyroid = new GyroidNode();
-        this.assertEquals(gyroid.uniqueId, 3);
+        this.assertEquals(gyroid.surfaceId, 3);
         const tree = new UnionNode([
             new IntersectionNode([sphere, box]),
             gyroid,

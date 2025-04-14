@@ -450,9 +450,9 @@ const renderer = {
         // Raymarch from this point
         this.rayMarchResult = this.rayMarchFromPoint(ro, rd);
 
-        console.log("id under cursor", this.rayMarchResult.uniqueId);
+        console.log("id under cursor", this.rayMarchResult.surfaceId);
 
-        let node = app.document.findNodeById(this.rayMarchResult.uniqueId);
+        let node = app.document.findNodeById(this.rayMarchResult.surfaceId);
 
         if (node != this.nodeUnderCursor) {
             this.nodeUnderCursor = node;
@@ -573,7 +573,7 @@ const renderer = {
             hit: false,
             hitPosition: null,
             steps: 0,
-            uniqueId: null,
+            surfaceId: null,
         };
 
         if (!app.sdf) {
@@ -595,7 +595,7 @@ const renderer = {
             if (d < 0.0) {
                 result.hit = true;
                 result.hitPosition = rotatedP;
-                result.uniqueId = sdfResult.uniqueId;
+                result.surfaceId = sdfResult.surfaceId;
                 break;
             }
 

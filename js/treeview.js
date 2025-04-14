@@ -38,7 +38,7 @@ class TreeView {
             
             // Restore selection if the selected node still exists
             if (this.selectedNode) {
-                const nodeLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${this.selectedNode.uniqueId}"]`);
+                const nodeLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${this.selectedNode.surfaceId}"]`);
                 nodeLabels.forEach(nodeLabel => {
                     nodeLabel.classList.add('selected');
                 });
@@ -79,7 +79,7 @@ class TreeView {
         const toggleBtn = document.createElement('div');
         toggleBtn.className = 'tree-toggle';
         // Check if this node was previously collapsed
-        if (this.collapsedNodeIds.has(node.uniqueId)) {
+        if (this.collapsedNodeIds.has(node.surfaceId)) {
             toggleBtn.innerHTML = '►';
         } else {
             toggleBtn.innerHTML = '▼';
@@ -96,7 +96,7 @@ class TreeView {
         const label = document.createElement('div');
         label.className = 'tree-node-label';
         label.textContent = node.displayName;
-        label.dataset.nodeId = node.uniqueId || Math.random().toString(36).substr(2, 9);
+        label.dataset.nodeId = node.surfaceId || Math.random().toString(36).substr(2, 9);
         
         // Add preselected styling if this is the preselected node
         if (this.preselectedNode === node) {
@@ -133,7 +133,7 @@ class TreeView {
             childHighlightLabels.forEach(el => el.classList.remove('child-of-selected'));
             
             // Add selected class to all instances of this node
-            const nodeLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${node.uniqueId}"]`);
+            const nodeLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${node.surfaceId}"]`);
             nodeLabels.forEach(nodeLabel => {
                 nodeLabel.classList.add('selected');
             });
@@ -163,7 +163,7 @@ class TreeView {
             childHighlightLabels.forEach(el => el.classList.remove('child-of-selected'));
             
             // Add selected class to all instances of this node
-            const nodeLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${node.uniqueId}"]`);
+            const nodeLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${node.surfaceId}"]`);
             nodeLabels.forEach(nodeLabel => {
                 nodeLabel.classList.add('selected');
             });
@@ -191,7 +191,7 @@ class TreeView {
                     toggleBtn.innerHTML = '▼';
                     childrenContainer.style.display = 'block';
                     // Remove from collapsed set
-                    this.collapsedNodeIds.delete(node.uniqueId);
+                    this.collapsedNodeIds.delete(node.surfaceId);
                     
                     // Recalculate line heights when expanding
                     setTimeout(() => this.adjustTreeLines(), 0);
@@ -199,7 +199,7 @@ class TreeView {
                     toggleBtn.innerHTML = '►';
                     childrenContainer.style.display = 'none';
                     // Add to collapsed set
-                    this.collapsedNodeIds.add(node.uniqueId);
+                    this.collapsedNodeIds.add(node.surfaceId);
                 }
             });
         }
@@ -248,7 +248,7 @@ class TreeView {
             container.appendChild(childrenContainer);
             
             // Apply collapsed state if needed
-            if (this.collapsedNodeIds.has(node.uniqueId)) {
+            if (this.collapsedNodeIds.has(node.surfaceId)) {
                 childrenContainer.style.display = 'none';
             }
         }
@@ -257,15 +257,15 @@ class TreeView {
     }
 
     isCollapsed(node) {
-        return this.collapsedNodeIds.has(node.uniqueId);
+        return this.collapsedNodeIds.has(node.surfaceId);
     }
 
     collapseNode(node) {
-        this.collapsedNodeIds.add(node.uniqueId);
+        this.collapsedNodeIds.add(node.surfaceId);
     }
 
     expandNode(node) {
-        this.collapsedNodeIds.delete(node.uniqueId);
+        this.collapsedNodeIds.delete(node.surfaceId);
     }
     
     setupDragAndDrop(element, node) {
@@ -293,7 +293,7 @@ class TreeView {
             element.classList.add('dragging');
             
             // Set drag data
-            e.dataTransfer.setData('text/plain', node.uniqueId);
+            e.dataTransfer.setData('text/plain', node.surfaceId);
             e.dataTransfer.effectAllowed = 'move';
             
             // Use a custom drag image if needed
@@ -482,7 +482,7 @@ class TreeView {
             if (currentNode.children) {
                 currentNode.children.forEach(child => {
                     // Find the DOM element for this child
-                    const childLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${child.uniqueId}"]`);
+                    const childLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${child.surfaceId}"]`);
                     if (childLabels.length > 0) {
                         childLabels.forEach(childLabel => {
                             if (highlight) {
@@ -502,7 +502,7 @@ class TreeView {
             if (currentNode.blends) {
                 currentNode.blends.forEach(blend => {
                     // Find all DOM elements for this blend
-                    const blendLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${blend.uniqueId}"]`);
+                    const blendLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${blend.surfaceId}"]`);
                     if (blendLabels.length > 0) {
                         blendLabels.forEach(blendLabel => {
                             if (highlight) {
@@ -523,10 +523,10 @@ class TreeView {
     }
     
     updateNodeLabel(node) {
-        if (!node || !node.uniqueId) return;
+        if (!node || !node.surfaceId) return;
         
         // Find the tree node label that corresponds to the node
-        const nodeLabel = this.container.querySelector(`.tree-node-label[data-node-id="${node.uniqueId}"]`);
+        const nodeLabel = this.container.querySelector(`.tree-node-label[data-node-id="${node.surfaceId}"]`);
         if (nodeLabel) {
             // Update just the label text without rebuilding the entire tree
             nodeLabel.textContent = node.displayName;
@@ -552,7 +552,7 @@ class TreeView {
         if (!node) return;
         
         // Update the UI to reflect the selection
-        const nodeLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${node.uniqueId}"]`);
+        const nodeLabels = this.container.querySelectorAll(`.tree-node-label[data-node-id="${node.surfaceId}"]`);
         if (nodeLabels.length > 0) {
             // Remove selected class from all nodes
             const selectedLabels = this.container.querySelectorAll('.tree-node-label.selected');
@@ -575,7 +575,7 @@ class TreeView {
     setPreselectedNode(node) {
         // Clear previous preselection
         if (this.preselectedNode) {
-            const prevLabel = this.container.querySelector(`.tree-node-label[data-node-id="${this.preselectedNode.uniqueId}"]`);
+            const prevLabel = this.container.querySelector(`.tree-node-label[data-node-id="${this.preselectedNode.surfaceId}"]`);
             if (prevLabel) {
                 prevLabel.classList.remove('preselected');
             }
@@ -585,7 +585,7 @@ class TreeView {
         
         // Apply preselection styling
         if (node) {
-            const nodeLabel = this.container.querySelector(`.tree-node-label[data-node-id="${node.uniqueId}"]`);
+            const nodeLabel = this.container.querySelector(`.tree-node-label[data-node-id="${node.surfaceId}"]`);
             if (nodeLabel) {
                 nodeLabel.classList.add('preselected');
             }

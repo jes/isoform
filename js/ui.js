@@ -527,10 +527,10 @@ const ui = {
 
         this.addMenuSeparator(contextMenu);
         
-        if (renderer.rayMarchResult?.uniqueId > 0) {
+        if (renderer.rayMarchResult?.surfaceId > 0) {
             // Add the "Add Blend" option
             this.addMenuItem(contextMenu, 'Add Blend', () => {
-                this.startBlendMode(renderer.rayMarchResult.uniqueId);
+                this.startBlendMode(renderer.rayMarchResult.surfaceId);
             }, '🔄'); // Using a circular arrows emoji as an icon
         }
     },
@@ -1279,7 +1279,7 @@ const ui = {
     // Helper function to check if a node exists in the tree
     nodeExistsInTree(node, rootNode) {
         if (!node || !rootNode) return false;
-        return rootNode.findNodeById(node.uniqueId) ? true : false;
+        return rootNode.findNodeById(node.surfaceId) ? true : false;
     },
 
     // Add these new properties and methods for blend mode
@@ -1300,7 +1300,7 @@ const ui = {
         this.blendClickHandler = (e, node, level) => {
             if (node) {
                 // If a valid node was clicked, create the blend
-                this.addBlend(this.blendMode.firstSurfaceId, renderer.rayMarchResult?.uniqueId);
+                this.addBlend(this.blendMode.firstSurfaceId, renderer.rayMarchResult?.surfaceId);
             }
             
             // Exit blend mode regardless of whether a node was clicked

@@ -15,7 +15,7 @@ class ColorNode extends TreeNode {
     return P.struct({
       distance: P.field(child, 'distance'),
       color: this.vuniform('color'),
-      uniqueId: P.field(child, 'uniqueId'),
+      surfaceId: P.field(child, 'surfaceId'),
       lipschitz: P.field(child, 'lipschitz'),
     });
   }
@@ -67,7 +67,7 @@ class PolkaDotNode extends TreeNode {
     return P.struct({
       distance: P.field(child, 'distance'),
       color: color,
-      uniqueId: P.field(child, 'uniqueId'),
+      surfaceId: P.field(child, 'surfaceId'),
       lipschitz: P.field(child, 'lipschitz'),
     });
   }
