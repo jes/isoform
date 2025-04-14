@@ -128,7 +128,7 @@ class BoxNode extends TreeNode {
   }
 
   surfaceIds() {
-    return this.halfspaces.map(h => h.surfaceId);
+    return this.halfspaces.map(h => h.surfaceId).concat(this.surfaceId);
   }
 
   makeNormalised() {

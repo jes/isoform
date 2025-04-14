@@ -79,7 +79,8 @@ class TreeNode {
     return this;
   }
 
-  // optionally return an array of multiple surface ids
+  // optionally override this to return an array of multiple surface ids;
+  // make sure the node's own surfaceId is included otherwise selection won't work properly
   surfaceIds() {
     return [this.surfaceId];
   }
