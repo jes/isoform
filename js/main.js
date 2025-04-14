@@ -220,15 +220,14 @@ const app = {
 
                 // Get the AABB of the secondary node
                 const nodeAABB = currentSelectedNode.aabb();
-                const center = nodeAABB.getCenter();
-                const size = nodeAABB.getSize();
                 
                 // Create a BoxNode with the size of the AABB
-                const boxNode = new BoxNode([size.x, size.y, size.z], 0);
+                const boxNode = new BoxNode();
+                boxNode.size = nodeAABB.getSize();
                 
                 // Create a TransformNode to position the box at the center of the AABB
                 const transformNode = new TransformNode(boxNode);
-                transformNode.translation = center;
+                transformNode.translation = nodeAABB.getCenter();
                 
                 // Generate the peptide expression for the AABB representation
                 this.processedSecondaryNode = TreeRewriter.rewrite(transformNode);
