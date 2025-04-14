@@ -1394,6 +1394,10 @@ const ui = {
         const blend = new BlendNode(app.document, surfaceId1, surfaceId2);
         const node1 = app.document.findNodeById(surfaceId1);
         const node2 = app.document.findNodeById(surfaceId2);
+        if (node1 instanceof BlendNode || node2 instanceof BlendNode) {
+            throw new Error("Cannot blend a blend");
+            // XXX: how could we do this?
+        }
         node1.addBlend(blend);
         if (node2 != node1) node2.addBlend(blend);
         ui.selectNode(blend);
