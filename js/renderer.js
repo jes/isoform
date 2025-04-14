@@ -277,14 +277,7 @@ const renderer = {
     },
     
     render(shaderLayers = null) {
-        if (!this.displayProgram) {
-            return;
-        }
-
-        // If no custom shader layers are provided, use the default programs
-        if (!shaderLayers) {
-            return;
-        }
+        if (!this.displayProgram || !shaderLayers) return;
 
         const gl = this.gl;
         
@@ -616,7 +609,6 @@ const renderer = {
         return result;
     },
     
-   
     // New method to render multiple shader layers
     renderShaderLayers(shaderLayers, width, height) {
         const gl = this.gl;
@@ -627,9 +619,7 @@ const renderer = {
         // Process each layer with appropriate blending
         for (let i = 0; i < shaderLayers.length; i++) {
             const layer = shaderLayers[i];
-            if (!layer) {
-                continue;
-            }
+            if (!layer) continue;
             
             // First layer has blending disabled, subsequent layers have it enabled
             if (i === 0) {
