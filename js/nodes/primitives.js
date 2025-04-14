@@ -150,7 +150,7 @@ class BoxNode extends TreeNode {
     this.halfspaces[5].axis = "z";
     this.halfspaces[5].size = this.size.z/2;
     this.halfspaces[5].negative = true;
-    return this.intersection.normalised();
+    return this.intersection.cloneWithSameIds().normalised();
   }
 
   getIcon() {

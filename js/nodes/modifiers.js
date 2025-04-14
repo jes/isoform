@@ -1112,9 +1112,10 @@ class NegateNode extends TreeNode {
 // object to store in the document tree; the BlendNodes are collected up in
 // the TreeRewriter to apply the blends
 class BlendNode extends TreeNode {
-  constructor(n1, n2, blendRadius = 0.5, chamfer = 1.0) {
+  constructor(document, id1, id2, blendRadius = 0.5, chamfer = 1.0) {
     super("Blend");
-    this.nodes = [n1, n2];
+    this.document = document;
+    this.ids = [id1, id2];
     this.blendRadius = blendRadius;
     this.chamfer = chamfer;
   }
@@ -1127,14 +1128,16 @@ class BlendNode extends TreeNode {
   }
 
   markDirty() {
-    this.nodes.forEach(node => node.markDirty());
+    this.document.markDirty();
   }
 
   delete() {
     this.markDirty();
 
+    let nodes = this.ids.map(id => this.document.findNodeById(id));
+
     // Remove this blend from each node's blends array
-    this.nodes.forEach(node => {
+    nodes.forEach(node => {
       // Find the index of this blend in the node's blends array
       const index = node.blends.indexOf(this);
       // If found, remove it from the array

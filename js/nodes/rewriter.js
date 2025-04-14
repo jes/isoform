@@ -8,35 +8,6 @@ const TreeRewriter = {
 
     const blends = TreeRewriter.collectBlends(treeNode);
 
-    blends.add({
-      nodes: [
-        {
-          uniqueId: 51,
-        },
-        {
-          uniqueId: 38,
-        },
-      ],
-      blendRadius: 3,
-      chamfer: 0.0,
-      uniqueId: 9000,
-    });
-
-    blends.add({
-      nodes: [
-        {
-          uniqueId: 49,
-        },
-        {
-          uniqueId: 40,
-        },
-      ],
-      blendRadius: 3,
-      chamfer: 0.0,
-      uniqueId: 9000,
-    });
-
-
     // turn the normalised tree into our intermediate representation
     const t = TreeRewriter.fromTreeNode(tNormalised);
     if (!t) return null;
@@ -172,8 +143,8 @@ const TreeRewriter = {
     const ids = TreeRewriter.possibleSurfaceIds(t);
 
     for (const blend of blends) {
-      const id0 = blend.nodes[0].uniqueId;
-      const id1 = blend.nodes[1].uniqueId;
+      const id0 = blend.ids[0];
+      const id1 = blend.ids[1];
       if (ids.has(id0) && ids.has(id1)) {
         blends.add(blend);
       }
@@ -205,9 +176,8 @@ const TreeRewriter = {
 
   Rewrite(t, blend) {
     if (t.type == 'primitive') return false;
-    const id0 = blend.nodes[0].uniqueId;
-    const id1 = blend.nodes[1].uniqueId;
-    let skip = false;
+    const id0 = blend.ids[0];
+    const id1 = blend.ids[1];
     const leftHasId0 = TreeRewriter.IdIsUnder(t.left, id0);
     const leftHasId1 = TreeRewriter.IdIsUnder(t.left, id1);
     const leftHasBoth = leftHasId0 && leftHasId1;
@@ -297,8 +267,8 @@ const TreeRewriter = {
 
   Satisfy(t, blend) {
     if (t.type == 'primitive') return false;
-    const id0 = blend.nodes[0].uniqueId;
-    const id1 = blend.nodes[1].uniqueId;
+    const id0 = blend.ids[0];
+    const id1 = blend.ids[1];
     if (!TreeRewriter.IdIsUnder(t.left, id0) && !TreeRewriter.IdIsUnder(t.right, id0)) return false;
     if (!TreeRewriter.IdIsUnder(t.left, id1) && !TreeRewriter.IdIsUnder(t.right, id1)) return false;
     if (TreeRewriter.Satisfy(t.left, blend) || TreeRewriter.Satisfy(t.right, blend)) return true;

@@ -527,10 +527,12 @@ const ui = {
 
         this.addMenuSeparator(contextMenu);
         
-        // Add the "Add Blend" option
-        this.addMenuItem(contextMenu, 'Add Blend', () => {
-            this.startBlendMode(node);
-        }, '🔄'); // Using a circular arrows emoji as an icon
+        if (renderer.rayMarchResult?.uniqueId > 0) {
+            // Add the "Add Blend" option
+            this.addMenuItem(contextMenu, 'Add Blend', () => {
+                this.startBlendMode(renderer.rayMarchResult.uniqueId);
+            }, '🔄'); // Using a circular arrows emoji as an icon
+        }
     },
 
     buildModifierOptions(contextMenu, node) {
@@ -1283,13 +1285,13 @@ const ui = {
     // Add these new properties and methods for blend mode
     blendMode: {
         active: false,
-        firstNode: null
+        firstSurfaceId: null
     },
 
-    startBlendMode(firstNode) {
+    startBlendMode(firstSurfaceId) {
         // Set up blend mode
         this.blendMode.active = true;
-        this.blendMode.firstNode = firstNode;
+        this.blendMode.firstSurfaceId = firstSurfaceId;
         
         // Show a message to the user
         this.showBlendModeMessage(true);
@@ -1298,7 +1300,7 @@ const ui = {
         this.blendClickHandler = (e, node, level) => {
             if (node) {
                 // If a valid node was clicked, create the blend
-                this.addBlend(this.blendMode.firstNode, node);
+                this.addBlend(this.blendMode.firstSurfaceId, renderer.rayMarchResult?.uniqueId);
             }
             
             // Exit blend mode regardless of whether a node was clicked
@@ -1324,7 +1326,7 @@ const ui = {
     exitBlendMode() {
         // Clean up blend mode
         this.blendMode.active = false;
-        this.blendMode.firstNode = null;
+        this.blendMode.firstSurfaceId = null;
         
         // Remove the message
         this.showBlendModeMessage(false);
@@ -1359,7 +1361,7 @@ const ui = {
             message.className = 'floating-message';
             message.innerHTML = `
                 <div>Blend Mode: Click on another object to create a blend, or press Esc to cancel</div>
-                <div class="small-text">First object: ${this.blendMode.firstNode.displayName}</div>
+                <div class="small-text">First object: ${app.document.findNodeById(this.blendMode.firstSurfaceId).displayName}</div>
             `;
             document.body.appendChild(message);
             
@@ -1386,12 +1388,12 @@ const ui = {
     },
 
     // Empty implementation of addBlend for now
-    addBlend(node1, node2) {
+    addBlend(surfaceId1, surfaceId2) {
         // This will be implemented later
-        console.log(`Creating blend between ${node1.displayName} and ${node2.displayName}`);
-        const blend = new BlendNode(node1,node2);
-        node1.addBlend(blend);
-        node2.addBlend(blend);
+        console.log(`Creating blend between ${surfaceId1} and ${surfaceId2}`);
+        const blend = new BlendNode(app.document, surfaceId1, surfaceId2);
+        app.document.findNodeById(surfaceId1).addBlend(blend);
+        app.document.findNodeById(surfaceId2).addBlend(blend);
         ui.selectNode(blend);
     },
 };
