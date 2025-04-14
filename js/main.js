@@ -130,7 +130,7 @@ const app = {
             this.primaryShaderLayer.setUniform('float', 'uOpacity', camera.opacity);
             this.primaryShaderLayer.setUniforms(this.processedDocument.uniforms());
             this.primaryShaderLayer.setUniform('float', 'uSelectedObject', ui.selectedNode?.uniqueId ?? -1);
-            this.primaryShaderLayer.setUniform('float', 'uObjectUnderCursor', renderer.nodeUnderCursor?.uniqueId ?? -1);
+            this.primaryShaderLayer.setUniform('float', 'uObjectUnderCursor', renderer.rayMarchResult?.uniqueId ?? -1);
             shaderLayers.push(this.primaryShaderLayer);
         }
         if (this.secondaryShaderLayer) {

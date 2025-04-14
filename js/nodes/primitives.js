@@ -85,6 +85,12 @@ class BoxNode extends TreeNode {
     super("Box");
     this.size = new Vec3(10, 10, 10);
     this.radius = 0.0;
+    this.halfspaces = [];
+    this.intersection = new IntersectionNode();
+    for (let i = 0; i < 6; i++) {
+      this.halfspaces.push(new HalfSpaceNode(i, this.size[i]/2, false));
+      this.intersection.addChild(this.halfspaces[i]);
+    }
   }
 
   properties() {
@@ -122,17 +128,29 @@ class BoxNode extends TreeNode {
   }
 
   uniqueIds() {
-    return [this.uniqueId*1000, this.uniqueId*1000+1, this.uniqueId*1000+2, this.uniqueId*1000+3, this.uniqueId*1000+4, this.uniqueId*1000+5 ];
+    return this.halfspaces.map(h => h.uniqueId);
   }
 
   makeNormalised() {
-    const x1 = new HalfSpaceNode("x", this.size.x/2, false);
-    const x2 = new HalfSpaceNode("x", this.size.x/2, true);
-    const y1 = new HalfSpaceNode("y", this.size.y/2, false);
-    const y2 = new HalfSpaceNode("y", this.size.y/2, true);
-    const z1 = new HalfSpaceNode("z", this.size.z/2, false);
-    const z2 = new HalfSpaceNode("z", this.size.z/2, true);
-    return new IntersectionNode([x1, x2, y1, y2, z1, z2]).normalised();
+    this.halfspaces[0].axis = "x";
+    this.halfspaces[0].size = this.size.x/2;
+    this.halfspaces[0].negative = false;
+    this.halfspaces[1].axis = "x";
+    this.halfspaces[1].size = this.size.x/2;
+    this.halfspaces[1].negative = true;
+    this.halfspaces[2].axis = "y";
+    this.halfspaces[2].size = this.size.y/2;
+    this.halfspaces[2].negative = false;
+    this.halfspaces[3].axis = "y";
+    this.halfspaces[3].size = this.size.y/2;
+    this.halfspaces[3].negative = true;
+    this.halfspaces[4].axis = "z";
+    this.halfspaces[4].size = this.size.z/2;
+    this.halfspaces[4].negative = false;
+    this.halfspaces[5].axis = "z";
+    this.halfspaces[5].size = this.size.z/2;
+    this.halfspaces[5].negative = true;
+    return this.intersection.normalised();
   }
 
   getIcon() {

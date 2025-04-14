@@ -119,6 +119,7 @@ const TreeRewriter = {
   },
 
   possibleSurfaceIds(t, set = new Set()) {
+    if (!t) return set;
     if (t.type == 'combinator') {
       TreeRewriter.possibleSurfaceIds(t.left, set);
       TreeRewriter.possibleSurfaceIds(t.right, set);

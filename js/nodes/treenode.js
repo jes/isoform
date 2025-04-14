@@ -86,28 +86,6 @@ class TreeNode {
 
   /// the rest of this class should not generally be overridden
 
-  // return a Set() of possible surface ids that can come out of this node,
-  // added to `set` if given;
-  // this function could in principle be overridden by specific nodes, but I
-  // think shouldn't have to be
-  possibleSurfaceIds(set = new Set()) {
-    if (this.children.length === 0) {
-      // for primitives (no children), this is that node's id
-      set.add(this.uniqueId);
-      return set;
-    }
-    if (this.isCombinator) {
-      // for combinators, it is the union of the possible surface ids of the children
-      for (const child of this.children) {
-        child.possibleSurfaceIds(set);
-      }
-      return set;
-    }
-    // for modifiers, it is the set of ids that can come out of the first child (2nd child
-    // if just for permuting space or whatever, doesn't yield surfaces)
-    return this.children[0].possibleSurfaceIds(set);
-  }
-
   normalised() {
     const node = this.makeNormalised();
     if (!node) return null;
@@ -118,13 +96,13 @@ class TreeNode {
   }
 
   findNodeById(id) {
-    if (this.uniqueId === id) return this;
+    if (this.uniqueIds().includes(id)) return this;
     for (const child of this.children) {
       const result = child.findNodeById(id);
       if (result) return result;
     }
     for (const blend of this.blends) {
-      if (blend.uniqueId === id) return blend;
+      if (blend.uniqueIds().includes(id)) return blend;
     }
     return null;
   }
