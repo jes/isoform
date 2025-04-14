@@ -1392,8 +1392,10 @@ const ui = {
         // This will be implemented later
         console.log(`Creating blend between ${surfaceId1} and ${surfaceId2}`);
         const blend = new BlendNode(app.document, surfaceId1, surfaceId2);
-        app.document.findNodeById(surfaceId1).addBlend(blend);
-        app.document.findNodeById(surfaceId2).addBlend(blend);
+        const node1 = app.document.findNodeById(surfaceId1);
+        const node2 = app.document.findNodeById(surfaceId2);
+        node1.addBlend(blend);
+        if (node2 != node1) node2.addBlend(blend);
         ui.selectNode(blend);
     },
 };
