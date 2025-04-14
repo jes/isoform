@@ -49,43 +49,6 @@ float findEdge(vec3 p) {
     return float(id1 != id2 || id1 != id3 || id1 != id4);
 }
 
-// Calculate normal at a point
-vec4 calcNormalAndEdge(vec3 p, float d) {
-    float distanceToCamera = length(p - uCameraPosition);
-    // XXX: decrease the number of zeroes to make edge detection work again
-    float offset = 0.000001 * distanceToCamera * (1.0 / uCameraZoom);
-
-    vec2 h = vec2(offset, 0.0);
-    
-    // Get SDF values at offset points
-    float dx1 = mapsign * map(p + h.xyy);
-    float dx2 = mapsign * map(p - h.xyy);
-    float dy1 = mapsign * map(p + h.yxy);
-    float dy2 = mapsign * map(p - h.yxy);
-    float dz1 = mapsign * map(p + h.yyx);
-    float dz2 = mapsign * map(p - h.yyx);
-
-    // Calculate normal using central differences
-    vec3 normal = normalize(vec3(
-        dx1 - dx2,
-        dy1 - dy2,
-        dz1 - dz2
-    ));
-
-    // Calculate second derivatives (mathematically correct)
-    float dxx = (dx1 - 2.0 * d + dx2) / (offset * offset);
-    float dyy = (dy1 - 2.0 * d + dy2) / (offset * offset);
-    float dzz = (dz1 - 2.0 * d + dz2) / (offset * offset);
-    
-    // Calculate edge factor based on second derivatives
-    float edge = sqrt(dxx * dxx + dyy * dyy + dzz * dzz);
-    
-    // Scale edge factor - note the different scale factor to compensate for offset division
-    edge = smoothstep(0.004, 0.005, edge * offset * offset * uCameraZoom);
-    
-    return vec4(normal, edge);
-}
-
 // Ray marching
 struct MarchResult {
     float distance;    // Total distance marched
@@ -263,9 +226,6 @@ OrthoProjectionResult orthoProjection(vec3 ro, vec3 rd, vec3 right, vec3 up, flo
     } else if (marchResult.hit) {
         // Calculate hit position and normal
         vec3 pos = marchResult.hitPosition;
-        /*vec4 normalAndEdge = calcNormalAndEdge(pos, marchResult.sdf);
-        vec3 normal = normalAndEdge.xyz;
-        float edge = normalAndEdge.w;*/
         vec3 normal = mapNormal(pos);
         float edge = findEdge(pos);
         
