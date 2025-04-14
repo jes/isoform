@@ -135,7 +135,7 @@ const app = {
             shaderLayers.push(this.primaryShaderLayer);
         }
         if (this.secondaryShaderLayer) {
-            this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.15);
+            this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.25);
             this.secondaryShaderLayer.setUniforms(this.processedSecondaryNode.uniforms());
             this.secondaryShaderLayer.setUniform('float', 'uSelectedObject', -1);
             this.secondaryShaderLayer.setUniform('float', 'uObjectUnderCursor', -1);
