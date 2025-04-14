@@ -2,6 +2,7 @@
 const app = {
     document: null,
     processedDocument: null,
+    processedSecondaryNode: null,
     lastSelectedNode: null,
     lastAdjustmentTime: 0,
     adjustmentInterval: 1000, // ms
@@ -135,7 +136,7 @@ const app = {
         }
         if (this.secondaryShaderLayer) {
             this.secondaryShaderLayer.setUniform('float', 'uOpacity', 0.15);
-            this.secondaryShaderLayer.setUniforms(this.processedDocument.uniforms());
+            this.secondaryShaderLayer.setUniforms(this.processedSecondaryNode.uniforms());
             this.secondaryShaderLayer.setUniform('float', 'uSelectedObject', -1);
             this.secondaryShaderLayer.setUniform('float', 'uObjectUnderCursor', -1);
             shaderLayers.push(this.secondaryShaderLayer);
@@ -186,24 +187,24 @@ const app = {
                 ui.propertyEditorComponent?.refresh();
             }
 
-            this.processedDocument = TreeRewriter.rewrite(this.document);
-            console.log("processedDocument", this.processedDocument);
-
             let startTime = performance.now();
+            this.processedDocument = TreeRewriter.rewrite(this.document);
+            console.log(`Rewrite took ${performance.now() - startTime} ms`);
+
             if (this.processedDocument) {
-                const expr = P.field(this.processedDocument.peptide(P.vvar('p')), 'distance');
-                console.log(`Peptide expression took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
                 let ssa;
                 [this.sdf, ssa] = this.processedDocument.getSDFAndSSA(true);
-                console.log(`SSA took ${performance.now() - startTime} ms`);
+                console.log(`SDF and SSA took ${performance.now() - startTime} ms`);
 
-
+                startTime = performance.now();
                 const peptide = P.field(this.processedDocument.peptide(P.vvar('p')), 'distance').derivative('p');
                 const ssaNormal = P.vec3(peptide[0], peptide[1], peptide[2]).ssa();
-                
-                this.primaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.primaryShaderLayer);
+                console.log(`SSA normal took ${performance.now() - startTime} ms`);
 
+                startTime = performance.now();
+                this.primaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.primaryShaderLayer, this.processedDocument.uniforms());
+                console.log(`Primary shader layer creation took ${performance.now() - startTime} ms`);
             } else {
                 this.primaryShaderLayer = null;
             }
@@ -211,10 +212,7 @@ const app = {
             this.document.markClean();
         }
 
-        if (false && currentSelectedNode !== null && !currentSelectedNode.aabb().isInfinite()) {
-            let expr;
-            let node;
-            
+        if (currentSelectedNode !== null && !currentSelectedNode.aabb().isInfinite()) {
             // If AABB visualization is enabled, create an AABB representation
             if (this.showAABB) {
                 // TODO: instead of using TreeNodes, we could have a static shader
@@ -229,24 +227,29 @@ const app = {
                 const boxNode = new BoxNode([size.x, size.y, size.z], 0);
                 
                 // Create a TransformNode to position the box at the center of the AABB
-                const transformNode = new TransformNode([center.x, center.y, center.z], [0, 1, 0], 0, boxNode);
+                const transformNode = new TransformNode(boxNode);
+                transformNode.translation = center;
                 
                 // Generate the peptide expression for the AABB representation
-                startTime = performance.now();
-                expr = transformNode.peptide(P.vvar('p'));
-                node = transformNode;
+                this.processedSecondaryNode = TreeRewriter.rewrite(transformNode);
             } else {
                 // Use the normal secondary node
-                startTime = performance.now();
-                expr = currentSelectedNode.peptide(P.vvar('p'));
+                let startTime = performance.now();
+                this.processedSecondaryNode = TreeRewriter.rewrite(currentSelectedNode);
+                console.log(`Secondary node rewrite took ${performance.now() - startTime} ms`);
             }
+
+            let startTime = performance.now();
+            let expr = this.processedSecondaryNode.peptide(P.vvar('p'));
         
             if (expr) {
                 console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);
                 startTime = performance.now();
                 expr = P.struct({
                     distance: P.field(expr, 'distance'),
-                    color: P.vconst(new Vec3(0.8, 0.2, 0.2))
+                    color: P.vconst(new Vec3(0.8, 0.2, 0.2)),
+                    surfaceId: P.zero(),
+                    lipschitz: P.field(expr, 'lipschitz'),
                 });
                 const ssa = expr.ssa();
                 const peptide = P.field(expr, 'distance').derivative('p');
@@ -254,11 +257,9 @@ const app = {
                 const ssaNormal = peptideVec3.ssa();
                 console.log(`SSA took ${performance.now() - startTime} ms`);
                 
-                this.secondaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.secondaryShaderLayer, node?.uniforms());
-
-                if (this.showAABB) {
-                    this.secondaryShaderLayer.setUniforms(node.uniforms());
-                }
+                startTime = performance.now();
+                this.secondaryShaderLayer = await this.createShaderLayer(ssa, ssaNormal, this.secondaryShaderLayer, this.processedSecondaryNode.uniforms());
+                console.log(`Secondary shader layer creation took ${performance.now() - startTime} ms`);
             } else {
                 this.secondaryShaderLayer = null;
             }
@@ -272,8 +273,7 @@ const app = {
         this.hideLoadingIndicator();
     },
 
-    async createShaderLayer(ssa, ssaNormal, lastShaderLayer, uniforms = null) {
-        uniforms ||= this.processedDocument.uniforms();
+    async createShaderLayer(ssa, ssaNormal, lastShaderLayer, uniforms) {
         const src = scene.generateShaderCode(ssa, ssaNormal, uniforms);
         if (lastShaderLayer && lastShaderLayer.src == src) {
             return lastShaderLayer;
