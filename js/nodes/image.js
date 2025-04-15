@@ -1,7 +1,6 @@
 class ImageNode extends TreeNode {
-    constructor(name, data, dimensions, interpolation = 'linear') {
+    constructor(data, dimensions, interpolation = 'linear') {
         super("Image");
-        this.name = name;
         this.data = data;
         this.dimensions = dimensions;
         this.interpolation = interpolation;
