@@ -155,10 +155,9 @@ class ImageProcessor {
      * Creates a new ImageProcessor containing a signed distance field (SDF) of the original image
      * Negative values are inside, positive values are outside
      * A pixel is considered "inside" if its grayscale value is < 0.5, "outside" otherwise
-     * @param {number} [maxDistance=Infinity] - Maximum distance to compute (for performance)
      * @returns {ImageProcessor} - A new ImageProcessor with the SDF data
      */
-    toSDF(maxDistance = Infinity) {
+    toSDF() {
         if (!this.imageData) {
             throw new Error('No image data available. Load an image first.');
         }
@@ -180,58 +179,143 @@ class ImageProcessor {
             mask[i] = grayscale < 0.5;
         }
         
-        // Compute the SDF
-        const sdfData = new Float32Array(pixelCount * 4); // RGBA format
+        // Initialize distance arrays for inside and outside
+        const distInside = new Float32Array(pixelCount).fill(Infinity);
+        const distOutside = new Float32Array(pixelCount).fill(Infinity);
         
-        // For each pixel, find the distance to the nearest pixel of opposite type
+        // Helper function to compute squared Euclidean distance between two points
+        const squaredDist = (x1, y1, x2, y2) => {
+            const dx = x1 - x2;
+            const dy = y1 - y2;
+            return dx * dx + dy * dy;
+        };
+        
+        // Initialize boundary pixels
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 const index = y * this.width + x;
                 const isInside = mask[index];
                 
-                // Find minimum distance to a pixel of opposite type
-                let minDist = maxDistance;
+                // Check if this is a boundary pixel (has neighbor of opposite type)
+                let isBoundary = false;
                 
-                // Search in a growing square until we find a pixel of opposite type
-                // or reach the maximum distance
-                for (let d = 0; d < maxDistance && minDist === maxDistance; d++) {
-                    // Check all pixels at distance d (Manhattan distance)
-                    for (let dy = -d; dy <= d; dy++) {
-                        for (let dx = -d; dx <= d; dx++) {
-                            // skip pixels that would have been handled on a previous pass
-                            if (Math.abs(dx) + Math.abs(dy) < 0.7*d) continue;
-                            
-                            const nx = x + dx;
-                            const ny = y + dy;
-                            
-                            // Skip if out of bounds
-                            if (nx < 0 || nx >= this.width || ny < 0 || ny >= this.height) continue;
-                            
-                            const nIndex = ny * this.width + nx;
-                            
-                            // If we found a pixel of opposite type
-                            if (mask[nIndex] !== isInside) {
-                                // Calculate Euclidean distance
-                                const dx2 = dx / this.width;
-                                const dy2 = dy / this.height;
-                                const dist = Math.sqrt(dx2 * dx2 + dy2 * dy2);
-                                minDist = Math.min(minDist, dist);
-                            }
+                // Check 4-neighborhood
+                const neighbors = [
+                    [x-1, y], [x+1, y], [x, y-1], [x, y+1]
+                ];
+                
+                for (const [nx, ny] of neighbors) {
+                    if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+                        const nIndex = ny * this.width + nx;
+                        if (mask[nIndex] !== isInside) {
+                            isBoundary = true;
+                            break;
                         }
                     }
                 }
                 
-                // Apply sign: negative if inside, positive if outside
-                const signedDist = isInside ? -minDist : minDist;
-                
-                // Store the SDF value in all channels (R, G, B) and set alpha to 1
-                const outIndex = index * 4;
-                
-                sdfData[outIndex] = signedDist;     // R
-                sdfData[outIndex + 1] = signedDist; // G
-                sdfData[outIndex + 2] = signedDist; // B
-                sdfData[outIndex + 3] = 1;        // A (fully opaque)
+                // Set distance to 0 for boundary pixels
+                if (isBoundary) {
+                    if (isInside) {
+                        distInside[index] = 0;
+                    } else {
+                        distOutside[index] = 0;
+                    }
+                }
             }
+        }
+        
+        // Danielsson's algorithm - Forward pass
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                const index = y * this.width + x;
+                const isInside = mask[index];
+                const distMap = isInside ? distInside : distOutside;
+                
+                // Skip if it's already a boundary pixel
+                if (distMap[index] === 0) continue;
+                
+                // Consider 4-neighborhood
+                const neighbors = [
+                    [x-1, y], [x+1, y], [x, y-1], [x, y+1]
+                ];
+                
+                for (const [nx, ny] of neighbors) {
+                    if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+                        const nIndex = ny * this.width + nx;
+                        
+                        // Only propagate from pixels of same type
+                        if (mask[nIndex] === isInside) {
+                            const dist = Math.sqrt(squaredDist(x, y, nx, ny)) + 
+                                         (isInside ? distInside[nIndex] : distOutside[nIndex]);
+                            
+                            if (dist < distMap[index]) {
+                                distMap[index] = dist;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Backward pass
+        for (let y = this.height - 1; y >= 0; y--) {
+            for (let x = this.width - 1; x >= 0; x--) {
+                const index = y * this.width + x;
+                const isInside = mask[index];
+                const distMap = isInside ? distInside : distOutside;
+                
+                // Skip if it's already a boundary pixel
+                if (distMap[index] === 0) continue;
+                
+                // Consider 4-neighborhood
+                const neighbors = [
+                    [x-1, y], [x+1, y], [x, y-1], [x, y+1]
+                ];
+                
+                for (const [nx, ny] of neighbors) {
+                    if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+                        const nIndex = ny * this.width + nx;
+                        
+                        // Only propagate from pixels of same type
+                        if (mask[nIndex] === isInside) {
+                            const dist = Math.sqrt(squaredDist(x, y, nx, ny)) + 
+                                         (isInside ? distInside[nIndex] : distOutside[nIndex]);
+                            
+                            if (dist < distMap[index]) {
+                                distMap[index] = dist;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Normalize distances and create signed distance field
+        const sdfData = new Float32Array(pixelCount * 4); // RGBA format
+        
+        // Normalization factor to keep distances in a reasonable range
+        const maxDim = Math.max(this.width, this.height);
+        const normFactor = 1.0 / maxDim;
+        
+        for (let i = 0; i < pixelCount; i++) {
+            const isInside = mask[i];
+            // Apply sign: negative if inside, positive if outside
+            // and use the appropriate distance map
+            let signedDist;
+            
+            if (isInside) {
+                signedDist = -distInside[i] * normFactor;
+            } else {
+                signedDist = distOutside[i] * normFactor;
+            }
+            
+            // Store the SDF value in all channels (R, G, B) and set alpha to 1
+            const outIndex = i * 4;
+            sdfData[outIndex] = signedDist;     // R
+            sdfData[outIndex + 1] = signedDist; // G
+            sdfData[outIndex + 2] = signedDist; // B
+            sdfData[outIndex + 3] = 1;          // A (fully opaque)
         }
         
         // Create a canvas to store the SDF data
