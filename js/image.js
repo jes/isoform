@@ -179,25 +179,15 @@ class ImageProcessor {
             mask[i] = grayscale < 0.5;
         }
         
-        // Initialize distance arrays for inside and outside
-        const distInside = new Float32Array(pixelCount).fill(Infinity);
-        const distOutside = new Float32Array(pixelCount).fill(Infinity);
-        
-        // Helper function to compute squared Euclidean distance between two points
-        const squaredDist = (x1, y1, x2, y2) => {
-            const dx = x1 - x2;
-            const dy = y1 - y2;
-            return dx * dx + dy * dy;
-        };
+        // Initialize "nearest" arrays - each pixel is the location of the nearest boundary pixel
+        const nearestX = new Float32Array(pixelCount).fill(Infinity);
+        const nearestY = new Float32Array(pixelCount).fill(Infinity);
         
         // Initialize boundary pixels
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 const index = y * this.width + x;
                 const isInside = mask[index];
-                
-                // Check if this is a boundary pixel (has neighbor of opposite type)
-                let isBoundary = false;
                 
                 // Check 4-neighborhood
                 const neighbors = [
@@ -208,86 +198,68 @@ class ImageProcessor {
                     if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
                         const nIndex = ny * this.width + nx;
                         if (mask[nIndex] !== isInside) {
-                            isBoundary = true;
+                            nearestX[index] = nx;
+                            nearestY[index] = ny;
                             break;
                         }
                     }
                 }
-                
-                // Set distance to 0 for boundary pixels
-                if (isBoundary) {
-                    if (isInside) {
-                        distInside[index] = 0;
-                    } else {
-                        distOutside[index] = 0;
+            }
+        }
+
+        const squaredDistance = (x1, y1, x2, y2) => {
+            const dx = x1 - x2;
+            const dy = y1 - y2;
+            return dx * dx + dy * dy;
+        }
+
+        const danielsson = (x, y) => {
+            const index = y * this.width + x;
+            const isInside = mask[index];
+            
+            // Skip if it's already a boundary pixel
+            if (nearestX[index] === x && nearestY[index] === y) return;
+            
+            // Consider 4-neighborhood
+            const neighbors = [
+                [x-1, y], [x+1, y], [x, y-1], [x, y+1]
+            ];
+
+            let sqDist = squaredDistance(x, y, nearestX[index], nearestY[index]);
+            
+            for (const [nx, ny] of neighbors) {
+                if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+                    const nIndex = ny * this.width + nx;
+
+                    const targetX = nearestX[nIndex];
+                    const targetY = nearestY[nIndex];
+                    const targetIndex = targetY * this.width + targetX;
+                    
+                    // Only propagate from pixels of same type
+                    if (mask[targetIndex] === isInside) {
+                        const targetSqDist = squaredDistance(x, y, targetX, targetY);
+                        
+                        if (targetSqDist < sqDist) {
+                            sqDist = targetSqDist;
+                            nearestX[index] = targetX;
+                            nearestY[index] = targetY;
+                        }
                     }
                 }
             }
         }
-        
+
         // Danielsson's algorithm - Forward pass
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                const index = y * this.width + x;
-                const isInside = mask[index];
-                const distMap = isInside ? distInside : distOutside;
-                
-                // Skip if it's already a boundary pixel
-                if (distMap[index] === 0) continue;
-                
-                // Consider 4-neighborhood
-                const neighbors = [
-                    [x-1, y], [x+1, y], [x, y-1], [x, y+1]
-                ];
-                
-                for (const [nx, ny] of neighbors) {
-                    if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
-                        const nIndex = ny * this.width + nx;
-                        
-                        // Only propagate from pixels of same type
-                        if (mask[nIndex] === isInside) {
-                            const dist = Math.sqrt(squaredDist(x, y, nx, ny)) + 
-                                         (isInside ? distInside[nIndex] : distOutside[nIndex]);
-                            
-                            if (dist < distMap[index]) {
-                                distMap[index] = dist;
-                            }
-                        }
-                    }
-                }
+                danielsson(x, y);
             }
         }
         
         // Backward pass
         for (let y = this.height - 1; y >= 0; y--) {
             for (let x = this.width - 1; x >= 0; x--) {
-                const index = y * this.width + x;
-                const isInside = mask[index];
-                const distMap = isInside ? distInside : distOutside;
-                
-                // Skip if it's already a boundary pixel
-                if (distMap[index] === 0) continue;
-                
-                // Consider 4-neighborhood
-                const neighbors = [
-                    [x-1, y], [x+1, y], [x, y-1], [x, y+1]
-                ];
-                
-                for (const [nx, ny] of neighbors) {
-                    if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
-                        const nIndex = ny * this.width + nx;
-                        
-                        // Only propagate from pixels of same type
-                        if (mask[nIndex] === isInside) {
-                            const dist = Math.sqrt(squaredDist(x, y, nx, ny)) + 
-                                         (isInside ? distInside[nIndex] : distOutside[nIndex]);
-                            
-                            if (dist < distMap[index]) {
-                                distMap[index] = dist;
-                            }
-                        }
-                    }
-                }
+                danielsson(x, y);
             }
         }
         
@@ -303,12 +275,15 @@ class ImageProcessor {
             // Apply sign: negative if inside, positive if outside
             // and use the appropriate distance map
             let signedDist;
+
+            const x = i % this.width;
+            const y = Math.floor(i / this.width);
+
+            // distance +1 because we marked a pixel on the boundary both inside and outside (is this right?)
+            const dist = Math.sqrt(squaredDistance(x, y, nearestX[i], nearestY[i])) + 1.0;
             
-            if (isInside) {
-                signedDist = -distInside[i] * normFactor;
-            } else {
-                signedDist = distOutside[i] * normFactor;
-            }
+            if (isInside) signedDist = -dist * normFactor;
+            else signedDist = dist * normFactor;
             
             // Store the SDF value in all channels (R, G, B) and set alpha to 1
             const outIndex = i * 4;
