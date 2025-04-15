@@ -803,6 +803,44 @@ class PolarPatternNode extends TreeNode {
   }
 }
 
+class InfiniteExtrudeNode extends TreeNode {
+  constructor(children = []) {
+    super("InfiniteExtrude");
+    this.maxChildren = 1;
+    this.draftAngle = 0.0;
+    this.axis = new Vec3(0, 0, 1);
+    this.addChild(children);
+  }
+
+  makePeptide(p) {
+    if (!this.hasChildren()) {
+      this.warn("InfiniteExtrude node has no child to transform");
+      return this.noop();
+    }
+    if (!this.children[0].is2d()) {
+      this.warn("InfiniteExtrude node requires a 2D child");
+      // carry on anyway
+    }
+    if (this.axis.z == 0){
+      this.warn("InfiniteExtrude axis must have non-zero Z component");
+      return this.noop();
+    }
+    const axis = P.vnormalize(this.vuniform('axis'));
+    const t = P.div(P.vecZ(p), P.vecZ(axis));
+    const p2d = P.vsub(p, P.vmul(axis, t));
+    const child = this.children[0].peptide(p2d);
+    if (!child) return null;
+    const draftAngleRad = P.mul(this.uniform('draftAngle'), P.const(Math.PI / 180.0));
+    const d = P.add(P.mul(P.field(child, 'distance'), P.cos(draftAngleRad)), P.mul(P.vecZ(p), P.tan(draftAngleRad)));
+    return P.struct({
+      distance: d,
+      color: P.field(child, 'color'),
+      surfaceId: P.field(child, 'surfaceId'),
+      lipschitz: P.field(child, 'lipschitz'),
+    });
+  }
+}
+
 class ExtrudeNode extends TreeNode {
   constructor(children = []) {
     super("Extrude");
@@ -811,6 +849,14 @@ class ExtrudeNode extends TreeNode {
     this.draftAngle = 0.0;
     this.axis = new Vec3(0, 0, 1);
     this.addChild(children);
+    this.infiniteExtrude = new InfiniteExtrudeNode();
+    this.halfspaces = [];
+    this.intersection = new IntersectionNode();
+    this.intersection.addChild(this.infiniteExtrude);
+    for (let i = 0; i < 2; i++) {
+      this.halfspaces.push(new HalfSpaceNode());
+      this.intersection.addChild(this.halfspaces[i]);
+    }
   }
 
   properties() {
@@ -825,37 +871,22 @@ class ExtrudeNode extends TreeNode {
     };
   }
 
-  makePeptide(p) {
-    if (!this.hasChildren()) {
-      this.warn("Extrude node has no child to transform");
-      return this.noop();
-    }
-    if (!this.children[0].is2d()) {
-      this.warn("Extrude node requires a 2D child");
-      // carry on anyway
-    }
-    if (this.axis.z == 0){
-      this.warn("Extrude axis must have non-zero Z component");
-      return this.noop();
-    }
-    const axis = P.vnormalize(this.vuniform('axis'));
-    const t = P.div(P.vecZ(p), P.vecZ(axis));
-    const p2d = P.vsub(p, P.vmul(axis, t));
-    const child = this.children[0].peptide(p2d);
-    if (!child) return null;
-    const halfHeight = P.div(this.uniform('height'), P.const(2.0));
-    const dz = P.sub(P.abs(P.vecZ(p)), halfHeight);
-    const pz = P.clamp(P.add(P.vecZ(p), halfHeight), P.zero(), this.uniform('height'));
-    const draftAngleRad = P.mul(this.uniform('draftAngle'), P.const(Math.PI / 180.0));
-    const d = P.add(P.mul(P.field(child, 'distance'), P.cos(draftAngleRad)), P.mul(pz, P.tan(draftAngleRad)));
-    return P.struct({
-      distance: this.max(d, dz),
-      color: P.field(child, 'color'),
-      surfaceId: P.field(child, 'surfaceId'),
-      lipschitz: P.field(child, 'lipschitz'),
-    });
+  makeNormalised() {
+    if (this.children.length == 0) return null;
+    this.infiniteExtrude.children = [this.children[0].cloneWithSameIds().normalised()];
+    this.infiniteExtrude.axis = this.axis;
+    this.infiniteExtrude.draftAngle = this.draftAngle;
+    this.halfspaces[0].axis = "z";
+    this.halfspaces[0].size = this.height / 2;
+    this.halfspaces[0].negative = false;
+    this.halfspaces[1].axis = "z";
+    this.halfspaces[1].size = this.height / 2;
+    this.halfspaces[1].negative = true;
+    this.intersection.blendRadius = this.blendRadius;
+    this.intersection.chamfer = this.chamfer;
+    return this.intersection.cloneWithSameIds().normalised();
   }
-  
+ 
   getIcon() {
     return "⬆️";
   }
@@ -1189,7 +1220,7 @@ class ConsolidateNode extends TreeNode {
   const nodes = { TransformNode, DomainDeformNode, DistanceDeformNode, ShellNode,
     InfillNode, OffsetNode, ScaleNode, TwistNode, MirrorNode, LinearPatternNode,
     PolarPatternNode, ExtrudeNode, RevolveNode, DistanceDeformInsideNode, HelixExtrudeNode,
-    NegateNode, BlendNode, ConsolidateNode };
+    NegateNode, BlendNode, ConsolidateNode, InfiniteExtrudeNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {
