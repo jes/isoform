@@ -73,9 +73,31 @@ class PolkaDotNode extends TreeNode {
   }
 }
 
+class ColorByNormalNode extends TreeNode {
+  constructor() {
+    super("ColorByNormal");
+    this.color = new Vec3(1, 0, 0);
+    this.maxChildren = 1;
+  }
+
+  makePeptide(p) {
+    if (!this.hasChildren()) {
+      this.warn("ColorByNormal node has no child to transform");
+      return this.noop();
+    }
+    const child = this.children[0].peptide(p);
+    if (!child) return null;
+    const normal = P.field(child, 'distance').derivative('p');
+    return P.struct({
+      distance: P.field(child, 'distance'),
+      color: P.vec3(normal[0], normal[1], normal[2]),
+    });
+  }
+}
+
 // Detect environment and export accordingly
 (function() {
-    const nodes = { ColorNode, PolkaDotNode };
+    const nodes = { ColorNode, PolkaDotNode, ColorByNormalNode };
     
     // Check if we're in a module environment
     if (typeof exports !== 'undefined') {
