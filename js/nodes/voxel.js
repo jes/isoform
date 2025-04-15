@@ -102,6 +102,9 @@ class VoxelNode extends TreeNode {
     // Create a new array for the voxel data
     const voxelData = new Array(this.size * this.size * this.size).fill(0);
     
+    // TODO: we could use interval arithmetic to quickly determine the boundary and
+    // then Danielsson's algorithm to fill up the SDF away from the boundary, see
+    // toSDF() in image.js for an existing implementation
     for (let i = 0; i < this.size; i++) {
       for (let j = 0; j < this.size; j++) {
         for (let k = 0; k < this.size; k++) {
