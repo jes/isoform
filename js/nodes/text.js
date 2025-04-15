@@ -7,13 +7,15 @@ class TextNode extends TreeNode {
 
     this.imageNode = new ImageNode(new Float32Array([0]), [1, 1], 'linear');
     this.renderedText = null;
+    this.renderedFont = null;
+    this.renderedFontSize = null;
     
     // Initial render
     this.renderText();
   }
 
   renderText() {
-    if (this.renderedText === this.text) return;
+    if (this.renderedText === this.text && this.renderedFont === this.font && this.renderedFontSize === this.fontSize) return;
     
     // Create a canvas to render the text
     const canvas = document.createElement('canvas');
@@ -73,9 +75,7 @@ class TextNode extends TreeNode {
   }
 
   makeNormalised() {
-    if (this.renderedText != this.text) {
-      this.renderText();
-    }
+    this.renderText();
     return this.imageNode.cloneWithSameIds().normalised();
   }
   
