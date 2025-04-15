@@ -22,7 +22,7 @@ class ImageNode extends TreeNode {
     }
 
     aabb() {
-        return new AABB(0, 0, this.dimensions[0], this.dimensions[1]);
+        return AABB.infinite();
     }
 
     makePeptide(p) {
