@@ -239,7 +239,7 @@ const app = {
             }
 
             let startTime = performance.now();
-            let expr = this.processedSecondaryNode.peptide(P.vvar('p'));
+            let expr = this.processedSecondaryNode?.peptide(P.vvar('p'));
         
             if (expr) {
                 console.log(`Peptide expression for secondary node took ${performance.now() - startTime} ms`);

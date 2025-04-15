@@ -31,12 +31,39 @@ class SphereNode extends TreeNode {
   }
 }
 
+class InfiniteCylinderNode extends TreeNode {
+  constructor() {
+    super("InfiniteCylinder");
+    this.radius = 5.0;
+  }
+
+  properties() {
+    return {"radius": "float"};
+  }
+  
+  makePeptide(p) {
+    const pxy = P.vec3(P.vecX(p), P.vecY(p), P.zero());
+    const d = P.sub(P.vlength(pxy), this.uniform('radius'));
+    return P.struct({
+      distance: d,
+    });
+  }
+}
+
 class CylinderNode extends TreeNode {
   constructor() {
     super("Cylinder");
     this.diameter = 10.0;
     this.height = 10.0;
     this.roundRadius = 0.0;
+    this.infiniteCylinder = new InfiniteCylinderNode();
+    this.halfspaces = [];
+    this.intersection = new IntersectionNode();
+    this.intersection.addChild(this.infiniteCylinder);
+    for (let i = 0; i < 2; i++) {
+      this.halfspaces.push(new HalfSpaceNode());
+      this.intersection.addChild(this.halfspaces[i]);
+    }
   }
 
   properties() {
@@ -51,22 +78,20 @@ class CylinderNode extends TreeNode {
     };
   }
 
-  makePeptide(p) {
-    const pxy = P.vec3(P.vecX(p), P.vecY(p), P.zero());
-    const pz = P.abs(P.vecZ(p));
-    const radius = P.div(this.uniform('diameter'), P.const(2.0));
-    const halfHeight = P.div(this.uniform('height'), P.const(2.0));
-    let dx = P.sub(P.vlength(pxy), radius);
-    let dz = P.sub(pz, halfHeight);
-    if (this.roundRadius > 0.0) {
-      dx = P.add(dx, this.uniform('roundRadius'));
-      dz = P.add(dz, this.uniform('roundRadius'));
-    }
-    let dist = P.add(P.min(P.max(dx, dz), P.zero()), P.vlength(P.vmax(P.vec3(dx, dz, P.zero()), P.vconst(new Vec3(0.0)))));
-    if (this.roundRadius > 0.0) {
-      dist = P.sub(dist, this.uniform('roundRadius'));
-    }
-    return P.struct({distance: dist});
+  surfaceIds() {
+    return this.halfspaces.map(h => h.surfaceId).concat(this.surfaceId, this.infiniteCylinder.surfaceId);
+  }
+
+  makeNormalised() {
+    this.infiniteCylinder.radius = this.diameter / 2;
+    this.halfspaces[0].axis = "z";
+    this.halfspaces[0].size = this.height / 2;
+    this.halfspaces[0].negative = false;
+    this.halfspaces[1].axis = "z";
+    this.halfspaces[1].size = this.height / 2;
+    this.halfspaces[1].negative = true;
+    this.intersection.blendRadius = this.roundRadius;
+    return this.intersection.cloneWithSameIds().normalised();
   }
 
   getIcon() {
@@ -88,7 +113,7 @@ class BoxNode extends TreeNode {
     this.halfspaces = [];
     this.intersection = new IntersectionNode();
     for (let i = 0; i < 6; i++) {
-      this.halfspaces.push(new HalfSpaceNode(i, this.size[i]/2, false));
+      this.halfspaces.push(new HalfSpaceNode());
       this.intersection.addChild(this.halfspaces[i]);
     }
   }
@@ -165,7 +190,7 @@ class BoxNode extends TreeNode {
 }
 
 class HalfSpaceNode extends TreeNode {
-  constructor(axis, size, negative) {
+  constructor(axis = "x", size = 1.0, negative = false) {
     super("HalfSpace");
     this.axis = axis;
     this.size = size;
@@ -235,7 +260,7 @@ class TorusNode extends TreeNode {
 
 // Detect environment and export accordingly
 (function() {
-  const nodes = { SphereNode, CylinderNode, BoxNode, TorusNode, HalfSpaceNode };
+  const nodes = { SphereNode, InfiniteCylinderNode, CylinderNode, BoxNode, TorusNode, HalfSpaceNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {
