@@ -1148,12 +1148,48 @@ class BlendNode extends TreeNode {
   }
 }
 
+class ConsolidateNode extends TreeNode {
+  constructor(children = []) {
+    super("Consolidate");
+    this.maxChildren = 1;
+    this.addChild(children);
+    this.consolidatedChild = null;
+  }
+
+  makeNormalised() {
+    this.consolidatedChild = TreeRewriter.rewrite(this.children[0].normalised());
+    this.children = [];
+    return this;
+  }
+
+  uniforms(uniforms = {}) {
+    if (this.consolidatedChild) return this.consolidatedChild.uniforms(uniforms);
+    if (this.children.length > 0) return this.children[0].uniforms(uniforms);
+    return uniforms;
+  }
+
+  makePeptide(p) {
+    if (!this.consolidatedChild) {
+      this.warn("Consolidate node has no child to transform");
+      return this.noop();
+    }
+    const child = this.consolidatedChild.peptide(p);
+    if (!child) return null;
+    return P.struct({
+      distance: P.field(child, 'distance'),
+      color: P.field(child, 'color'),
+      surfaceId: P.const(this.surfaceId),
+      lipschitz: P.field(child, 'lipschitz'),
+    });
+  }
+}
+
 // Detect environment and export accordingly
 (function() {
   const nodes = { TransformNode, DomainDeformNode, DistanceDeformNode, ShellNode,
     InfillNode, OffsetNode, ScaleNode, TwistNode, MirrorNode, LinearPatternNode,
     PolarPatternNode, ExtrudeNode, RevolveNode, DistanceDeformInsideNode, HelixExtrudeNode,
-    NegateNode, BlendNode };
+    NegateNode, BlendNode, ConsolidateNode };
   
   // Check if we're in a module environment
   if (typeof exports !== 'undefined') {

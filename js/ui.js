@@ -555,6 +555,7 @@ const ui = {
             { name: 'Distance Deform Inside', constructor: DistanceDeformInsideNode, icon: DistanceDeformInsideNode.prototype.getIcon() },
             { name: 'Color', constructor: ColorNode, icon: ColorNode.prototype.getIcon() },
             { name: 'Polka Dot', constructor: PolkaDotNode, icon: PolkaDotNode.prototype.getIcon() },
+            { name: 'Consolidate', constructor: ConsolidateNode, icon: ConsolidateNode.prototype.getIcon() },
         ];
         
         modifiers.forEach(modifier => {

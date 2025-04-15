@@ -109,8 +109,8 @@ class TreeNode {
   }
 
   // return a map of uniform name to value
-  uniforms() {
-    return this.dfsUniforms();
+  uniforms(uniforms = {}) {
+    return this.dfsUniforms(uniforms);
   }
 
   dfsUniforms(uniforms = {}) {
@@ -118,7 +118,7 @@ class TreeNode {
       uniforms[uniformName] = this[property];
     }
     for (const child of this.children) {
-      child.dfsUniforms(uniforms);
+      child.uniforms(uniforms);
     }
     return uniforms;
   }
