@@ -52,18 +52,6 @@ editor knows which file to apply the changes to.
 
 ## SDFs
 
-I'm sure you already know what SDFs are so I won't bore you with it, but in our application
-we classify SDFs into 3 categories based on their exactness:
-
- * Exact: The SDF is exact, meaning it is the exact distance to the surface of the object.
- * Lower Bound: The SDF is a lower bound on the distance to the surface of the object.
- * Isosurface: The SDF is an isosurface of the object.
-
-When you're writing an SDF please try to keep track of which category it falls into, and
-update the node's exactness property accordingly. It is OK if the exactness property
-depends on other properties of the node, just make sure `getExactness()` never over-estimates
-the exactness.
-
 The document is edited as a tree of nodes. Node types are:
 
  * Primitives (Box, Sphere, Cylinder, etc.): they do not have child nodes, set `this.maxChildren = 0`
