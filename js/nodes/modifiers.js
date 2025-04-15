@@ -929,7 +929,7 @@ class DistanceDeformInsideNode extends TreeNode {
       return this.noop();
     }
     if (!child1) {
-      // Hack: the TreeRewriter loses out reference to our second child, so we stash it in makeNormalised() and put it back here
+      // Hack: the TreeRewriter loses our reference to our second child, so we stash it in makeNormalised() and put it back here
       if (this.secondChild) {
         this.children.push(this.secondChild);
         child1 = this.secondChild;

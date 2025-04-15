@@ -657,6 +657,7 @@ class TreeNode {
         chamfer: node.chamfer,
         propertyUniforms: {...node.propertyUniforms}, // Copy propertyUniforms
         children: includeChildren ? node.children.map(child => {
+          if (!child) return null;
           // For each child, either serialize it or reference it
           if (nodeMap.get(child).path.length > nodeMap.get(node).path.length) {
             // This is a forward reference, serialize normally
