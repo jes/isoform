@@ -698,6 +698,8 @@ class TreeNode {
     
     // Function to create a node of the correct type
     const createNode = (data) => {
+      if (!data) return null;
+
       // Handle circular references
       if (data.circularRef !== undefined) {
         return { isRef: true, id: data.circularRef };

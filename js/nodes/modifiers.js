@@ -913,7 +913,7 @@ class DistanceDeformInsideNode extends TreeNode {
   }
 
   makeNormalised() {
-    this.secondChild = this.children[1];
+    this.secondChild = this.children[1]?.cloneWithSameIds().normalised();
     return super.makeNormalised();
   }
 
